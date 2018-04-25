@@ -7,3 +7,7 @@ to avoid having to include working source files.
 2229143.tar.gz - simple tex plus pdf with larger TeX source
 2230466.tar.gz - simple tex plus multiple pdf files
 
+Heuristic:
+	- pdfpages
+	- tiny main TeX source file
+	- one or more PDFs
