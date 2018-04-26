@@ -1,5 +1,9 @@
-# Implements arXiv's file guess logic.
-#
+"""Implements arXiv's file type guess logic. 
+
+   Attempts to detect obvious errors in uploaded files and assigns priority 
+   in terms of our downstream TeX compilation process.
+   """
+
 import os
 import os.path
 import re
@@ -17,6 +21,10 @@ TEX_types = ['TYPE_LATEX',
              'TYPE_PDFLATEX',
              'TYPE_PDFTEX'
              ]
+
+# Priorities may be redesigned and reimplemented once I understand the entire
+# impact of their use. Initial Python implementation attempts to stay true to
+# the original Perl version author's design until the point I know better.
 
 # Type priorities
 priority = 0

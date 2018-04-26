@@ -1,3 +1,7 @@
+"""Encapsulate file-related methods necessary to complete checks on
+   uploaded files. Pulls in analyzed type information and makes it easier
+   to keep track of decisions as we analyze files."""
+
 import os.path
 from filemanager.arXiv.FileType import guess, _is_tex_type, name
 
@@ -108,3 +112,5 @@ to be displayed to the submitter."""
         self.__removed = 1
 
 # TODO Need to handle special Ancillary Files
+
+# TODO Need to implement sha256sum routine
