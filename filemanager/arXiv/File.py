@@ -3,6 +3,8 @@
    to keep track of decisions as we analyze files."""
 
 import os.path
+import re
+
 from filemanager.arXiv.FileType import guess, _is_tex_type, name
 
 
@@ -16,6 +18,7 @@ to be displayed to the submitter."""
         self.__base_dir = base_dir
         self.__description = ''
         self.__removed = 0
+        self.__type = ''
 
     @property
     def name(self) -> str:
@@ -31,7 +34,10 @@ to be displayed to the submitter."""
     @property
     def dir(self) -> str:
         """Directory which contains the file. This is only used for files."""
-        return os.path.dirname(self.filepath)
+        if os.path.isfile(self.filepath):
+            return os.path.dirname(self.filepath)
+        else:
+            return ''
 
     @property
     def base_dir(self) -> str:
@@ -50,8 +56,15 @@ to be displayed to the submitter."""
         pdir = os.path.dirname(self.filepath)
         if pdir == self.__base_dir:
             return ''
-        else:
+        elif self.dir:
             return pdir.replace(self.base_dir + '/',"")
+        else:
+            # For directories self.dir is empty, must get rest of path from filepath
+            public_dir =  pdir.replace(self.base_dir + '/', "")
+            name = re.sub(r'[\+]/\\\+', '', self.name)
+            regex = name + '$'
+            public_dir = re.sub(regex, '', public_dir)
+            return public_dir
 
     @property
     def filepath(self) -> str:
@@ -72,12 +85,32 @@ to be displayed to the submitter."""
     @property
     def type(self) -> str:
         """The file type."""
-        return guess(self.__filepath)
+        if self.__type:
+            """Use existing type setting."""
+            return self.__type
+        elif self.dir:
+            """Guess file type."""
+            self.__type = guess(self.__filepath)
+            return self.__type
+        elif self.dir == '' and self.filepath == os.path.join(self.base_dir, 'anc'):
+            return 'directory'
+        else:
+            return 'directory'
+
+    @type.setter
+    def type(self, type: str):
+        """Set the type manually."""
+        self.__type = type
 
     @property
     def type_string(self) -> str:
         """The human readable type name."""
-        return name(self.type)
+        if self.dir:
+            return name(self.type)
+        elif self.dir == '' and self.filepath == os.path.join(self.base_dir, 'anc'):
+            return 'Ancillary files directory'
+        else:
+            return 'Directory'
 
     @property
     def sha256sum(self) -> str:
