@@ -26,12 +26,12 @@ TEST_FILES_DIRECTORY = os.path.join(os.getcwd(),'tests/test_files_upload')
 upload_tests = []
 
 # Basic tests
-if 0:
+if 1:
     upload_tests.append(['upload1.tar.gz', '9902.1001', True, 'espcrc2.sty is empty \(size is zero\)',
                      'Test zero file detection'])
     upload_tests.append(['upload2.tar.gz',  '9903.1002',False,'', 'Test well-formed submission.'])
     upload_tests.append(['upload3.tar.gz',  '9903.1003',False,'', 'Test well-formed submission.'])
-    upload_tests.append(['upload4.gz',      '9903.1004',False,'', 'Test well-formed submission.'])
+    upload_tests.append(['upload4.gz',      '9903.1004',True,'', "Renaming 'upload4.gz' to 'upload4'"])
     upload_tests.append(['upload5.pdf',     '9903.1005',False,'', 'Test well-formed pdf submission.'])
     ## .tgz file because of Archive::Extrat/gzip bug
     upload_tests.append(['upload6.tgz',     '9903.1006',False,'', 'Test well-formed submission.'])
@@ -44,32 +44,29 @@ if 0:
     # This really needs to be a special test since we need to inspect outcomes.
     #upload_tests.append(['UnpackWithSubdirectories.tar.gz', '9903.1014', False, '', 'Test upload with multiple levels'])
 
-#  contains top-level directory [Not implemented yet]
-#upload_tests.append(['upload7.tar.gz', '9903.1007', True, 'Removing top level directory',
-#                     'Test removing top level directory.'])
+    #  contains top-level directory
+    upload_tests.append(['upload7.tar.gz', '9903.1007', True, 'Removing top level directory',
+                         'Test removing top level directory.'])
 
 
 #upload_tests.append(['1801.03879-1.tar.gz', '20180225', False, '', "Test gzipped tar unpack'"])
-#upload_tests.append(['arxiv.zip','20180226',False,'', 'Test zip unpack'])
-#upload_tests.append(['','',False,''])
-#upload_tests.append(['','',False,''])
 #upload_tests.append(['','',False,''])
 #upload_tests.append(['','',False,'', 'Test well-formed submission.'])
 
 # Working tests
-if 0:
-    upload_tests.append(['UploadTestWindowCDrive.tar.gz', '12345639', True, 'Renaming c:\data\windows.txt',
+if 1:
+    upload_tests.append(['UploadTestWindowCDrive.tar.gz', '12345639', True, 
+                        r'Renaming c:\\data\\windows\.txt',
                          'Test renaming of Windows filename'])
 
     upload_tests.append(['Upload9BadFileNames.tar.gz', '12345640', True,
-                     'Attempting to rename 10-1-1\(63\)\.png to 10-1-1_63_\.png.', 'Test for bad/illegal file names.'])
+                  'Attempting to rename 10-1-1\(63\)\.png to 10-1-1_63_\.png.', 'Test for bad/illegal file names.'])
+
+    upload_tests.append(['source_with_dir.tar.gz', '9903.1009', True, 'Removing top level directory',
+                         'Removing top level directory'])
 
 # Debugging tests
-upload_tests.append(['source_with_dir.tar.gz', '9903.1009', True, 'Removing top level directory',
-                     'Removing top level directory'])
 
-
-#from zero.process.mutate import add_some_one_to_the_thing
 
 class TestInternalSupportRoutines(TestCase):
 

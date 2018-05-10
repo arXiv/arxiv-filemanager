@@ -327,7 +327,7 @@ submitter."""
                     new_file_path = os.path.join(a, new_file_name)
                     try:
                         os.rename(file_path, new_file_path)
-                        msg = 'Renaming ' + file_name + ' to ' + new_file_name + '.'
+                        msg = "Renaming '" + file_name + "' to '" + new_file_name + "'."
                         self.add_warning(msg)
                     except os.error:
                         self.add_warning('Unable to rename ' + file_name)
