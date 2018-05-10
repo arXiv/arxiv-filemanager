@@ -91,4 +91,24 @@ class TestFileClass(TestCase):
         file.remove()
         self.assertTrue(file.removed, 'File has been marked as removed')
 
+    def test_anc_detection(self):
+        """Check that we are detecting 'special' ancillary directory properly."""
+        cwd = os.getcwd()
+        testfiles_dir = os.path.join(cwd, 'tests')
+        testfile_path = os.path.join(testfiles_dir, 'anc')
+        file = File(testfile_path, testfiles_dir)
 
+        self.assertEquals(file.type, 'directory', "Check type of ancillary directory.")
+        self.assertEquals(file.type_string, 'Ancillary files directory', "Check type_string for ancillary directory")
+
+    def test_dirs(self):
+        """Check operations on directories."""
+        cwd = os.getcwd()
+        testfiles_dir = os.path.join(cwd, 'tests')
+        testfile_path = os.path.join(testfiles_dir, 'type_test_files', 'subdirectory')
+        file = File(testfile_path, testfiles_dir)
+
+        self.assertEquals(file.base_dir, testfiles_dir, "Check base_dir() method")
+        self.assertEquals(file.public_dir, 'type_test_files', "Check public_dir() method")
+        self.assertEquals(file.type, 'directory', "Check type of ancillary directory.")
+        self.assertEquals(file.type_string, 'Directory', "Check type_string for ancillary directory")
