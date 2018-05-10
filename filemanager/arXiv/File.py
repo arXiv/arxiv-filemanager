@@ -26,7 +26,7 @@ to be displayed to the submitter."""
         return os.path.basename(self.filepath)
 
     @property
-    def ext(self):
+    def ext(self) -> str:
         """Return file extension"""
         fbase, ext = os.path.splitext(self.__filepath)
         return ext
@@ -45,7 +45,7 @@ to be displayed to the submitter."""
         return self.__base_dir
 
     @base_dir.setter
-    def base_dir(self, base: str) -> str:
+    def base_dir(self, base: str) -> None:
         """Directory containing all source files."""
         self.__base_dir = base
 
@@ -72,7 +72,7 @@ to be displayed to the submitter."""
         return self.__filepath
 
     @filepath.setter
-    def filepath(self, path: str) -> str:
+    def filepath(self, path: str) -> None:
         """The file name WITH complete path/directory in filesystem."""
         self.__filepath = path
 
@@ -98,7 +98,7 @@ to be displayed to the submitter."""
             return 'directory'
 
     @type.setter
-    def type(self, type: str):
+    def type(self, type: str) -> None:
         """Set the type manually."""
         self.__type = type
 
@@ -117,12 +117,12 @@ to be displayed to the submitter."""
         return 'NOT IMPLEMENTED YET'
 
     @property
-    def description(self, description='') -> str:
+    def description(self) -> str:
         """Description of file. (Optional)"""
         return self.__description
 
     @description.setter
-    def description(self, description='') -> str:
+    def description(self, description:str='') -> None:
         """Description of file. (Optional)"""
         if description != '':
             self.__description = description
@@ -137,11 +137,11 @@ to be displayed to the submitter."""
         return os.path.getsize(self.filepath)
 
     @property
-    def removed(self):
+    def removed(self) -> int:
         return self.__removed
 
 
-    def remove(self):
+    def remove(self) -> None:
         self.__removed = 1
 
 # TODO Need to handle special Ancillary Files
