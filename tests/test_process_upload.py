@@ -162,6 +162,7 @@ class TestUpload(TestCase):
         # Recreate FileStroage object that flask will be passing in
         file = None
         with open(filename, 'rb') as fp:
+            upload = Upload('9903.1014')
             file = FileStorage(fp)
             ret = upload.process_upload(file)
 
@@ -179,12 +180,12 @@ class TestUpload(TestCase):
 
 
     def test_process_anc_upload(self) -> None:
-        """Try to process upload with ancillary files in anc directory"""
+        """Process upload with ancillary files in anc directory"""
         upload = Upload(20180226)
         filename = os.path.join(TEST_FILES_DIRECTORY, 'UploadWithANCDirectory.tar.gz')
 
         # For testing purposes, clean out existing workspace directory
-        workspace_dir = upload.create_upload_workspace()
+        workspace_dir = upload.get_upload_directory()
         if os.path.exists(workspace_dir):
             shutil.rmtree(workspace_dir)
 
@@ -192,6 +193,8 @@ class TestUpload(TestCase):
         # Recreate FileStroage object that flask will be passing in
         file = None
         with open(filename, 'rb') as fp:
+            # Now create upload instance
+            upload = Upload(20180226)
             file = FileStorage(fp)
             ret = upload.process_upload(file)
 
@@ -271,7 +274,6 @@ class TestUpload(TestCase):
             # For testing purposes only, clean out existing workspace directory
             workspace_dir = upload.get_upload_directory()
             if os.path.exists(workspace_dir):
-                print("Upload directory exists:")
                 shutil.rmtree(workspace_dir)
 
             print('Run test upload checks against file: ' + test_file)
