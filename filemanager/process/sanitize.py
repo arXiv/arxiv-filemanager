@@ -11,9 +11,7 @@ from werkzeug.utils import secure_filename
 
 from filemanager.arXiv.File import File
 
-# TODO MOVE TO CONFIG FILE
-from filemanager.utilities.upload_size import check_upload_file_size_limit
-
+# TODO: Need to move to config file
 UPLOAD_BASE_DIRECTORY = '/tmp/a/b/submissions'
 
 
@@ -27,16 +25,21 @@ submitter."""
 
         self.__warnings = []
         self.__errors = []
+        self.create_upload_workspace()
+
 
     def add_warning(self, msg: str) -> None:
+        """Record warning for this upload instance."""
         print('Warning: ' + msg)
         self.__warnings.append(msg)
 
     def has_warnings(self):
+        """Indicates that upload has warnings."""
         return len(self.__warnings)
 
-    def search_warnings(self, search:str) -> bool:
-        #if search in self.__warnings:
+    def search_warnings(self, search: str) -> bool:
+        """Search warnings for specific regex."""
+
         for warning in self.__warnings:
             # Turn this into debugging
             #print("Look for '" + search + '\' in \n\t \'' + warning +"'")
@@ -48,6 +51,7 @@ submitter."""
         return False
 
     def add_error(self, msg: str) -> None:
+        """Record error for this upload instance."""
         print('Error: ' + msg)
         self.__errors.append(msg)
 
@@ -55,15 +59,27 @@ submitter."""
 
     @property
     def upload_id(self) -> int:
+        """Return upload identifier.
+
+        The unique identifier for upload.
+
+        """
         return self.__upload_id
 
     def remove_file(self, file: File, msg: str) -> bool:
+        """Remove file from source directory.
+
+        Moves file to 'removed' directory and marks File
+        objects state as removed."""
+
         # Move file to removed directory
         filepath = file.filepath
         removed_path = os.path.join(self.get_removed_directory(), file.name)
         print("Move file " + file.name + " to removed dir: " + removed_path)
+
         if shutil.move(filepath, removed_path):
             self.add_warning("*** File " + file.name + " has been removed ***")
+            self.add_warning("*** Reason: " + msg)
         else:
             self.add_warning("*** FAILED to remove file " + filepath + " ***")
         file.remove()
@@ -86,7 +102,7 @@ submitter."""
             # TODO determine if we need to set owner/modes
             os.makedirs(UPLOAD_BASE_DIRECTORY, 0o755)
             # Stick this entry in service log?
-            print("Created file management service workarea\n");
+            print("Created file management service workarea\n")
 
         upload_directory = self.get_upload_directory()
 
@@ -152,16 +168,20 @@ submitter."""
         return upload_path
 
 
-
     def check_files(self) -> None:
         """This is the main loop that goes through the list of files and does a long
         list of checks that depend on file type, extension, and sometimes file name."""
 
         source_directory = self.get_source_directory()
 
-        for a, b, c in os.walk(source_directory):
-            for file in c:
-                path = os.path.join(a, file)
+        for root_directory, directories, files in os.walk(source_directory):
+            for dir in directories:
+                # Need to decide whether we need to do anything to directories
+                # in the meantime get rid of lint warning
+                pass
+
+            for file in files:
+                path = os.path.join(root_directory, file)
                 obj = File(path, source_directory)
 
                 # Convert this to debugging
@@ -170,8 +190,7 @@ submitter."""
 
                 file_type = obj.type
                 file_name = obj.name
-                file_dir = obj.dir
-                file_path = os.path.join(a, file)
+                file_path = os.path.join(root_directory, file)
                 file_size = obj.size
 
                 # Update file timestamps
@@ -190,11 +209,11 @@ submitter."""
                 # Rename Windows file names
                 if re.search(r'^[A-Za-z]:\\', file_name):
                     # Rename using basename
-                    new_name = re.sub (r'^[A-Za-z]:\\(.*\\)?', '', file_name)
-                    new_file_path = os.path.join(a, new_name)
+                    new_name = re.sub(r'^[A-Za-z]:\\(.*\\)?', '', file_name)
+                    new_file_path = os.path.join(root_directory, new_name)
                     msg = 'Renaming ' + file_name + ' to ' + new_name + '.'
                     self.add_warning(msg)
-                    os.rename (file_path, new_file_path)
+                    os.rename(file_path, new_file_path)
                     # fix up local data
                     file_name = new_name
                     file_path = new_file_path
@@ -215,14 +234,15 @@ submitter."""
                 # Attempt to rename filenames containing illegal characters
 
                 # Filename contains illegal characters+,-,/,=,
-                if re.search('[^\w\+\-\.\=\,]', file_name):
+                if re.search(r'[^\w\+\-\.\=\,]', file_name):
                     # Translate bad characters
-                    new_file_name = re.sub('[^\w\+\-\.\=\,]', '_', file_name)
+                    new_file_name = re.sub(r'[^\w\+\-\.\=\,]', '_', file_name)
                     self.add_warning("We only accept file names containing the characters: "
-                                   + "a-z A-Z 0-9 _ + - . , =")
-                    self.add_warning('Attempting to rename ' + file_name + ' to '+ new_file_name +'.')
+                                     + "a-z A-Z 0-9 _ + - . , =")
+                    self.add_warning('Attempting to rename ' + file_name
+                                     + ' to '+ new_file_name +'.')
                     # Do the renaming
-                    new_file_path = os.path.join(a, new_file_name)
+                    new_file_path = os.path.join(root_directory, new_file_name)
                     try:
                         os.rename(file_path, new_file_path)
                     except os.error:
@@ -238,10 +258,10 @@ submitter."""
                     # Replace dash (-) with underscore
                     new_file_name = re.sub('^-', '_', file_name)
                     self.add_warning('We do not accept files starting with a hyphen. '
-                                   + 'Attempting to rename \"'+ file_name + '\" to \"'
-                                   + new_file_name + '\".')
+                                     + 'Attempting to rename \"'+ file_name + '\" to \"'
+                                     + new_file_name + '\".')
                     # Do the renaming
-                    new_file_path = os.path.join(a, new_file_name)
+                    new_file_path = os.path.join(root_directory, new_file_name)
                     try:
                         os.rename(file_path, new_file_path)
                     except os.error:
@@ -251,7 +271,7 @@ submitter."""
                     file_path = new_file_path
 
                 # Filename starts with dot (.)
-                if file_name.startswith('\.'):
+                if file_name.startswith(r'\.'):
                     # Remove files starting with dot
                     msg = 'Removed hidden file ' + file_name
                     self.add_warning(msg)
@@ -263,12 +283,12 @@ submitter."""
                 # all are tied together with if / elif
 
                 # TeX: Remove hyperlink styles espcrc2 and lamuphys
-                if re.search('^(espcrc2|lamuphys)\.sty$', file_name):
+                if re.search(r'^(espcrc2|lamuphys)\.sty$', file_name):
                     # TeX: styles that conflict with internal hypertex package
                     print("Found hyperlink-compatible package\n")
                     self.remove_file(obj, msg)
                     self.add_warning('    -- instead using hypertex-compatible local version')
-                elif re.search('^(espcrc2|lamuphys)\.tex$', file_name):
+                elif re.search(r'^(espcrc2|lamuphys)\.tex$', file_name):
                     # TeX: source files that conflict with internal hypertex package
                     # I'm not sure why this is just a warning
                     self.add_warning('Possible submitter error. Unwanted ' + file_name)
@@ -276,58 +296,72 @@ submitter."""
                     # Remove these files
                     msg = 'File not allowed.'
                     self.remove_file(obj, msg)
-                elif re.search('^xxx\.(rsrc$|finfo$|cshrc$|nfs)', file_name) \
-                    or re.search('\.[346]00gf$', file_name) \
-                    or (re.search('\.desc$', file_name) and file_size < 10):
+                elif re.search(r'^xxx\.(rsrc$|finfo$|cshrc$|nfs)', file_name) \
+                    or re.search(r'\.[346]00gf$', file_name) \
+                    or (re.search(r'\.desc$', file_name) and file_size < 10):
                     # Remove these files
                     msg = 'File not allowed.'
                     self.remove_file(obj, msg)
-                elif re.search('(.*)\.bib$', file_name, re.IGNORECASE):
+                elif re.search(r'(.*)\.bib$', file_name, re.IGNORECASE):
                     # TeX: Remove bib file since we do not run BibTeX
                     # TODO: Generate bib warning bib()??
-                    msg = 'Removing ' + file_name + ". Please upload .bbl file instead."
+                    msg = 'Removing ' + file_name \
+                          + ". Please upload .bbl file instead."
                     self.remove_file(obj, msg)
-                elif re.search('^(10pt\.rtx|11pt\.rtx|12pt\.rtx|aps\.rtx|revsymb\.sty|revtex4\.cls|rmp\.rtx)$',
+                elif re.search(r'^(10pt\.rtx|11pt\.rtx|12pt\.rtx|aps\.rtx|'
+                               + r'revsymb\.sty|revtex4\.cls|rmp\.rtx)$',
                                file_name):
-                    # TeX: submitter is including file already included in TeX Live release
+                    # TeX: submitter is including file already included
+                    # in TeX Live release
                     # TODO: get revtex() warning message ???
                     self.remove_file(obj, msg)
-                elif re.search('^diagrams\.(sty|tex)$', file_name):
-                    # TeX: diagrams package contains a time bomb and stops working
-                    # after a specified date. Use internal version with time bomb disable.
+                elif re.search(r'^diagrams\.(sty|tex)$', file_name):
+                    # TeX: diagrams package contains a time bomb and stops
+                    # working after a specified date. Use internal version
+                    # with time bomb disable.
 
                     # TODO: get diagrams warning
                     msg = ''
                     self.remove_file(obj, msg)
                 elif file_name == 'aa.dem':
                     # TeX: Check for aa.dem
-                    # This is demo file that authors seem to include with their submissions.
+                    # This is demo file that authors seem to include with
+                    # their submissions.
                     self.remove_file(obj, msg)
-                    self.add_warning('REMOVING ' + file_name + ' on the assumption that it is the example '
-                                     + 'file for the Astronomy and Astrophysics macro package aa.cls.')
-                elif re.search('(.+)\.(log|aux|blg|dvi|ps|pdf)$', file_name, re.IGNORECASE):
-                    # TeX: Check for TeX processed output files (log, aux, blg, dvi, ps, pdf, etc.)
+                    self.add_warning('REMOVING ' + file_name
+                                     + ' on the assumption that it is the example '
+                                     + 'file for the Astronomy and '
+                                     + 'Astrophysics macro package aa.cls.')
+                elif re.search(r'(.+)\.(log|aux|blg|dvi|ps|pdf)$', file_name,
+                               re.IGNORECASE):
+                    # TeX: Check for TeX processed output files (log, aux,
+                    # blg, dvi, ps, pdf, etc.)
                     # Detect naming conflict, warn, remove offending files.
                     # Check if certain source files exist
                     filebase, file_extension = os.path.splitext(file_name)
-                    tex_file = os.path.join(a, filebase, '.tex')
-                    TEX_file = os.path.join(a, filebase, '.TEX')
-                    if os.path.exists(tex_file) or os.path.exists(TEX_file):
-                        # Potential conflict / corruption by including TeX generated files in submission
+                    tex_file = os.path.join(root_directory, filebase, '.tex')
+                    upper_case_tex_file = os.path.join(root_directory, filebase, '.TEX')
+                    if os.path.exists(tex_file) or os.path.exists(upper_case_tex_file):
+                        # Potential conflict / corruption by including TeX
+                        # generated files in submission
                         self.add_warning(' REMOVING $fn due to name conflict')
                         self.remove_file(obj, msg)
-                elif re.search('[^\w\+\-\.\=\,]', file_name):
+                elif re.search(r'[^\w\+\-\.\=\,]', file_name):
                     # File name contains unwanted bad characters - this is an Error
-                    # We attempted to fix file_names with bad characters at beginning of this routine
-                    self.add_error('Filename \"' + file_name + '\" contains unwanted bad character \"$&\", '
+                    # We attempted to fix file_names with bad characters at
+                    # beginning of this routine
+                    self.add_error('Filename \"' + file_name
+                                   + '\" contains unwanted bad character \"$&\", '
                                    + 'only allowed are a-z A-Z 0-9 _ + - . , =')
-                elif re.search('([\.\-]t?[ga]?z)$', file_name):
+                elif re.search(r'([\.\-]t?[ga]?z)$', file_name):
                     # Fix filename
-                    new_file_name = re.sub(r'([\.\-]t?[ga]?z)$', '', file_name, re.IGNORECASE)
-                    new_file_path = os.path.join(a, new_file_name)
+                    new_file_name = re.sub(r'([\.\-]t?[ga]?z)$', '', file_name,
+                                           re.IGNORECASE)
+                    new_file_path = os.path.join(root_directory, new_file_name)
                     try:
                         os.rename(file_path, new_file_path)
-                        msg = "Renaming '" + file_name + "' to '" + new_file_name + "'."
+                        msg = "Renaming '" + file_name + "' to '" \
+                              + new_file_name + "'."
                         self.add_warning(msg)
                     except os.error:
                         self.add_warning('Unable to rename ' + file_name)
@@ -341,8 +375,8 @@ submitter."""
 
                 # Finished basic file checks
 
-                # We are done if file was marked as removed, otherwise continue with
-                # additional type checks below
+                # We are done if file was marked as removed,
+                # otherwise continue with additional type checks below
                 if obj.removed:
                     print("File was removed -- skipping to next file\n")
                     continue
@@ -354,8 +388,9 @@ submitter."""
                 # TODO: Investigate missfont.log error - possibly move handling here
 
                 # TODO: diagrams detection script (does not exist in legacy system)
-                # TeX: Detect various diagrams files where user changes name of package.
-                # Implement at some point - just thinking of this given recent failures.
+                # TeX: Detect various diagrams files where user changes name
+                # of package. Implement at some point - just thinking of this
+                # given recent failures.
 
 
 
@@ -365,7 +400,8 @@ submitter."""
                 # TeX: If dvi file is present we ask for TeX source
                 #   Do we need to do this is TeX was also included???????
                 if file_type == 'dvi':
-                    msg = file_name + ' is a TeX-produced DVI file. Please submit the TeX source instead.'
+                    msg = file_name + ' is a TeX-produced DVI file. ' \
+                          + ' Please submit the TeX source instead.'
                     self.add_error(msg)
 
                 # Clean up any html
@@ -374,8 +410,9 @@ submitter."""
 
                 # Postscript - must check and clean up postscript
                 #   unmacify, check_ps, ???
-                elif file_type == 'postscript' or (file_type == 'failed'
-                                                   and re.search('\.e?psi?$', file_name, re.IGNORECASE)):
+                elif file_type == 'postscript' \
+                        or (file_type == 'failed' \
+                            and re.search(r'\.e?psi?$', file_name, re.IGNORECASE)):
                     pass
 
                 # TeX: Check form of source for latex and latex2e
@@ -383,7 +420,9 @@ submitter."""
                     pass
 
                 # TeX: Check for image types that are not accepted
-                elif file_type == 'image' and re.search(r'\.(pcx|bmp|wmf|opj|pct|tiff?)$', file_name, re.IGNORECASE):
+                elif file_type == 'image' \
+                        and re.search(r'\.(pcx|bmp|wmf|opj|pct|tiff?)$',
+                                      file_name, re.IGNORECASE):
                     pass
 
                 # Uuencode file: decode uuencoded file
@@ -423,18 +462,19 @@ submitter."""
                 # End of file type checks
 
     def create_file_list(self) -> None:
-        """Create list of File objects with details of each file in upload package."""
+        """Create list of File objects with details of each file in
+        upload package."""
 
         pass
 
     def set_file_permissions(self, source_directory: str) -> None:
-
+        """Set the file permissions for all files and directories in upload."""
         # Set permissions on all directories and files
-        for root_directory, b, c in os.walk(source_directory):
-            for file in c:
+        for root_directory, directories, files in os.walk(source_directory):
+            for file in files:
                 file_path = os.path.join(root_directory, file)
                 os.chmod(file_path, 0o664)
-            for dir in b:
+            for dir in directories:
                 dir_path = os.path.join(root_directory, dir)
                 os.chmod(dir_path, 0o775)
 
@@ -450,11 +490,12 @@ submitter."""
 
             if os.path.isdir(os.path.join(source_directory, entries[0])):
 
-                self.add_warning("Removing top level directory");
+                self.add_warning("Removing top level directory")
                 single_directory = os.path.join(source_directory, entries[0])
 
                 # Save copy in removed directory
-                save_filename = os.path.join(self.get_removed_directory(), 'move_source.tar.gz')
+                save_filename = os.path.join(self.get_removed_directory(),
+                                             'move_source.tar.gz')
                 with tarfile.open(save_filename, "w:gz") as tar:
                     tar.add(single_directory, arcname=os.path.sep)
 
@@ -465,7 +506,8 @@ submitter."""
                 # Replace files
                 if os.path.exists(save_filename):
                     tar = tarfile.open(save_filename)
-                    tar.extractall(path=source_directory)  # untar file into source directory
+                    # untar file into source directory
+                    tar.extractall(path=source_directory)
                     tar.close()
                 else:
                     self.add_error('Failed to remove top level directory.')
@@ -476,8 +518,8 @@ submitter."""
 
 
     def finalize_upload(self):
-        """For file type checks that cannot be done until all files are uploaded,
-        including total submission size.
+        """For file type checks that cannot be done until all files
+        are uploaded, including total submission size.
 
         Build final list of files contained in upload.
 
@@ -504,28 +546,27 @@ submitter."""
         """
 
         # Upload_id and filename exists
-        # Testing
-        print("\n---> Upload id: " + str(self.upload_id) + " FilenamePath: " + file.filename
-              + " FilenameBase: " + os.path.basename(file.filename)
-              + " Mime: " + file.mimetype + '\n')
+        # Move this to log
+        #print("\n---> Upload id: " + str(self.upload_id) + " FilenamePath: " + file.filename
+        #      + " FilenameBase: " + os.path.basename(file.filename)
+        #      + " Mime: " + file.mimetype + '\n')
 
         # Make sure upload directory exists or create it
         # Nornally done is seperate step!!!!!!
-        dir_path = self.create_upload_workspace()
+        ##dir_path = self.create_upload_workspace()
 
         ####print("Create upload work area: " + dir_path)
 
         # Move file to source directory
-        path = self.deposit_upload(file)
+        self.deposit_upload(file)
 
         from filemanager.utilities.unpack import unpack_archive
         # Unpack upload archive (if necessary)
-        unpack_archive(self, path)
+        #unpack_archive(self, path)
+        unpack_archive(self)
+
 
         # Check files
         self.check_files()
 
         self.finalize_upload()
-
-
-        return ("SUCCEEDED")
