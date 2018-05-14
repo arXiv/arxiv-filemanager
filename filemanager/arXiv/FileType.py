@@ -1,6 +1,6 @@
-"""Implements arXiv's file type guess logic. 
+"""Implements arXiv's file type guess logic.
 
-   Attempts to detect obvious errors in uploaded files and assigns priority 
+   Attempts to detect obvious errors in uploaded files and assigns priority
    in terms of our downstream TeX compilation process.
    """
 
@@ -20,7 +20,7 @@ TEX_types = ['TYPE_LATEX',
              'TYPE_TEXINFO',
              'TYPE_PDFLATEX',
              'TYPE_PDFTEX'
-             ]
+            ]
 
 # Priorities may be redesigned and reimplemented once I understand the entire
 # impact of their use. Initial Python implementation attempts to stay true to
@@ -31,6 +31,7 @@ priority = 0
 
 
 def set_priority() -> int:
+    """This is going away real soon. But still needs doc string!"""
     global priority
     priority = + priority
     priority = priority + 1
@@ -143,17 +144,14 @@ def _type_of_latex2e(file, count: int) -> Tuple[str, str, str]:
     """Determine whether file is PDFLATEX or LATEX2e."""
     limit = count + 5
 
-    # Save current file pointer - will restore state when done
-    original_ptr = file.tell()
-
     # Rewind to beginning of file
-    ptr = file.seek(0, 0)
+    file.seek(0, 0)
 
     line_no = 1
     for line in file:
-        if re.search(rb'^[^%]*\\includegraphics[^%]*\.(?:pdf|png|gif|jpg)\s?\}', line, re.IGNORECASE) \
+        if re.search(rb'^[^%]*\\includegraphics[^%]*\.'
+                     + rb'(?:pdf|png|gif|jpg)\s?\}', line, re.IGNORECASE) \
                 or (line_no < limit and re.search(rb'^[^%]*\\pdfoutput(?:\s+)?=(?:\s+)?1', line)):
-
             return 'TYPE_PDFLATEX', '', ''
         line_no += 1
     return 'TYPE_LATEX2e', '', ''
@@ -165,9 +163,6 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
     :type filepath: object
     """
 
-    filebase, file_extension = os.path.splitext(filepath)
-    base = os.path.basename(filepath)
-
     # check whether file exists (new)
     if not os.path.isfile(filepath):
         return 'TYPE_FAILED', '', ''
@@ -176,40 +171,41 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
     # to identify the type without inspecting content of file.
 
     # arXiv's special command file
-    if re.search('(^|/)00README\.XXX$', filepath):
+    if re.search(r'(^|/)00README\.XXX$', filepath):
         return "TYPE_README", '', ''
 
     # Ignore tmp files created by (unpatched) dvihps, in top dir
-    if re.search('(^|/)(head|body)\.tmp$', filepath):
+    if re.search(r'(^|/)(head|body)\.tmp$', filepath):
         return 'TYPE_ALWAYS_IGNORE', '', ''
 
     # Missing font error is fatal error
-    if re.search('(^|/)missfont\.log$', filepath):
+    if re.search(r'(^|/)missfont\.log$', filepath):
         return 'TYPE_ABORT', '', ''
 
     # Auxillary TeX Files
-    if re.search('\.(sty|cls|mf|\d*pk|bbl|bst|tfm|ax|def|log|hrfldf|cfg|clo|inx|end|fgx|tbx|rtx|rty|toc)$',
+    if re.search(r'\.(sty|cls|mf|\d*pk|bbl|bst|tfm|ax|def|log|hrfldf|cfg'
+                 + r'|clo|inx|end|fgx|tbx|rtx|rty|toc)$',
                  filepath, re.IGNORECASE):
         return 'TYPE_TEXAUX', '', ''
 
     # Abstract
-    if re.search('\.abs$', filepath):
+    if re.search(r'\.abs$', filepath):
         return 'TYPE_ABS', '', ''
 
     # Ignore xfig files
-    if re.search('\.fig$', filepath):
+    if re.search(r'\.fig$', filepath):
         return 'TYPE_IGNORE', '', ''
 
-    if re.search('\.nb$', filepath, re.IGNORECASE):
+    if re.search(r'\.nb$', filepath, re.IGNORECASE):
         return 'TYPE_NOTEBOOK', '', ''
 
-    if re.search('\.inp$', filepath, re.IGNORECASE):
+    if re.search(r'\.inp$', filepath, re.IGNORECASE):
         return 'TYPE_INPUT', '', ''
 
-    if re.search('\.html?$', filepath):
+    if re.search(r'\.html?$', filepath):
         return 'TYPE_HTML', '', ''
 
-    if re.search('\.cry$', filepath):
+    if re.search(r'\.cry$', filepath):
         return 'TYPE_ENCRYPTED', '', ''
 
     # Check for zero size file size
@@ -229,7 +225,8 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
         return 'TYPE_COMPRESSED', '', ''
     if input_bytes[0] == 0x1F and input_bytes[1] == 0x8B:
         return 'TYPE_GZIPPED', '', ''
-    if input_bytes[0] == 0x42 and input_bytes[1] == 0x5A and input_bytes[2] == 0x68 and input_bytes[3] > 0x2F:
+    if input_bytes[0] == 0x42 and input_bytes[1] == 0x5A \
+            and input_bytes[2] == 0x68 and input_bytes[3] > 0x2F:
         return 'TYPE_BZIP2', '', ''
 
     # POSIX tarfiles: look for the string 'ustar' at position 257
@@ -256,7 +253,7 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
     # TIFF IMAGE
     # (big endian and little endian)
     # should really test b3 and b4 also, see https://en.wikipedia.org/wiki/List_of_file_signatures
-    if re.search('\.tif$', filepath):
+    if re.search(r'\.tif$', filepath):
         if input_bytes[0] == 0x4D and input_bytes[1] == 0x4D:
             return 'TYPE_IMAGE', '', ''
         if input_bytes[0] == 0x49 and input_bytes[1] == 0x49:
@@ -270,7 +267,8 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
 
     # MPEG IMAGE
     # 2015-11: other seqs for MPEG, and certainly other movie types missing
-    if input_bytes[0] == 0x0 and input_bytes[1] == 0x0 and input_bytes[2] == 0x1 and input_bytes[3] == 0xB3:
+    if input_bytes[0] == 0x0 and input_bytes[1] == 0x0 \
+            and input_bytes[2] == 0x1 and input_bytes[3] == 0xB3:
         return 'TYPE_ANIM', '', ''
 
     # Related formats: JAR, ODF,DOCX,XLSX,ZIP
@@ -278,13 +276,13 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
     option2 = b'PK00PK\003\004'
 
     if (input_bytes[0:4] == option1) or (input_bytes[0:8] == option2):
-        if re.search('\.jar$', filepath, re.IGNORECASE):
+        if re.search(r'\.jar$', filepath, re.IGNORECASE):
             return 'TYPE_JAR', '', ''
-        if re.search('\.odt$', filepath, re.IGNORECASE):
+        if re.search(r'\.odt$', filepath, re.IGNORECASE):
             return 'TYPE_ODF', '', ''
-        if re.search('\.docx$', filepath, re.IGNORECASE):
+        if re.search(r'\.docx$', filepath, re.IGNORECASE):
             return 'TYPE_DOCX', '', ''
-        if re.search('\.xlsx$', filepath, re.IGNORECASE):
+        if re.search(r'\.xlsx$', filepath, re.IGNORECASE):
             return 'TYPE_XLSX', '', ''
         return 'TYPE_ZIP', '', ''
 
@@ -296,7 +294,8 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
     # DOS EPS
     #:0  belong          0xC5D0D3C6      DOS EPS Binary File
     # ->4 long            >0              Postscript starts at byte %d
-    if input_bytes[0] == 0xC5 and input_bytes[1] == 0xD0 and input_bytes[2] == 0xD3 and input_bytes[3] == 0xC6:
+    if input_bytes[0] == 0xC5 and input_bytes[1] == 0xD0 \
+            and input_bytes[2] == 0xD3 and input_bytes[3] == 0xC6:
         return 'TYPE_DOS_EPS', '', ''
 
     # Fetch a chunck of data from file
@@ -306,7 +305,7 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
     if re.search(b'%PDF-', kilo):
         return 'TYPE_PDF', '', ''
 
-    if re.search(b'#!/bin/csh -f\r#|(\r|^)begin \d{1,4}\s+\S.*\r[^\n]', kilo):
+    if re.search(rb'#!/bin/csh -f\r#|(\r|^)begin \d{1,4}\s+\S.*\r[^\n]', kilo):
         return 'TYPE_MAC', '', ''
 
     set = 0  # debugging
@@ -376,17 +375,17 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
                 return 'TYPE_TEX_MAC', str(latex_type), ''
 
         # HTML
-        if line_no <= 10 and re.search(b'<html[>\s]', line, re.IGNORECASE):
+        if line_no <= 10 and re.search(rb'<html[>\s]', line, re.IGNORECASE):
             return 'TYPE_HTML', '', ''
 
         # Include
-        if line_no <= 10 and re.search(b'%auto-include', line):
+        if line_no <= 10 and re.search(rb'%auto-include', line):
             return 'TYPE_INCLUDE', '', ''
 
         # All subsequent checks have lines with '%' in them chopped.
         #  if we need to look for a % then do it earlier!
         orig = line
-        line = line.replace(b'\%[^\r]*', b'')
+        line = line.replace(rb'\%[^\r]*', b'')
         # if line.replace(b'\%[^\r]*', b''):
         if line != orig:
             print("ORIG: " + str(orig))
@@ -403,9 +402,11 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
         if re.search(rb'(^|\r)\s*\\documentclass', line):
             return _type_of_latex2e(file, line_no)
 
-        if re.search(rb'(^|\r)\s*(\\font|\\magnification|\\input|\\def|\\special|\\baselineskip|\\begin)', line):
+        if re.search(rb'(^|\r)\s*(\\font|\\magnification|\\input|\\def|\\special|'
+                     + rb'\\baselineskip|\\begin)', line):
             maybe_tex = 1
-            match = re.search(rb'(^|\r)\s*(\\font|\\magnification|\\input|\\def|\\special|\\baselineskip|\\begin)',
+            match = re.search(rb'(^|\r)\s*(\\font|\\magnification|\\input|\\def|'
+                              + rb'\\special|\\baselineskip|\\begin)',
                               line).group(2)
             if set == 0:
                 print("Set HINT TYPE_TEX 0 (line:[" + str(line_no) + "]\n" + str(match))
@@ -423,16 +424,16 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
             return 'TYPE_TEX_MAC', '', ''
 
         # MetaFont
-        if re.search(b'beginchar\(', line):
+        if re.search(rb'beginchar\(', line):
             return 'TYPE_MF', '', ''
 
         # BibTeX
-        if re.search(b'(^|\r)@(book|article|inbook|unpublished){', line, re.IGNORECASE):
+        if re.search(rb'(^|\r)@(book|article|inbook|unpublished){', line, re.IGNORECASE):
             return 'TYPE_BIBTEX', '', ''
 
         # Make some decisions using partial hints we've seen already
         # TeX,PC,UUENCODED
-        if re.search(b'^begin \d{1,4}\s+[^\s]+\r?$', line):
+        if re.search(rb'^begin \d{1,4}\s+[^\s]+\r?$', line):
             if maybe_tex_priority:
                 return 'TYPE_TEX_priority', '', ''
             if maybe_tex:
