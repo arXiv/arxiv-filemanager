@@ -37,105 +37,107 @@ def set_priority() -> int:
     priority = priority + 1
     return priority
 
+type_priorities = [
+    'TYPE_ABORT',
+    'TYPE_FAILED',
+    'TYPE_ALWAYS_IGNORE',
+    'TYPE_INPUT',
+    'TYPE_BIBTEX',
+    'TYPE_POSTSCRIPT',
+    'TYPE_DOS_EPS',
+    'TYPE_PS_FONT',
+    'TYPE_PS_PC',
+    'TYPE_IMAGE',
+    'TYPE_ANIM',
+    'TYPE_HTML',
+    'TYPE_PDF',
+    'TYPE_DVI',
+    'TYPE_NOTEBOOK',
+    'TYPE_ODF',
+    'TYPE_DOCX',
+    'TYPE_TEX',
+    'TYPE_PDFTEX',
+    'TYPE_TEX_priority2',
+    'TYPE_TEX_AMS',
+    'TYPE_TEX_priority',
+    'TYPE_TEX_MAC',
+    'TYPE_LATEX',
+    'TYPE_LATEX2e',
+    'TYPE_PDFLATEX',
+    'TYPE_TEXINFO',
+    'TYPE_MF',
+    'TYPE_UUENCODED',
+    'TYPE_ENCRYPTED',
+    'TYPE_PC',
+    'TYPE_MAC',
+    'TYPE_CSH',
+    'TYPE_SH',
+    'TYPE_JAR',
+    'TYPE_RAR',
+    'TYPE_XLSX',
+    'TYPE_COMPRESSED',
+    'TYPE_ZIP',
+    'TYPE_GZIPPED',
+    'TYPE_BZIP2',
+    'TYPE_MULTI_PART_MIME',
+    'TYPE_TAR',
+    'TYPE_IGNORE',
+    'TYPE_README',
+    'TYPE_TEXAUX',
+    'TYPE_ABS',
+    'TYPE_INCLUDE'
+]
 
-type_priorities = {}
+#type_priorities = {}
 type_name = {}
 
-type_priorities['TYPE_ABORT'] = set_priority()
 type_name['TYPE_ABORT'] = 'Immediate stop'
-type_priorities['TYPE_FAILED'] = set_priority()
 type_name['TYPE_FAILED'] = 'unknown'
-type_priorities['TYPE_ALWAYS_IGNORE'] = set_priority()
 type_name['TYPE_ALWAYS_IGNORE'] = 'Always ignore'
-type_priorities['TYPE_INPUT'] = set_priority()
 type_name['TYPE_INPUT'] = 'Input for (La)TeX'
-type_priorities['TYPE_BIBTEX'] = set_priority()
 type_name['TYPE_BIBTEX'] = 'BiBTeX'
-type_priorities['TYPE_POSTSCRIPT'] = set_priority()
 type_name['TYPE_POSTSCRIPT'] = 'Postscript'
-type_priorities['TYPE_DOS_EPS'] = set_priority()
 type_name['TYPE_DOS_EPS'] = 'DOS EPS Binary File'
-type_priorities['TYPE_PS_FONT'] = set_priority()
 type_name['TYPE_PS_FONT'] = 'Postscript Type 1 Font'
-type_priorities['TYPE_PS_PC'] = set_priority()
 type_name['TYPE_PS_PC'] = '^D%! Postscript'
-type_priorities['TYPE_IMAGE'] = set_priority()
 type_name['TYPE_IMAGE'] = 'Image (gif/jpg etc)'
-type_priorities['TYPE_ANIM'] = set_priority()
 type_name['TYPE_ANIM'] = 'Animation (mpeg etc)'
-type_priorities['TYPE_HTML'] = set_priority()
 type_name['TYPE_HTML'] = 'HTML'
-type_priorities['TYPE_PDF'] = set_priority()
 type_name['TYPE_PDF'] = 'PDF'
-type_priorities['TYPE_DVI'] = set_priority()
 type_name['TYPE_DVI'] = 'DVI'
-type_priorities['TYPE_NOTEBOOK'] = set_priority()
 type_name['TYPE_NOTEBOOK'] = 'Mathematica Notebook'
-type_priorities['TYPE_ODF'] = set_priority()
 type_name['TYPE_ODF'] = 'OpenDocument Format'
-type_priorities['TYPE_DOCX'] = set_priority()
 type_name['TYPE_DOCX'] = 'Microsoft DOCX'
-type_priorities['TYPE_TEX'] = set_priority()
 type_name['TYPE_TEX'] = 'TEX'
-type_priorities['TYPE_PDFTEX'] = set_priority()
 type_name['TYPE_PDFTEX'] = 'PDFTEX'
-type_priorities['TYPE_TEX_priority2'] = set_priority()
 type_name['TYPE_TEX_priority2'] = 'TeX (with \\end or \\bye - not starting a line)'
-type_priorities['TYPE_TEX_AMS'] = set_priority()
 type_name['TYPE_TEX_AMS'] = 'AMSTeX'
-type_priorities['TYPE_TEX_priority'] = set_priority()
 type_name['TYPE_TEX_priority'] = 'TeX (with \\end or \\bye)'
-type_priorities['TYPE_TEX_MAC'] = set_priority()
 type_name['TYPE_TEX_MAC'] = 'TeX +macros (harv,lanl..)'
-type_priorities['TYPE_LATEX'] = set_priority()
 type_name['TYPE_LATEX'] = 'LaTeX'
-type_priorities['TYPE_LATEX2e'] = set_priority()
 type_name['TYPE_LATEX2e'] = 'LATEX2e'
-type_priorities['TYPE_PDFLATEX'] = set_priority()
 type_name['TYPE_PDFLATEX'] = 'PDFLATEX'
-type_priorities['TYPE_TEXINFO'] = set_priority()
 type_name['TYPE_TEXINFO'] = 'Texinfo'
-type_priorities['TYPE_MF'] = set_priority()
 type_name['TYPE_MF'] = 'Metafont'
-type_priorities['TYPE_UUENCODED'] = set_priority()
 type_name['TYPE_UUENCODED'] = 'UUencoded'
-type_priorities['TYPE_ENCRYPTED'] = set_priority()
 type_name['TYPE_ENCRYPTED'] = 'Encrypted'
-type_priorities['TYPE_PC'] = set_priority()
 type_name['TYPE_PC'] = 'PC-ctrl-Ms'
-type_priorities['TYPE_MAC'] = set_priority()
 type_name['TYPE_MAC'] = 'MAC-ctrl-Ms'
-type_priorities['TYPE_CSH'] = set_priority()
 type_name['TYPE_CSH'] = 'CSH'
-type_priorities['TYPE_SH'] = set_priority()
 type_name['TYPE_SH'] = 'SH'
-type_priorities['TYPE_JAR'] = set_priority()
 type_name['TYPE_JAR'] = 'JAR archive'
-type_priorities['TYPE_RAR'] = set_priority()
 type_name['TYPE_RAR'] = 'RAR archive'
-type_priorities['TYPE_XLSX'] = set_priority()
 type_name['TYPE_XLSX'] = 'Microsoft XLSX'
-type_priorities['TYPE_COMPRESSED'] = set_priority()
 type_name['TYPE_COMPRESSED'] = 'UNIX-compressed'
-type_priorities['TYPE_ZIP'] = set_priority()
 type_name['TYPE_ZIP'] = 'ZIP-compressed'
-type_priorities['TYPE_GZIPPED'] = set_priority()
 type_name['TYPE_GZIPPED'] = 'GZIP-compressed'
-type_priorities['TYPE_BZIP2'] = set_priority()
 type_name['TYPE_BZIP2'] = 'BZIP2-compressed'
-type_priorities['TYPE_MULTI_PART_MIME'] = set_priority()
 type_name['TYPE_MULTI_PART_MIME'] = 'MULTI_PART_MIME'
-type_priorities['TYPE_TAR'] = set_priority()
 type_name['TYPE_TAR'] = 'TAR archive'
-type_priorities['TYPE_IGNORE'] = set_priority()
 type_name['TYPE_IGNORE'] = ' user defined IGNORE'
-type_priorities['TYPE_README'] = set_priority()
 type_name['TYPE_README'] = 'override'
-type_priorities['TYPE_TEXAUX'] = set_priority()
 type_name['TYPE_TEXAUX'] = 'TeX auxiliary'
-type_priorities['TYPE_ABS'] = set_priority()
 type_name['TYPE_ABS'] = 'abstract'
-type_priorities['TYPE_INCLUDE'] = set_priority()
 type_name['TYPE_INCLUDE'] = ' keep'
 
 
@@ -485,8 +487,8 @@ def get_type_priority(type: str) -> int:
     """Returns an integer indicating the processing priority of this file
     type. Higher numbers should be processed first. Will return 0 (lower
     than all other types) if $type is not recognized."""
-    if type in type_priorities.keys():
-        return type_priorities[type]
+    if type in type_priorities:
+        return type_priorities.index(type) + 1
     else:
         return 0
 
