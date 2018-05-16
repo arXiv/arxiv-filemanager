@@ -128,7 +128,7 @@ class TestGuessFileType(TestCase):
         self.assertEqual(get_type_name('TYPE_LATEX'), 'LaTeX', 'Lookup type name')
         self.assertEqual(get_type_name('TYPE_TAR'), 'TAR archive', 'Lookup type name')
         self.assertEqual(get_type_name('TYPE_DAVID'), 'unknown', 'Lookup name for non existent type')
-        pass
+
 
     def test_is_tex_type(self):
         """Test that TeX file types are identified correctly."""
@@ -136,11 +136,12 @@ class TestGuessFileType(TestCase):
         self.assertTrue(is_tex_type('TYPE_TEX'), 'Expected TeX file type')
         self.assertTrue(is_tex_type('TYPE_TEX_priority2'), 'Expected TeX file type')
         self.assertFalse(is_tex_type('TYPE_HTML'), 'Expected non-TeX file type')
-        pass
+
 
     def test_type_priority(self):
         """Spot check type priorities."""
-        self.assertEqual(get_type_priority('TYPE_DOEST_EXIST'), 0, 'Unknown type should return lowest priorit=0')
+        self.assertEqual(get_type_priority('TYPE_DOES_NOT_EXIST'), 0,
+                         'Unknown type should return lowest priorit=0')
         self.assertLess(get_type_priority('TYPE_BIBTEX'), get_type_priority('TYPE_TEX'),
                         'TeX source higher priority than BibTeX')
         self.assertLess(get_type_priority('TYPE_TEX'), get_type_priority('TYPE_PDFTEX'),
@@ -153,7 +154,21 @@ class TestGuessFileType(TestCase):
         self.assertLess(get_type_priority('TYPE_LATEX'), get_type_priority('TYPE_README'),
                         'README directives file higher priority than TeX source')
 
-        pass
+        # Add some specific priority tests to catch inadvertant changes to new list
+        self.assertEqual(get_type_priority('TYPE_ABORT'), 1,
+                         'Expect signal for immediate stop.')
+        self.assertEqual(get_type_priority('TYPE_FAILED'), 2,
+                         'Expect priority for TYPE_FAILED type guess.')
+        self.assertEqual(get_type_priority('TYPE_PDF'), 13,
+                         'Expect priority for TYPE_PDF type guess.')
+        self.assertEqual(get_type_priority('TYPE_TEX'), 18,
+                         'Expect priority for TYPE_TEX type guess.')
+        self.assertEqual(get_type_priority('TYPE_LATEX'), 24,
+                         'Expect priority for TYPE_LATEX type guess.')
+        self.assertEqual(get_type_priority('TYPE_ZIP'), 39,
+                         'Expect priority for TYPE_ZIP type guess.')
+        self.assertEqual(get_type_priority('TYPE_INCLUDE'), 48,
+                         'Expect priority for TYPE_INCLUDE type guess.')
 
 
 class TestExternalMethods(TestCase):
