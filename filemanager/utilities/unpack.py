@@ -26,10 +26,26 @@ ERROR_MSG_SUF = '" -- continuing. Please try again and confirm your files.'
 DEBUG = 0
 
 
-def unpack_archive(upload: Upload):
-    """Uppack specified archive and recursively traverse the source directory
-    and unpack any additional
-       gzipped/tar archives contained in original archive."""
+def unpack_archive(upload: Upload) -> None:
+    """
+    Uppack specified archive and recursively traverse the source directory
+    and unpack any additional gzipped/tar archives contained within original
+    archive.
+
+    Parameters
+    ----------
+    upload : Upload
+        Upload object with files to be unpacks.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    This code may migrate back into sanitize.py code. Was part of upload code
+    in original Perl code.
+    """
 
     #archive_name = os.path.basename(archive_path)
     # TODO debug logging ("*******Process upload: " + archive_name + '*****************')
@@ -175,10 +191,4 @@ def unpack_archive(upload: Upload):
         packed_file -= 1
 
     # Set permissions on all directories and files
-    for root_directory, directories, files in os.walk(source_directory):
-        for file in files:
-            file_path = os.path.join(root_directory, file)
-            os.chmod(file_path, 0o664)
-        for dir in directories:
-            dir_path = os.path.join(root_directory, dir)
-            os.chmod(dir_path, 0o775)
+    upload.set_file_permissions()
