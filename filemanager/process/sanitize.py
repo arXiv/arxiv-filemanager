@@ -21,24 +21,70 @@ various file checks that might cause errors to be displayed to the
 submitter."""
 
     def __init__(self, upload_id: int):
+        """
+        Initialize Upload object.
+
+        Parameters
+        ----------
+        upload_id : int
+            Unique identifier for submission workspace.
+
+        """
         self.__upload_id = upload_id
 
         self.__warnings = []
         self.__errors = []
+        self.__files = []
         self.create_upload_workspace()
+
+    def has_files(self) -> bool:
+        """Indicates whether files list contains entries."""
+        if self.__files:
+            return True
+
+        return False
 
 
     def add_warning(self, msg: str) -> None:
-        """Record warning for this upload instance."""
-        print('Warning: ' + msg)
+        """
+        Record and log warning for this upload instance."
+        Parameters
+        ----------
+        msg
+            User-friendly warning message. Intended to support corrective action.
+
+        Returns
+        -------
+        None
+
+        """
+
+        print('Warning: ' + msg) # temporary, until logging implemented
         self.__warnings.append(msg)
 
+
     def has_warnings(self):
-        """Indicates that upload has warnings."""
+        """Indicates whether upload has warnings."""
         return len(self.__warnings)
 
+
     def search_warnings(self, search: str) -> bool:
-        """Search warnings for specific regex."""
+        """
+        Search list of warnings for specific warning.
+
+        Useful for verifying tests produced correct warning.
+
+        Parameters
+        ----------
+        search : str
+            String or regex argument will be used to search warnings for
+            specific warning.
+
+        Returns
+        -------
+        bool
+            True if warning we are searching for exists. False otherwise.
+        """
 
         for warning in self.__warnings:
             # Turn this into debugging
@@ -46,14 +92,48 @@ submitter."""
             #print("ret: " + str(re.search(search, warning)))
 
             if re.match(search, warning):
-                #print("Found Match!")
                 return True
+
         return False
+
 
     def add_error(self, msg: str) -> None:
         """Record error for this upload instance."""
         print('Error: ' + msg)
         self.__errors.append(msg)
+
+    def has_errors(self):
+        """Indicates whether upload has errors."""
+        return len(self.__errors)
+
+
+    def search_errors(self, search: str) -> bool:
+        """
+        Search list of errors for specific error.
+
+        Useful for verifying tests produced correct error.
+
+        Parameters
+        ----------
+        search : str
+            String or regex argument will be used to search errors for
+            specific error.
+
+        Returns
+        -------
+        bool
+            True if error we are searching for exists. False otherwise.
+        """
+
+        for error in self.__errors:
+            # Turn this into debugging
+            #print("Look for '" + search + '\' in \n\t \'' + warning +"'")
+            #print("ret: " + str(re.search(search, warning)))
+
+            if re.match(search, error):
+                return True
+
+        return False
 
 
 
@@ -67,10 +147,27 @@ submitter."""
         return self.__upload_id
 
     def remove_file(self, file: File, msg: str) -> bool:
-        """Remove file from source directory.
+        """
+        Remove file from source directory.
 
-        Moves file to 'removed' directory and marks File
-        objects state as removed."""
+        Moves specified file to 'removed' directory and marks File
+        objects state as removed."
+
+        Parameters
+        ----------
+        file : File
+            File to be removed from source directory.
+        msg
+            Message indicating reason for removal.
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+
+        """
 
         # Move file to removed directory
         filepath = file.filepath
@@ -85,12 +182,20 @@ submitter."""
         file.remove()
 
 
-
     def get_upload_directory(self) -> str:
-        """Get top level workspace directory for submission."""
+        """
+        Get top level workspace directory for submission."
+
+        Returns
+        -------
+        str
+            Top level directory path for upload workspace.
+        """
+
         root_path = UPLOAD_BASE_DIRECTORY
         upload_directory = os.path.join(root_path, str(self.upload_id))
         return upload_directory
+
 
     def create_upload_directory(self):
         """Create the base directory for upload workarea"""
@@ -114,8 +219,10 @@ submitter."""
 
         return upload_directory
 
+
     def get_source_directory(self) -> str:
         """Return directory where source files get deposited."""
+
         base = self.get_upload_directory()
         src_dir = os.path.join(base, 'src')
         return src_dir
@@ -151,8 +258,23 @@ submitter."""
 
         return base_dir
 
+
     def deposit_upload(self, file: FileStorage) -> str:
-        """Deposit upload archive/file into workspace source directory."""
+        """
+        Deposit uploaded archive/file into workspace source directory.
+
+        Parameters
+        ----------
+        file
+            Archive containing one or more files to be added to source files
+            for this upload.
+
+        Returns
+        -------
+        str
+            Full path of archive file.
+
+        """
 
         basename = os.path.basename(file.filename)
 
@@ -169,8 +291,14 @@ submitter."""
 
 
     def check_files(self) -> None:
-        """This is the main loop that goes through the list of files and does a long
-        list of checks that depend on file type, extension, and sometimes file name."""
+        """
+        This is the main loop that goes through the list of files and performs
+        a long list of checks that depend on file type, extension, and sometimes file name.
+
+        Returns
+        -------
+        None
+        """
 
         source_directory = self.get_source_directory()
 
@@ -464,11 +592,15 @@ submitter."""
     def create_file_list(self) -> None:
         """Create list of File objects with details of each file in
         upload package."""
-
+        # TODO: implement create file list
         pass
 
-    def set_file_permissions(self, source_directory: str) -> None:
+    def set_file_permissions(self) -> None:
         """Set the file permissions for all files and directories in upload."""
+
+        # Start at directory containing source files
+        source_directory = self.get_source_directory()
+
         # Set permissions on all directories and files
         for root_directory, directories, files in os.walk(source_directory):
             for file in files:
@@ -480,7 +612,14 @@ submitter."""
 
 
     def fix_top_level_directory(self):
-        """Eliminate single top-level directory."""
+        """
+        Eliminate single top-level directory. Intended for case where submitter
+        creates archive with submission files in subdirectory.
+
+        Returns
+        -------
+
+        """
 
         source_directory = self.get_source_directory()
 
@@ -513,7 +652,10 @@ submitter."""
                     self.add_error('Failed to remove top level directory.')
 
                 # Set permissions
-                self.set_file_permissions(source_directory)
+                self.set_file_permissions()
+
+                # Rebuild file list
+                self.create_file_list()
 
 
 
@@ -527,7 +669,8 @@ submitter."""
         """
 
         # Only do this if we haven't generated list already
-        self.create_file_list()
+        if not self.has_files():
+            self.create_file_list()
 
         # Eliminate top directory when only single directory
         self.fix_top_level_directory()
@@ -535,14 +678,31 @@ submitter."""
 
     def process_upload(self, file: FileStorage) -> None:
         """
-        Add some ones to the name of a :class:`.Upload`.
+        Main entry point for processing uploaded files.
 
         Parameters
         ----------
-        upload_id : :int
-        filename : str
-        :param file:
-        :return:
+        file
+            File object received from flask request.
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        This upload processing logic is originally derived/translated from the
+        legacy system's Perl upload code. In order avoid breaking downstream
+        clients this Python version faithfully implements as much of the
+        original upload logic.
+
+        Backward compatible improvements have been made to existing checks and
+        new checks have been created. Existing legacy upload tests are included
+        in test suite with many new and missing tests added.
+
+        References
+        ----------
+        Original Perl code is located in Upload.pm (in arXivLib/lib/arXiv/Submit)
         """
 
         # Upload_id and filename exists
@@ -551,20 +711,13 @@ submitter."""
         #      + " FilenameBase: " + os.path.basename(file.filename)
         #      + " Mime: " + file.mimetype + '\n')
 
-        # Make sure upload directory exists or create it
-        # Nornally done is seperate step!!!!!!
-        ##dir_path = self.create_upload_workspace()
-
-        ####print("Create upload work area: " + dir_path)
-
-        # Move file to source directory
+        # Move uploaded archive/file to source directory
         self.deposit_upload(file)
 
         from filemanager.utilities.unpack import unpack_archive
         # Unpack upload archive (if necessary)
         #unpack_archive(self, path)
         unpack_archive(self)
-
 
         # Check files
         self.check_files()
