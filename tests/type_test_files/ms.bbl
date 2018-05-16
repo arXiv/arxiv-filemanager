@@ -1,0 +1,61 @@
+\begin{thebibliography}{10}
+
+\bibitem{van2001correlation}
+Jacob van~den Berg and Jeff Kahn.
+\newblock A correlation inequality for connection events in percolation.
+\newblock {\em The Annals of Probability}, 29(1):123--126, 2001.
+
+\bibitem{bollobas1997random}
+B{\'e}la Bollob{\'a}s and Graham Brightwell.
+\newblock Random walks and electrical resistances in products of graphs.
+\newblock {\em Discrete applied mathematics}, 73(1):69--79, 1997.
+
+\bibitem{de2016proof}
+Paul~de Buyer.
+\newblock A proof of the bunkbed conjecture for the complete graph at $p=\frac
+  12$.
+\newblock {\em arXiv preprint arXiv:1604.08439}, 2016.
+
+\bibitem{de2018proof}
+Paul de~Buyer.
+\newblock A proof of the bunkbed conjecture on the complete graph for
+  $p\geq\frac12$.
+\newblock {\em arXiv preprint arXiv:1802.04694}, 2018.
+
+\bibitem{grimmett2018probability}
+Geoffrey Grimmett.
+\newblock {\em Probability on graphs}.
+\newblock Cambridge University Press, 2018.
+
+\bibitem{haggstrom1998conjecture}
+Olle H{\"a}ggstr{\"o}m.
+\newblock On a conjecture of {Bollob{\'a}s} and {Brightwell} concerning random
+  walks on product graphs.
+\newblock {\em Combinatorics, Probability and Computing}, 7(4):397--401, 1998.
+
+\bibitem{haggstrom2003probability}
+Olle H{\"a}ggstr{\"o}m.
+\newblock Probability on bunkbed graphs.
+\newblock In {\em Proceedings of FPSAC}, volume~3, 2003.
+
+\bibitem{karp1990transitive}
+Richard Karp.
+\newblock The transitive closure of a random digraph.
+\newblock {\em Random Structures \& Algorithms}, 1(1):73--93, 1990.
+
+\bibitem{leander2009sjalvstandiga}
+Madeleine Leander.
+\newblock Sj\"alvst\"andiga arbeten i matematik, on the bunkbed conjecture.
+\newblock 2009.
+
+\bibitem{linusson2011percolation}
+Svante Linusson.
+\newblock On percolation and the bunkbed conjecture.
+\newblock {\em Combinatorics, Probability and Computing}, 20(1):103--117, 2011.
+
+\bibitem{mcdiarmid1981general}
+Colin McDiarmid.
+\newblock General percolation and random graphs.
+\newblock {\em Advances in Applied Probability}, 13(1):40--60, 1981.
+
+\end{thebibliography}
