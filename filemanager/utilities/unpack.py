@@ -16,7 +16,7 @@ import zipfile
 
 from filemanager.arXiv.File import File
 
-from filemanager.process.sanitize import Upload
+from filemanager.process.upload import Upload
 
 ERROR_MSG_PRE = 'There were problems unpacking "'
 ERROR_MSG_SUF = '" -- continuing. Please try again and confirm your files.'
@@ -43,8 +43,7 @@ def unpack_archive(upload: Upload) -> None:
 
     Notes
     -----
-    This code may migrate back into sanitize.py code. Was part of upload code
-    in original Perl code.
+    Originates from Upload.pm (Perl).
     """
 
     #archive_name = os.path.basename(archive_path)

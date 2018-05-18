@@ -3,14 +3,14 @@
 from unittest import TestCase
 from datetime import datetime
 # from filemanager.domain import Upload
-from filemanager.process import sanitize
+from filemanager.process import upload
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 import os.path
 import shutil
 
-from filemanager.process.sanitize import Upload
+from filemanager.process.upload import Upload
 
 UPLOAD_BASE_DIRECTORY = '/tmp/a/b/submissions'
 
