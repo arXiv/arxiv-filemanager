@@ -2,7 +2,7 @@
 
 from unittest import TestCase
 from datetime import datetime
-#from filemanager.domain import Upload
+# from filemanager.domain import Upload
 from filemanager.process import sanitize
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
@@ -10,60 +10,61 @@ from werkzeug.utils import secure_filename
 import os.path
 import shutil
 
-
 from filemanager.process.sanitize import Upload
 
 UPLOAD_BASE_DIRECTORY = '/tmp/a/b/submissions'
 
-TEST_FILES_DIRECTORY = os.path.join(os.getcwd(),'tests/test_files_upload')
+TEST_FILES_DIRECTORY = os.path.join(os.getcwd(), 'tests/test_files_upload')
 
 # General upload tests format:
 #
 #       test_filename, upload_id, warning, warnings_match, description/note/comment/details
 #
 # Can we use this for errors???
+#
+# Examples
+# upload_tests.append(['1801.03879-1.tar.gz', '20180225', False, '', "Test gzipped tar unpack'"])
+# upload_tests.append(['','',False,''])
+# upload_tests.append(['filename','identifier',False/True,'Regex', 'Description'])
 
 upload_tests = []
 
 # Basic tests
-if 1:
-    upload_tests.append(['upload1.tar.gz', '9902.1001', True, 'espcrc2.sty is empty \(size is zero\)',
+
+upload_tests.append(['upload1.tar.gz', '9902.1001', True, 'espcrc2.sty is empty \(size is zero\)',
                      'Test zero file detection'])
-    upload_tests.append(['upload2.tar.gz',  '9903.1002',False,'', 'Test well-formed submission.'])
-    upload_tests.append(['upload3.tar.gz',  '9903.1003',False,'', 'Test well-formed submission.'])
-    upload_tests.append(['upload4.gz',      '9903.1004',True,'', "Renaming 'upload4.gz' to 'upload4'"])
-    upload_tests.append(['upload5.pdf',     '9903.1005',False,'', 'Test well-formed pdf submission.'])
-    ## .tgz file because of Archive::Extrat/gzip bug
-    upload_tests.append(['upload6.tgz',     '9903.1006',False,'', 'Test well-formed submission.'])
+upload_tests.append(['upload2.tar.gz', '9903.1002', False, '', 'Test well-formed submission.'])
+upload_tests.append(['upload3.tar.gz', '9903.1003', False, '', 'Test well-formed submission.'])
+upload_tests.append(['upload4.gz', '9903.1004', True, '', "Renaming 'upload4.gz' to 'upload4'"])
+upload_tests.append(['upload5.pdf', '9903.1005', False, '', 'Test well-formed pdf submission.'])
+## .tgz file because of Archive::Extrat/gzip bug
+upload_tests.append(['upload6.tgz', '9903.1006', False, '', 'Test well-formed submission.'])
 
-    # Nested archives
-    upload_tests.append(['upload-nested-zip-and-tar.zip', '9903.1013', True,
-                         'There were problems unpacking "jz2.zip" -- continuing. Please try again and confirm your files.',
-                         'Test upload with corrupt zip file'])
+# Nested archives
+upload_tests.append(['upload-nested-zip-and-tar.zip', '9903.1013', True,
+                     'There were problems unpacking "jz2.zip" -- continuing. Please try again and confirm your files.',
+                     'Test upload with corrupt zip file'])
 
-    # This really needs to be a special test since we need to inspect outcomes.
-    #upload_tests.append(['UnpackWithSubdirectories.tar.gz', '9903.1014', False, '', 'Test upload with multiple levels'])
+# This really needs to be a special test since we need to inspect outcomes.
+# upload_tests.append(['UnpackWithSubdirectories.tar.gz', '9903.1014', False, '', 'Test upload with multiple levels'])
 
-    #  contains top-level directory
-    upload_tests.append(['upload7.tar.gz', '9903.1007', True, 'Removing top level directory',
-                         'Test removing top level directory.'])
+#  contains top-level directory
+upload_tests.append(['upload7.tar.gz', '9903.1007', True, 'Removing top level directory',
+                     'Test removing top level directory.'])
 
 
-#upload_tests.append(['1801.03879-1.tar.gz', '20180225', False, '', "Test gzipped tar unpack'"])
-#upload_tests.append(['','',False,''])
-#upload_tests.append(['','',False,'', 'Test well-formed submission.'])
 
-# Working tests
-if 1:
-    upload_tests.append(['UploadTestWindowCDrive.tar.gz', '12345639', True, 
-                        r'Renaming c:\\data\\windows\.txt',
-                         'Test renaming of Windows filename'])
+upload_tests.append(['UploadTestWindowCDrive.tar.gz', '12345639', True,
+                     r'Renaming c:\\data\\windows\.txt',
+                     'Test renaming of Windows filename'])
 
-    upload_tests.append(['Upload9BadFileNames.tar.gz', '12345640', True,
-                  'Attempting to rename 10-1-1\(63\)\.png to 10-1-1_63_\.png.', 'Test for bad/illegal file names.'])
+upload_tests.append(['Upload9BadFileNames.tar.gz', '12345640', True,
+                     'Attempting to rename 10-1-1\(63\)\.png to 10-1-1_63_\.png.',
+                     'Test for bad/illegal file names.'])
 
-    upload_tests.append(['source_with_dir.tar.gz', '9903.1009', True, 'Removing top level directory',
-                         'Removing top level directory'])
+upload_tests.append(['source_with_dir.tar.gz', '9903.1009', True, 'Removing top level directory',
+                     'Removing top level directory'])
+
 
 # Debugging tests
 
@@ -74,7 +75,7 @@ class TestInternalSupportRoutines(TestCase):
         upload = Upload(12345678)
         workspace_dir = upload.get_upload_directory()
         self.assertEqual(workspace_dir, os.path.join(UPLOAD_BASE_DIRECTORY, '12345678'),
-                          'Generate path to workspace directory')
+                         'Generate path to workspace directory')
 
     def test_create_upload_directory(self):
         upload = Upload(12345679)
@@ -82,20 +83,17 @@ class TestInternalSupportRoutines(TestCase):
         dir_exists = os.path.exists(workspace_dir)
         self.assertEqual(dir_exists, True, 'Create workspace directory.')
 
-
     def test_get_source_directory(self):
         upload = Upload(12345680)
         source_dir = upload.get_source_directory()
         self.assertEqual(source_dir, os.path.join(UPLOAD_BASE_DIRECTORY, '12345680', 'src'),
                          "Check 'src' directory")
 
-
     def test_get_removed_directory(self):
         upload = Upload(12345680)
         removed_dir = upload.get_removed_directory()
         self.assertEqual(removed_dir, os.path.join(UPLOAD_BASE_DIRECTORY, '12345680', 'removed'),
                          "Check 'removed' directory")
-
 
     def test_create_upload_workspace(self):
         upload = Upload(12345681)
@@ -106,7 +104,6 @@ class TestInternalSupportRoutines(TestCase):
         self.assertEqual(dir_exists, True, 'Create workspace directory.')
         self.assertEqual(src_dir_exists, True, 'Create workspace source directory.')
         self.assertEqual(rem_dir_exists, True, 'Create workspace removed directory.')
-
 
     def test_deposit_upload(self):
         """Test upload file deposit into src directory."""
@@ -137,7 +134,6 @@ class TestInternalSupportRoutines(TestCase):
             self.assertTrue(os.path.exists(path), "Deposited upload file.")
         else:
             self.assertTrue(os.path.exists(workspace_dir), "Workspace directory exists.")
-
 
 
 class TestUpload(TestCase):
@@ -178,7 +174,6 @@ class TestUpload(TestCase):
         file_to_check = os.path.join(source_directory, 'b', 'c', 'c_level_file.txt')
         self.assertTrue(os.path.exists(file_to_check), 'Test file within subdirectory exists: \'c_level_file.txt\'')
 
-
     def test_process_anc_upload(self) -> None:
         """Process upload with ancillary files in anc directory"""
         upload = Upload(20180226)
@@ -203,7 +198,7 @@ class TestUpload(TestCase):
     def XXtest_process_tgz_upload(self) -> None:
 
         """Try to process bzip2 archive upload"""
-        #upload_id = 20180228
+        # upload_id = 20180228
         upload = Upload(20180228)
         # filename = '/Users/dlf2/arXiv/arxiv-filemanager/tests/upload_data/1801.03879-1.tar.gz'
         filename = os.path.join(TEST_FILES_DIRECTORY, 'upload6.tgz')
@@ -222,11 +217,10 @@ class TestUpload(TestCase):
 
         print("Process tgz upload: " + ret)
 
-
     def XXtest_process_compressed_upload(self) -> None:
 
         """Try to process compressed archive upload"""
-        #upload_id = 20180229
+        # upload_id = 20180229
         upload = Upload(20180229)
         # filename = '/Users/dlf2/arXiv/arxiv-filemanager/tests/upload_data/1801.03879-1.tar.gz'
         filename = os.path.join(TEST_FILES_DIRECTORY, 'BorelPaper.tex.Z')
@@ -244,7 +238,6 @@ class TestUpload(TestCase):
             ret = upload.process_upload(file)
 
         print("Process tgz upload: " + ret)
-
 
     def test_process_general_upload(self) -> None:
         """Test series of uniform test cases with specified outcomes"""
@@ -265,8 +258,7 @@ class TestUpload(TestCase):
             new_path = os.path.join(test_file_directory, test_file)
 
             # Make sure test file exists
-            self.assertTrue(os.path.exists(new_path), 'Test upload '+ new_path + ' exists!')
-
+            self.assertTrue(os.path.exists(new_path), 'Test upload ' + new_path + ' exists!')
 
             # Create Uplaod object - this instance gets cleaned out
             upload = Upload(upload_id)
@@ -294,17 +286,16 @@ class TestUpload(TestCase):
 
                     # Look for specific warning we are attempting to generate
                     if upload.has_warnings():
-                        #print ("Upload process had warnings as expected")
-                        #print("Search for warning: '" + warnings_match + "'")
+                        # print ("Upload process had warnings as expected")
+                        # print("Search for warning: '" + warnings_match + "'")
                         # Complain if we didn't find speocfied warning
                         self.assertTrue(upload.search_warnings(warnings_match),
                                         'This test is expected to generate specific warning: "' + warnings_match + '"')
-                        #if upload.search_warnings(warnings_match):
-                            #print("Found expected warning")
-                        #else:
-                            #print("Failed to find expected warning")
+                        # if upload.search_warnings(warnings_match):
+                        # print("Found expected warning")
+                        # else:
+                        # print("Failed to find expected warning")
                     else:
-                        print ("Upload completed without warnings (not expected)")
+                        print("Upload completed without warnings (not expected)")
                 else:
                     self.assertFalse(upload.has_warnings(), 'Not expecting warnings!')
-
