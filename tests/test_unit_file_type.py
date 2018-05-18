@@ -1,6 +1,6 @@
 from unittest import TestCase
-from filemanager.arXiv import FileType
-from filemanager.arXiv.FileType import guess_file_type, get_type_priority, is_tex_type, get_type_name, get_type_priority, \
+from filemanager.arxiv import file_type
+from filemanager.arxiv.file_type import guess_file_type, get_type_priority, is_tex_type, get_type_name, get_type_priority, \
     _is_tex_type, name, guess
 import os.path
 

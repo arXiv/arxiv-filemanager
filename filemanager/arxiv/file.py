@@ -5,7 +5,7 @@
 import os.path
 import re
 
-from filemanager.arXiv.FileType import guess, _is_tex_type, name
+from filemanager.arxiv.file_type import guess, _is_tex_type, name
 
 
 class File:

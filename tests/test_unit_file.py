@@ -1,5 +1,5 @@
 from unittest import TestCase
-from filemanager.arXiv.File import File
+from filemanager.arxiv.file import File
 
 import os.path
 

@@ -172,7 +172,7 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
     # Currently the following type identification relies on the extension
     # to identify the type without inspecting content of file.
 
-    # arXiv's special command file
+    # arXxiv's special command file
     if re.search(r'(^|/)00README\.XXX$', filepath):
         return "TYPE_README", '', ''
 

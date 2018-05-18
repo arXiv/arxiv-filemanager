@@ -9,7 +9,7 @@ import tarfile
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
-from filemanager.arXiv.File import File
+from filemanager.arxiv.file import File
 
 # TODO: Need to move to config file
 UPLOAD_BASE_DIRECTORY = '/tmp/a/b/submissions'

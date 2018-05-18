@@ -200,7 +200,7 @@ class TestUpload(TestCase):
         """Try to process bzip2 archive upload"""
         # upload_id = 20180228
         upload = Upload(20180228)
-        # filename = '/Users/dlf2/arXiv/arxiv-filemanager/tests/upload_data/1801.03879-1.tar.gz'
+
         filename = os.path.join(TEST_FILES_DIRECTORY, 'upload6.tgz')
 
         # For testing purposes, clean out existing workspace directory
@@ -222,7 +222,7 @@ class TestUpload(TestCase):
         """Try to process compressed archive upload"""
         # upload_id = 20180229
         upload = Upload(20180229)
-        # filename = '/Users/dlf2/arXiv/arxiv-filemanager/tests/upload_data/1801.03879-1.tar.gz'
+
         filename = os.path.join(TEST_FILES_DIRECTORY, 'BorelPaper.tex.Z')
 
         # For testing purposes, clean out existing workspace directory

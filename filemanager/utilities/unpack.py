@@ -14,7 +14,7 @@ import os.path
 import tarfile
 import zipfile
 
-from filemanager.arXiv.File import File
+from filemanager.arxiv.file import File
 
 from filemanager.process.upload import Upload
 
