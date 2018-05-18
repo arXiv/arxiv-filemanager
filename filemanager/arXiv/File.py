@@ -36,8 +36,8 @@ to be displayed to the submitter."""
         """Directory which contains the file. This is only used for files."""
         if os.path.isfile(self.filepath):
             return os.path.dirname(self.filepath)
-        else:
-            return ''
+
+        return ''
 
     @property
     def base_dir(self) -> str:
@@ -57,10 +57,10 @@ to be displayed to the submitter."""
         if pdir == self.__base_dir:
             return ''
         elif self.dir:
-            return pdir.replace(self.base_dir + '/',"")
+            return pdir.replace(self.base_dir + '/', "")
         else:
             # For directories self.dir is empty, must get rest of path from filepath
-            public_dir =  pdir.replace(self.base_dir + '/', "")
+            public_dir = pdir.replace(self.base_dir + '/', "")
             name = re.sub(r'[\+]/\\\+', '', self.name)
             regex = name + '$'
             public_dir = re.sub(regex, '', public_dir)
@@ -80,7 +80,7 @@ to be displayed to the submitter."""
     def public_filepath(self) -> str:
         """Public directory and filename."""
         ppath = self.filepath
-        return ppath.replace(self.base_dir + '/',"")
+        return ppath.replace(self.base_dir + '/', "")
 
     @property
     def type(self) -> str:
@@ -114,6 +114,7 @@ to be displayed to the submitter."""
 
     @property
     def sha256sum(self) -> str:
+        """Calculate sha256 Checksum."""
         return 'NOT IMPLEMENTED YET'
 
     @property
@@ -122,7 +123,7 @@ to be displayed to the submitter."""
         return self.__description
 
     @description.setter
-    def description(self, description:str='') -> None:
+    def description(self, description: str = '') -> None:
         """Description of file. (Optional)"""
         if description != '':
             self.__description = description
@@ -134,14 +135,16 @@ to be displayed to the submitter."""
 
     @property
     def size(self) -> int:
+        """Return size of file entity."""
         return os.path.getsize(self.filepath)
 
     @property
     def removed(self) -> int:
+        """Indicate whether file has been flagged as removed."""
         return self.__removed
 
-
     def remove(self) -> None:
+        """Set file status to removed."""
         self.__removed = 1
 
 # TODO Need to handle special Ancillary Files
