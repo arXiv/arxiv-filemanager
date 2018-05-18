@@ -99,3 +99,13 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# Editor files & misc
+*~
+*.idea
+*.vscode
+default.nix
+*.db
+*#*
+*.#*
+
