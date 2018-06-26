@@ -1,0 +1,40 @@
+{
+  "title": "UploadResult",
+  "description": "Describes the result of a source upload processing.",
+  "additionalProperties": false,
+  "required": ["upload_id", "status", "create_time", "modify_time", "errors"],
+  "type": "object",
+  "properties": {
+    "upload_id": {
+      "description": "Unique long-lived identifier for the upload processing result.",
+      "type": "integer"
+    },
+    "status": {
+      "description": "Final status of the upload processing job.",
+      "type": "string",
+      "enum": ["FAILED", "SUCCEEDED", "CANCELLED"]
+    },
+    "create_datetime": {
+      "description": "The date-time when upload created.",
+      "type": "string",
+      "format": "datetime"
+    },
+    "start_datetime": {
+      "description": "The date-time when upload processing started.",
+      "type": "string",
+      "format": "datetime"
+    },
+    "completion_datetime": {
+      "description": "The date-time when processing upload completed.",
+      "type": "string",
+      "format": "datetime"
+    },
+    "log": {
+      "description": "Includes errors or other information that may be relevant for debugging upload issues.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
