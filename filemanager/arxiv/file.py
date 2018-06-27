@@ -19,6 +19,7 @@ to be displayed to the submitter."""
         self.__description = ''
         self.__removed = 0
         self.__type = ''
+        self.__size = os.path.getsize(self.filepath)
 
     @property
     def name(self) -> str:
@@ -136,7 +137,7 @@ to be displayed to the submitter."""
     @property
     def size(self) -> int:
         """Return size of file entity."""
-        return os.path.getsize(self.filepath)
+        return self.__size
 
     @property
     def removed(self) -> int:
