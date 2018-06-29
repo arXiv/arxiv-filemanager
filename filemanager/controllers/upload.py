@@ -22,6 +22,7 @@ INVALID_UPLOAD_ID = {'reason': 'invalid upload identifier'}
 MISSING_UPLOAD_ID = {'reason': 'missing upload id'}
 UPLOAD_NOT_FOUND = {'reason': 'upload not found'}
 ERROR_RETRIEVING_UPLOAD = {'reason': 'upload not found'}
+ERROR_REQUEST_NOT_IMPLEMENTED = {'reason': 'request not implemented'}
 
 # upload status
 NO_SUCH_THING = {'reason': 'there is no upload'}
@@ -310,6 +311,41 @@ def generate_upload_summary(uploadObj: Upload) -> list:
             file_list.append(file_details)
 
         return file_list
+
+def package_content(upload_id: int) -> Response:
+    """Package up files for downloading. Create a compressed gzipped tar file."""
+    response_data = ERROR_REQUEST_NOT_IMPLEMENTED
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    return response_data, status_code, {}
+
+def upload_lock(upload_id: int) -> Response:
+    """Lock upload workspace. Prohibit all user operations on upload.
+    Admins may unlock upload."""
+    response_data = ERROR_REQUEST_NOT_IMPLEMENTED
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    return response_data, status_code, {}
+
+def upload_unlock(upload_id: int) -> Response:
+    """Unlock upload workspace."""
+    response_data = ERROR_REQUEST_NOT_IMPLEMENTED
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    return response_data, status_code, {}
+
+def upload_release(upload_id: int) -> Response:
+    """Inidcate we are done with upload workspace.
+       System will schedule to remove files.
+       """
+    response_data = ERROR_REQUEST_NOT_IMPLEMENTED
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    return response_data, status_code, {}
+
+def upload_logs(upload_id: int) -> Response:
+    """Return logs. Are we talking logs in database or full
+    source logs. Need to implement logs first!!! """
+    response_data = ERROR_REQUEST_NOT_IMPLEMENTED
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    return response_data, status_code, {}
+
 
 # Demo reference code
 # TODO: Implement async processing and use/remove code below.
