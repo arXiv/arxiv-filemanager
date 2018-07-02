@@ -4,8 +4,18 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+arxiv-base = "==0.7.1"
 flask = "*"
 "nose2" = "*"
+flask-sqlalchemy = "*"
+pylint = "*"
+mypy = "*"
+requests = "*"
+uwsgi = "*"
+pyjwt = "*"
+jsonschema = "*"
+celery = "*"
+redis = "*"
 
 [dev-packages]
 
