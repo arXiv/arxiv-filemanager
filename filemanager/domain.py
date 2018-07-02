@@ -65,7 +65,6 @@ class Data(object):
     def __init__(self, **data: Any) -> None:
         """Initialize with some data."""
         for key, value in data.items():
-            print(f"Key: {key} Value: {value}\n")
             if isinstance(getattr(self.__class__, key), Property):
                 setattr(self, key, value)
 
