@@ -9,7 +9,7 @@ from filemanager import status, authorization
 
 from filemanager.controllers import upload
 
-blueprint = Blueprint('upload_api', __name__, url_prefix='/filemanager/upload')
+blueprint = Blueprint('upload_api', __name__, url_prefix='/filemanager/api')
 
 
 @blueprint.route('/status', methods=['GET'])
