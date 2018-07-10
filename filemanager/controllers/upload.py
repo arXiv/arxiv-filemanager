@@ -2,13 +2,14 @@
 
 from typing import Tuple, Optional
 from datetime import datetime
+from werkzeug.exceptions import NotFound, BadRequest, InternalServerError, NotImplemented
 import json
 from werkzeug.datastructures import FileStorage
 from flask.json import jsonify
 
-import filemanager
-from filemanager import status
+from arxiv import status
 
+import filemanager
 from filemanager.shared import url_for
 
 from filemanager.domain import Upload
@@ -20,19 +21,30 @@ from filemanager.arxiv.file import File
 # upload status codes
 INVALID_UPLOAD_ID = {'reason': 'invalid upload identifier'}
 MISSING_UPLOAD_ID = {'reason': 'missing upload id'}
-UPLOAD_NOT_FOUND = {'reason': 'upload not found'}
-ERROR_RETRIEVING_UPLOAD = {'reason': 'upload not found'}
-ERROR_REQUEST_NOT_IMPLEMENTED = {'reason': 'request not implemented'}
+
+# Indicate requests that have not been implemented yet.
+REQUEST_NOT_IMPLEMENTED = {'request not implemented'}
 
 # upload status
 NO_SUCH_THING = {'reason': 'there is no upload'}
 THING_WONT_COME = {'reason': 'could not get the upload'}
-CANT_CREATE_UPLOAD = {'reason': 'could not create the upload'}
-MISSING_NAME = {'reason': 'an upload needs a name'}
-ACCEPTED = {'reason': 'upload in progress'}
-INVALID_TASK_ID = {'reason': 'invalid task id'}
 
+UPLOAD_NOT_FOUND = {'reason': 'upload not found'}
+ERROR_RETRIEVING_UPLOAD = {'upload not found'}
+#UPLOAD_DOESNT_EXIST = {'upload does not exist'}
+CANT_CREATE_UPLOAD = {'could not create the upload'}  #
+CANT_UPLOAD_FILE = {'could not upload file'}
+
+ACCEPTED = {'reason': 'upload in progress'}
+
+MISSING_NAME = {'an upload needs a name'}
+
+SOME_ERROR = {'Need to define and assign better error'}
+
+# task related exceptions
+INVALID_TASK_ID = {'reason': 'invalid task id'}
 TASK_DOES_NOT_EXIST = {'reason': 'task not found'}
+
 TASK_IN_PROGRESS = {'status': 'in progress'}
 TASK_FAILED = {'status': 'failed'}
 TASK_COMPLETE = {'status': 'complete'}
@@ -74,7 +86,7 @@ def create_upload() -> Response:
 
         upload = Upload(name=name, created_datetime=datetime.now(),
                         modified_datetime=datetime.now(),
-                        state='Active')
+                        state='ACTIVE')
         try:
             # Store in DB
             uploads.store(upload)
@@ -91,11 +103,11 @@ def create_upload() -> Response:
             headers['Location'] = upload_url
         except RuntimeError as e:
             print('Error: ' + e.__str__())
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-            response_data = CANT_CREATE_UPLOAD
+            #status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+            #response_data = CANT_CREATE_UPLOAD
+            raise InternalServerError(CANT_CREATE_UPLOAD)
 
     return response_data, status_code, headers
-
 
 
 
@@ -137,8 +149,9 @@ def upload(upload_id: int, file: FileStorage) -> Response:
         upload: Optional[Upload] = uploads.retrieve(upload_id)
 
         if upload is None:
-            status_code = status.HTTP_404_NOT_FOUND
-            response_data = UPLOAD_NOT_FOUND
+            #status_code = status.HTTP_404_NOT_FOUND
+            #response_data = UPLOAD_NOT_FOUND
+            raise NotFound(UPLOAD_NOT_FOUND)
         else:
             # Now handle upload package - process file or gzipped tar archive
 
@@ -180,8 +193,10 @@ def upload(upload_id: int, file: FileStorage) -> Response:
             return ACCEPTED, status.HTTP_202_ACCEPTED, headers
 
     except IOError:
-        response_data = ERROR_RETRIEVING_UPLOAD
-        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        #response_data = ERROR_RETRIEVING_UPLOAD
+        #status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        raise InternalServerError(CANT_UPLOAD_FILE)
+
     return response_data, status_code, {}
 
 def upload_status(upload_id: int) -> Response:
@@ -207,8 +222,9 @@ def upload_status(upload_id: int) -> Response:
     try:
         upload: Optional[Upload] = uploads.retrieve(upload_id)
         if upload is None:
-            status_code = status.HTTP_404_NOT_FOUND
-            response_data = UPLOAD_NOT_FOUND
+            #status_code = status.HTTP_404_NOT_FOUND
+            #response_data = UPLOAD_NOT_FOUND
+            raise NotFound(UPLOAD_NOT_FOUND)
         else:
             status_code = status.HTTP_200_OK
             response_data = {
@@ -217,8 +233,9 @@ def upload_status(upload_id: int) -> Response:
                 'status': "SUCCEEDED"
             }
     except IOError:
-        response_data = ERROR_RETRIEVING_UPLOAD
-        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        #response_data = ERROR_RETRIEVING_UPLOAD
+        #status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        raise InternalServerError(ERROR_RETRIEVING_UPLOAD)
     return response_data, status_code, {}
 
 def upload_summary(upload_id: int) -> Response:
@@ -266,8 +283,9 @@ def upload_summary(upload_id: int) -> Response:
             }
 
     except IOError:
-        response_data = ERROR_RETRIEVING_UPLOAD
-        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        #response_data = ERROR_RETRIEVING_UPLOAD
+        #status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        raise InternalServerError(ERROR_RETRIEVING_UPLOAD)
     return response_data, status_code, {}
 
 
@@ -314,36 +332,41 @@ def generate_upload_summary(uploadObj: Upload) -> list:
 
 def package_content(upload_id: int) -> Response:
     """Package up files for downloading. Create a compressed gzipped tar file."""
-    response_data = ERROR_REQUEST_NOT_IMPLEMENTED
-    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    #response_data = ERROR_REQUEST_NOT_IMPLEMENTED
+    #status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    raise NotImplemented(REQUEST_NOT_IMPLEMENTED)
     return response_data, status_code, {}
 
 def upload_lock(upload_id: int) -> Response:
     """Lock upload workspace. Prohibit all user operations on upload.
     Admins may unlock upload."""
-    response_data = ERROR_REQUEST_NOT_IMPLEMENTED
-    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    #response_data = ERROR_REQUEST_NOT_IMPLEMENTED
+    #status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    raise NotImplemented(REQUEST_NOT_IMPLEMENTED)
     return response_data, status_code, {}
 
 def upload_unlock(upload_id: int) -> Response:
     """Unlock upload workspace."""
-    response_data = ERROR_REQUEST_NOT_IMPLEMENTED
-    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    #response_data = ERROR_REQUEST_NOT_IMPLEMENTED
+    #status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    raise NotImplemented(REQUEST_NOT_IMPLEMENTED)
     return response_data, status_code, {}
 
 def upload_release(upload_id: int) -> Response:
     """Inidcate we are done with upload workspace.
        System will schedule to remove files.
        """
-    response_data = ERROR_REQUEST_NOT_IMPLEMENTED
-    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    #response_data = ERROR_REQUEST_NOT_IMPLEMENTED
+    #status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    raise NotImplemented(REQUEST_NOT_IMPLEMENTED)
     return response_data, status_code, {}
 
 def upload_logs(upload_id: int) -> Response:
     """Return logs. Are we talking logs in database or full
     source logs. Need to implement logs first!!! """
-    response_data = ERROR_REQUEST_NOT_IMPLEMENTED
-    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    #response_data = ERROR_REQUEST_NOT_IMPLEMENTED
+    #status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    raise NotImplemented(REQUEST_NOT_IMPLEMENTED)
     return response_data, status_code, {}
 
 
