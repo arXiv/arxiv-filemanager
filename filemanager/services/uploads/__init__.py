@@ -42,6 +42,7 @@ def retrieve(upload_id: int) -> Optional[Upload]:
 
     args = {}
     args['upload_id'] = upload_data.upload_id
+    args['name'] = upload_data.name
     args['created_datetime'] = upload_data.created_datetime
     args['modified_datetime'] = upload_data.modified_datetime
     args['state'] = upload_data.state
