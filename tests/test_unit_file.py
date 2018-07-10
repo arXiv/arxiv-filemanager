@@ -88,7 +88,7 @@ class TestFileClass(TestCase):
         file = File(testfile_path, testfiles_dir)
 
         self.assertFalse(file.removed, 'File not removed yet')
-        file.remove()
+        file.remove("Test File Removal")
         self.assertTrue(file.removed, 'File has been marked as removed')
 
     def test_anc_detection(self):
