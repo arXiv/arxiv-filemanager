@@ -3,9 +3,13 @@
 import json
 
 from flask.json import jsonify
-from flask import Blueprint, render_template, redirect, request, url_for
+from flask import Blueprint, render_template, redirect, request, url_for, \
+    Response, make_response
+from werkzeug.exceptions import NotFound, Forbidden, Unauthorized, \
+    InternalServerError, HTTPException, BadRequest
 from arxiv.base import routes as base_routes
-from filemanager import status, authorization
+from arxiv import status
+from filemanager import authorization
 
 from filemanager.controllers import upload
 
@@ -19,7 +23,7 @@ def service_status() -> tuple:
 
 
 @blueprint.route('/create', methods=['GET'])
-# @authorization.scoped('read:upload')
+@authorization.scoped('read:upload')
 def create_one() -> tuple:
     """Create upload workspace. Create and return unique upload identifier."""
     data, status_code, headers = upload.create_upload()
@@ -33,14 +37,16 @@ def upload_files(upload_id: int) -> tuple:
     and add to upload package. Multiple uploads accepted."""
 
     if request.method == 'POST':
+
         if 'file' not in request.files:
-            # TODO figure out error message
-            return jsonify({'status': "FAILED"})
+            raise NotFound("Upload 'file' not found.")
+            # TODO move to contoller
+
         file = request.files['file']
 
         if file.filename == '':
-            # TODO figure out error message
-            return jsonify({'status': "FAILED"})
+            # TODO move to controller
+            raise NotFound("Upload 'file' not found.")
 
         # Attempt to process upload
         data, status_code, headers = upload.upload(upload_id, file)
@@ -68,9 +74,9 @@ def upload_status(upload_id: int) -> tuple:
 #
 # Will upload GET always return list of files?
 #
-#@blueprint.route('/manifest/<int:upload_id>', methods=['GET'])
-#@authorization.scoped('read:upload')
-#def manifest(upload_id: int) -> tuple:
+# @blueprint.route('/manifest/<int:upload_id>', methods=['GET'])
+# @authorization.scoped('read:upload')
+# def manifest(upload_id: int) -> tuple:
 #    """Manifest of files contained in upload package."""
 #    #data, status_code, headers = upload.generate_manifest(upload_id)
 #    return jsonify(data), status_code, headers
@@ -123,3 +129,26 @@ def logs(upload_id: int) -> tuple:
     history or actions on submission package."""
     data, status_code, headers = upload.upload_logs(upload_id)
     return jsonify(data), status_code, headers
+
+# Exception handling
+
+@blueprint.errorhandler(NotFound)
+@blueprint.errorhandler(InternalServerError)
+@blueprint.errorhandler(Forbidden)
+@blueprint.errorhandler(Unauthorized)
+@blueprint.errorhandler(BadRequest)
+def handle_exception(error: HTTPException) -> Response:
+    """
+    JSON-ify the error response.
+
+    This works just like the handlers in zero.routes.ui, but instead of
+    rendering a template we are JSON-ifying the response. Note that we are
+    registering the same error handler for several different exceptions, since
+    we aren't doing anything that is specific to a particular exception.
+    """
+    content = jsonify({'reason': error.description})
+
+    # Each Werkzeug HTTP exception has a class attribute called ``code``; we
+    # can use that to set the status code on the response.
+    response = make_response(content, error.code)
+    return response
