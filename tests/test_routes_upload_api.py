@@ -62,6 +62,11 @@ class TestUploadAPIRoutes(TestCase):
         with open('schema/resources/uploadCreate.json') as f:
             schema = json.load(f)
 
+        # Create a token for writing to upload workspace
+        token = generate_token(self.app,
+                               {'scope': ['read:upload', 'write:upload']})
+
+
         created = datetime.now()
         create_data = {'upload_id': 4, 'create_datetime': created.isoformat(),
                        'url': '/filemanager/api/upload/4'}
@@ -69,7 +74,8 @@ class TestUploadAPIRoutes(TestCase):
 
         print("\nMake 'create upload' request\n")
 
-        response = self.client.get('/filemanager/api/create')
+        response = self.client.get('/filemanager/api/create',
+                                   headers={'Authorization': token})
 
         #  data['file'] = (io.BytesIO(b"abcdef"), 'test.jpg')
         expected_data = {'upload_id': create_data['upload_id'],
@@ -110,14 +116,18 @@ class TestUploadAPIRoutes(TestCase):
         name = os.path.basename(filename)
         print(f"\nAPI: Create upload and post upload file {name} to server\n")
 
-        response = self.client.get('/filemanager/api/create')
+        response = self.client.get('/filemanager/api/create',
+                                   headers={'Authorization': token})
         #print("Create Response:" + str(response.data) + '\n')
 
         create_data: Dict[str, Any] = json.loads(response.data)
 
-        print(f"Upload Id: {create_data['upload_id']}\n")
-        print(f"Upload URL: {create_data['url']}\n")
+        print(f"Upload: Created upload with Id: {create_data['upload_id']}\n")
+        print(f"Upload: Upload files URL: {create_data['url']}\n")
         # Post a test submission to upload API
+
+        #token1 = str(token.encode("ascii"))
+        print(f"Token (for possible use in manual browser tests): {token}\n")
 
         print("\nMake request to upload gzipped tar file. \n"
               + "\t[Warnings and errors are currently printed to console.\n"
