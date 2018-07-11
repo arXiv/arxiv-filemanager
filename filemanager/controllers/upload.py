@@ -7,7 +7,9 @@ import json
 from werkzeug.datastructures import FileStorage
 from flask.json import jsonify
 
+
 from arxiv import status
+
 
 import filemanager
 from filemanager.shared import url_for
@@ -17,6 +19,28 @@ from filemanager.services import uploads
 from filemanager.tasks import sanitize_upload, check_sanitize_status
 
 from filemanager.arxiv.file import File
+
+# Temporary logging at service level - just to get something in place to build on
+
+#from arxiv.base import logging
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+
+logger = logging.getLogger(__name__)
+
+file_handler = logging.FileHandler('upload.log', 'a')
+# Default arXiv log format.
+#fmt = ("application %(asctime)s - %(name)s - %(requestid)s"
+#          " - [arxiv:%(paperid)s] - %(levelname)s: \"%(message)s\"")
+datefmt = '%d/%b/%Y:%H:%M:%S %z'    # Used to format asctime.
+formatter = logging.Formatter('%(asctime)s %(message)s', '%d/%b/%Y:%H:%M:%S %z' )
+file_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
+logger.setLevel(logging.DEBUG)
+
+# End logging configuration
 
 # upload status codes
 INVALID_UPLOAD_ID = {'reason': 'invalid upload identifier'}
@@ -101,7 +125,10 @@ def create_upload() -> Response:
                 'url': upload_url
             }
             headers['Location'] = upload_url
+
+            logger.info(f"{upload.upload_id}: Successfully created new upload in database.")
         except RuntimeError as e:
+            logger.error("Failed to create new upload in database.")
             print('Error: ' + e.__str__())
             #status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
             #response_data = CANT_CREATE_UPLOAD
@@ -158,6 +185,7 @@ def upload(upload_id: int, file: FileStorage) -> Response:
             # NOTE: This will need to be migrated to task.py using Celery at
             #       some point in future. Depends in time it takes to process
             #       uploads.retrieve
+            logger.info(f"{upload.upload_id}: Scheduling upload request: file='{file.filename}'")
 
             # Keep track of how long processing upload takes
             start_datetime = datetime.now()
@@ -193,6 +221,7 @@ def upload(upload_id: int, file: FileStorage) -> Response:
             return ACCEPTED, status.HTTP_202_ACCEPTED, headers
 
     except IOError:
+        logger.error(f"{upload.upload_id}: File upload request failed.")
         #response_data = ERROR_RETRIEVING_UPLOAD
         #status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         raise InternalServerError(CANT_UPLOAD_FILE)
@@ -281,6 +310,7 @@ def upload_summary(upload_id: int) -> Response:
                 'status': "SUCCEEDED",
                 'upload_state': upload.state
             }
+            logger.info(f"{upload.upload_id}: Processed upload summary request.")
 
     except IOError:
         #response_data = ERROR_RETRIEVING_UPLOAD
