@@ -36,7 +36,7 @@ file_handler = logging.FileHandler('upload.log', 'a')
 datefmt = '%d/%b/%Y:%H:%M:%S %z'    # Used to format asctime.
 formatter = logging.Formatter('%(asctime)s %(message)s', '%d/%b/%Y:%H:%M:%S %z' )
 file_handler.setFormatter(formatter)
-
+logger.handlers = []
 logger.addHandler(file_handler)
 logger.setLevel(logging.DEBUG)
 
