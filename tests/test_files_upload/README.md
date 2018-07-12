@@ -37,18 +37,18 @@ UploadTestWindowCDrive.tar.gz
 
 UploadWithANCDirectory.tar.gz
 * Summary: Upload with ancillary files.
-* Expected results:
+* Expected results: Ancillary files unpacked in anc directory.
 * Status: Ready
 
 source_with_dir.tar.gz
 * Summary: Remove top level directory
-* Expected results:
+* Expected results: Automatically removes top level directory.
 * Status: Ready with warning
 
 upload-nested-zip-and-tar.zip
 * Summary: Submission that contains a bad zip
-* Expected results: Error/warning.
-* Status: Failed
+* Expected results: Error about malformed zip file.
+* Status: Ready with warnings
 * Note: Submitter is still able to proceed with submission. Difficult to know/track whether this
 issue is resolved by subsequent uploads.
 
@@ -89,5 +89,5 @@ upload6.tgz
 
 upload7.tar.gz
 * Summary: Contains useless top level directory
-* Expected results: Automatically removes top level directory
+* Expected results: Automatically removes top level directory.
 * Status: Ready with warnings
