@@ -79,13 +79,6 @@ paths:
          required: true
          schema:
            type: string
-      parameters:
-        -in: path
-         name: upload_id
-         description: Unique long-lived identifier for the upload.
-         required: true
-         schema:
-           type: string
       responses:
         '200':
           description: A description of the upload package.
