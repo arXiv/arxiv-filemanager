@@ -15,6 +15,8 @@ Notes: Upload summary indicates errors/warnings and a list of files contained in
 
 README.md	- This file!
 
+File			- Expected result
+
 1801.03879-1.tar.gz	- contains hidden files / removed
 
 UnpackWithSubdirectories.tar.gz
@@ -24,16 +26,25 @@ UnpackWithSubdirectories.tar.gz
 
 
 Upload9BadFileNames.tar.gz      - Contains bad file names.
+
 UploadTestWindowCDrive.tar.gz   - Contains Windows paths. Renames file.
+
 UploadWithANCDirectory.tar.gz   - Upload with ancillary files.
+
 source_with_dir.tar.gz  - remove top level directory
+
 upload-nested-zip-and-tar.zip - submission that contains a bad zip
 
 upload1.tar.gz		- contains zero-size file 'espcrc2.sty'
+
 upload2.tar.gz		- well-formed / valid submission / no errors
+
 upload3.tar.gz		- well-formed / valid submission / no errors 
+
 upload4.gz		- invalid filename / rename archive 
+
 upload5.pdf		- well-formed / valid submission / no errors
+
 upload5.tar.gz		- invalid filename / rename archive	
 upload6.tgz		- well-formed / valid submission / no errors
 upload7.tar.gz		- contains useless top level directory / 
