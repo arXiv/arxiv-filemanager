@@ -297,7 +297,7 @@ paths:
     post:
       operationId: releaseUpload
       summary: |
-        Client indicates they are finished with wprkspace. File management
+        Client indicates they are finished with workspace. File management
         service is free to remove uploaded files, or schedule files for
         removal at later time.
       responses:
@@ -331,7 +331,7 @@ paths:
     get:
       operationId: getLogs
       summary: |
-        Retreive log files related to workspace. Indicates history or actions
+        Retrieve log files related to workspace. Indicates history or actions
         on workspace.
       responses:
         '200':
