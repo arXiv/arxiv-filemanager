@@ -24,28 +24,70 @@ UnpackWithSubdirectories.tar.gz
 * Expected results: Nested directories are correctly extracted from archive.
 * Status: Ready
 
+Upload9BadFileNames.tar.gz
+* Summary: Contains bad file names.
+* Expected results:
+* Status: Ready with warnings
 
-Upload9BadFileNames.tar.gz      - Contains bad file names.
+UploadTestWindowCDrive.tar.gz
+* Summary: Contains Windows paths.
+* Expected results: Renames Windows paths to Unix style paths.
+* Status: Ready
+* Notes: Changes will likely break submission.
 
-UploadTestWindowCDrive.tar.gz   - Contains Windows paths. Renames file.
+UploadWithANCDirectory.tar.gz
+* Summary: Upload with ancillary files.
+* Expected results:
+* Status: Ready
 
-UploadWithANCDirectory.tar.gz   - Upload with ancillary files.
+source_with_dir.tar.gz
+* Summary: Remove top level directory
+* Expected results:
+* Status: Ready with warning
 
-source_with_dir.tar.gz  - remove top level directory
+upload-nested-zip-and-tar.zip
+* Summary: Submission that contains a bad zip
+* Expected results: Error/warning.
+* Status: Failed
+* Note: Submitter is still able to proceed with submission. Difficult to know/track whether this
+issue is resolved by subsequent uploads.
 
-upload-nested-zip-and-tar.zip - submission that contains a bad zip
+upload1.tar.gz
+* Summary: Contains zero-size file 'espcrc2.sty'
+* Expected results: Remove zero-size file
+* Status: Ready with warnings
 
-upload1.tar.gz		- contains zero-size file 'espcrc2.sty'
+upload2.tar.gz
+* Summary: Clean submission: well-formed / valid submission / no errors
+* Expected results: Upload without errors/warnings.
+* Status: Ready
 
-upload2.tar.gz		- well-formed / valid submission / no errors
+upload3.tar.gz
+* Summary: Clean submission: well-formed / valid submission / no errors
+* Expected results: Upload without errors/warnings.
+* Status: Ready
 
-upload3.tar.gz		- well-formed / valid submission / no errors 
+upload4.gz
+* Summary: Invalid filename
+* Expected results: Rename file with warnings.
+* Status: Ready with warnings
 
-upload4.gz		- invalid filename / rename archive 
+upload5.pdf
+* Summary: Clean submission: well-formed / valid submission / no errors
+* Expected results: Upload without errors/warnings.
+* Status: Ready
 
-upload5.pdf		- well-formed / valid submission / no errors
+upload5.tar.gz
+* Summary: Rename invalid filename to valid filename.
+* Expected results: Rename file with warning
+* Status: Ready with warnings
 
-upload5.tar.gz		- invalid filename / rename archive	
-upload6.tgz		- well-formed / valid submission / no errors
-upload7.tar.gz		- contains useless top level directory / 
-			  automatically removes top level directory
+upload6.tgz
+* Summary: Clean submission: well-formed / valid submission / no errors
+* Expected results: Upload without errors/warnings.
+* Status: Ready
+
+upload7.tar.gz
+* Summary: Contains useless top level directory
+* Expected results: Automatically removes top level directory
+* Status: Ready with warnings
