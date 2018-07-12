@@ -5,6 +5,7 @@ import os.path
 import re
 import shutil
 import tarfile
+import logging
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
@@ -35,7 +36,11 @@ submitter."""
         self.__warnings = []
         self.__errors = []
         self.__files = []
+        self.__log = ''
         self.create_upload_workspace()
+        self.create_upload_log()
+
+        self.__log.info(f"Initialized upload {upload_id}")
 
     # Files
 
@@ -74,7 +79,12 @@ submitter."""
 
         """
 
-        print('Warning: ' + msg) # temporary, until logging implemented
+        #print('Warning: ' + msg) # temporary, until logging implemented
+        # Log warning
+        msg = 'Warning: ' + msg
+        self.__log.warning(msg)
+
+        # Add to internal list to make it easier to manipulate
         self.__warnings.append(msg)
 
 
@@ -194,13 +204,17 @@ submitter."""
         # Move file to removed directory
         filepath = file.filepath
         removed_path = os.path.join(self.get_removed_directory(), file.name)
-        print("Move file " + file.name + " to removed dir: " + removed_path)
+        self.__log.debug("Moving file " + file.name + " to removed dir: " + removed_path)
 
         if shutil.move(filepath, removed_path):
-            self.add_warning("*** File " + file.name + " has been removed ***")
-            self.add_warning("*** Reason: " + msg)
+            lmsg = "*** File " + file.name + f" has been removed. Reason: {msg} ***"
+            #self.add_warning("*** File " + file.name + " has been removed ***")
+            #self.add_warning("*** Reason: " + msg)
+            self.add_warning(lmsg)
         else:
             self.add_warning("*** FAILED to remove file " + filepath + " ***")
+
+        # Add reason for removal to File object
         file.remove(msg)
 
 
@@ -280,6 +294,21 @@ submitter."""
 
         return base_dir
 
+    def create_upload_log(self):
+        """Create a source log to record activity for this upload."""
+
+        # Grab standard logger and customized it
+        logger = logging.getLogger(__name__)
+        log_path = os.path.join (self.get_upload_directory(), 'source.log')
+        file_handler = logging.FileHandler(log_path)
+
+        formatter = logging.Formatter('%(asctime)s %(message)s', '%d/%b/%Y:%H:%M:%S %z')
+        file_handler.setFormatter(formatter)
+        logger.handlers = []
+        logger.addHandler(file_handler)
+        logger.setLevel(logging.DEBUG)
+
+        self.__log = logger
 
     def deposit_upload(self, file: FileStorage) -> str:
         """
@@ -427,7 +456,7 @@ submitter."""
                 if file_name.startswith('.'):
                     # Remove files starting with dot
                     msg = 'Removed hidden file'
-                    self.add_warning(msg)
+                    #self.add_warning(msg)
                     self.remove_file(obj, msg)
 
                     continue
