@@ -1,18 +1,28 @@
-Description of individual upload test files.
+Description of individual upload test cases.
 
 This directory contains well-formed submissions along with submissions
-that are designed to trigger specific errors.
+designed to trigger specific errors.
 
 Additional details may be found in test_process_upload.py file.
 
 ----
 
+Prerequisites: DB uploads table (will be created automatically), development server
+
+Procedure: For each test case upload test submission archive.
+
+Notes: Upload summary indicates errors/warnings and a list of files contained in submission archive.
+
 README.md	- This file!
 
 1801.03879-1.tar.gz	- contains hidden files / removed
 
-UnpackWithSubdirectories.tar.gz - Submission containing gzipped 
-			 archives containing other subdirectories. 
+UnpackWithSubdirectories.tar.gz
+* Summary: Submission containing gzipped archives containing other subdirectories.
+* Expected results: Nested directories are correctly extracted from archive.
+* Status: Ready
+
+
 Upload9BadFileNames.tar.gz      - Contains bad file names.
 UploadTestWindowCDrive.tar.gz   - Contains Windows paths. Renames file.
 UploadWithANCDirectory.tar.gz   - Upload with ancillary files.
