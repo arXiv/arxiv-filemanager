@@ -26,7 +26,7 @@ UnpackWithSubdirectories.tar.gz
 
 Upload9BadFileNames.tar.gz
 * Summary: Contains bad file names.
-* Expected results:
+* Expected results: Rename files with warnings.
 * Status: Ready with warnings
 
 UploadTestWindowCDrive.tar.gz
