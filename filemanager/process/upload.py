@@ -12,7 +12,7 @@ from werkzeug.utils import secure_filename
 from filemanager.arxiv.file import File
 
 # TODO: Need to move to config file
-UPLOAD_BASE_DIRECTORY = '/tmp/a/b/submissions'
+UPLOAD_BASE_DIRECTORY = '/tmp/filemanagment/submissions'
 
 
 class Upload:
@@ -37,6 +37,8 @@ submitter."""
         self.__files = []
         self.create_upload_workspace()
 
+    # Files
+
     def has_files(self) -> bool:
         """Indicates whether files list contains entries."""
         if self.__files:
@@ -44,6 +46,19 @@ submitter."""
 
         return False
 
+    # TODO: Need to add test for these last minute additions
+    #       get_files, add_files, get_errors, get_warnings.
+
+    def get_files(self) -> list:
+        """Return list of files contained in upload."""
+        return self.__files
+
+    def add_file(self, file: File) -> None:
+        """Add a file to list."""
+        self.__files.append(file)
+
+
+    # Warnings
 
     def add_warning(self, msg: str) -> None:
         """
@@ -96,6 +111,11 @@ submitter."""
 
         return False
 
+    def get_warnings(self) -> list:
+        """Get list of upload warnings."""
+        return self.__warnings
+
+    # Errors
 
     def add_error(self, msg: str) -> None:
         """Record error for this upload instance."""
@@ -135,7 +155,9 @@ submitter."""
 
         return False
 
-
+    def get_errors(self) -> list:
+        """Get list of upload errors."""
+        return self.__errors
 
     @property
     def upload_id(self) -> int:
@@ -179,7 +201,7 @@ submitter."""
             self.add_warning("*** Reason: " + msg)
         else:
             self.add_warning("*** FAILED to remove file " + filepath + " ***")
-        file.remove()
+        file.remove(msg)
 
 
     def get_upload_directory(self) -> str:
@@ -303,7 +325,7 @@ submitter."""
         source_directory = self.get_source_directory()
 
         for root_directory, directories, files in os.walk(source_directory):
-            for dir in directories:
+            for directory in directories:
                 # Need to decide whether we need to do anything to directories
                 # in the meantime get rid of lint warning
                 pass
@@ -311,10 +333,13 @@ submitter."""
             for file in files:
                 path = os.path.join(root_directory, file)
                 obj = File(path, source_directory)
+                # Add all files to upload file list as this will hold
+                # information about handling of file (removed)
+                self.add_file(obj)
 
                 # Convert this to debugging
                 #print("  File is : " + file + " Size: " + str(
-                #   obj.size) + " File is type: " + obj.type + ":" + obj.type_string + '\n')
+                #    obj.size) + " File is type: " + obj.type + ":" + obj.type_string + '\n')
 
                 file_type = obj.type
                 file_name = obj.name
@@ -327,7 +352,7 @@ submitter."""
                 if obj.size == 0:
                     msg = obj.name + " is empty (size is zero)"
                     self.add_warning(msg)
-                    self.remove_file(obj, msg)
+                    self.remove_file(obj, f"Removed: {msg}")
                     continue
 
                 # Remove 10240 byte all-null files (bad user tar attempts?)
@@ -399,11 +424,12 @@ submitter."""
                     file_path = new_file_path
 
                 # Filename starts with dot (.)
-                if file_name.startswith(r'\.'):
+                if file_name.startswith('.'):
                     # Remove files starting with dot
-                    msg = 'Removed hidden file ' + file_name
+                    msg = 'Removed hidden file'
                     self.add_warning(msg)
                     self.remove_file(obj, msg)
+
                     continue
 
 
@@ -593,7 +619,35 @@ submitter."""
         """Create list of File objects with details of each file in
         upload package."""
         # TODO: implement create file list
-        pass
+
+        # TODO: Cleanup and test.
+        # Make sure file list creation is working in check files before enabling.
+        #
+        # Not ready to enable.
+        # Note: check files adds all files in upload archive. If this
+        # routine is called elsewhere or (later) without processing upload the
+        # list will not contain the files that have been removed.
+
+        # Need to think about this a little since I'd like the UI
+        # receive a list of ALL files including those which are
+        # removed or rejected (but only for upload files action).
+
+        source_directory = self.get_source_directory()
+
+        list = []
+        for root_directory, directories, files in os.walk(source_directory):
+            for directory in directories:
+                # Need to decide whether we need to do anything to directories
+                # in the meantime get rid of lint warning
+                pass
+
+            for file in files:
+                path = os.path.join(root_directory, file)
+                obj = File(path, source_directory)
+                list.append(obj) # silence lint error
+                # self.add_file(obj)
+
+
 
     def set_file_permissions(self) -> None:
         """Set the file permissions for all files and directories in upload."""

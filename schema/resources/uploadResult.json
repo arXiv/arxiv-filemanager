@@ -1,0 +1,57 @@
+{
+  "title": "UploadResult",
+  "description": "Describes the result of a source upload processing.",
+  "additionalProperties": false,
+  "required": ["upload_id", "upload_state", "status", "created_datetime", "modified_datetime"],
+  "type": "object",
+  "properties": {
+    "upload_id": {
+      "description": "Unique long-lived identifier for the upload processing result.",
+      "type": "integer"
+    },
+    "upload_state": {
+      "description": "Status of the upload.",
+      "type": "string",
+      "enum": ["ACTIVE", "LOCKED", "RELEASED"]
+    },
+    "status": {
+      "description": "Final status of the upload processing job.",
+      "type": "string",
+      "enum": ["FAILED", "SUCCEEDED", "CANCELLED"]
+    },
+    "created_datetime": {
+      "description": "The date-time when upload created.",
+      "type": "string",
+      "format": "datetime"
+    },
+    "modified_datetime": {
+      "description": "The date-time when upload modified.",
+      "type": "string",
+      "format": "datetime"
+    },
+    "start_datetime": {
+      "description": "The date-time when upload processing started.",
+      "type": "string",
+      "format": "datetime"
+    },
+    "completion_datetime": {
+      "description": "The date-time when processing upload completed.",
+      "type": "string",
+      "format": "datetime"
+    },
+    "files": {
+      "description": "Complete list of uploaded files. Includes details for UI",
+      "type": "string",
+      "items": {
+        "type": "string"
+      }
+    },
+    "log": {
+      "description": "Includes errors or other information that may be relevant for debugging upload issues.",
+      "type": "string",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

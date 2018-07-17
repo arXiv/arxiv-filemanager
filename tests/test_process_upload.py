@@ -12,7 +12,7 @@ import shutil
 
 from filemanager.process.upload import Upload
 
-UPLOAD_BASE_DIRECTORY = '/tmp/a/b/submissions'
+UPLOAD_BASE_DIRECTORY = '/tmp/filemanagment/submissions'
 
 TEST_FILES_DIRECTORY = os.path.join(os.getcwd(), 'tests/test_files_upload')
 

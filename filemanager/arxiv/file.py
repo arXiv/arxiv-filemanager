@@ -18,7 +18,8 @@ to be displayed to the submitter."""
         self.__base_dir = base_dir
         self.__description = ''
         self.__removed = 0
-        self.__type = ''
+        self.__type = self.initialize_type()
+        self.__size = os.path.getsize(self.filepath)
 
     @property
     def name(self) -> str:
@@ -82,13 +83,8 @@ to be displayed to the submitter."""
         ppath = self.filepath
         return ppath.replace(self.base_dir + '/', "")
 
-    @property
-    def type(self) -> str:
-        """The file type."""
-        if self.__type:
-            """Use existing type setting."""
-            return self.__type
-        elif self.dir:
+    def initialize_type(self):
+        if self.dir:
             """Guess file type."""
             self.__type = guess(self.__filepath)
             return self.__type
@@ -96,6 +92,15 @@ to be displayed to the submitter."""
             return 'directory'
         else:
             return 'directory'
+
+    @property
+    def type(self) -> str:
+        """The file type."""
+        if self.__type:
+            """Use existing type setting."""
+            return self.__type
+        else:
+            self.initialize_type()
 
     @type.setter
     def type(self, type: str) -> None:
@@ -105,7 +110,9 @@ to be displayed to the submitter."""
     @property
     def type_string(self) -> str:
         """The human readable type name."""
-        if self.dir:
+        if self.removed:
+            return "Invalid File"
+        elif self.dir:
             return name(self.type)
         elif self.dir == '' and self.filepath == os.path.join(self.base_dir, 'anc'):
             return 'Ancillary files directory'
@@ -136,16 +143,18 @@ to be displayed to the submitter."""
     @property
     def size(self) -> int:
         """Return size of file entity."""
-        return os.path.getsize(self.filepath)
+        return self.__size
 
     @property
     def removed(self) -> int:
         """Indicate whether file has been flagged as removed."""
         return self.__removed
 
-    def remove(self) -> None:
+    def remove(self, reason: str) -> None:
         """Set file status to removed."""
-        self.__removed = 1
+        if not reason:
+            reason = "Removed"
+        self.__removed = reason
 
 # TODO Need to handle special Ancillary Files
 
