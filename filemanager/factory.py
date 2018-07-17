@@ -21,6 +21,7 @@ def create_web_app() -> Flask:
     app.config.from_pyfile('config.py')
     app.json_encoder = ISO8601JSONEncoder
 
+    # Initialize file management app
     uploads.init_app(app)
 
     Base(app)    # Gives us access to the base UI templates and resources.
