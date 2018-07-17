@@ -5,4 +5,6 @@ from filemanager.services import uploads
 
 app = create_web_app()
 
+app.app_context().push()
+
 uploads.db.create_all()
