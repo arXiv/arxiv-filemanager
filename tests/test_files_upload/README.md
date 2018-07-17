@@ -32,7 +32,7 @@ Upload9BadFileNames.tar.gz
 UploadTestWindowCDrive.tar.gz
 * Summary: Contains Windows paths.
 * Expected results: Renames Windows paths to Unix style paths.
-* Status: Ready
+* Status: Ready with warnings
 * Notes: Changes will likely break submission.
 
 UploadWithANCDirectory.tar.gz
