@@ -21,7 +21,7 @@ paths:
               schema:
                 $ref: 'resources/serviceStatus.json'
 
-  /upload:
+  /:
     post:
       operationId: uploadPackage
       summary: |
@@ -32,7 +32,7 @@ paths:
         the response body.
       requestBody:
         content:
-          application/gzip:
+          application/octet-stream:
             schema:
               type: string
               format: binary
@@ -49,7 +49,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/uploadResult.json'
+                $ref: 'resources/Result.json'
+        '400':
+          description: |
+            There was an unrecoverable problem when processing the upload. For
+            example, the upload could not be unpacked, or was not in an
+            acceptable format.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/error.json'
         '401':
           description: Unauthorized. Missing valid authentication information.
         '403':
@@ -60,14 +69,8 @@ paths:
             application/json:
               schema:
                 $ref: 'resources/error.json'
-        '500':
-          description: There was a problem processing the upload.
-          content:
-            application/json:
-              schema:
-                $ref: 'resources/error.json'
 
-  /upload/{upload_id}:
+  /{upload_id}:
     get:
       operationId: getUploadStatus
       summary: |
@@ -85,19 +88,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/uploadResult.json'
+                $ref: 'resources/Result.json'
         '401':
           description: Unauthorized. Missing valid authentication information.
         '403':
           description: |
             Forbidden. Client is not authorized to access this upload.
-        '500':
-          description: |
-            There was a problem retrieving information about the upload.
-          content:
-            application/json:
-              schema:
-                $ref: 'resources/error.json'
     post:
       operationId: addFilesToPackage
       summary: |
@@ -115,7 +111,7 @@ paths:
            type: string
       requestBody:
         content:
-          application/gzip:
+          application/octet-stream:
             schema:
               type: string
               format: binary
@@ -132,19 +128,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/uploadResult.json'
+                $ref: 'resources/Result.json'
+        '400':
+          description: |
+            There was an unrecoverable problem when processing the upload. For
+            example, the upload could not be unpacked, or was not in an
+            acceptable format.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/error.json'
         '401':
           description: Unauthorized. Missing valid authentication information.
         '403':
           description: Forbidden. Client or user is not authorized to upload.
         '415':
           description: The uploaded file is not of an acceptable type.
-          content:
-            application/json:
-              schema:
-                $ref: 'resources/error.json'
-        '500':
-          description: There was a problem processing the upload.
           content:
             application/json:
               schema:
@@ -162,7 +161,7 @@ paths:
             Forbidden. Client or user is not authorized to delete this
             workspace.
 
-  /upload/{upload_id}/{file_path}:
+  /{upload_id}/{file_path}:
     parameters:
       -in: path
        name: upload_id
@@ -184,7 +183,7 @@ paths:
 
   # These are a bit different from what is currently implemented in
   # routes/ui.py. Maybe this provides a bit more RESTful semantics?
-  /upload/{upload_id}/content:
+  /{upload_id}/content:
     parameters:
       -in: path
        name: upload_id
@@ -206,7 +205,7 @@ paths:
         '200':
           description: Returns the sanitized/processed upload package.
           content:
-            application/gzip:
+            application/octet-stream:
               schema:
                 type: string
                 format: binary
@@ -216,14 +215,8 @@ paths:
           description: |
             Forbidden. Client or user is not authorized to download this
             package.
-        '500':
-          description: There was a problem handling the request.
-          content:
-            application/json:
-              schema:
-                $ref: 'resources/error.json'
 
-  /upload/{upload_id}/lock:
+  /{upload_id}/lock:
     parameters:
       -in: path
        name: upload_id
@@ -242,20 +235,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/uploadResult.json'
+                $ref: 'resources/Result.json'
+        '400':
+          description: |
+            There was an unrecoverable problem when handling the request.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/error.json'
         '401':
           description: Unauthorized. Missing valid authentication information.
         '403':
           description: |
             Forbidden. Client or user is not authorized to lock this resource.
-        '500':
-          description: There was a problem handling the request.
-          content:
-            application/json:
-              schema:
-                $ref: 'resources/error.json'
 
-  /upload/{upload_id}/unlock:
+  /{upload_id}/unlock:
     parameters:
       -in: path
        name: upload_id
@@ -272,21 +266,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/uploadResult.json'
+                $ref: 'resources/Result.json'
+        '400':
+          description: |
+            There was an unrecoverable problem when handling the request.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/error.json'
         '401':
           description: Unauthorized. Missing valid authentication information.
         '403':
           description: |
             Forbidden. Client or user is not authorized to unlock this
             resource.
-        '500':
-          description: There was a problem handling the request.
-          content:
-            application/json:
-              schema:
-                $ref: 'resources/error.json'
 
-  /upload/{upload_id}/release:
+  /{upload_id}/release:
     parameters:
       -in: path
        name: upload_id
@@ -306,21 +301,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/uploadResult.json'
+                $ref: 'resources/Result.json'
+        '400':
+          description: |
+            There was an unrecoverable problem when handling the request.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/error.json'
         '401':
           description: Unauthorized. Missing valid authentication information.
         '403':
           description: |
             Forbidden. Client or user is not authorized to release this
             resource.
-        '500':
-          description: There was a problem handling the request.
-          content:
-            application/json:
-              schema:
-                $ref: 'resources/error.json'
 
-  /upload/{upload_id}/logs:
+  /{upload_id}/logs:
     parameters:
       -in: path
        name: upload_id
@@ -339,16 +335,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/uploadLog.json'
+                $ref: 'resources/Log.json'
         '401':
           description: Unauthorized. Missing valid authentication information.
         '403':
           description: |
             Forbidden. Client or user is not authorized to access logs for this
             workspace.
-        '500':
-          description: There was a problem handling the request.
-          content:
-            application/json:
-              schema:
-                $ref: 'resources/error.json'
