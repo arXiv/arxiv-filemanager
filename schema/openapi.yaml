@@ -71,6 +71,14 @@ paths:
                 $ref: 'resources/error.json'
 
   /{upload_id}:
+    parameters:
+      -in: path
+       name: upload_id
+       description: Unique long-lived identifier for the upload.
+       required: true
+       schema:
+         type: string
+
     get:
       operationId: getUploadStatus
       summary: |
@@ -102,13 +110,7 @@ paths:
         processing and sanitization routines are performed. Existing files will
         be overwritten by files of the  same name. and any errors or warnings
         (including deleted files) will be included in the response body.
-      parameters:
-        -in: path
-         name: upload_id
-         description: Unique long-lived identifier for the upload.
-         required: true
-         schema:
-           type: string
+
       requestBody:
         content:
           application/octet-stream:
@@ -150,7 +152,7 @@ paths:
                 $ref: 'resources/error.json'
     delete:
       operationId: deleteAll
-      summary: Deletes the entire workspace.
+      description: Deletes the entire workspace.
       responses:
         '204':
           description: The workspace was deleted successfully.
@@ -160,6 +162,31 @@ paths:
           description: |
             Forbidden. Client or user is not authorized to delete this
             workspace.
+
+  /{upload_id}/delete_all:
+    summary: Delete all files in the workspace.
+    parameters:
+      -in: path
+       name: upload_id
+       description: Unique long-lived identifier for the upload.
+       required: true
+       schema:
+         type: string
+    post:
+      desription: |
+        Delete all files in the workspace. Does not delete the workspace
+        itself.
+      responses:
+        '204':
+          description: All files in the workspace were deleted successfully.
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to delete files in this
+            workspace.
+
+
 
   /{upload_id}/{file_path}:
     parameters:
