@@ -1,4 +1,4 @@
-"""Asynchronous tasks."""
+"""Asynchronous tasks. NOT IMPLEMENTED AT MOMENT. MAY GO AWAY."""
 
 # TODO: This is not hooked up yet
 
@@ -28,10 +28,13 @@ def sanitize_upload(upload_id: int, file: FileStorage, with_sleep: int = 15) -> 
     ----------
     upload_id : int
 
+    file : FileStorage
+        Upload file/archive to be processed.
+
     Returns
     -------
-    int
-        The number of characters in :prop:`.Thing.name` after mutation.
+    Still TBD
+
     """
     print(f'Task: Upload task for {upload_id}')
     upload: Optional[Upload] = uploads.retrieve(upload_id)
@@ -73,12 +76,14 @@ def check_sanitize_status(task_id: str) -> Tuple[str, Any]:
     Parameters
     ----------
     task_id : str
-        A mutation task ID.
+        upload task ID.
 
     Returns
     -------
     str
-        Status.
+        Task status.
+    result
+        Result from task metadata.
     """
     if not isinstance(task_id, str):
         raise ValueError('task_id must be string, not %s' % type(task_id))
@@ -89,19 +94,20 @@ def check_sanitize_status(task_id: str) -> Tuple[str, Any]:
         result = None
     return task.status, result
 
-def check_mutation_status(task_id: str) -> Tuple[str, Any]:
+def check_upload_status(task_id: str) -> Tuple[str, Any]:
     """
-    Check the status of a mutation task.
+    Check the status of a upload task.
 
     Parameters
     ----------
     task_id : str
-        A mutation task ID.
+        upload task ID.
 
     Returns
     -------
     str
         Status.
+
     """
     if not isinstance(task_id, str):
         raise ValueError('task_id must be string, not %s' % type(task_id))
@@ -111,31 +117,6 @@ def check_mutation_status(task_id: str) -> Tuple[str, Any]:
     else:
         result = None
     return task.status, result
-
-
-@shared_task
-def mutate_a_upload(upload_id: int, with_sleep: int = 5) -> Dict[str, Any]:
-    """
-    Perform some expen$ive mutations on a :class:`.Upload`.
-
-    Parameters
-    ----------
-    upload_id : int
-
-    Returns
-    -------
-    int
-        The number of characters in :prop:`.Upload.name` after mutation.
-    """
-
-    a_upload: Optional[Upload] = uploads.retrieve(upload_id)
-    if a_upload is None:
-        raise RuntimeError('No such upload! %s' % upload_id)
-#    mutate.add_some_one_to_the_thing(a_thing)
-    time.sleep(with_sleep)
-    uploads.update(a_upload)
-    return {'upload_id': upload_id, 'result': len(a_upload.name)}
-
 
 @after_task_publish.connect
 def update_sent_state(sender: Optional[Callable] = None,

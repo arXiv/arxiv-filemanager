@@ -11,6 +11,7 @@ import jwt
 
 from flask import Flask
 from filemanager.factory import create_web_app
+from filemanager.services import uploads
 
 
 # Generate authentication token
@@ -27,6 +28,8 @@ class TestUploadAPIRoutes(TestCase):
         """Initialize the Flask application, and get a client for testing."""
         self.app = create_web_app()
         self.client = self.app.test_client()
+        self.app.app_context().push()
+        uploads.db.create_all()
 
     # Provide general statistics on the upload service. Primarily intended to
     # indicate normal operation or exception conditions. This information will be
@@ -118,12 +121,12 @@ class TestUploadAPIRoutes(TestCase):
 
         response = self.client.get('/filemanager/api/create',
                                    headers={'Authorization': token})
-        #print("Create Response:" + str(response.data) + '\n')
+        #print("**Create Response:" + str(response.data) + '\n')
 
         create_data: Dict[str, Any] = json.loads(response.data)
 
-        print(f"Upload: Created upload with Id: {create_data['upload_id']}\n")
-        print(f"Upload: Upload files URL: {create_data['url']}\n")
+        #print(f"Upload: Created upload with Id: {create_data['upload_id']}\n")
+        #print(f"Upload: Upload files URL: {create_data['url']}\n")
         # Post a test submission to upload API
 
         #token1 = str(token.encode("ascii"))

@@ -1,0 +1,371 @@
+openapi: "3.0.0"
+info:
+  version: "0.1"
+  title: "arXiv File Management Service"
+  contact:
+    name: "arXiv API Team"
+    email: nextgen@arxiv.org
+  license:
+    name: MIT
+
+paths:
+  /status:
+    get:
+      operationId: getServiceStatus
+      summary: |
+        Get information about the current status of file management service.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/serviceStatus.json'
+
+  /:
+    post:
+      operationId: uploadPackage
+      summary: |
+        Upload a new file or package (e.g. an arXiv submission source package).
+        If the file is an archive (zip, tar-ball, etc), it will be unpacked.
+        A variety of processing and sanitization routines are performed, and
+        any errors or warnings (including deleted files) will be included in
+        the response body.
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '201':
+          description: |
+            The upload has been accepted and processed, and a new upload
+            workspace has been created.
+          headers:
+            Location:
+              description: URI of the upload workspace.
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/Result.json'
+        '400':
+          description: |
+            There was an unrecoverable problem when processing the upload. For
+            example, the upload could not be unpacked, or was not in an
+            acceptable format.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/error.json'
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: Forbidden. Client or user is not authorized to upload.
+        '415':
+          description: The uploaded file is not of an acceptable type.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/error.json'
+
+  /{upload_id}:
+    parameters:
+      -in: path
+       name: upload_id
+       description: Unique long-lived identifier for the upload.
+       required: true
+       schema:
+         type: string
+
+    get:
+      operationId: getUploadStatus
+      summary: |
+        Retrieve metadata about an accepted and processed upload package.
+      parameters:
+        -in: path
+         name: upload_id
+         description: Unique long-lived identifier for the upload.
+         required: true
+         schema:
+           type: string
+      responses:
+        '200':
+          description: A description of the upload package.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/Result.json'
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client is not authorized to access this upload.
+    post:
+      operationId: addFilesToPackage
+      summary: |
+        Upload a file or package to an existing upload workspace. If the file
+        is an archive (zip, tar-ball, etc), it will be unpacked. A variety of
+        processing and sanitization routines are performed. Existing files will
+        be overwritten by files of the  same name. and any errors or warnings
+        (including deleted files) will be included in the response body.
+
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '201':
+          description: |
+            The upload has been accepted and processed, and the upload
+            workspace updated.
+          headers:
+            Location:
+              description: URI of the upload workspace.
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/Result.json'
+        '400':
+          description: |
+            There was an unrecoverable problem when processing the upload. For
+            example, the upload could not be unpacked, or was not in an
+            acceptable format.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/error.json'
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: Forbidden. Client or user is not authorized to upload.
+        '415':
+          description: The uploaded file is not of an acceptable type.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/error.json'
+    delete:
+      operationId: deleteAll
+      description: Deletes the entire workspace.
+      responses:
+        '204':
+          description: The workspace was deleted successfully.
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to delete this
+            workspace.
+
+  /{upload_id}/delete_all:
+    summary: Delete all files in the workspace.
+    parameters:
+      -in: path
+       name: upload_id
+       description: Unique long-lived identifier for the upload.
+       required: true
+       schema:
+         type: string
+    post:
+      desription: |
+        Delete all files in the workspace. Does not delete the workspace
+        itself.
+      responses:
+        '204':
+          description: All files in the workspace were deleted successfully.
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to delete files in this
+            workspace.
+
+
+
+  /{upload_id}/{file_path}:
+    parameters:
+      -in: path
+       name: upload_id
+       description: Unique long-lived identifier for the upload.
+       required: true
+       schema:
+         type: string
+    delete:
+      operationId: deleteFile
+      summary: Deletes a single file.
+      responses:
+        '204':
+          description: The file was deleted successfully.
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to delete this file.
+
+  # These are a bit different from what is currently implemented in
+  # routes/ui.py. Maybe this provides a bit more RESTful semantics?
+  /{upload_id}/content:
+    parameters:
+      -in: path
+       name: upload_id
+       description: Unique long-lived identifier for the upload.
+       required: true
+       schema:
+         type: string
+    get:
+      operationId: getUploadContent
+      summary: Retrieve the sanitized/processed upload package.
+      parameters:
+        -in: path
+         name: upload_id
+         description: Unique long-lived identifier for the upload.
+         required: true
+         schema:
+           type: string
+      responses:
+        '200':
+          description: Returns the sanitized/processed upload package.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to download this
+            package.
+
+  /{upload_id}/lock:
+    parameters:
+      -in: path
+       name: upload_id
+       description: Unique long-lived identifier for the upload.
+       required: true
+       schema:
+         type: string
+    post:
+      operationId: lockUpload
+      summary: |
+        Lock workspace (read-only mode) while other services are processing
+        (major state transitions are occurring).
+      responses:
+        '201':
+          description: The upload workspace was locked successfully.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/Result.json'
+        '400':
+          description: |
+            There was an unrecoverable problem when handling the request.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/error.json'
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to lock this resource.
+
+  /{upload_id}/unlock:
+    parameters:
+      -in: path
+       name: upload_id
+       description: Unique long-lived identifier for the upload.
+       required: true
+       schema:
+         type: string
+    post:
+      operationId: unlockUpload
+      summary: Unlock workspace and enable write mode.
+      responses:
+        '201':
+          description: The upload workspace was unlocked successfully.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/Result.json'
+        '400':
+          description: |
+            There was an unrecoverable problem when handling the request.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/error.json'
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to unlock this
+            resource.
+
+  /{upload_id}/release:
+    parameters:
+      -in: path
+       name: upload_id
+       description: Unique long-lived identifier for the upload.
+       required: true
+       schema:
+         type: string
+    post:
+      operationId: releaseUpload
+      summary: |
+        Client indicates they are finished with workspace. File management
+        service is free to remove uploaded files, or schedule files for
+        removal at later time.
+      responses:
+        '201':
+          description: The upload workspace was released successfully.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/Result.json'
+        '400':
+          description: |
+            There was an unrecoverable problem when handling the request.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/error.json'
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to release this
+            resource.
+
+  /{upload_id}/logs:
+    parameters:
+      -in: path
+       name: upload_id
+       description: Unique long-lived identifier for the upload.
+       required: true
+       schema:
+         type: string
+    get:
+      operationId: getLogs
+      summary: |
+        Retrieve log files related to workspace. Indicates history or actions
+        on workspace.
+      responses:
+        '200':
+          description: Activity log for the upload workspace.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/Log.json'
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to access logs for this
+            workspace.
