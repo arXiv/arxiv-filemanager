@@ -290,7 +290,7 @@ class TestUpload(TestCase):
                         # print("Search for warning: '" + warnings_match + "'")
                         # Complain if we didn't find speocfied warning
                         self.assertTrue(upload.search_warnings(warnings_match),
-                                        'This test is expected to generate specific warning: "' + warnings_match + '"')
+                                        f'This test is expected to generate specific warning: "{warnings_match}"')
                         # if upload.search_warnings(warnings_match):
                         # print("Found expected warning")
                         # else:
