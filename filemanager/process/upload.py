@@ -81,7 +81,8 @@ submitter."""
 
         #print('Warning: ' + msg) # temporary, until logging implemented
         # Log warning
-        msg = 'Warning: ' + msg
+        ##msg = 'Warning: ' + msg
+        #  TODO: This breaks tests. Don't reformat message for now. Wait until next sprint.
         self.__log.warning(msg)
 
         # Add to internal list to make it easier to manipulate
@@ -204,12 +205,11 @@ submitter."""
         # Move file to removed directory
         filepath = file.filepath
         removed_path = os.path.join(self.get_removed_directory(), file.name)
-        self.__log.debug("Moving file " + file.name + " to removed dir: " + removed_path)
+        #self.__log.debug("Moving file " + file.name + " to removed dir: " + removed_path)
 
         if shutil.move(filepath, removed_path):
-            lmsg = "*** File " + file.name + f" has been removed. Reason: {msg} ***"
-            #self.add_warning("*** File " + file.name + " has been removed ***")
-            #self.add_warning("*** Reason: " + msg)
+            #lmsg = "*** File " + file.name + f" has been removed. Reason: {msg} ***"
+            lmsg = f"Removed hidden file {file.name}."
             self.add_warning(lmsg)
         else:
             self.add_warning("*** FAILED to remove file " + filepath + " ***")
@@ -310,6 +310,10 @@ submitter."""
 
         self.__log = logger
 
+    def log(self, message: str):
+        """Write message to upload log"""
+        self.__log.info(message)
+
     def deposit_upload(self, file: FileStorage) -> str:
         """
         Deposit uploaded archive/file into workspace source directory.
@@ -357,7 +361,9 @@ submitter."""
             for directory in directories:
                 # Need to decide whether we need to do anything to directories
                 # in the meantime get rid of lint warning
-                pass
+                path = os.path.join(root_directory, directory)
+                obj = File(path, source_directory)
+                #self.log(f'{directory} [{obj.type}] in {obj.filepath}')
 
             for file in files:
                 path = os.path.join(root_directory, file)
@@ -406,10 +412,10 @@ submitter."""
                     statinfo = os.stat(file_path)
                     kilos = statinfo.st_size
                     warn = "Ancillary file " + file_name + " (" + str(kilos) + ')'
-                    self.add_warning(warn)
+                    ##self.add_warning(warn)
                     obj.type = 'ancillary'
                     # We are done at this point - we do not inspect ancillary files
-                    continue
+                    ##continue
 
                 # Basic file checks
 
@@ -640,9 +646,22 @@ submitter."""
                 # check if file contains raw postscript
                 elif obj.is_tex_type:
                     # TODO: Implement unmacify
+                    print(f'File {obj.name} is TeX type. Needs further inspection. ***')
+                    self.unmacify(file_name)
+                    self.extract_uu(file_name, file_type)
                     pass
 
                 # End of file type checks
+
+    def unmacify(self, file_name: str):
+        self.log(f'Unmacify file {file_name}')
+        self.log(f"I'm sorry Dave I'm afraid I can't do that. unmacify not implemented YET.")
+
+    def extract_uu(self, file_name:str, file_type:str):
+        self.log(f'Looking for uu attachment in {file_name}')
+        self.log(f"I'm sorry Dave I'm afraid I can't do that. uu extract not implemented YET.")
+
+
 
     def create_file_list(self) -> None:
         """Create list of File objects with details of each file in
@@ -668,12 +687,20 @@ submitter."""
             for directory in directories:
                 # Need to decide whether we need to do anything to directories
                 # in the meantime get rid of lint warning
-                pass
+                path = os.path.join(root_directory, directory)
+                obj = File(path, source_directory)
+                self.log(f'{directory} [{obj.type}] in {obj.filepath}')
 
             for file in files:
                 path = os.path.join(root_directory, file)
                 obj = File(path, source_directory)
                 list.append(obj) # silence lint error
+
+                # Create log entry containing file, type, dir
+                log_msg = f'{obj.name} \t[{obj.type}] in {obj.dir}'
+                self.log(log_msg)
+
+
                 # self.add_file(obj)
 
 
@@ -794,15 +821,29 @@ submitter."""
         #      + " FilenameBase: " + os.path.basename(file.filename)
         #      + " Mime: " + file.mimetype + '\n')
 
+        self.log('********** File Upload ************')
+
         # Move uploaded archive/file to source directory
         self.deposit_upload(file)
 
+        self.log('******** File Upload Processing *****')
+
         from filemanager.utilities.unpack import unpack_archive
-        # Unpack upload archive (if necessary)
-        #unpack_archive(self, path)
+        # Unpack upload archive (if necessary). Completes minor cleanup.
         unpack_archive(self)
+
+        # Build list of files
+        self.create_file_list()
 
         # Check files
         self.check_files()
 
+        # Final cleanup
         self.finalize_upload()
+
+        self.log('\n******** File Upload Finished *****\n\n')
+
+        self.log(f'\n******** Errors: {self.has_errors()} *****\n\n')
+
+
+
