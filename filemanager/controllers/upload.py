@@ -39,6 +39,7 @@ file_handler.setFormatter(formatter)
 logger.handlers = []
 logger.addHandler(file_handler)
 logger.setLevel(logging.DEBUG)
+logger.propagate = False
 
 # End logging configuration
 
