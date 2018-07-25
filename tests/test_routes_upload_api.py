@@ -167,7 +167,7 @@ class TestUploadAPIRoutes(TestCase):
         response = self.client.get(f"/filemanager/api/upload_status/{create_data['upload_id']}",
                                    headers={'Authorization': token})
         print(f"\nRequest: /filemanager/api/upload_status/{create_data['upload_id']}")
-        print("Task Status Response (simple):\n" + str(response.data) + '\n')
+        #print("Task Status Response (simple):\n" + str(response.data) + '\n')
 
         try:
             jsonschema.validate(json.loads(response.data), status_schema)
