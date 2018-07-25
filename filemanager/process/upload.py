@@ -355,6 +355,8 @@ submitter."""
         None
         """
 
+        self.log('******** Check Files *****')
+
         source_directory = self.get_source_directory()
 
         for root_directory, directories, files in os.walk(source_directory):
@@ -654,6 +656,7 @@ submitter."""
                 # End of file type checks
 
     def unmacify(self, file_name: str):
+        """Fix up carriage returns and newlines."""
         self.log(f'Unmacify file {file_name}')
         self.log(f"I'm sorry Dave I'm afraid I can't do that. unmacify not implemented YET.")
 
@@ -661,6 +664,9 @@ submitter."""
         self.log(f'Looking for uu attachment in {file_name}')
         self.log(f"I'm sorry Dave I'm afraid I can't do that. uu extract not implemented YET.")
 
+    def check_size(self):
+        """Check the uploaded files against individual and aggregate size limitations."""
+        self.log('Coming soon! Check total file size is not implemented yet!')
 
 
     def create_file_list(self) -> None:
@@ -837,6 +843,9 @@ submitter."""
 
         # Check files
         self.check_files()
+
+        # Check total file size
+        self.check_size()
 
         # Final cleanup
         self.finalize_upload()
