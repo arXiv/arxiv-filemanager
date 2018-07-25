@@ -250,8 +250,8 @@ submitter."""
             # Create path for submissions
             # TODO determine if we need to set owner/modes
             os.makedirs(upload_directory, 0o755)
-            
-            self.__log.info(f"Created upload workspace: {upload_id}")
+            self.create_upload_log()
+            self.log(f"Created upload workspace: {self.upload_id}")
 
         return upload_directory
 
