@@ -83,6 +83,9 @@ def unpack_archive(upload: Upload) -> None:
 
                     target_directory = os.path.join(source_directory, root_directory)
 
+                    msg = f"***** unpack {obj.type} {file} to dir: {target_directory}"
+                    upload.log(msg)
+
                     try:
                         tar = tarfile.open(path)
                     except tarfile.TarError as error:
@@ -148,25 +151,33 @@ def unpack_archive(upload: Upload) -> None:
                     # Maybe can't do this in production if submitter reloads tar.gz
                     if os.path.exists(rfile) and (os.path.getsize(rfile) == os.path.getsize(path)):
                         print("File (same size) saved already! Remove tar file")
+                        msg = f"Removed packed file {file}"
+                        upload.log(msg)
                         os.remove(path)
                     else:
                         rem_path = os.path.join(removed_directory, os.path.basename(path))
-                        # TODO: debugging log ("Moving tar file to removed dir: " + rem_path)
+                        msg = f"Removed packed file {file}"
+                        upload.log(msg)
+                        # Now move tar file out of way to removed directory
                         shutil.move(path, rem_path)
                     # Since we are unpacking something we want to make one more pass over files.
                     packed_file += 1
                 elif obj.type == 'tar' and not tarfile.is_tarfile(path):
                     print("Package 'tarfile' unable to read this tar file.")
-                    # TODO Throw and error
+                    # TODO Throw an error
 
                 # Hanlde .zip files
                 elif obj.type == 'zip' and zipfile.is_zipfile(path):
                     print("*******Process zip archive: " + path)
+                    msg = f"***** unpack {obj.type} {file} to dir: {source_directory}"
+                    upload.log(msg)
                     try:
                         with zipfile.ZipFile(path, "r") as zip_ref:
                             zip_ref.extractall(source_directory)
+                            # Now move zip file out of way to removed directory
                             rem_path = os.path.join(removed_directory, os.path.basename(path))
-                            # TODO: debug logging ("Moving zip file to removed dir: " + rem_path)
+                            msg = f"Removed packed file {file}"
+                            upload.log(msg)
                             shutil.move(path, rem_path)
                             # Since we are unpacking something we want to make
                             # one more pass over files.
@@ -181,6 +192,10 @@ def unpack_archive(upload: Upload) -> None:
                 # TODO: Add support for compressed files
                 elif obj.type == 'compressed':
                     print("We can't uncompress .Z files yet.")
+                    msg = f"***** unpack {obj.type} {file} to dir: {source_directory}"
+                    upload.log(msg)
+                    msg = "Unable to uncompress .Z file. Not implemented yet"
+                    upload.log(msg)
 
                 # TODO: Handle 'processed' and __MACOSX directories (removal of/deletion)
 
