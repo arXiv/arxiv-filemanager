@@ -40,7 +40,6 @@ submitter."""
         self.create_upload_workspace()
         self.create_upload_log()
 
-        self.__log.info(f"Initialized upload {upload_id}")
 
     # Files
 
@@ -251,7 +250,8 @@ submitter."""
             # Create path for submissions
             # TODO determine if we need to set owner/modes
             os.makedirs(upload_directory, 0o755)
-            # print("Created upload workarea\n");
+            
+            self.__log.info(f"Created upload workspace: {upload_id}")
 
         return upload_directory
 
@@ -307,6 +307,7 @@ submitter."""
         logger.handlers = []
         logger.addHandler(file_handler)
         logger.setLevel(logging.DEBUG)
+        logger.propagate = False
 
         self.__log = logger
 
@@ -335,10 +336,11 @@ submitter."""
 
         # Sanitize file name before saving it
         filename = secure_filename(basename)
-        if basename != filename:
-            self.add_warning("Cleaned filename: " + filename + '(' + basename + ')')
 
-        # TODO Do we need to do anything else to filename?
+        if basename != filename:
+            self.log(f'Secured filename: {filename} (basename + )')
+
+        # Store uploaded file/archive in source directory
         src_directory = self.get_source_directory()
         upload_path = os.path.join(src_directory, filename)
         file.save(upload_path)

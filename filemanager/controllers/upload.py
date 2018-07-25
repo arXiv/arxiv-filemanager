@@ -126,7 +126,7 @@ def create_upload() -> Response:
             }
             headers['Location'] = upload_url
 
-            logger.info(f"{upload.upload_id}: Successfully created new upload in database.")
+            #logger.info(f"{upload.upload_id}: Successfully created new upload in database.")
         except RuntimeError as e:
             logger.error("Failed to create new upload in database.")
             print('Error: ' + e.__str__())
@@ -185,7 +185,7 @@ def upload(upload_id: int, file: FileStorage) -> Response:
             # NOTE: This will need to be migrated to task.py using Celery at
             #       some point in future. Depends in time it takes to process
             #       uploads.retrieve
-            logger.info(f"{upload.upload_id}: Scheduling upload request: file='{file.filename}'")
+            logger.info(f"{upload.upload_id}: Upload request: file='{file.filename}'")
 
             # Keep track of how long processing upload takes
             start_datetime = datetime.now()
@@ -213,6 +213,8 @@ def upload(upload_id: int, file: FileStorage) -> Response:
             # Store in DB
             uploads.update(upload)
 
+            # Do we want affirmative log messages after processing each request, maybe just report errors
+            #logger.info(f"{upload.upload_id}: Processed upload request: file='{file.filename}'")
 
             # Upload action itself has very simple response
             headers = {'Location': url_for('upload_api.upload_status',
@@ -221,7 +223,7 @@ def upload(upload_id: int, file: FileStorage) -> Response:
             return ACCEPTED, status.HTTP_202_ACCEPTED, headers
 
     except IOError:
-        logger.error(f"{upload.upload_id}: File upload request failed.")
+        logger.error(f"{upload.upload_id}: File upload request failed for file='{file.filename}'")
         #response_data = ERROR_RETRIEVING_UPLOAD
         #status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         raise InternalServerError(CANT_UPLOAD_FILE)
@@ -298,6 +300,7 @@ def upload_summary(upload_id: int) -> Response:
             status_code = status.HTTP_404_NOT_FOUND
             response_data = UPLOAD_NOT_FOUND
         else:
+            logger.info(f"{upload.upload_id}: Upload summary request.")
             status_code = status.HTTP_200_OK
             response_data = {
                 'upload_id': upload.upload_id,
@@ -310,7 +313,7 @@ def upload_summary(upload_id: int) -> Response:
                 'status': "SUCCEEDED",
                 'upload_state': upload.state
             }
-            logger.info(f"{upload.upload_id}: Processed upload summary request.")
+            logger.info(f"{upload.upload_id}: Upload summary request.")
 
     except IOError:
         #response_data = ERROR_RETRIEVING_UPLOAD

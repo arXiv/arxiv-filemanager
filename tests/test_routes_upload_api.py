@@ -113,11 +113,11 @@ class TestUploadAPIRoutes(TestCase):
 
         cwd = os.getcwd()
         testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
-        filename = os.path.join(testfiles_dir, '1801.03879-1.tar.gz')
+        filepath = os.path.join(testfiles_dir, '1801.03879-1.tar.gz')
 
         # Prepare gzipped tar submission for upload
-        name = os.path.basename(filename)
-        print(f"\nAPI: Create upload and post upload file {name} to server\n")
+        filename = os.path.basename(filepath)
+        print(f"\nAPI: Create upload and post upload file {filename} to server\n")
 
         response = self.client.get('/filemanager/api/create',
                                    headers={'Authorization': token})
@@ -140,7 +140,8 @@ class TestUploadAPIRoutes(TestCase):
         response = self.client.post(create_data['url'],
                                     data={
                                         # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
-                                        'file': (open(filename, 'rb'), 'test.tar.gz'),
+                                  #      'file': (open(filepath, 'rb'), 'test.tar.gz'),
+                                        'file': (open(filepath, 'rb'), filename),
                                     },
                                     headers={'Authorization': token},
                                     #        content_type='application/gzip')
