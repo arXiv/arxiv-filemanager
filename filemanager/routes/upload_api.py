@@ -137,6 +137,7 @@ def logs(upload_id: int) -> tuple:
 @blueprint.errorhandler(Forbidden)
 @blueprint.errorhandler(Unauthorized)
 @blueprint.errorhandler(BadRequest)
+@blueprint.errorhandler(NotImplementedError)
 def handle_exception(error: HTTPException) -> Response:
     """
     JSON-ify the error response.

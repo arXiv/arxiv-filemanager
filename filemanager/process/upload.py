@@ -5,6 +5,7 @@ import os.path
 import re
 import shutil
 import tarfile
+import logging
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
@@ -35,7 +36,9 @@ submitter."""
         self.__warnings = []
         self.__errors = []
         self.__files = []
+        self.__log = ''
         self.create_upload_workspace()
+        self.create_upload_log()
 
     # Files
 
@@ -57,7 +60,6 @@ submitter."""
         """Add a file to list."""
         self.__files.append(file)
 
-
     # Warnings
 
     def add_warning(self, msg: str) -> None:
@@ -74,14 +76,18 @@ submitter."""
 
         """
 
-        print('Warning: ' + msg) # temporary, until logging implemented
-        self.__warnings.append(msg)
+        # print('Warning: ' + msg) # temporary, until logging implemented
+        # Log warning
+        ##msg = 'Warning: ' + msg
+        #  TODO: This breaks tests. Don't reformat message for now. Wait until next sprint.
+        self.__log.warning(msg)
 
+        # Add to internal list to make it easier to manipulate
+        self.__warnings.append(msg)
 
     def has_warnings(self):
         """Indicates whether upload has warnings."""
         return len(self.__warnings)
-
 
     def search_warnings(self, search: str) -> bool:
         """
@@ -103,8 +109,8 @@ submitter."""
 
         for warning in self.__warnings:
             # Turn this into debugging
-            #print("Look for '" + search + '\' in \n\t \'' + warning +"'")
-            #print("ret: " + str(re.search(search, warning)))
+            # print("Look for '" + search + '\' in \n\t \'' + warning +"'")
+            # print("ret: " + str(re.search(search, warning)))
 
             if re.match(search, warning):
                 return True
@@ -126,7 +132,6 @@ submitter."""
         """Indicates whether upload has errors."""
         return len(self.__errors)
 
-
     def search_errors(self, search: str) -> bool:
         """
         Search list of errors for specific error.
@@ -147,8 +152,8 @@ submitter."""
 
         for error in self.__errors:
             # Turn this into debugging
-            #print("Look for '" + search + '\' in \n\t \'' + warning +"'")
-            #print("ret: " + str(re.search(search, warning)))
+            # print("Look for '" + search + '\' in \n\t \'' + warning +"'")
+            # print("ret: " + str(re.search(search, warning)))
 
             if re.match(search, error):
                 return True
@@ -194,15 +199,17 @@ submitter."""
         # Move file to removed directory
         filepath = file.filepath
         removed_path = os.path.join(self.get_removed_directory(), file.name)
-        print("Move file " + file.name + " to removed dir: " + removed_path)
+        # self.__log.debug("Moving file " + file.name + " to removed dir: " + removed_path)
 
         if shutil.move(filepath, removed_path):
-            self.add_warning("*** File " + file.name + " has been removed ***")
-            self.add_warning("*** Reason: " + msg)
+            # lmsg = "*** File " + file.name + f" has been removed. Reason: {msg} ***"
+            lmsg = f"Removed hidden file {file.name}."
+            self.add_warning(lmsg)
         else:
             self.add_warning("*** FAILED to remove file " + filepath + " ***")
-        file.remove(msg)
 
+        # Add reason for removal to File object
+        file.remove(msg)
 
     def get_upload_directory(self) -> str:
         """
@@ -217,7 +224,6 @@ submitter."""
         root_path = UPLOAD_BASE_DIRECTORY
         upload_directory = os.path.join(root_path, str(self.upload_id))
         return upload_directory
-
 
     def create_upload_directory(self):
         """Create the base directory for upload workarea"""
@@ -237,10 +243,10 @@ submitter."""
             # Create path for submissions
             # TODO determine if we need to set owner/modes
             os.makedirs(upload_directory, 0o755)
-            # print("Created upload workarea\n");
+            self.create_upload_log()
+            self.log(f"Created upload workspace: {self.upload_id}")
 
         return upload_directory
-
 
     def get_source_directory(self) -> str:
         """Return directory where source files get deposited."""
@@ -280,6 +286,26 @@ submitter."""
 
         return base_dir
 
+    def create_upload_log(self):
+        """Create a source log to record activity for this upload."""
+
+        # Grab standard logger and customized it
+        logger = logging.getLogger(__name__)
+        log_path = os.path.join(self.get_upload_directory(), 'source.log')
+        file_handler = logging.FileHandler(log_path)
+
+        formatter = logging.Formatter('%(asctime)s %(message)s', '%d/%b/%Y:%H:%M:%S %z')
+        file_handler.setFormatter(formatter)
+        logger.handlers = []
+        logger.addHandler(file_handler)
+        logger.setLevel(logging.DEBUG)
+        logger.propagate = False
+
+        self.__log = logger
+
+    def log(self, message: str):
+        """Write message to upload log"""
+        self.__log.info(message)
 
     def deposit_upload(self, file: FileStorage) -> str:
         """
@@ -302,15 +328,15 @@ submitter."""
 
         # Sanitize file name before saving it
         filename = secure_filename(basename)
-        if basename != filename:
-            self.add_warning("Cleaned filename: " + filename + '(' + basename + ')')
 
-        # TODO Do we need to do anything else to filename?
+        if basename != filename:
+            self.log(f'Secured filename: {filename} (basename + )')
+
+        # Store uploaded file/archive in source directory
         src_directory = self.get_source_directory()
         upload_path = os.path.join(src_directory, filename)
         file.save(upload_path)
         return upload_path
-
 
     def check_files(self) -> None:
         """
@@ -322,13 +348,17 @@ submitter."""
         None
         """
 
+        self.log('******** Check Files *****')
+
         source_directory = self.get_source_directory()
 
         for root_directory, directories, files in os.walk(source_directory):
             for directory in directories:
                 # Need to decide whether we need to do anything to directories
                 # in the meantime get rid of lint warning
-                pass
+                path = os.path.join(root_directory, directory)
+                obj = File(path, source_directory)
+                # self.log(f'{directory} [{obj.type}] in {obj.filepath}')
 
             for file in files:
                 path = os.path.join(root_directory, file)
@@ -338,7 +368,7 @@ submitter."""
                 self.add_file(obj)
 
                 # Convert this to debugging
-                #print("  File is : " + file + " Size: " + str(
+                # print("  File is : " + file + " Size: " + str(
                 #    obj.size) + " File is type: " + obj.type + ":" + obj.type_string + '\n')
 
                 file_type = obj.type
@@ -358,7 +388,6 @@ submitter."""
                 # Remove 10240 byte all-null files (bad user tar attempts?)
                 # Check of file is 10240 bytes and all are zero
 
-
                 # Rename Windows file names
                 if re.search(r'^[A-Za-z]:\\', file_name):
                     # Rename using basename
@@ -377,10 +406,10 @@ submitter."""
                     statinfo = os.stat(file_path)
                     kilos = statinfo.st_size
                     warn = "Ancillary file " + file_name + " (" + str(kilos) + ')'
-                    self.add_warning(warn)
+                    ##self.add_warning(warn)
                     obj.type = 'ancillary'
                     # We are done at this point - we do not inspect ancillary files
-                    continue
+                    ##continue
 
                 # Basic file checks
 
@@ -393,7 +422,7 @@ submitter."""
                     self.add_warning("We only accept file names containing the characters: "
                                      + "a-z A-Z 0-9 _ + - . , =")
                     self.add_warning('Attempting to rename ' + file_name
-                                     + ' to '+ new_file_name +'.')
+                                     + ' to ' + new_file_name + '.')
                     # Do the renaming
                     new_file_path = os.path.join(root_directory, new_file_name)
                     try:
@@ -405,13 +434,12 @@ submitter."""
                     file_name = new_file_name
                     file_path = new_file_path
 
-
                 # Filename starts with hyphen
                 if file_name.startswith('-'):
                     # Replace dash (-) with underscore
                     new_file_name = re.sub('^-', '_', file_name)
                     self.add_warning('We do not accept files starting with a hyphen. '
-                                     + 'Attempting to rename \"'+ file_name + '\" to \"'
+                                     + 'Attempting to rename \"' + file_name + '\" to \"'
                                      + new_file_name + '\".')
                     # Do the renaming
                     new_file_path = os.path.join(root_directory, new_file_name)
@@ -427,11 +455,10 @@ submitter."""
                 if file_name.startswith('.'):
                     # Remove files starting with dot
                     msg = 'Removed hidden file'
-                    self.add_warning(msg)
+                    # self.add_warning(msg)
                     self.remove_file(obj, msg)
 
                     continue
-
 
                 # Following checks can only occur once in current file
                 # all are tied together with if / elif
@@ -451,8 +478,8 @@ submitter."""
                     msg = 'File not allowed.'
                     self.remove_file(obj, msg)
                 elif re.search(r'^xxx\.(rsrc$|finfo$|cshrc$|nfs)', file_name) \
-                    or re.search(r'\.[346]00gf$', file_name) \
-                    or (re.search(r'\.desc$', file_name) and file_size < 10):
+                        or re.search(r'\.[346]00gf$', file_name) \
+                        or (re.search(r'\.desc$', file_name) and file_size < 10):
                     # Remove these files
                     msg = 'File not allowed.'
                     self.remove_file(obj, msg)
@@ -535,7 +562,6 @@ submitter."""
                     print("File was removed -- skipping to next file\n")
                     continue
 
-
                 # Placeholder for future checks/notes
 
                 # TeX: Files that indicate user error
@@ -545,9 +571,6 @@ submitter."""
                 # TeX: Detect various diagrams files where user changes name
                 # of package. Implement at some point - just thinking of this
                 # given recent failures.
-
-
-
 
                 # Check for individual types if/elif/else
 
@@ -611,9 +634,26 @@ submitter."""
                 # check if file contains raw postscript
                 elif obj.is_tex_type:
                     # TODO: Implement unmacify
+                    print(f'File {obj.name} is TeX type. Needs further inspection. ***')
+                    self.unmacify(file_name)
+                    self.extract_uu(file_name, file_type)
                     pass
 
                 # End of file type checks
+
+    def unmacify(self, file_name: str):
+        """Fix up carriage returns and newlines."""
+        self.log(f'Unmacify file {file_name}')
+        self.log(f"I'm sorry Dave I'm afraid I can't do that. unmacify not implemented YET.")
+
+    def extract_uu(self, file_name: str, file_type: str):
+        """Extract uuencode content from file."""
+        self.log(f'Looking for uu attachment in {file_name} of type {file_type}')
+        self.log(f"I'm sorry Dave I'm afraid I can't do that. uu extract not implemented YET.")
+
+    def check_size(self):
+        """Check the uploaded files against individual and aggregate size limitations."""
+        self.log('Coming soon! Check total file size is not implemented yet!')
 
     def create_file_list(self) -> None:
         """Create list of File objects with details of each file in
@@ -639,15 +679,20 @@ submitter."""
             for directory in directories:
                 # Need to decide whether we need to do anything to directories
                 # in the meantime get rid of lint warning
-                pass
+                path = os.path.join(root_directory, directory)
+                obj = File(path, source_directory)
+                self.log(f'{directory} [{obj.type}] in {obj.filepath}')
 
             for file in files:
                 path = os.path.join(root_directory, file)
                 obj = File(path, source_directory)
-                list.append(obj) # silence lint error
+                list.append(obj)  # silence lint error
+
+                # Create log entry containing file, type, dir
+                log_msg = f'{obj.name} \t[{obj.type}] in {obj.dir}'
+                self.log(log_msg)
+
                 # self.add_file(obj)
-
-
 
     def set_file_permissions(self) -> None:
         """Set the file permissions for all files and directories in upload."""
@@ -663,7 +708,6 @@ submitter."""
             for dir in directories:
                 dir_path = os.path.join(root_directory, dir)
                 os.chmod(dir_path, 0o775)
-
 
     def fix_top_level_directory(self):
         """
@@ -711,8 +755,6 @@ submitter."""
                 # Rebuild file list
                 self.create_file_list()
 
-
-
     def finalize_upload(self):
         """For file type checks that cannot be done until all files
         are uploaded, including total submission size.
@@ -728,7 +770,6 @@ submitter."""
 
         # Eliminate top directory when only single directory
         self.fix_top_level_directory()
-
 
     def process_upload(self, file: FileStorage) -> None:
         """
@@ -761,19 +802,33 @@ submitter."""
 
         # Upload_id and filename exists
         # Move this to log
-        #print("\n---> Upload id: " + str(self.upload_id) + " FilenamePath: " + file.filename
+        # print("\n---> Upload id: " + str(self.upload_id) + " FilenamePath: " + file.filename
         #      + " FilenameBase: " + os.path.basename(file.filename)
         #      + " Mime: " + file.mimetype + '\n')
+
+        self.log('********** File Upload ************')
 
         # Move uploaded archive/file to source directory
         self.deposit_upload(file)
 
+        self.log('******** File Upload Processing *****')
+
         from filemanager.utilities.unpack import unpack_archive
-        # Unpack upload archive (if necessary)
-        #unpack_archive(self, path)
+        # Unpack upload archive (if necessary). Completes minor cleanup.
         unpack_archive(self)
+
+        # Build list of files
+        self.create_file_list()
 
         # Check files
         self.check_files()
 
+        # Check total file size
+        self.check_size()
+
+        # Final cleanup
         self.finalize_upload()
+
+        self.log('\n******** File Upload Finished *****\n\n')
+
+        self.log(f'\n******** Errors: {self.has_errors()} *****\n\n')
