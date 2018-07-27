@@ -60,9 +60,10 @@ def unpack_archive(upload: Upload) -> None:
         # TODO debug logging ("\n*****ROUND " + str(round) + '  Packed: '
         # + str(packed_file) + '*****\n')
 
-        for root_directory, directories, files in os.walk(source_directory):
+        for root_directory, _, files in os.walk(source_directory):
             # TODO debug logging (f"---> Dir {root_directory} contains the
             # directories {b} and the files {c}")
+            # ignoring directories using '_' above
             for file in files:
 
                 # os.walk provides a list of files with the root directory so
