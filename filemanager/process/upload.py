@@ -7,10 +7,13 @@ import shutil
 import tarfile
 import logging
 
+from werkzeug.exceptions import BadRequest
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from filemanager.arxiv.file import File
+
+UPLOAD_FILE_EMPTY = {'file payload is zero length'}
 
 # TODO: Need to move to config file
 UPLOAD_BASE_DIRECTORY = '/tmp/filemanagment/submissions'
@@ -336,6 +339,10 @@ submitter."""
         src_directory = self.get_source_directory()
         upload_path = os.path.join(src_directory, filename)
         file.save(upload_path)
+
+        if os.stat(upload_path).st_size == 0:
+            raise BadRequest(UPLOAD_FILE_EMPTY)
+
         return upload_path
 
     def check_files(self) -> None:
@@ -693,6 +700,52 @@ submitter."""
                 self.log(log_msg)
 
                 # self.add_file(obj)
+
+    def create_file_upload_summary(self) -> list:
+        """Returns a list files with details [dict]. Maybe be generated when upload
+        is processed or when run against existing upload directory.
+
+        Return list of files created during upload processing or from list of
+        files in directory.
+
+        Generates a list of files in the upload source directory.
+
+        Note: The detailed of regenerating the file list is still being worked out since
+              the list generated during processing upload (includes removed files) may be
+              different than the list generated against an existing source directory.
+
+        """
+
+        file_list = []
+
+        if self.has_files():
+
+            # TODO: Do we want count in response? Don't really need it but would
+            # TODO: need to process list of files.
+            # count = len(uploadObj.get_files())
+
+            for fileObj in self.get_files():
+
+                # print("\tFile:" + fileObj.name + "\tFilePath: " + fileObj.public_filepath
+                #      + "\tRemoved: " + str(fileObj.removed) + " Size: " + str(fileObj.size))
+
+                # Collect details we would like to return to client
+                file_details = {}
+                file_details = {
+                    'name': fileObj.name,
+                    'public_filepath': fileObj.public_filepath,
+                    'size': fileObj.size,
+                    'type': fileObj.type_string,
+                }
+                if fileObj.removed:
+                    file_details['removed'] = fileObj.removed
+
+                file_list.append(file_details)
+
+            return file_list
+        return file_list
+
+
 
     def set_file_permissions(self) -> None:
         """Set the file permissions for all files and directories in upload."""
