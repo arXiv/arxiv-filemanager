@@ -224,7 +224,7 @@ class TestUploadAPIRoutes(TestCase):
                                     #        content_type='application/gzip')
                                     content_type='multipart/form-data')
 
-        self.assertEqual(response.status_code, 400, "Accepted uploaded Submission Contents")
+        self.assertEqual(response.status_code, 404, "Accepted uploaded Submission Contents")
 
         expected_data = {'reason': ['upload workspace not found']}
 
@@ -234,7 +234,7 @@ class TestUploadAPIRoutes(TestCase):
         response = self.client.get(f"/filemanager/api/{bad_upload_id}",
                                    headers={'Authorization': token})
 
-        self.assertEqual(response.status_code, 400, "Accepted uploaded Submission Contents")
+        self.assertEqual(response.status_code, 404, "Accepted uploaded Submission Contents")
 
         expected_data = {'reason': ['upload workspace not found']}
 
