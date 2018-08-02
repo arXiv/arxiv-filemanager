@@ -66,6 +66,7 @@ ERROR_RETRIEVING_UPLOAD = {'upload not found'}
 # UPLOAD_DOESNT_EXIST = {'upload does not exist'}
 CANT_CREATE_UPLOAD = {'could not create the upload'}  #
 CANT_UPLOAD_FILE = {'could not upload file'}
+CANT_DELETE_FILE = {'could not delete file'}
 
 ACCEPTED = {'reason': 'upload in progress'}
 
@@ -102,16 +103,38 @@ def delete_workspace(upload_id: int) -> Response:
 
     # Do we care if workspace was modified recently...NO. Log it
 
-    # Any other conditions that raise red flags? Any that stop the deletion?
+    try:
+        # Make sure we have an upload_obj to work with
+        upload_obj: Optional[Upload] = uploads.retrieve(upload_id)
 
-    # Actually remove entire workspace directory structure. Log something to
-    # global log since source log is being removed!
+        if upload_obj is None:
+            # Invalid workspace identifier
+            logger.info(f"Upload id '{upload_id}' not found in database.")
+            raise NotFound(UPLOAD_NOT_FOUND)
+        else:
+            # Any other conditions that raise red flags? Any that stop the
+            # deletion?
 
-    # Update database (but keep around) for historical reference. Does not
-    # consume very much space. What about source log?
+            # Actually remove entire workspace directory structure. Log
+            # something to global log since source log is being removed!
+
+            # Initiate workspace deletion
+
+            # Update database (but keep around) for historical reference. Does not
+            # consume very much space. What about source log?
+
+
+            pass
+
+
+    except IOError:
+        logger.error(f"{upload_obj.upload_id}: Delete workspace request failed ")
+        raise InternalServerError(CANT_DELETE_FILE)
+
 
     # API doesn't provide for returning errors resulting from delete.
     # 401-unautorized and 403-forbidden are handled at routes level.
+    # Add 400 response to openapi.yaml
     if upload_id:
         raise NotImplemented(REQUEST_NOT_IMPLEMENTED)
 
@@ -209,11 +232,9 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
         upload_obj: Optional[Upload] = uploads.retrieve(upload_id)
 
         if upload_obj is None:
-            # status_code = status.HTTP_404_NOT_FOUND
-            # response_data = UPLOAD_NOT_FOUND
+            # Invalid workspace identifier
             logger.info(f"Upload id '{upload_id}' not found in database.")
-            #raise NotFound(UPLOAD_NOT_FOUND)
-            raise BadRequest(UPLOAD_NOT_FOUND)
+            raise NotFound(UPLOAD_NOT_FOUND)
         else:
             # Now handle upload package - process file or gzipped tar archive
 
@@ -280,9 +301,9 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
         raise InternalServerError(CANT_UPLOAD_FILE)
 
     # TODO: Make pylint happy! This is all getting redone for API changes.
-    response_data = ACCEPTED
-    status_code = status.HTTP_203_NON_AUTHORITATIVE_INFORMATION
-    return response_data, status_code, {}
+    #response_data = ACCEPTED
+    #status_code = status.HTTP_203_NON_AUTHORITATIVE_INFORMATION
+    #eturn response_data, status_code, {}
 
 
 def upload_summary(upload_id: int) -> Response:
@@ -315,8 +336,7 @@ def upload_summary(upload_id: int) -> Response:
         if upload_obj is None:
             status_code = status.HTTP_404_NOT_FOUND
             response_data = UPLOAD_NOT_FOUND
-            #raise NotFound(UPLOAD_NOT_FOUND)
-            raise BadRequest(UPLOAD_NOT_FOUND)
+            raise NotFound(UPLOAD_NOT_FOUND)
         else:
             logger.info(f"{upload_obj.upload_id}: Upload summary request.")
             status_code = status.HTTP_200_OK
