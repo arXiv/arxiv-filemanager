@@ -27,8 +27,10 @@ class TestUploadGetter(TestCase):
         uploads.db.app = app
         uploads.db.create_all()
 
-        self.data = dict(name='The first upload', created_datetime=datetime.now(),
-                         modified_datetime=datetime.now(), state="ACTIVE")
+        self.data = dict(owner_user_id='dlf2', archive='physics',
+                         created_datetime=datetime.now(),
+                         modified_datetime=datetime.now(),
+                         state="ACTIVE")
         self.dbupload = self.uploads.DBUpload(**self.data)  # type: ignore
         self.uploads.db.session.add(self.dbupload)  # type: ignore
         self.uploads.db.session.commit()  # type: ignore
@@ -43,12 +45,13 @@ class TestUploadGetter(TestCase):
         upload = self.uploads.retrieve(1)  # type: ignore
         self.assertIsInstance(upload, Upload)
         self.assertEqual(upload.upload_id, 1)
-        self.assertEqual(upload.name, self.data['name'])
+        self.assertEqual(upload.owner_user_id, self.data['owner_user_id'])
+        self.assertEqual(upload.archive, self.data['archive'])
         self.assertEqual(upload.created_datetime, self.data['created_datetime'])
 
     def test_get_an_upload_that_doesnt_exist(self) -> None:
         """When the upload doesn't exist, returns None."""
-        self.assertIsNone(uploads.retrieve(2))
+        self.assertIsNone(uploads.retrieve(666))
 
     @mock.patch('filemanager.services.uploads.db.session.query')
     def test_get_upload_when_db_is_unavailable(self, mock_query: Any) -> None:
@@ -80,7 +83,7 @@ class TestUploadCreator(TestCase):
         self.uploads.db.app = app  # type: ignore
         self.uploads.db.create_all()  # type: ignore
 
-        self.data = {'name': 'The first upload', 'created_datetime': datetime.now(),
+        self.data = {'owner_user_id': 'dlf2', 'archive': 'physics', 'created_datetime': datetime.now(),
                      'modified_datetime': datetime.now(), 'state': "ACTIVE"}
         self.dbupload = self.uploads.DBUpload(**self.data)  # type: ignore
         self.uploads.db.session.add(self.dbupload)  # type: ignore
@@ -88,12 +91,14 @@ class TestUploadCreator(TestCase):
 
     def tearDown(self) -> None:
         """Clear the database and tear down all tables."""
+
         self.uploads.db.session.remove()  # type: ignore
         self.uploads.db.drop_all()  # type: ignore
+        pass
 
     def test_store_an_upload(self) -> None:
         """A new row is added for the upload."""
-        existing_upload = Upload(name='The first upload', created_datetime=datetime.now(),
+        existing_upload = Upload(owner_user_id='dlf2', archive='physics', created_datetime=datetime.now(),
                                  modified_datetime=datetime.now(), state="ACTIVE")
 
         self.uploads.store(existing_upload)  # type: ignore
@@ -101,7 +106,7 @@ class TestUploadCreator(TestCase):
 
         dbupload = self.uploads.db.session.query(self.uploads.DBUpload).get(existing_upload.upload_id)  # type: ignore
 
-        self.assertEqual(dbupload.name, existing_upload.name)
+        self.assertEqual(dbupload.owner_user_id, existing_upload.owner_user_id)
 
 
 class TestUploadUpdater(TestCase):
@@ -122,7 +127,7 @@ class TestUploadUpdater(TestCase):
         self.uploads.db.app = app  # type: ignore
         self.uploads.db.create_all()  # type: ignore
 
-        self.data = dict(name='The first upload', created_datetime=datetime.now())
+        self.data = dict(owner_user_id='dlf2', archive='physics', created_datetime=datetime.now())
         self.dbupload = self.uploads.DBUpload(**self.data)  # type: ignore
         self.uploads.db.session.add(self.dbupload)  # type: ignore
         self.uploads.db.session.commit()  # type: ignore
@@ -134,17 +139,17 @@ class TestUploadUpdater(TestCase):
 
     def test_update_an_upload(self) -> None:
         """The db is updated with the current state of the :class:`.Upload`."""
-        an_upload = Upload(upload_id=self.dbupload.upload_id, name='Test Upload')
+        an_upload = Upload(upload_id=self.dbupload.upload_id, owner_user_id='dlf2', archive='math')
         self.uploads.update(an_upload)  # type: ignore
 
         dbupload = self.uploads.db.session.query(self.uploads.DBUpload).get(self.dbupload.upload_id)  # type: ignore
 
-        self.assertEqual(dbupload.name, an_upload.name)
+        self.assertEqual(dbupload.archive, an_upload.archive)
 
     @mock.patch('filemanager.services.uploads.db.session.query')
     def test_operationalerror_is_handled(self, mock_query: Any) -> None:
         """When the db raises an OperationalError, an IOError is raised."""
-        an_upload = Upload(upload_id=self.dbupload.upload_id, name='Test Upload')
+        an_upload = Upload(upload_id=self.dbupload.upload_id, owner_user_id='dlf2', archive='math')
 
         def raise_op_error(*args, **kwargs) -> None:  # type: ignore
             """Function designed to raise operational error."""
@@ -157,14 +162,14 @@ class TestUploadUpdater(TestCase):
 
     def test_upload_really_does_not_exist(self) -> None:
         """If the :class:`.Upload` doesn't exist, a RuntimeError is raised."""
-        an_update = Upload(upload_id=666, name='Test Upload')  # Unlikely to exist.
+        an_update = Upload(upload_id=666, archive='physics')  # Unlikely to exist.
         with self.assertRaises(RuntimeError):
             self.uploads.update(an_update)  # type: ignore
 
     @mock.patch('filemanager.services.uploads.db.session.query')
     def test_thing_does_not_exist(self, mock_query: Any) -> None:
         """If the :class:`.Upload` doesn't exist, a RuntimeError is raised."""
-        an_upload = Upload(upload_id=666, name='Test Upload')  # Unlikely to exist.
+        an_upload = Upload(upload_id=666, owner_user_id='dlf2')  # Unlikely to exist.
         mock_query.return_value = mock.MagicMock(
             get=mock.MagicMock(return_value=None)
         )

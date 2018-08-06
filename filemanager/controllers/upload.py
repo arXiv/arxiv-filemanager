@@ -44,10 +44,12 @@ logger.propagate = False
 # exceptions
 UPLOAD_MISSING_FILE = {'missing file/archive payload'}
 UPLOAD_MISSING_FILENAME = {'file argument missing filename or file not selected'}
-#UPLOAD_FILE_EMPTY = {'file payload is zero length'}
+# UPLOAD_FILE_EMPTY = {'file payload is zero length'}
 
 UPLOAD_NOT_FOUND = {'upload workspace not found'}
-
+UPLOAD_DB_ERROR = {'unable to create/insert new upload workspace into database'}
+UPLOAD_IO_ERROR = {'encountered an IOError'}
+UPLOAD_UNKNOWN_ERROR = {'unknown error'}
 UPLOAD_DELETE_WORKSPACE = {'reason': 'workspace scheduled for deletion.'}
 
 # upload status codes
@@ -60,7 +62,6 @@ REQUEST_NOT_IMPLEMENTED = {'request not implemented'}
 # upload status
 NO_SUCH_THING = {'reason': 'there is no upload'}
 THING_WONT_COME = {'reason': 'could not get the upload'}
-
 
 ERROR_RETRIEVING_UPLOAD = {'upload not found'}
 # UPLOAD_DOESNT_EXIST = {'upload does not exist'}
@@ -87,9 +88,9 @@ Response = Tuple[Optional[dict], int, dict]
 
 def delete_workspace(upload_id: int) -> Response:
     """Delete workspace."""
-    logger.info(f"Scheduling upload workspace {upload_id} for deletion.")
+    logger.info(f"{upload_id}: Deleting upload workspace.")
 
-    #TODO: This request was not really part if this sprint. Write down ideas and
+    # TODO: This request was not really part if this sprint. Write down ideas and
     #      come back to later.
 
     # Need to add several checks here
@@ -109,7 +110,6 @@ def delete_workspace(upload_id: int) -> Response:
 
         if upload_obj is None:
             # Invalid workspace identifier
-            logger.info(f"Upload id '{upload_id}' not found in database.")
             raise NotFound(UPLOAD_NOT_FOUND)
         else:
             # Any other conditions that raise red flags? Any that stop the
@@ -123,14 +123,18 @@ def delete_workspace(upload_id: int) -> Response:
             # Update database (but keep around) for historical reference. Does not
             # consume very much space. What about source log?
 
-
             pass
-
 
     except IOError:
         logger.error(f"{upload_obj.upload_id}: Delete workspace request failed ")
         raise InternalServerError(CANT_DELETE_FILE)
-
+    except NotFound:
+        logger.info(f"Upload id '{upload_id}' not found in database.")
+        raise
+    except Exception as ue:
+        logger.info("Unknown error creating new workspace. "
+                    + f" Add except clauses for '{ue}'. DO IT NOW!")
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     # API doesn't provide for returning errors resulting from delete.
     # 401-unautorized and 403-forbidden are handled at routes level.
@@ -186,11 +190,6 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
         logger.error(f'Upload request is missing file/archive payload.')
         raise BadRequest(UPLOAD_MISSING_FILE)
 
-    #if file.content_length == 0:
-        # What good will that empty file do for your submission
-     #   logger.error(f'Upload file payload is empty (zero length).')
-     #   raise BadRequest(UPLOAD_FILE_EMPTY)
-
     if file.filename == '':
         # Client needs to select file, or provide name to upload payload
         logger.error(f'Upload file is missing filename. File to upload may not be selected.')
@@ -207,14 +206,20 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
         # warning will get generated in process/upload.py and not here.
         logger.error(f"Upload 'archive' not specified. Oversize calculation will use default values.")
 
-
     # If this is a new upload then we need to create a workspace and add to database.
     if upload_id == None:
         try:
             logger.info(f"Create new workspace: Upload request: "
                         + f"file='{file.filename}' archive='{archive}'")
-            name = 'test name'
-            new_upload = Upload(name=name, created_datetime=datetime.now(),
+            user_id = 'dlf2'
+
+            if archive == None:
+                arch = ''
+            else:
+                arch = archive
+
+            new_upload = Upload(owner_user_id=user_id, archive=arch,
+                                created_datetime=datetime.now(),
                                 modified_datetime=datetime.now(),
                                 state='ACTIVE')
             # Store in DB
@@ -224,7 +229,14 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
 
         except IOError:
             logger.info(f"Error creating new workspace.")
-
+            raise InternalServerError(UPLOAD_IO_ERROR)
+        except (TypeError, ValueError) as dbe:
+            logger.info(f"Error adding new workspace to database: '{dbe}'.")
+            raise InternalServerError(UPLOAD_DB_ERROR)
+        except Exception as ue:
+            logger.info("Unknown error creating new workspace. "
+                        + f" Add except clauses for '{ue}'. DO IT NOW!")
+            raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     # At this point we expect upload to exist in system
     try:
@@ -233,7 +245,6 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
 
         if upload_obj is None:
             # Invalid workspace identifier
-            logger.info(f"Upload id '{upload_id}' not found in database.")
             raise NotFound(UPLOAD_NOT_FOUND)
         else:
             # Now handle upload package - process file or gzipped tar archive
@@ -298,12 +309,20 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
     except IOError:
         logger.error(f"{upload_obj.upload_id}: File upload_obj request failed "
                      + f"for file='{file.filename}'")
-        raise InternalServerError(CANT_UPLOAD_FILE)
-
-    # TODO: Make pylint happy! This is all getting redone for API changes.
-    #response_data = ACCEPTED
-    #status_code = status.HTTP_203_NON_AUTHORITATIVE_INFORMATION
-    #eturn response_data, status_code, {}
+        raise InternalServerError(UPLOAD_IO_ERROR)
+    except (TypeError, ValueError) as dbe:
+        logger.info(f"Error updating database: '{dbe}'")
+        raise InternalServerError(UPLOAD_DB_ERROR)
+    except BadRequest as breq:
+        logger.info(f"{upload_id}: '{breq}'.")
+        raise
+    except NotFound:
+        logger.info(f"Upload id '{upload_id}' not found in database.")
+        raise
+    except Exception as ue:
+        logger.info("Unknown error with existing workspace."
+                    + f" Add except clauses for '{ue}'. DO IT NOW!")
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
 
 def upload_summary(upload_id: int) -> Response:
@@ -357,6 +376,18 @@ def upload_summary(upload_id: int) -> Response:
         # response_data = ERROR_RETRIEVING_UPLOAD
         # status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         raise InternalServerError(ERROR_RETRIEVING_UPLOAD)
+    except (TypeError, ValueError):
+        logger.info(f"Error updating database.")
+        raise InternalServerError(UPLOAD_DB_ERROR)
+    except NotFound:
+        logger.info(f"Upload id '{upload_id}' not found in database.")
+        raise
+    except Exception as ue:
+        logger.info("Unknown error with existing workspace."
+                    + f" Add except clauses for '{ue}'. DO IT NOW!")
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+
+
     return response_data, status_code, {}
 
 
@@ -390,7 +421,7 @@ def upload_unlock(upload_id: int) -> Response:
     # response_data = ERROR_REQUEST_NOT_IMPLEMENTED
     # status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     if 1 + upload_id:
-        print(upload_id) # make pylint happy - increase my score!
+        print(upload_id)  # make pylint happy - increase my score!
         raise NotImplementedError(REQUEST_NOT_IMPLEMENTED)
     response_data = ACCEPTED
     status_code = status.HTTP_202_ACCEPTED
