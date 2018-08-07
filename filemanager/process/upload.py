@@ -65,7 +65,7 @@ submitter."""
 
     # Warnings
 
-    def add_warning(self, msg: str) -> None:
+    def add_warning(self, public_filepath: str, msg: str) -> None:
         """
         Record and log warning for this upload instance."
         Parameters
@@ -86,7 +86,9 @@ submitter."""
         self.__log.warning(msg)
 
         # Add to internal list to make it easier to manipulate
-        self.__warnings.append(msg)
+        entry = [public_filepath, msg]
+        #self.__warnings.append(msg)
+        self.__warnings.append(entry)
 
     def has_warnings(self):
         """Indicates whether upload has warnings."""
@@ -110,11 +112,12 @@ submitter."""
             True if warning we are searching for exists. False otherwise.
         """
 
-        for warning in self.__warnings:
+        for entry in self.__warnings:
             # Turn this into debugging
             # print("Look for '" + search + '\' in \n\t \'' + warning +"'")
             # print("ret: " + str(re.search(search, warning)))
 
+            filename, warning = entry
             if re.match(search, warning):
                 return True
 
@@ -126,10 +129,11 @@ submitter."""
 
     # Errors
 
-    def add_error(self, msg: str) -> None:
+    def add_error(self, public_filepath: str, msg: str) -> None:
         """Record error for this upload instance."""
         print('Error: ' + msg)
-        self.__errors.append(msg)
+        entry = [public_filepath, msg]
+        self.__errors.append(entry)
 
     def has_errors(self):
         """Indicates whether upload has errors."""
@@ -153,11 +157,12 @@ submitter."""
             True if error we are searching for exists. False otherwise.
         """
 
-        for error in self.__errors:
+        for entry in self.__errors:
             # Turn this into debugging
             # print("Look for '" + search + '\' in \n\t \'' + warning +"'")
             # print("ret: " + str(re.search(search, warning)))
 
+            filename, error = entry
             if re.match(search, error):
                 return True
 
@@ -207,7 +212,7 @@ submitter."""
         if shutil.move(filepath, removed_path):
             # lmsg = "*** File " + file.name + f" has been removed. Reason: {msg} ***"
             lmsg = f"Removed hidden file {file.name}."
-            self.add_warning(lmsg)
+            self.add_warning(file.public_filepath, lmsg)
         else:
             self.add_warning("*** FAILED to remove file " + filepath + " ***")
 
@@ -388,7 +393,7 @@ submitter."""
                 # Remove zero length files
                 if obj.size == 0:
                     msg = obj.name + " is empty (size is zero)"
-                    self.add_warning(msg)
+                    self.add_warning(obj.public_filepath, msg)
                     self.remove_file(obj, f"Removed: {msg}")
                     continue
 
@@ -401,7 +406,7 @@ submitter."""
                     new_name = re.sub(r'^[A-Za-z]:\\(.*\\)?', '', file_name)
                     new_file_path = os.path.join(root_directory, new_name)
                     msg = 'Renaming ' + file_name + ' to ' + new_name + '.'
-                    self.add_warning(msg)
+                    self.add_warning(obj.public_filepath, msg)
                     os.rename(file_path, new_file_path)
                     # fix up local data
                     file_name = new_name
@@ -426,16 +431,16 @@ submitter."""
                 if re.search(r'[^\w\+\-\.\=\,]', file_name):
                     # Translate bad characters
                     new_file_name = re.sub(r'[^\w\+\-\.\=\,]', '_', file_name)
-                    self.add_warning("We only accept file names containing the characters: "
+                    self.add_warning(obj.public_filepath, "We only accept file names containing the characters: "
                                      + "a-z A-Z 0-9 _ + - . , =")
-                    self.add_warning('Attempting to rename ' + file_name
+                    self.add_warning(obj.public_filepath, 'Attempting to rename ' + file_name
                                      + ' to ' + new_file_name + '.')
                     # Do the renaming
                     new_file_path = os.path.join(root_directory, new_file_name)
                     try:
                         os.rename(file_path, new_file_path)
                     except os.error:
-                        self.add_warning('Unable to rename ' + file_name)
+                        self.add_warning(obj.public_filepath, 'Unable to rename ' + file_name)
 
                     # fix up local data
                     file_name = new_file_name
@@ -445,7 +450,7 @@ submitter."""
                 if file_name.startswith('-'):
                     # Replace dash (-) with underscore
                     new_file_name = re.sub('^-', '_', file_name)
-                    self.add_warning('We do not accept files starting with a hyphen. '
+                    self.add_warning(obj.public_filepath, 'We do not accept files starting with a hyphen. '
                                      + 'Attempting to rename \"' + file_name + '\" to \"'
                                      + new_file_name + '\".')
                     # Do the renaming
@@ -453,7 +458,7 @@ submitter."""
                     try:
                         os.rename(file_path, new_file_path)
                     except os.error:
-                        self.add_warning('Unable to rename ' + file_name)
+                        self.add_warning(obj.public_filepath, 'Unable to rename ' + file_name)
                     # fix up local data
                     file_name = new_file_name
                     file_path = new_file_path
@@ -474,12 +479,13 @@ submitter."""
                 if re.search(r'^(espcrc2|lamuphys)\.sty$', file_name):
                     # TeX: styles that conflict with internal hypertex package
                     print("Found hyperlink-compatible package\n")
+                    # TODO: Check the error/warning messaging for this check.
                     self.remove_file(obj, msg)
-                    self.add_warning('    -- instead using hypertex-compatible local version')
+                    self.add_warning(obj.public_filepath, '    -- instead using hypertex-compatible local version')
                 elif re.search(r'^(espcrc2|lamuphys)\.tex$', file_name):
                     # TeX: source files that conflict with internal hypertex package
                     # I'm not sure why this is just a warning
-                    self.add_warning('Possible submitter error. Unwanted ' + file_name)
+                    self.add_warning(obj.public_filepath, f"Possible submitter error. Unwanted '{file_name}'")
                 elif file_name == 'uufiles' or file_name == 'core' or file_name == 'splread.1st':
                     # Remove these files
                     msg = 'File not allowed.'
@@ -516,7 +522,7 @@ submitter."""
                     # This is demo file that authors seem to include with
                     # their submissions.
                     self.remove_file(obj, msg)
-                    self.add_warning('REMOVING ' + file_name
+                    self.add_warning(obj.public_filepath, 'REMOVING ' + file_name
                                      + ' on the assumption that it is the example '
                                      + 'file for the Astronomy and '
                                      + 'Astrophysics macro package aa.cls.')
@@ -532,13 +538,13 @@ submitter."""
                     if os.path.exists(tex_file) or os.path.exists(upper_case_tex_file):
                         # Potential conflict / corruption by including TeX
                         # generated files in submission
-                        self.add_warning(' REMOVING $fn due to name conflict')
+                        self.add_warning(obj.public_filepath, ' REMOVING $fn due to name conflict')
                         self.remove_file(obj, msg)
                 elif re.search(r'[^\w\+\-\.\=\,]', file_name):
                     # File name contains unwanted bad characters - this is an Error
                     # We attempted to fix file_names with bad characters at
                     # beginning of this routine
-                    self.add_error('Filename \"' + file_name
+                    self.add_error(obj.public_filepath, 'Filename \"' + file_name
                                    + '\" contains unwanted bad character \"$&\", '
                                    + 'only allowed are a-z A-Z 0-9 _ + - . , =')
                 elif re.search(r'([\.\-]t?[ga]?z)$', file_name):
@@ -550,15 +556,15 @@ submitter."""
                         os.rename(file_path, new_file_path)
                         msg = "Renaming '" + file_name + "' to '" \
                               + new_file_name + "'."
-                        self.add_warning(msg)
+                        self.add_warning(obj.public_filepath, msg)
                     except os.error:
-                        self.add_warning('Unable to rename ' + file_name)
+                        self.add_warning(obj.public_filepath, 'Unable to rename ' + file_name)
                 elif file_name.endswith('.doc') and type == 'failed':
                     # Doc warning
                     # TODO: Get doc warning from message class
                     msg = ''
                     # TODO: need to log error
-                    self.add_error(msg)
+                    self.add_error(obj.public_filepath, msg)
                     self.remove_file(obj, msg)
 
                 # Finished basic file checks
@@ -586,7 +592,7 @@ submitter."""
                 if file_type == 'dvi':
                     msg = file_name + ' is a TeX-produced DVI file. ' \
                           + ' Please submit the TeX source instead.'
-                    self.add_error(msg)
+                    self.add_error(obj.public_filepath, msg)
 
                 # Clean up any html
                 elif file_type == 'html':
@@ -618,9 +624,7 @@ submitter."""
                 # RAR
                 elif file_type == 'rar':
                     msg = "We do not support 'rar' files. Please use 'zip' or 'tar'."
-                    self.add_error(msg)
-
-
+                    self.add_error(obj.public_filepath, msg)
 
                 # unmacify files of type PC and MAC
                 elif file_type == 'pc' or file_type == 'mac':
@@ -737,10 +741,11 @@ submitter."""
                     'size': fileObj.size,
                     'type': fileObj.type_string,
                 }
-                if fileObj.removed:
-                    file_details['removed'] = fileObj.removed
+                #if fileObj.removed:
+                #    file_details['removed'] = fileObj.removed
 
-                file_list.append(file_details)
+                if not fileObj.removed:
+                    file_list.append(file_details)
 
             return file_list
         return file_list
@@ -780,7 +785,7 @@ submitter."""
 
             if os.path.isdir(os.path.join(source_directory, entries[0])):
 
-                self.add_warning("Removing top level directory")
+                self.add_warning(entries[0], "Removing top level directory")
                 single_directory = os.path.join(source_directory, entries[0])
 
                 # Save copy in removed directory
