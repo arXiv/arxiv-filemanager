@@ -268,13 +268,36 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
             # Keep track of files processed (this included deleted files)
             file_list = uploadObj.create_file_upload_summary()
 
+            # Determine readiness state of upload content
+            upload_status = "READY"
+
+            if uploadObj.has_errors():
+                upload_status = "ERRORS"
+            elif uploadObj.has_warnings():
+                upload_status = "READY_WITH_WARNINGS"
+
+            # Create combine list of errors and warnings
+            # TODO: Should I do this in Upload package?? Likely...
+            all_errors_and_warnings = []
+
+            for warn in uploadObj.get_warnings():
+                public_filepath, warning_message = warn
+                all_errors_and_warnings.append(['warn', public_filepath, warning_message])
+
+            for error in uploadObj.get_errors():
+                public_filepath, warning_message = error
+                # TODO: errors renamed fatal. Need to review 'errors' as to whether they are 'fatal'
+                all_errors_and_warnings.append(['fatal', public_filepath, warning_message])
+
             # Prepare upload_obj details (DB). I'm assuming that in memory Redis
             # is not sufficient for results that may be needed in the distant future.
-            errors_and_warnings = uploadObj.get_errors() + uploadObj.get_warnings()
+            #errors_and_warnings = uploadObj.get_errors() + uploadObj.get_warnings()
+            errors_and_warnings = all_errors_and_warnings
             upload_obj.lastupload_logs = str(errors_and_warnings)
             upload_obj.lastupload_start_datetime = start_datetime
             upload_obj.lastupload_completion_datetime = completion_datetime
             upload_obj.lastupload_file_summary = json.dumps(file_list)
+            upload_obj.lastupload_upload_status = upload_status
             upload_obj.state = 'ACTIVE'
 
             # Store in DB
@@ -292,6 +315,8 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
 
             status_code = status.HTTP_201_CREATED
 
+
+
             response_data = {
                 'upload_id': upload_obj.upload_id,
                 'created_datetime': upload_obj.created_datetime,
@@ -299,9 +324,10 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
                 'start_datetime': upload_obj.lastupload_start_datetime,
                 'completion_datetime': upload_obj.lastupload_completion_datetime,
                 'files': upload_obj.lastupload_file_summary,
-                'log': upload_obj.lastupload_logs,
-                'status': "SUCCEEDED",
-                'upload_state': upload_obj.state
+                'errors': upload_obj.lastupload_logs,
+                'upload_status': upload_obj.lastupload_upload_status,
+                'workspace_state': upload_obj.state,
+                'lock_state': upload_obj.lock
             }
             logger.info(f"{upload_obj.upload_id}: Generating upload summary.")
             return response_data, status_code, headers
@@ -316,9 +342,9 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
     except BadRequest as breq:
         logger.info(f"{upload_id}: '{breq}'.")
         raise
-    except NotFound:
-        logger.info(f"Upload id '{upload_id}' not found in database.")
-        raise
+    except NotFound as nfdb:
+        logger.info(f"Upload id '{upload_id}' not found in database: '{nfdb}'.")
+        raise nfdb
     except Exception as ue:
         logger.info("Unknown error with existing workspace."
                     + f" Add except clauses for '{ue}'. DO IT NOW!")
@@ -366,9 +392,10 @@ def upload_summary(upload_id: int) -> Response:
                 'start_datetime': upload_obj.lastupload_start_datetime,
                 'completion_datetime': upload_obj.lastupload_completion_datetime,
                 'files': upload_obj.lastupload_file_summary,
-                'log': upload_obj.lastupload_logs,
-                'status': "SUCCEEDED",
-                'upload_state': upload_obj.state
+                'errors': upload_obj.lastupload_logs,
+                'upload_status': upload_obj.lastupload_upload_status,
+                'workspace_state': upload_obj.state,
+                'lock_state': upload_obj.lock
             }
             logger.info(f"{upload_obj.upload_id}: Upload summary request.")
 
