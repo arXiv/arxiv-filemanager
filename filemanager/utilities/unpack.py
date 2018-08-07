@@ -91,9 +91,9 @@ def unpack_archive(upload: Upload) -> None:
                         tar = tarfile.open(path)
                     except tarfile.TarError as error:
                         # Do something better with as error
-                        upload.add_warning("There were problems opening file '"
+                        upload.add_warning(obj.public_filepath, "There were problems opening file '"
                                            + obj.public_filepath + "'")
-                        upload.add_warning('Tar error message: ' + error.__str__())
+                        upload.add_warning(obj.public_filepath, 'Tar error message: ' + error.__str__())
 
                     try:
                         for tarinfo in tar:
@@ -125,26 +125,26 @@ def unpack_archive(upload: Upload) -> None:
                                 # We did not check carefully in legacy system
                                 # and hard links caused bad things to happen.
                                 if tarinfo.issym():  # sym link
-                                    upload.add_warning("Symbolic links are not allowed. Removing '"
+                                    upload.add_warning(obj.public_filepath, "Symbolic links are not allowed. Removing '"
                                                        + tarinfo.name + "'.")
                                 elif tarinfo.islnk():  # hard link
-                                    upload.add_warning('Hard links are not allowed. Removing ')
+                                    upload.add_warning(obj.public_filepath, 'Hard links are not allowed. Removing ')
                                 elif tarinfo.ischr():
-                                    upload.add_warning('Hard links are not allowed. Removing ')
+                                    upload.add_warning(obj.public_filepath, 'Hard links are not allowed. Removing ')
                                 elif tarinfo.isblk():
-                                    upload.add_warning('Block devices are not allowed. Removing ')
+                                    upload.add_warning(obj.public_filepath, 'Block devices are not allowed. Removing ')
                                 elif tarinfo.isfifo():
-                                    upload.add_warning('FIFO are not allowed. Removing ')
+                                    upload.add_warning(obj.public_filepath, 'FIFO are not allowed. Removing ')
                                 elif tarinfo.isdev():
-                                    upload.add_warning('Character devices are '
+                                    upload.add_warning(obj.public_filepath, 'Character devices are '
                                                        + 'not allowed. Removing ')
                         tar.close()
 
                     except tarfile.TarError as error:
                         # TODO: Do something with as error, post to error log
                         # print("Error processing tar file failed!\n")
-                        upload.add_warning(ERROR_MSG_PRE + obj.public_filepath + ERROR_MSG_SUF)
-                        upload.add_warning('Tar error message: ' + error.__str__())
+                        upload.add_warning(obj.public_filepath, ERROR_MSG_PRE + obj.public_filepath + ERROR_MSG_SUF)
+                        upload.add_warning(obj.public_filepath, 'Tar error message: ' + error.__str__())
 
                     # Move gzipped file out of way
                     rfile = os.path.join(removed_directory, os.path.basename(path))
@@ -187,8 +187,8 @@ def unpack_archive(upload: Upload) -> None:
                         # TODO: Think about warnings a bit. Tar/zip problems
                         # currently reported as warnings. Upload warnings allow
                         # submitter to continue on to process/compile step.
-                        upload.add_warning(ERROR_MSG_PRE + obj.public_filepath + ERROR_MSG_SUF)
-                        upload.add_warning('Zip error message: ' + error.__str__())
+                        upload.add_warning(obj.public_filepath, ERROR_MSG_PRE + obj.public_filepath + ERROR_MSG_SUF)
+                        upload.add_warning(obj.public_filepath, 'Zip error message: ' + error.__str__())
 
                 # TODO: Add support for compressed files
                 elif obj.type == 'compressed':
