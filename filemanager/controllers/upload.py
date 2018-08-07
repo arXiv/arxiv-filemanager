@@ -185,7 +185,7 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
 
     # File argument is required to exist and have a name associated with it.
     # It is standard practice that if user fails to select file the filename is null.
-    if file == None:
+    if file is None:
         # Crash and burn...not quite...do we need info about client?
         logger.error(f'Upload request is missing file/archive payload.')
         raise BadRequest(UPLOAD_MISSING_FILE)
@@ -196,7 +196,7 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
         raise BadRequest(UPLOAD_MISSING_FILENAME)
 
     # What about archive argument.
-    if archive == None:
+    if archive is None:
         # TODO: Discussion about how to treat omission of archive argument.
         # Is this an HTTP exception? Oversize limits are configured per archive.
         # Or is this a warning/error returned in upload summary?
@@ -207,13 +207,13 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
         logger.error(f"Upload 'archive' not specified. Oversize calculation will use default values.")
 
     # If this is a new upload then we need to create a workspace and add to database.
-    if upload_id == None:
+    if upload_id is None:
         try:
             logger.info(f"Create new workspace: Upload request: "
                         + f"file='{file.filename}' archive='{archive}'")
             user_id = 'dlf2'
 
-            if archive == None:
+            if archive is None:
                 arch = ''
             else:
                 arch = archive

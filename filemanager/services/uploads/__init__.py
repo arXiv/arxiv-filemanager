@@ -124,7 +124,7 @@ def update(upload_update_data: Upload) -> None:
 
     # owner_user_id, archive
     upload_data.owner_user_id = upload_update_data.owner_user_id
-    upload_data.archive       = upload_update_data.archive
+    upload_data.archive = upload_update_data.archive
 
     # We won't let client update created_datetime
 
@@ -140,7 +140,7 @@ def update(upload_update_data: Upload) -> None:
     upload_data.modified_datetime = datetime.now()
 
     # TODO: Would user ever need to set the modification time manually?
-    #upload_data.modified_datetime = upload_update_data.modified_datetime
+    # upload_data.modified_datetime = upload_update_data.modified_datetime
 
     db.session.add(upload_data)
     try:
