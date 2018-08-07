@@ -105,6 +105,9 @@ class Upload(Data):
     lastupload_file_summary = Property('lastupload_file_summary', str)
     """Logs associated with last upload event."""
 
+    lastupload_upload_status = Property('lastupload_upload_status', str)
+    """Content eadiness status after last upload event."""
+
     # General state of upload
 
     state = Property('state', str)

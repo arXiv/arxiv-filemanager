@@ -30,6 +30,8 @@ class DBUpload(db.Model):
     """Log (error/warning messages) from last upload."""
     lastupload_file_summary = Column(Text, nullable=True)
     """Upload details useful for display in UI"""
+    lastupload_upload_status = Column(Text, nullable=True)
+    """Upload content readiness status."""
     state = Column(String(30), default='ACTIVE')
     """State of upload. ACTIVE, RELEASED, DELETED"""
     lock = Column(String(30), default='UNLOCKED')

@@ -62,6 +62,9 @@ def retrieve(upload_id: int) -> Optional[Upload]:
     if upload_data.lastupload_file_summary is not None:
         args['lastupload_file_summary'] = upload_data.lastupload_file_summary
 
+    if upload_data.lastupload_upload_status is not None:
+        args['lastupload_upload_status'] = upload_data.lastupload_upload_status
+
     return Upload(**args)
 
 
@@ -129,6 +132,7 @@ def update(upload_update_data: Upload) -> None:
     upload_data.lastupload_completion_datetime = upload_update_data.lastupload_completion_datetime
     upload_data.lastupload_logs = upload_update_data.lastupload_logs
     upload_data.lastupload_file_summary = upload_update_data.lastupload_file_summary
+    upload_data.lastupload_upload_status = upload_update_data.lastupload_upload_status
     upload_data.state = upload_update_data.state
     upload_data.lock = upload_update_data.lock
 
