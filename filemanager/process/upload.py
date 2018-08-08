@@ -7,13 +7,16 @@ import shutil
 import tarfile
 import logging
 
-from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import BadRequest, NotFound
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from filemanager.arxiv.file import File
 
 UPLOAD_FILE_EMPTY = {'file payload is zero length'}
+UPLOAD_DELETE_FILE_FAILED = {'unable to delete file'}
+UPLOAD_DELETE_ALL_FILE_FAILED = {'unable to delete all file'}
+UPLOAD_FILE_NOT_FOUND = {'file not found'}
 
 # TODO: Need to move to config file
 UPLOAD_BASE_DIRECTORY = '/tmp/filemanagment/submissions'
@@ -218,6 +221,100 @@ submitter."""
 
         # Add reason for removal to File object
         file.remove(msg)
+
+    def client_remove_file(self, public_file_path: str) -> bool:
+        """Delete a single file.
+
+        For a single file delete we will move it to 'removed' directory.
+
+        Parameters
+        ----------
+        public_file_path: str
+            Relative path of file to be deleted.
+
+        Returns
+        -------
+
+            True on success.
+
+        Notes
+        _____
+            We are logging messages to source log. Warnings are not passed
+            back in response for non-upload requests so we skip issuing warnings/errors.
+
+        """
+
+        self.log('********** Delete File ************')
+
+        # Check whether client is trying to damage system with invalid path
+
+        # Sanitize file name
+        filename = secure_filename(public_file_path)
+
+        # TODO: Come up with better file path checker. We allow subdirectories
+        # TODO: and secure_filename strips them (/ => _)
+        if 0 and public_file_path != filename:
+            self.log("Possible Security Violation: Sanitized file path "
+                     + f"'{filename}' is different from '{public_file_path}'")
+            # TODO: I'm not sure how well secure_filename maps to attempted security
+            # TODO: violation. Need to check whether it does other mutations.
+
+            # Rasie an exception without giving the client indication of a
+            # potential security violation.
+            raise BadRequest(UPLOAD_DELETE_FILE_FAILED)
+
+        # Resolve path of file
+        src_directory = self.get_source_directory()
+        file_path = os.path.join(src_directory, filename)
+
+        # Need to determine whether file exists
+        if os.path.exists(file_path):
+            # Let's move it to 'removed' directory.
+
+            # Flatten public path to eliminate directory structure
+            clean_public_path = re.sub('/', '_', public_file_path)
+
+
+
+            # Generate path in removed directory
+            removed_path = os.path.join(self.get_removed_directory(), clean_public_path)
+            self.log(f"Deleted file: '{clean_public_path}'")
+
+
+            if shutil.move(file_path, removed_path):
+                # lmsg = "*** File " + file.name + f" has been removed. Reason: {msg} ***"
+                #lmsg = f"Removed hidden file {file.name}."
+                #self.add_warning(file.public_filepath, lmsg)
+                self.log(f"Moved file from {file_path} to {removed_path}")
+                return True
+            else:
+                self.log(f"*** FAILED to remove file '{file_path}' ***")
+                return False
+        else:
+            self.log(f"File to delete not found: '{public_file_path}'")
+            raise NotFound(UPLOAD_FILE_NOT_FOUND)
+
+
+    def client_remove_all_files(self) -> bool:
+        """Delete all files uploaded by client from specified workspace.
+
+        For client delete requests we assume they have copies of original files and
+        therefore do NOT backup files.
+
+        Returns
+        -------
+
+        """
+
+        self.log('********** Delete ALL Files ************')
+
+        # Cycle through list of files under src directory and remove them.
+        #
+        # For now we will remove file by moving it to 'removed' directory
+        src_directory = self.get_source_directory()
+        self.log(f"Removing all files under directory '{src_directory}'")
+
+
 
     def get_upload_directory(self) -> str:
         """
