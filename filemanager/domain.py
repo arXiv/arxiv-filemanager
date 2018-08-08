@@ -74,13 +74,16 @@ class Upload(Data):
 
     upload_id = Property('upload_id', int)
 
-    name = Property('name', str)
-    """Test Field"""
-
     submission_id = Property('submission_id', str)
     """Optionally associate upload workspace with submission_id.
        File Management Service 'upload_id' is independent and not directly
        tied to any external service."""
+
+    owner_user_id = Property('owner_user_id', str)
+    """User id for owner of workspace."""
+
+    archive = Property('archive', str)
+    """Target archive for this submission."."""
 
     created_datetime = Property('created_datetime', datetime)
     """When workspace was created"""
@@ -102,8 +105,16 @@ class Upload(Data):
     lastupload_file_summary = Property('lastupload_file_summary', str)
     """Logs associated with last upload event."""
 
+    lastupload_upload_status = Property('lastupload_upload_status', str)
+    """Content eadiness status after last upload event."""
+
     # General state of upload
 
     state = Property('state', str)
-    """Last known status of upload. 'Active', 'Released',
+    """Status of upload. 'ACTIVE', 'RELEASED', 'DELETED'
     Eventually will become enumeration."""
+
+    lock = Property('lock', str)
+    """Lock state of upload workspace. 'LOCKED', 'UNLOCKED'"""
+
+

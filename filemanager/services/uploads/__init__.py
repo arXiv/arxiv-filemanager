@@ -42,10 +42,13 @@ def retrieve(upload_id: int) -> Optional[Upload]:
 
     args = {}
     args['upload_id'] = upload_data.upload_id
-    args['name'] = upload_data.name
+    args['owner_user_id'] = upload_data.owner_user_id
+    args['archive'] = upload_data.archive
+
     args['created_datetime'] = upload_data.created_datetime
     args['modified_datetime'] = upload_data.modified_datetime
     args['state'] = upload_data.state
+    args['lock'] = upload_data.lock
 
     if upload_data.lastupload_start_datetime is not None:
         args['lastupload_start_datetime'] = upload_data.lastupload_start_datetime
@@ -58,6 +61,9 @@ def retrieve(upload_id: int) -> Optional[Upload]:
 
     if upload_data.lastupload_file_summary is not None:
         args['lastupload_file_summary'] = upload_data.lastupload_file_summary
+
+    if upload_data.lastupload_upload_status is not None:
+        args['lastupload_upload_status'] = upload_data.lastupload_upload_status
 
     return Upload(**args)
 
@@ -77,7 +83,8 @@ def store(new_upload_data: Upload) -> Upload:
     RuntimeError
         When there is some other problem.
     """
-    upload_data = DBUpload(name=new_upload_data.name,
+    upload_data = DBUpload(owner_user_id=new_upload_data.owner_user_id,
+                           archive=new_upload_data.archive,
                            created_datetime=new_upload_data.created_datetime,
                            modified_datetime=new_upload_data.modified_datetime,
                            state=new_upload_data.state)
@@ -115,17 +122,25 @@ def update(upload_update_data: Upload) -> None:
     if upload_data is None:
         raise RuntimeError('Cannot find the thing!')
 
-    # Name will go away = leaving in case need new field whereby rename makes
-    # easy to use name
-    upload_data.name = upload_update_data.name
-    # Won't let client update created_datetime
-    upload_data.modified_datetime = upload_update_data.modified_datetime
+    # owner_user_id, archive
+    upload_data.owner_user_id = upload_update_data.owner_user_id
+    upload_data.archive = upload_update_data.archive
+
+    # We won't let client update created_datetime
+
     upload_data.lastupload_start_datetime = upload_update_data.lastupload_start_datetime
     upload_data.lastupload_completion_datetime = upload_update_data.lastupload_completion_datetime
     upload_data.lastupload_logs = upload_update_data.lastupload_logs
     upload_data.lastupload_file_summary = upload_update_data.lastupload_file_summary
+    upload_data.lastupload_upload_status = upload_update_data.lastupload_upload_status
     upload_data.state = upload_update_data.state
-    upload_data.modified = datetime.now()
+    upload_data.lock = upload_update_data.lock
+
+    # Always set this when workspace DB entry is updated
+    upload_data.modified_datetime = datetime.now()
+
+    # TODO: Would user ever need to set the modification time manually?
+    # upload_data.modified_datetime = upload_update_data.modified_datetime
 
     db.session.add(upload_data)
     try:

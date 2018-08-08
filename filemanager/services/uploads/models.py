@@ -14,8 +14,10 @@ class DBUpload(db.Model):
     """The unique identifier for a thing."""
     submission_id = Column(Integer)
     """Submission identifier (optional)"""
-    name = Column(String(255))
-    """Note/comment/metadata about the upload."""
+    owner_user_id = Column(String(255))
+    """Owner of upload workspace."""
+    archive = Column(String(255))
+    """Target archive for this submission."""
     created_datetime = Column(DateTime)
     """The datetime when the upload was created."""
     modified_datetime = Column(DateTime, nullable=True)
@@ -28,5 +30,9 @@ class DBUpload(db.Model):
     """Log (error/warning messages) from last upload."""
     lastupload_file_summary = Column(Text, nullable=True)
     """Upload details useful for display in UI"""
-    state = Column(String(30), default='Active')
-    """State of upload. Initialized. Active. Released."""
+    lastupload_upload_status = Column(Text, nullable=True)
+    """Upload content readiness status."""
+    state = Column(String(30), default='ACTIVE')
+    """State of upload. ACTIVE, RELEASED, DELETED"""
+    lock = Column(String(30), default='UNLOCKED')
+    """Lock state of upload workspace. UNLOCKED or LOCKED."""

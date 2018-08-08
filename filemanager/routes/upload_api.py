@@ -22,47 +22,60 @@ def service_status() -> tuple:
     return jsonify({'status': 'OK', 'total_uploads': 1}), status.HTTP_200_OK
 
 
-@blueprint.route('/create', methods=['GET'])
-@authorization.scoped('read:upload')
-def create_one() -> tuple:
-    """Create upload workspace. Create and return unique upload identifier."""
-    data, status_code, headers = upload.create_upload()
+@blueprint.route('/', methods=['POST'])
+@authorization.scoped('write:upload')
+def new_upload() -> tuple:
+    """Initial upload where workspace (upload_id) does not yet exist.
+
+    This requests creates a new workspace. Upload package is processed normally.
+
+    Client response include upload_id which is necessary for subsequent requests."""
+
+    # Optional category/archive - this is required to accurately calculate
+    # whether submission is oversize.
+    archive_arg = request.form.get('archive', None)
+
+    # is this optional??
+    archive_arg = request.args.get('archive')
+
+    # Required file payload
+    file = request.files.get('file', None)
+
+    # Collect arguments and call main upload controller
+    data, status_code, headers = upload.upload(None, file, archive_arg)
+
     return jsonify(data), status_code, headers
 
-
-@blueprint.route('/upload/<int:upload_id>', methods=['GET', 'POST'])
+@blueprint.route('<int:upload_id>', methods=['GET', 'POST'])
 @authorization.scoped('write:upload')
 def upload_files(upload_id: int) -> tuple:
     """Upload individual files or compressed archive
-    and add to upload package. Multiple uploads accepted."""
+    and add to existing upload workspace. Multiple uploads accepted."""
 
     if request.method == 'POST':
 
-        if 'file' not in request.files:
-            raise NotFound("Upload 'file' not found.")
-            # TODO move to contoller
+        archive_arg = request.args.get('archive')
 
-        file = request.files['file']
-
-        if file.filename == '':
-            # TODO move to controller
-            raise NotFound("Upload 'file' not found.")
+        file = request.files.get('file', None)
 
         # Attempt to process upload
-        data, status_code, headers = upload.upload(upload_id, file)
+        data, status_code, headers = upload.upload(upload_id, file, archive_arg)
 
     if request.method == 'GET':
         data, status_code, headers = upload.upload_summary(upload_id)
 
+   # if request.method == 'DELETE':
+    #    data, status_code, headers = upload.delete_workspace(upload_id)
+
     return jsonify(data), status_code, headers
 
+@blueprint.route('<int:upload_id>', methods=['DELETE'])
+@authorization.scoped('admin:upload')
+def workspace_delete(upload_id: int) -> tuple:
+    """Delete the specified workspace."""
 
-@blueprint.route('/upload_status/<int:upload_id>', methods=['GET'])
-@authorization.scoped('read:upload')
-def upload_status(upload_id: int) -> tuple:
-    """Retrieve status of upload processing task."""
+    data, status_code, headers = upload.delete_workspace(upload_id)
 
-    data, status_code, headers = upload.upload_status(upload_id)
     return jsonify(data), status_code, headers
 
 
