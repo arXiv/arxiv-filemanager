@@ -323,6 +323,27 @@ class TestUploadAPIRoutes(TestCase):
         except jsonschema.exceptions.SchemaError as e:
             self.fail(e)
 
+        # Delete a file (normal call)
+        #public_file_path = "../../subdir/this_file"
+        #public_file_path = "this_file"
+        public_file_path = "lipics-logo-bw.pdf"
+        from requests.utils import quote
+        encoded_file_path = quote(public_file_path, safe='')
+        #encoded_file_path = public_file_path
+        print(f"ENCODED:{encoded_file_path}\n")
+        #response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{encoded_file_path}",
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+                                   headers={'Authorization': token})
+        print("Delete File Response:\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 200, "Delete an individual file.")
+
+        # Delete all files in my workspace (normal)
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
+                                   headers={'Authorization': token},
+                                   content_type='multipart/form-data')
+        print("Delete All Files Response:\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 200, "Delete all user-uploaded files.")
+
         # Delete the workspace
 
         # Create admin token for deleting upload workspace
