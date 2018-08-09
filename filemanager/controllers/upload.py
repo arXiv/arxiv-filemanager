@@ -218,25 +218,25 @@ def client_delete_file(upload_id: str, public_file_path: str) -> Response:
 def client_delete_all_files(upload_id: str) -> Response:
     """Delete all files uploaded by client from specified workspace.
 
-        This request is being received from API so we need to be extra careful.
+    This request is being received from API so we need to be extra careful.
 
-        Parameters
-        ----------
-        upload_id : int
-            The unique identifier for the upload_obj in question.
-        public_file_path: str
-            relative path of file to be deleted.
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for the upload_obj in question.
+    public_file_path: str
+        relative path of file to be deleted.
 
-        Returns
-        -------
-        dict
-            Complete summary of upload processing.
-        int
-            An HTTP status code.
-        dict
-            Some extra headers to add to the response.
+    Returns
+    -------
+    dict
+        Complete summary of upload processing.
+    int
+        An HTTP status code.
+    dict
+        Some extra headers to add to the response.
 
-        """
+    """
 
     logger.info(f"{upload_id}: Deleting all uploaded files from this workspace.")
 
