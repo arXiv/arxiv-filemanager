@@ -9,12 +9,25 @@ from werkzeug.exceptions import NotFound, Forbidden, Unauthorized, \
     InternalServerError, HTTPException, BadRequest
 from arxiv.base import routes as base_routes
 from arxiv import status
+from arxiv.users import domain as auth_domain
 from arxiv.users.auth import scopes
+
 from arxiv.users.auth.decorators import scoped
 
+from filemanager.services import uploads
 from filemanager.controllers import upload
 
 blueprint = Blueprint('upload_api', __name__, url_prefix='/filemanager/api')
+
+
+def is_owner(session: auth_domain.Session, upload_id: str, **kwargs) -> bool:
+    """User must be the upload owner, or an admin."""
+    if scopes.ADMIN_UPLOAD in session.authorizations.scopes:
+        return True
+    upload_obj = uploads.retrieve(upload_id)
+    if upload_obj is None:
+        return True
+    return session.user.user_id == uploads.retrieve(upload_id).owner_user_id
 
 
 @blueprint.route('/status', methods=['GET'])
@@ -43,13 +56,14 @@ def new_upload() -> tuple:
     file = request.files.get('file', None)
 
     # Collect arguments and call main upload controller
-    data, status_code, headers = upload.upload(None, file, archive_arg)
+    data, status_code, headers = upload.upload(None, file, archive_arg,
+                                               request.session.user)
 
     return jsonify(data), status_code, headers
 
 
 @blueprint.route('<int:upload_id>', methods=['GET', 'POST'])
-@scoped(scopes.WRITE_UPLOAD)
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def upload_files(upload_id: int) -> tuple:
     """Upload individual files or compressed archive
     and add to existing upload workspace. Multiple uploads accepted."""
@@ -61,7 +75,8 @@ def upload_files(upload_id: int) -> tuple:
         file = request.files.get('file', None)
 
         # Attempt to process upload
-        data, status_code, headers = upload.upload(upload_id, file, archive_arg)
+        data, status_code, headers = upload.upload(upload_id, file, archive_arg,
+                                                   request.session.user)
 
     if request.method == 'GET':
         data, status_code, headers = upload.upload_summary(upload_id)
@@ -109,7 +124,7 @@ def get_files(upload_id: int) -> tuple:
 
 # This could be freeze instead of lock
 @blueprint.route('/lock/<int:upload_id>', methods=['GET'])
-@scoped(scopes.WRITE_UPLOAD)
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def lock(upload_id: int) -> tuple:
     """Lock submission (read-only mode) while other services are
     processing (major state transitions are occurring)."""
@@ -119,7 +134,7 @@ def lock(upload_id: int) -> tuple:
 
 # This could be thaw or release instead of unlock
 @blueprint.route('/unlock/<int:upload_id>', methods=['GET'])
-@scoped(scopes.WRITE_UPLOAD)
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def unlock(upload_id: int) -> tuple:
     """Unlock submission and enable write mode."""
     data, status_code, headers = upload.upload_unlock(upload_id)
@@ -128,7 +143,7 @@ def unlock(upload_id: int) -> tuple:
 
 # This could be remove or delete instead of release
 @blueprint.route('/release/<int:upload_id>', methods=['GET'])
-@scoped(scopes.WRITE_UPLOAD)
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def release(upload_id: int) -> tuple:
     """Client indicates they are finished with submission.
     File management service is free to remove submissions files,
@@ -139,7 +154,7 @@ def release(upload_id: int) -> tuple:
 
 # This could be get_logs or retrieve_logs instead of logs
 @blueprint.route('/logs/<int:upload_id>', methods=['GET'])
-@scoped(scopes.WRITE_UPLOAD)
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def logs(upload_id: int) -> tuple:
     """Retreive log files related to submission. Indicates
     history or actions on submission package."""

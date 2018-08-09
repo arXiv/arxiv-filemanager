@@ -11,6 +11,7 @@ from werkzeug.datastructures import FileStorage
 from flask.json import jsonify
 
 from arxiv import status
+from arxiv.users import domain as auth_domain
 
 import filemanager
 from filemanager.shared import url_for
@@ -146,7 +147,8 @@ def delete_workspace(upload_id: int) -> Response:
     return UPLOAD_DELETE_WORKSPACE, status_code, {}
 
 
-def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
+def upload(upload_id: int, file: FileStorage, archive: str,
+           user: auth_domain.User) -> Response:
     """Upload individual files or compressed archive. Unpack and add
     files to upload_obj workspace.
 
@@ -211,7 +213,7 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
         try:
             logger.info(f"Create new workspace: Upload request: "
                         + f"file='{file.filename}' archive='{archive}'")
-            user_id = 'dlf2'
+            user_id = user.user_id
 
             if archive is None:
                 arch = ''
