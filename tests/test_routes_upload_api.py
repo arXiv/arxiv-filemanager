@@ -8,7 +8,7 @@ from typing import Any, Optional, Dict
 from io import BytesIO
 import jsonschema
 import jwt
-
+from requests.utils import quote
 from flask import Flask
 from filemanager.factory import create_web_app
 from filemanager.services import uploads
@@ -246,6 +246,274 @@ class TestUploadAPIRoutes(TestCase):
 
         # TODO: Add size checks (when implemented)
 
+
+    def test_delete_file(self) -> None:
+        """
+        Test delete file operation.
+
+        These tests will focus on triggering delete failures.
+
+        """
+        # Create a token for writing to upload workspace
+        token = generate_token(self.app,
+                               {'scope': ['read:upload', 'write:upload']})
+
+
+        # Upload a gzipped tar archive package containing files to delete.
+        cwd = os.getcwd()
+        testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
+        filepath = os.path.join(testfiles_dir, 'UploadWithANCDirectory.tar.gz')
+        # Prepare gzipped tar submission for upload
+        filename = os.path.basename(filepath)
+
+        # Upload some files so we can delete them
+        # response = self.client.post('/filemanager/api/',
+        response = self.client.post('/filemanager/api/',
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        #      'file': (open(filepath, 'rb'), 'test.tar.gz'),
+                                        'file': (open(filepath, 'rb'), filename),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
+
+        # This upload should work but we'll check the response anyway
+        with open('schema/resources/uploadResult.json') as f:
+            schema = json.load(f)
+
+        try:
+            jsonschema.validate(json.loads(response.data), schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+        # Try a few valid deletions
+
+        # Delete a file (normal call)
+        # public_file_path = "../../subdir/this_file"
+        # public_file_path = "this_file"
+        #public_file_path = "lipics-logo-bw.pdf"
+        public_file_path = "accessibilityMeta.sty"
+
+        encoded_file_path = quote(public_file_path, safe='')
+        public_file_path = encoded_file_path
+        print(f"ENCODED:{public_file_path}\n")
+
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+                                      headers={'Authorization': token})
+        print(f"Delete File Response:'{public_file_path}'\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 200,
+                         "Delete an individual file: '{public_file_path}'.")
+
+        # Now try to break delete
+
+        # This file path is a potential security threat. Attempt to detect such deviant
+        # file deletions without alerting the client.
+        public_file_path = "../../subdir/this_file"
+        public_file_path = quote(public_file_path, safe='')
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+                                      headers={'Authorization': token})
+        print(f"Delete hacker file path Response:'{public_file_path}'\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 404,
+                         f"Delete a file outside of workspace: '{public_file_path}'.")
+
+        # Another file path is a potential security threat. Attempt to detect such deviant
+        # file deletions without alerting the client.
+        public_file_path = "anc/../../etc/passwd"
+        public_file_path = quote(public_file_path, safe='')
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+                                      headers={'Authorization': token})
+        print(f"Delete hacker file path Response:'{public_file_path}'\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 404,
+                         f"Delete a file outside of workspace: '{public_file_path}'.")
+
+        # Attempt to delete an important system file
+        #
+        # This generates an illegal URL so this doesn't make it to our code.
+        public_file_path = "/etc/passwd"
+        public_file_path = quote(public_file_path, safe='')
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+                                      headers={'Authorization': token})
+        print(f"Delete system password file Response:'{public_file_path}'\n")
+        self.assertEqual(response.status_code, 404,
+                         f"Delete a system file: '{public_file_path}'..")
+
+        # Try to delete non-existent file
+        public_file_path = "somedirectory/lipics-logo-bw.pdf"
+        public_file_path = quote(public_file_path, safe='')
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+                                      headers={'Authorization': token})
+        print(f"Delete non-existent file Response:'{public_file_path}'\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 404,
+                         f"Delete non-existent file: '{public_file_path}'.")
+
+        # Try to delete file in subdirectory - valid file deletion
+        public_file_path = "anc/manuscript_Na2.7Ru4O9.tex"
+        public_file_path = quote(public_file_path, safe='')
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+                                      headers={'Authorization': token})
+        print(f"Delete file in subdirectory anc Response:'{public_file_path}'\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 200,
+                         f"Delete file in subdirectory: '{public_file_path}'.")
+
+        # Try to delete file in subdirectory - valid file deletion
+        public_file_path = "anc/fig8.PNG"
+        public_file_path = quote(public_file_path, safe='')
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+                                      headers={'Authorization': token})
+        print(f"Delete file in subdirectory anc Response:'{public_file_path}'\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 200,
+                         f"Delete file in subdirectory: '{public_file_path}'.")
+
+        # Try an delete file a second time...we'll know if first delete really worked.
+        public_file_path = "anc/manuscript_Na2.7Ru4O9.tex"
+        public_file_path = quote(public_file_path, safe='')
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+                                      headers={'Authorization': token})
+        print(f"Delete file in subdirectory anc Response:'{public_file_path}'\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 404,
+                         f"Delete file in subdirectory: '{public_file_path}'.")
+
+        # Try a path that is not hacky but that we know secure_filename() will
+        # filter out characters.
+        #
+        # Reject these filenames for now (because they're a little funny)
+        #
+        # TODO: I suppose we could map ~/ and ./ to root of src directory.
+        #
+        public_file_path = "~/anc/manuscript_Na2.7Ru4O9.tex"
+        public_file_path = quote(public_file_path, safe='')
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+                                      headers={'Authorization': token})
+        print(f"Delete invalid file in subdirectory anc Response:'{public_file_path}'\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 404,
+                         f"Delete file in subdirectory: '{public_file_path}'.")
+
+        # Technically a legal file path, but where is client coming up with this path? Manually?
+        public_file_path = "./anc/manuscript_Na2.7Ru4O9.tex"
+        public_file_path = quote(public_file_path, safe='')
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+                                      headers={'Authorization': token})
+        print(f"Delete invalid file in subdirectory anc Response:'{public_file_path}'\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 404,
+                         f"Delete file in subdirectory: '{public_file_path}'.")
+
+    def test_delete_all_files(self) -> None:
+        """
+        Test delete file operation.
+
+        These tests will focus on triggering delete failures.
+
+        """
+        # Create a token for writing to upload workspace
+        token = generate_token(self.app,
+                               {'scope': ['read:upload', 'write:upload']})
+
+        # Upload a gzipped tar archive package containing files to delete.
+        cwd = os.getcwd()
+        testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
+        filepath = os.path.join(testfiles_dir, 'UploadWithANCDirectory.tar.gz')
+
+        # Prepare gzipped tar submission for upload
+        filename = os.path.basename(filepath)
+
+        # Upload files to delete
+        response = self.client.post('/filemanager/api/',
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        #      'file': (open(filepath, 'rb'), 'test.tar.gz'),
+                                        'file': (open(filepath, 'rb'), filename),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
+
+        # This upload should work but we'll check the response anyway
+        with open('schema/resources/uploadResult.json') as f:
+            schema = json.load(f)
+
+        try:
+            jsonschema.validate(json.loads(response.data), schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+        # Delete all files in my workspace (normal)
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
+                                    headers={'Authorization': token},
+                                    content_type='multipart/form-data')
+        print("Delete All Files Response:\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 200, "Delete all user-uploaded files.")
+
+        # There are really not many exceptions we can generate as long as the upload workspace
+        # exists. If upload workspace exists this command will remove all files and directories
+        # under src directory. At this point I don't anticipate generating exception when src
+        # directory is already empty.
+
+        # Delete all files in my workspace (normal)
+        response = self.client.post(f"/filemanager/api/999999/delete_all",
+                                    headers={'Authorization': token},
+                                    content_type='multipart/form-data')
+        print("Delete All Files for invalid workspace Response:\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 404,
+                         "Delete all user-uploaded files for non-existent workspace.")
+
+
+
+        # Try an delete an individual file ...we'll know if delete all files really worked.
+        public_file_path = "anc/manuscript_Na2.7Ru4O9.tex"
+        public_file_path = quote(public_file_path, safe='')
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+                                      headers={'Authorization': token})
+        print(f"Delete already deleted file in subdirectory anc Response:'{public_file_path}'\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 404,
+                         f"Delete already deleted file in subdirectory: '{public_file_path}'.")
+
+
+    def test_delete_upload_workspace(self) -> None:
+        """
+        Test delete file operation.
+
+        These tests will focus on triggering delete failures.
+
+        """
+
+        # TODO: Need to work on this code after imlementing delete workspace.
+
+        # Create a token for writing to upload workspace
+        token = generate_token(self.app,
+                               {'scope': ['read:upload', 'write:upload']})
+
+        # Delete the workspace
+
+        # Create admin token for deleting upload workspace
+
+        admin_token = generate_token(self.app,
+                                     {'scope': ['read:upload', 'write:upload',
+                                                'admin:upload']})
+        print(f"ADMIN Token (for possible use in manual browser tests): {admin_token}\n")
+
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+                                      headers={'Authorization': admin_token}
+                                      )
+
+        # print("Delete Response:\n" + str(response.data) + '\n')
+
+        # TODO: Delete implementation is coming soon so leave here for now.
+        self.assertEqual(response.status_code, 501, "Accepted request to delete workspace.")
+
+
+
+
+
+
     # Upload a submission package
     def test_upload_files_normal(self) -> None:
         """Test normal well-behaved upload.
@@ -322,6 +590,27 @@ class TestUploadAPIRoutes(TestCase):
             jsonschema.validate(json.loads(response.data), status_schema)
         except jsonschema.exceptions.SchemaError as e:
             self.fail(e)
+
+        # Delete a file (normal call)
+        #public_file_path = "../../subdir/this_file"
+        #public_file_path = "this_file"
+        public_file_path = "lipics-logo-bw.pdf"
+        from requests.utils import quote
+        encoded_file_path = quote(public_file_path, safe='')
+        #encoded_file_path = public_file_path
+        print(f"ENCODED:{encoded_file_path}\n")
+        #response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{encoded_file_path}",
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+                                   headers={'Authorization': token})
+        print("Delete File Response:\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 200, "Delete an individual file.")
+
+        # Delete all files in my workspace (normal)
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
+                                   headers={'Authorization': token},
+                                   content_type='multipart/form-data')
+        print("Delete All Files Response:\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 200, "Delete all user-uploaded files.")
 
         # Delete the workspace
 

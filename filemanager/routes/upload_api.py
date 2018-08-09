@@ -69,6 +69,27 @@ def upload_files(upload_id: int) -> tuple:
 
     return jsonify(data), status_code, headers
 
+@blueprint.route('<int:upload_id>/<path:public_file_path>', methods=['DELETE'])
+@authorization.scoped('write:upload')
+def delete_file(upload_id: int, public_file_path: str) -> tuple:
+    """Delete individual file."""
+
+    data, status_code, headers = upload.client_delete_file(upload_id, public_file_path)
+
+    return jsonify(data), status_code, headers
+
+
+@blueprint.route('<int:upload_id>/delete_all', methods=['POST'])
+@authorization.scoped('write:upload')
+def delete_all_files(upload_id: int) -> tuple:
+    """Delete all files in specified workspace."""
+
+    data, status_code, headers = upload.client_delete_all_files(upload_id)
+
+    return jsonify(data), status_code, headers
+
+
+
 @blueprint.route('<int:upload_id>', methods=['DELETE'])
 @authorization.scoped('admin:upload')
 def workspace_delete(upload_id: int) -> tuple:
