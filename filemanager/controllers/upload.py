@@ -5,7 +5,8 @@ from datetime import datetime
 import json
 import logging
 
-from werkzeug.exceptions import NotFound, BadRequest, InternalServerError, NotImplemented, SecurityError
+from werkzeug.exceptions import NotFound, BadRequest, InternalServerError, \
+    NotImplemented, SecurityError
 
 from werkzeug.datastructures import FileStorage
 from flask.json import jsonify
@@ -328,7 +329,8 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
         # Most submissions can get by with default size limitations so we'll add a warning
         # message for the upload (this will appear on upload page and get logged). This
         # warning will get generated in process/upload.py and not here.
-        logger.error(f"Upload 'archive' not specified. Oversize calculation will use default values.")
+        logger.error("Upload 'archive' not specified. Oversize calculation "
+                     + "will use default values.")
 
     # If this is a new upload then we need to create a workspace and add to database.
     if upload_id is None:
@@ -376,7 +378,8 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
             # NOTE: This will need to be migrated to task.py using Celery at
             #       some point in future. Depends in time it takes to process
             #       uploads.retrieve
-            logger.info(f"{upload_obj.upload_id}: Upload files to existing workspace: file='{file.filename}'")
+            logger.info(f"{upload_obj.upload_id}: Upload files to existing "
+                        + f"workspace: file='{file.filename}'")
 
             # Keep track of how long processing upload_obj takes
             start_datetime = datetime.now()
@@ -427,7 +430,8 @@ def upload(upload_id: int, file: FileStorage, archive: str) -> Response:
             # Store in DB
             uploads.update(upload_obj)
 
-            logger.info(f"{upload_obj.upload_id}: Processed upload. Saved to DB. Preparing upload summary.")
+            logger.info(f"{upload_obj.upload_id}: Processed upload. "
+                        + "Saved to DB. Preparing upload summary.")
 
             # Do we want affirmative log messages after processing each request
             # or maybe just report errors like:
