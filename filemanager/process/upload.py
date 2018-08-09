@@ -235,12 +235,12 @@ submitter."""
         Returns
         -------
 
-            True on success.
+        True on success.
 
         Notes
         _____
-            We are logging messages to source log. Warnings are not passed
-            back in response for non-upload requests so we skip issuing warnings/errors.
+        We are logging messages to source log. Warnings are not passed
+        back in response for non-upload requests so we skip issuing warnings/errors.
 
         """
 
