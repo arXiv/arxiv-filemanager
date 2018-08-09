@@ -7,7 +7,7 @@ import shutil
 import tarfile
 import logging
 
-from werkzeug.exceptions import BadRequest, NotFound
+from werkzeug.exceptions import BadRequest, NotFound, SecurityError
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
@@ -244,28 +244,54 @@ submitter."""
 
         """
 
-        self.log('********** Delete File ************')
+        self.log('********** Delete File ************\n')
 
         # Check whether client is trying to damage system with invalid path
 
         # Sanitize file name
         filename = secure_filename(public_file_path)
 
+        # Our UI will never attempt to delete a file path containing components that attempt
+        # to escape out of workspace and this would be removed by secure_filename().
+        # This error must be propagated to wider notification level beyond source log.
+        if re.search(r'^/|^\.\./|\.\./', public_file_path):
+            # should never start with '/' or '../' or contain '..' anywhere in path.
+            message = f"SECURITY WARNING: file to delete contains illegal constructs: '{public_file_path}'"
+            self.log(message)
+            raise SecurityError(message)
+
+        # Secure filename should not change length of valid file path (but it will
+        # mess with directory slashes '/')
         # TODO: Come up with better file path checker. We allow subdirectories
         # TODO: and secure_filename strips them (/ => _)
-        if 0 and public_file_path != filename:
-            self.log("Possible Security Violation: Sanitized file path "
-                     + f"'{filename}' is different from '{public_file_path}'")
-            # TODO: I'm not sure how well secure_filename maps to attempted security
-            # TODO: violation. Need to check whether it does other mutations.
+        # The length of file path should not change (need to check secure_filename)
+        # so if length changes generate warning.
+        if len(public_file_path) != len(filename):
+            message = f"SECURITY WARNING: sanitized file is different length: '{filename}' <=> '{public_file_path}'"
+            self.log(message)
+            raise SecurityError(message)
 
-            # Rasie an exception without giving the client indication of a
-            # potential security violation.
-            raise BadRequest(UPLOAD_DELETE_FILE_FAILED)
-
-        # Resolve path of file
+        # Resolve reletive path of file to filesystem
         src_directory = self.get_source_directory()
         file_path = os.path.join(src_directory, filename)
+
+        # secure_filename will eliminate '/' making paths to subdirectories
+        # impossible to resolve. Make assumption we caught bad actors with checks above.
+
+        # Check if original path might be subdirectory.
+        # We've made it past serious threat checks above.
+        if not os.path.exists(file_path) and re.search(r'_', filename) and re.search(r'/', public_file_path):
+            if len(filename) == len(public_file_path):
+                # May be issue of directory delimiter converted to '_'
+                # Check if raw path exists
+                check_path = os.path.join(src_directory, public_file_path)
+                if os.path.exists(check_path):
+                    self.log(f"Path appears to be valid and contain "
+                             + "subdirectory: '{public_file_path}' <=> '{filename}'")
+                    # TODO: Can someone hurt us here? Is it now safe to use original
+                    # TODO: path or should I edit 'secure' path. I believe what I'm doing is ok.
+                    file_path = check_path
+                    filename = public_file_path
 
         # Need to determine whether file exists
         if os.path.exists(file_path):
@@ -274,11 +300,9 @@ submitter."""
             # Flatten public path to eliminate directory structure
             clean_public_path = re.sub('/', '_', public_file_path)
 
-
-
             # Generate path in removed directory
             removed_path = os.path.join(self.get_removed_directory(), clean_public_path)
-            self.log(f"Deleted file: '{clean_public_path}'")
+            self.log(f"Delete file: '{filename}'")
 
 
             if shutil.move(file_path, removed_path):
@@ -288,10 +312,10 @@ submitter."""
                 self.log(f"Moved file from {file_path} to {removed_path}")
                 return True
             else:
-                self.log(f"*** FAILED to remove file '{file_path}' ***")
+                self.log(f"*** FAILED to remove file '{file_path}'/{clean_public_path} ***")
                 return False
         else:
-            self.log(f"File to delete not found: '{public_file_path}'")
+            self.log(f"File to delete not found: '{public_file_path}' '{filename}'")
             raise NotFound(UPLOAD_FILE_NOT_FOUND)
 
 
@@ -306,7 +330,7 @@ submitter."""
 
         """
 
-        self.log('********** Delete ALL Files ************')
+        self.log('********** Delete ALL Files ************\n')
 
         # Cycle through list of files under src directory and remove them.
         #
@@ -314,6 +338,19 @@ submitter."""
         src_directory = self.get_source_directory()
         self.log(f"Removing all files under directory '{src_directory}'")
 
+        for dir_entry in os.listdir(src_directory):
+            file_path = os.path.join(src_directory, dir_entry)
+            try:
+                if os.path.isfile(file_path):
+                    #os.unlink(file_path)
+                    self.log(f"Removing file:'{dir_entry}'")
+                # elif os.path.isdir(file_path): shutil.rmtree(file_path)
+                elif os.path.isdir(file_path):
+                    self.log(f"Removing directory:'{dir_entry}'")
+            except Exception as rme:
+                self.log(f"Error while removing all files: '{rme}'")
+                print(rme)
+                raise
 
 
     def get_upload_directory(self) -> str:
@@ -457,7 +494,7 @@ submitter."""
         None
         """
 
-        self.log('******** Check Files *****')
+        self.log('\n******** Check Files *****\n\n')
 
         source_directory = self.get_source_directory()
 
@@ -961,12 +998,12 @@ submitter."""
         #      + " FilenameBase: " + os.path.basename(file.filename)
         #      + " Mime: " + file.mimetype + '\n')
 
-        self.log('********** File Upload ************')
+        self.log('\n********** File Upload ************\n\n')
 
         # Move uploaded archive/file to source directory
         self.deposit_upload(file)
 
-        self.log('******** File Upload Processing *****')
+        self.log('\n******** File Upload Processing *****\n\n')
 
         from filemanager.utilities.unpack import unpack_archive
         # Unpack upload archive (if necessary). Completes minor cleanup.
