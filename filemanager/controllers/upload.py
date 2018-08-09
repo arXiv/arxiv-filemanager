@@ -5,7 +5,7 @@ from datetime import datetime
 import json
 import logging
 
-from werkzeug.exceptions import NotFound, BadRequest, InternalServerError, NotImplemented
+from werkzeug.exceptions import NotFound, BadRequest, InternalServerError, NotImplemented, SecurityError
 
 from werkzeug.datastructures import FileStorage
 from flask.json import jsonify
@@ -51,6 +51,7 @@ UPLOAD_DB_ERROR = {'unable to create/insert new upload workspace into database'}
 UPLOAD_IO_ERROR = {'encountered an IOError'}
 UPLOAD_UNKNOWN_ERROR = {'unknown error'}
 UPLOAD_DELETED_FILE = {'deleted file'}
+UPLOAD_FILE_NOT_FOUND = {'file not found'}
 UPLOAD_DELETED_ALL_FILES = {'deleted all files'}
 
 UPLOAD_DELETE_WORKSPACE = {'reason': 'workspace scheduled for deletion.'}
@@ -172,7 +173,7 @@ def client_delete_file(upload_id: str, public_file_path: str) -> Response:
         Some extra headers to add to the response.
 
     """
-    logger.info(f"{upload_id}: Deleted file '{public_file_path}'.")
+    logger.info(f"{upload_id}: Delete file '{public_file_path}'.")
 
     try:
         # Make sure we have an upload_obj to work with
@@ -196,6 +197,11 @@ def client_delete_file(upload_id: str, public_file_path: str) -> Response:
     except NotFound as nf:
         logger.info(f"{upload_id}: DeleteFile: {nf}")
         raise
+    except SecurityError as secerr:
+        logger.info(f"{upload_id}: {secerr.description}")
+        # TODO: Should this be BadRequest or NotFound. I'm leaning towards
+        # NotFound in order to provide as little feedback as posible to client.
+        raise NotFound(UPLOAD_FILE_NOT_FOUND)
     except Exception as ue:
         logger.info("Unknown error in delete file. "
                     + f" Add except clauses for '{ue}'. DO IT NOW!")
