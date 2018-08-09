@@ -287,7 +287,7 @@ submitter."""
                 check_path = os.path.join(src_directory, public_file_path)
                 if os.path.exists(check_path):
                     self.log(f"Path appears to be valid and contain "
-                             + "subdirectory: '{public_file_path}' <=> '{filename}'")
+                             + f"subdirectory: '{public_file_path}' <=> '{filename}'")
                     # TODO: Can someone hurt us here? Is it now safe to use original
                     # TODO: path or should I edit 'secure' path. I believe what I'm doing is ok.
                     file_path = check_path
@@ -336,20 +336,19 @@ submitter."""
         #
         # For now we will remove file by moving it to 'removed' directory
         src_directory = self.get_source_directory()
-        self.log(f"Removing all files under directory '{src_directory}'")
+        self.log(f"Delete all files under directory '{src_directory}'")
 
         for dir_entry in os.listdir(src_directory):
             file_path = os.path.join(src_directory, dir_entry)
             try:
                 if os.path.isfile(file_path):
-                    #os.unlink(file_path)
-                    self.log(f"Removing file:'{dir_entry}'")
-                # elif os.path.isdir(file_path): shutil.rmtree(file_path)
+                    self.log(f"Delete file:'{dir_entry}'")
+                    os.unlink(file_path)
                 elif os.path.isdir(file_path):
-                    self.log(f"Removing directory:'{dir_entry}'")
+                    self.log(f"Delete directory:'{dir_entry}'")
+                    shutil.rmtree(file_path)
             except Exception as rme:
                 self.log(f"Error while removing all files: '{rme}'")
-                print(rme)
                 raise
 
 
