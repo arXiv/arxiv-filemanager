@@ -116,5 +116,3 @@ class Upload(Data):
 
     lock = Property('lock', str)
     """Lock state of upload workspace. 'LOCKED', 'UNLOCKED'"""
-
-

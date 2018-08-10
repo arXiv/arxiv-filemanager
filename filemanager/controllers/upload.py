@@ -5,7 +5,8 @@ from datetime import datetime
 import json
 import logging
 
-from werkzeug.exceptions import NotFound, BadRequest, InternalServerError, NotImplemented
+from werkzeug.exceptions import NotFound, BadRequest, InternalServerError, \
+    NotImplemented, SecurityError
 
 from werkzeug.datastructures import FileStorage
 from flask.json import jsonify
@@ -51,6 +52,10 @@ UPLOAD_NOT_FOUND = {'upload workspace not found'}
 UPLOAD_DB_ERROR = {'unable to create/insert new upload workspace into database'}
 UPLOAD_IO_ERROR = {'encountered an IOError'}
 UPLOAD_UNKNOWN_ERROR = {'unknown error'}
+UPLOAD_DELETED_FILE = {'deleted file'}
+UPLOAD_FILE_NOT_FOUND = {'file not found'}
+UPLOAD_DELETED_ALL_FILES = {'deleted all files'}
+
 UPLOAD_DELETE_WORKSPACE = {'reason': 'workspace scheduled for deletion.'}
 
 # upload status codes
@@ -69,6 +74,7 @@ ERROR_RETRIEVING_UPLOAD = {'upload not found'}
 CANT_CREATE_UPLOAD = {'could not create the upload'}  #
 CANT_UPLOAD_FILE = {'could not upload file'}
 CANT_DELETE_FILE = {'could not delete file'}
+CANT_DELETE_ALL_FILES = {'could not delete all files'}
 
 ACCEPTED = {'reason': 'upload in progress'}
 
@@ -129,11 +135,11 @@ def delete_workspace(upload_id: int) -> Response:
     except IOError:
         logger.error(f"{upload_obj.upload_id}: Delete workspace request failed ")
         raise InternalServerError(CANT_DELETE_FILE)
-    except NotFound:
-        logger.info(f"Upload id '{upload_id}' not found in database.")
+    except NotFound as nf:
+        logger.info(f"{upload_id}: DeleteWorkspace: '{nf}'")
         raise
     except Exception as ue:
-        logger.info("Unknown error creating new workspace. "
+        logger.info("Unknown error in delete workspace. "
                     + f" Add except clauses for '{ue}'. DO IT NOW!")
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
@@ -143,8 +149,127 @@ def delete_workspace(upload_id: int) -> Response:
     if upload_id:
         raise NotImplemented(REQUEST_NOT_IMPLEMENTED)
 
-    status_code = status.HTTP_204_NO_CONTENT
-    return UPLOAD_DELETE_WORKSPACE, status_code, {}
+    #status_code = status.HTTP_204_NO_CONTENT
+    #return UPLOAD_DELETE_WORKSPACE, status_code, {}
+
+
+def client_delete_file(upload_id: str, public_file_path: str) -> Response:
+    """Delete a single file.
+
+    This request is being received from API so we need to be extra careful.
+
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for the upload_obj in question.
+    public_file_path: str
+        relative path of file to be deleted.
+
+    Returns
+    -------
+    dict
+        Complete summary of upload processing.
+    int
+        An HTTP status code.
+    dict
+        Some extra headers to add to the response.
+
+    """
+    logger.info(f"{upload_id}: Delete file '{public_file_path}'.")
+
+    try:
+        # Make sure we have an upload_obj to work with
+        upload_obj: Optional[Upload] = uploads.retrieve(upload_id)
+
+        if upload_obj is None:
+            # Invalid workspace identifier
+            raise NotFound(UPLOAD_NOT_FOUND)
+        else:
+
+            # Create Upload object
+            uploadObj = filemanager.process.upload.Upload(upload_id)
+
+            # Call routine that will do the actual work
+            uploadObj.client_remove_file(public_file_path)
+
+
+    except IOError:
+        logger.error(f"{upload_obj.upload_id}: Delete file request failed ")
+        raise InternalServerError(CANT_DELETE_FILE)
+    except NotFound as nf:
+        logger.info(f"{upload_id}: DeleteFile: {nf}")
+        raise
+    except SecurityError as secerr:
+        logger.info(f"{upload_id}: {secerr.description}")
+        # TODO: Should this be BadRequest or NotFound. I'm leaning towards
+        # NotFound in order to provide as little feedback as posible to client.
+        raise NotFound(UPLOAD_FILE_NOT_FOUND)
+    except Exception as ue:
+        logger.info("Unknown error in delete file. "
+                    + f" Add except clauses for '{ue}'. DO IT NOW!")
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+
+    #status_code = status.HTTP_204_NO_CONTENT
+    #return f"Going to delete file", status_code, {}
+    response_data = UPLOAD_DELETED_FILE  # Get rid of pylint error
+    status_code = status.HTTP_200_OK
+    return response_data, status_code, {}
+
+
+def client_delete_all_files(upload_id: str) -> Response:
+    """Delete all files uploaded by client from specified workspace.
+
+    This request is being received from API so we need to be extra careful.
+
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for the upload_obj in question.
+    public_file_path: str
+        relative path of file to be deleted.
+
+    Returns
+    -------
+    dict
+        Complete summary of upload processing.
+    int
+        An HTTP status code.
+    dict
+        Some extra headers to add to the response.
+
+    """
+
+    logger.info(f"{upload_id}: Deleting all uploaded files from this workspace.")
+
+    try:
+        # Make sure we have an upload_obj to work with
+        upload_obj: Optional[Upload] = uploads.retrieve(upload_id)
+
+        if upload_obj is None:
+            # Invalid workspace identifier
+            raise NotFound(UPLOAD_NOT_FOUND)
+        else:
+
+            # Create Upload object
+            uploadObj = filemanager.process.upload.Upload(upload_id)
+
+            uploadObj.client_remove_all_files()
+
+
+    except IOError:
+        logger.error(f"{upload_obj.upload_id}: Delete all files request failed ")
+        raise InternalServerError(CANT_DELETE_ALL_FILES)
+    except NotFound as nf:
+        logger.info(f"{upload_id}: DeleteAllFiles: '{nf}'")
+        raise
+    except Exception as ue:
+        logger.info("Unknown error in delete all files. "
+                    + f" Add except clauses for '{ue}'. DO IT NOW!")
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+
+    response_data = UPLOAD_DELETED_ALL_FILES # Get rid of pylint error
+    status_code = status.HTTP_200_OK
+    return response_data, status_code, {}
 
 
 def upload(upload_id: int, file: FileStorage, archive: str,
@@ -206,7 +331,8 @@ def upload(upload_id: int, file: FileStorage, archive: str,
         # Most submissions can get by with default size limitations so we'll add a warning
         # message for the upload (this will appear on upload page and get logged). This
         # warning will get generated in process/upload.py and not here.
-        logger.error(f"Upload 'archive' not specified. Oversize calculation will use default values.")
+        logger.error("Upload 'archive' not specified. Oversize calculation "
+                     + "will use default values.")
 
     # If this is a new upload then we need to create a workspace and add to database.
     if upload_id is None:
@@ -236,7 +362,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             logger.info(f"Error adding new workspace to database: '{dbe}'.")
             raise InternalServerError(UPLOAD_DB_ERROR)
         except Exception as ue:
-            logger.info("Unknown error creating new workspace. "
+            logger.info("Unknown error in upload for new workspace. "
                         + f" Add except clauses for '{ue}'. DO IT NOW!")
             raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
@@ -254,7 +380,8 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             # NOTE: This will need to be migrated to task.py using Celery at
             #       some point in future. Depends in time it takes to process
             #       uploads.retrieve
-            logger.info(f"{upload_obj.upload_id}: Upload files to existing workspace: file='{file.filename}'")
+            logger.info(f"{upload_obj.upload_id}: Upload files to existing "
+                        + f"workspace: file='{file.filename}'")
 
             # Keep track of how long processing upload_obj takes
             start_datetime = datetime.now()
@@ -293,7 +420,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
 
             # Prepare upload_obj details (DB). I'm assuming that in memory Redis
             # is not sufficient for results that may be needed in the distant future.
-            #errors_and_warnings = uploadObj.get_errors() + uploadObj.get_warnings()
+            # errors_and_warnings = uploadObj.get_errors() + uploadObj.get_warnings()
             errors_and_warnings = all_errors_and_warnings
             upload_obj.lastupload_logs = str(errors_and_warnings)
             upload_obj.lastupload_start_datetime = start_datetime
@@ -305,7 +432,8 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             # Store in DB
             uploads.update(upload_obj)
 
-            logger.info(f"{upload_obj.upload_id}: Processed upload. Saved to DB. Preparing upload summary.")
+            logger.info(f"{upload_obj.upload_id}: Processed upload. "
+                        + "Saved to DB. Preparing upload summary.")
 
             # Do we want affirmative log messages after processing each request
             # or maybe just report errors like:
@@ -316,8 +444,6 @@ def upload(upload_id: int, file: FileStorage, archive: str,
                                            upload_id=upload_obj.upload_id)}
 
             status_code = status.HTTP_201_CREATED
-
-
 
             response_data = {
                 'upload_id': upload_obj.upload_id,
@@ -345,7 +471,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
         logger.info(f"{upload_id}: '{breq}'.")
         raise
     except NotFound as nfdb:
-        logger.info(f"Upload id '{upload_id}' not found in database: '{nfdb}'.")
+        logger.info(f"{upload_id}: Upload: '{nfdb}'.")
         raise nfdb
     except Exception as ue:
         logger.info("Unknown error with existing workspace."
@@ -408,14 +534,13 @@ def upload_summary(upload_id: int) -> Response:
     except (TypeError, ValueError):
         logger.info(f"Error updating database.")
         raise InternalServerError(UPLOAD_DB_ERROR)
-    except NotFound:
-        logger.info(f"Upload id '{upload_id}' not found in database.")
+    except NotFound as nf:
+        logger.info(f"{upload_id}: UploadSummary: '{nf}'")
         raise
     except Exception as ue:
         logger.info("Unknown error with existing workspace."
                     + f" Add except clauses for '{ue}'. DO IT NOW!")
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
-
 
     return response_data, status_code, {}
 
