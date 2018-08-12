@@ -52,10 +52,9 @@ UPLOAD_DB_ERROR = {'unable to create/insert new upload workspace into database'}
 UPLOAD_IO_ERROR = {'encountered an IOError'}
 UPLOAD_UNKNOWN_ERROR = {'unknown error'}
 UPLOAD_DELETED_FILE = {'deleted file'}
+UPLOAD_DELETED_WORKSPACE = {'deleted workspace'}
 UPLOAD_FILE_NOT_FOUND = {'file not found'}
 UPLOAD_DELETED_ALL_FILES = {'deleted all files'}
-
-UPLOAD_DELETE_WORKSPACE = {'reason': 'workspace scheduled for deletion.'}
 
 # upload status codes
 INVALID_UPLOAD_ID = {'reason': 'invalid upload identifier'}
@@ -93,22 +92,37 @@ Response = Tuple[Optional[dict], int, dict]
 
 
 def delete_workspace(upload_id: int) -> Response:
-    """Delete workspace."""
+    """Delete workspace.
+
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for the upload_obj in question.
+
+    Returns
+    -------
+    dict
+        Complete summary of upload processing.
+    int
+        An HTTP status code.
+    dict
+        Some extra headers to add to the response.
+
+    """
+
     logger.info(f"{upload_id}: Deleting upload workspace.")
 
-    # TODO: This request was not really part if this sprint. Write down ideas and
-    #      come back to later.
 
     # Need to add several checks here
 
     # At this point I believe we know that caller is authorized to delete the
     # workspace. This is checked at the routes level.
 
-    # Does workspace exist? Has it already been deleted? Generate 400:BadRequest error.
-
+    # Does workspace exist? Has it already been deleted? Generate 400:NotFound error.
     # Do we care is workspace is ACTIVE state? And not released? NO. But log it...
-
+    # Do we want to stash source.log somewhere?
     # Do we care if workspace was modified recently...NO. Log it
+
 
     try:
         # Make sure we have an upload_obj to work with
@@ -116,20 +130,33 @@ def delete_workspace(upload_id: int) -> Response:
 
         if upload_obj is None:
             # Invalid workspace identifier
+            # Note: DB entry will exist for workspace that has already been
+            #       deleted
             raise NotFound(UPLOAD_NOT_FOUND)
         else:
-            # Any other conditions that raise red flags? Any that stop the
-            # deletion?
 
             # Actually remove entire workspace directory structure. Log
-            # something to global log since source log is being removed!
+            # everything to global log since source log is being removed!
 
             # Initiate workspace deletion
 
             # Update database (but keep around) for historical reference. Does not
             # consume very much space. What about source log?
+            # Create Upload object
 
-            pass
+            uploadObj = filemanager.process.upload.Upload(upload_id)
+
+            # Call routine that will do the actual work
+            uploadObj.remove_workspace()
+
+            # update database
+            if upload_obj.state != 'RELEASED':
+                logger.info(f"{upload_id}: Workspace currently in '{upload_obj.state}' state.")
+
+            upload_obj.state = 'DELETED'
+
+            # Store in DB
+            uploads.update(upload_obj)
 
     except IOError:
         logger.error(f"{upload_obj.upload_id}: Delete workspace request failed ")
@@ -145,11 +172,10 @@ def delete_workspace(upload_id: int) -> Response:
     # API doesn't provide for returning errors resulting from delete.
     # 401-unautorized and 403-forbidden are handled at routes level.
     # Add 400 response to openapi.yaml
-    if upload_id:
-        raise NotImplemented(REQUEST_NOT_IMPLEMENTED)
 
-    #status_code = status.HTTP_204_NO_CONTENT
-    #return UPLOAD_DELETE_WORKSPACE, status_code, {}
+    response_data = UPLOAD_DELETED_WORKSPACE  # Get rid of pylint error
+    status_code = status.HTTP_200_OK
+    return response_data, status_code, {}
 
 
 def client_delete_file(upload_id: str, public_file_path: str) -> Response:
