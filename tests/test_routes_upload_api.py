@@ -500,7 +500,7 @@ class TestUploadAPIRoutes(TestCase):
         filename = os.path.basename(filepath)
 
         # Upload files to delete
-        response = self.client.post('/filemanager/api/24',
+        response = self.client.post('/filemanager/api/',
                                     data={
                                         'file': (open(filepath, 'rb'), filename),
                                     },
@@ -536,8 +536,33 @@ class TestUploadAPIRoutes(TestCase):
 
         # print("Delete Response:\n" + str(response.data) + '\n')
 
-        # TODO: Delete implementation is coming soon so leave here for now.
-        self.assertEqual(response.status_code, 501, "Accepted request to delete workspace.")
+        self.assertEqual(response.status_code, 200, "Delete workspace.")
+
+        # Let's try to delete the same workspace again
+
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+                                      headers={'Authorization': admin_token}
+                                      )
+
+        self.assertEqual(response.status_code, 404, "Delete non-existent workspace.")
+
+        # Try and delete a non-sense upload_id
+        response = self.client.delete(f"/filemanager/api/34+14",
+                                      headers={'Authorization': admin_token}
+                                      )
+
+        self.assertEqual(response.status_code, 404, "Delete workspace using bogus upload_id.")
+
+        # Try and delete a non-sense upload_id
+        response = self.client.delete(f"/filemanager/api/../../etc/passwd",
+                                      headers={'Authorization': admin_token}
+                                      )
+
+        self.assertEqual(response.status_code, 404, "Delete workspace using bogus upload_id.")
+
+
+
+        # TODO: Need to add more tests for auth/z for submitter and admin
 
 
 
@@ -656,5 +681,6 @@ class TestUploadAPIRoutes(TestCase):
 
         #print("Delete Response:\n" + str(response.data) + '\n')
 
-        # TODO: Delete implementation is coming soon so leave here for now.
-        self.assertEqual(response.status_code, 501, "Accepted request to delete workspace.")
+        # This cleans out the workspace. Comment out if you want to inspect files
+        # in workspace. Source log is saved to 'deleted_workspace_logs' directory.
+        self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
