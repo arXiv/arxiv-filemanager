@@ -491,6 +491,36 @@ class TestUploadAPIRoutes(TestCase):
         token = generate_token(self.app,
                                {'scope': ['read:upload', 'write:upload']})
 
+        # Upload a gzipped tar archive package containing files to delete.
+        cwd = os.getcwd()
+        testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
+        filepath = os.path.join(testfiles_dir, 'UploadWithANCDirectory.tar.gz')
+
+        # Prepare gzipped tar submission for upload
+        filename = os.path.basename(filepath)
+
+        # Upload files to delete
+        response = self.client.post('/filemanager/api/24',
+                                    data={
+                                        'file': (open(filepath, 'rb'), filename),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
+
+        # This upload should work but we'll check the response anyway
+        with open('schema/resources/uploadResult.json') as f:
+            schema = json.load(f)
+
+        try:
+            jsonschema.validate(json.loads(response.data), schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
         # Delete the workspace
 
         # Create admin token for deleting upload workspace
