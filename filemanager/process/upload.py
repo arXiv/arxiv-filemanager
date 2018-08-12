@@ -17,6 +17,7 @@ UPLOAD_FILE_EMPTY = {'file payload is zero length'}
 UPLOAD_DELETE_FILE_FAILED = {'unable to delete file'}
 UPLOAD_DELETE_ALL_FILE_FAILED = {'unable to delete all file'}
 UPLOAD_FILE_NOT_FOUND = {'file not found'}
+UPLOAD_WORKSPACE_NOT_FOUND = {'workspcae not found'}
 
 # TODO: Need to move to config file
 UPLOAD_BASE_DIRECTORY = '/tmp/filemanagment/submissions'
@@ -221,6 +222,53 @@ submitter."""
 
         # Add reason for removal to File object
         file.remove(msg)
+
+    def remove_workspace(self) -> bool:
+        """Remove upload workspace. This request completely removes the upload
+        workspace directory. No backup is made here (system backups may have files
+        for period of time).
+
+        Returns
+        -------
+
+        """
+
+        self.log('********** Delete Workspace ************\n')
+
+        # Think about stashing source.log, otherwise any logging is fruitless
+        # since we are deleting all files under workspace.
+
+        workspace_directory = self.get_upload_directory()
+
+        if not os.path.exists(workspace_directory):
+            raise NotFound(UPLOAD_WORKSPACE_NOT_FOUND)
+
+        # Let's stash a copy of the source.log file (if it exists)
+        log_path = os.path.join(self.get_upload_directory(), 'source.log')
+
+        if os.path.exists(log_path):
+            # Does directory exist to stash log
+            deleted_workspace_logs = os.path.join(UPLOAD_BASE_DIRECTORY,
+                                                  'deleted_workspace_logs')
+            if not os.path.exists(deleted_workspace_logs):
+                # Create the directory for deleted workspace logs
+                os.makedirs(deleted_workspace_logs, 0o755)
+
+            # Since every source log has the same filename we will prefix
+            # upload identifier to log.
+
+            new_filename = str(self.__upload_id) + "_source.log"
+            deleted_log_path = os.path.join(deleted_workspace_logs, new_filename)
+            self.log(f"Move '{log_path} to '{deleted_log_path}'.")
+            if not shutil.move(log_path, deleted_log_path):
+                self.log('Saving source.log failed.')
+                return False
+
+        # Now blow away the workspace
+
+        return True
+
+
 
     def client_remove_file(self, public_file_path: str) -> bool:
         """Delete a single file.
