@@ -240,9 +240,6 @@ submitter."""
 
         workspace_directory = self.get_upload_directory()
 
-        if not os.path.exists(workspace_directory):
-            raise NotFound(UPLOAD_WORKSPACE_NOT_FOUND)
-
         # Let's stash a copy of the source.log file (if it exists)
         log_path = os.path.join(self.get_upload_directory(), 'source.log')
 
@@ -256,15 +253,19 @@ submitter."""
 
             # Since every source log has the same filename we will prefix
             # upload identifier to log.
-
-            new_filename = str(self.__upload_id) + "_source.log"
+            padded_id = '{0:07d}'.format(self.__upload_id)
+            new_filename = padded_id + "_source.log"
             deleted_log_path = os.path.join(deleted_workspace_logs, new_filename)
             self.log(f"Move '{log_path} to '{deleted_log_path}'.")
+            self.log(f"Delete workspace '{workspace_directory}'.")
             if not shutil.move(log_path, deleted_log_path):
                 self.log('Saving source.log failed.')
                 return False
 
         # Now blow away the workspace
+        if os.path.exists(workspace_directory):
+            shutil.rmtree(workspace_directory)
+
 
         return True
 
