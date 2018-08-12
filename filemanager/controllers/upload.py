@@ -55,6 +55,7 @@ UPLOAD_DELETED_FILE = {'deleted file'}
 UPLOAD_DELETED_WORKSPACE = {'deleted workspace'}
 UPLOAD_FILE_NOT_FOUND = {'file not found'}
 UPLOAD_DELETED_ALL_FILES = {'deleted all files'}
+UPLOAD_WORKSPACE_NOT_FOUND = {'workspcae not found'}
 
 # upload status codes
 INVALID_UPLOAD_ID = {'reason': 'invalid upload identifier'}
@@ -143,6 +144,10 @@ def delete_workspace(upload_id: int) -> Response:
             # Update database (but keep around) for historical reference. Does not
             # consume very much space. What about source log?
             # Create Upload object
+            if upload_obj.state == 'DELETED':
+                logger.info(f"{upload_id}: Workspace has already been deleted:"
+                            f"current state is '{upload_obj.state}'")
+                raise NotFound(UPLOAD_WORKSPACE_NOT_FOUND)
 
             uploadObj = filemanager.process.upload.Upload(upload_id)
 
@@ -162,7 +167,7 @@ def delete_workspace(upload_id: int) -> Response:
         logger.error(f"{upload_obj.upload_id}: Delete workspace request failed ")
         raise InternalServerError(CANT_DELETE_FILE)
     except NotFound as nf:
-        logger.info(f"{upload_id}: DeleteWorkspace: '{nf}'")
+        logger.info(f"{upload_id}: Delete Workspace: '{nf}'")
         raise
     except Exception as ue:
         logger.info("Unknown error in delete workspace. "
