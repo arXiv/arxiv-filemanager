@@ -1,10 +1,13 @@
 """Tests for :mod:`filemanager.routes.upload_api`."""
 
 from unittest import TestCase, mock
-from datetime import datetime
+from datetime import datetime, timedelta
+from pytz import timezone
 import json
+import os
+import uuid
 import os.path
-from typing import Any, Optional, Dict
+from typing import Any, Optional, Dict, List
 from io import BytesIO
 import jsonschema
 import jwt
@@ -13,12 +16,53 @@ from flask import Flask
 from filemanager.factory import create_web_app
 from filemanager.services import uploads
 
+from arxiv.users import domain, auth
+
 
 # Generate authentication token
-def generate_token(app: Flask, claims: dict) -> str:
+def generate_token(app: Flask, scope: List[str]) -> str:
     """Helper function for generating a JWT."""
     secret = app.config.get('JWT_SECRET')
-    return jwt.encode(claims, secret, algorithm='HS256')  # type: ignore
+    start = datetime.now(tz=timezone('US/Eastern'))
+    end = start + timedelta(seconds=36000)   # Make this as long as you want.
+    user_id = '1'
+    email = 'foo@bar.com'
+    username = 'theuser'
+    first_name = 'Jane'
+    last_name = 'Doe'
+    suffix_name = 'IV'
+    affiliation = 'Cornell University'
+    rank = 3
+    country = 'us'
+    default_category = 'astro-ph.GA'
+    submission_groups = 'grp_physics'
+    endorsements = 'astro-ph.CO,astro-ph.GA'
+    session = domain.Session(
+        session_id=str(uuid.uuid4()),
+        start_time=start, end_time=end,
+        user=domain.User(
+            user_id=user_id,
+            email=email,
+            username=username,
+            name=domain.UserFullName(first_name, last_name, suffix_name),
+            profile=domain.UserProfile(
+                affiliation=affiliation,
+                rank=int(rank),
+                country=country,
+                default_category=domain.Category(
+                    *default_category.split('.', 1)
+                ),
+                submission_groups=submission_groups.split(',')
+            )
+        ),
+        authorizations=domain.Authorizations(
+            scopes=scope,
+            endorsements=[domain.Category(cat.split('.', 1))
+                          for cat in endorsements.split(',')]
+        )
+    )
+    token = auth.tokens.encode(session, secret)
+    return token
 
 
 class TestUploadAPIRoutes(TestCase):
@@ -26,7 +70,10 @@ class TestUploadAPIRoutes(TestCase):
 
     def setUp(self) -> None:
         """Initialize the Flask application, and get a client for testing."""
+        # There is a bug in arxiv.base where it doesn't pick up app config
+        # parameters. Until then, we pass it to os.environ.
         self.app = create_web_app()
+        os.environ['JWT_SECRET'] = self.app.config.get('JWT_SECRET')
         self.client = self.app.test_client()
         self.app.app_context().push()
         uploads.db.create_all()
@@ -70,7 +117,7 @@ class TestUploadAPIRoutes(TestCase):
                                     #headers={'Authorization': ''},
                                     content_type='multipart/form-data')
 
-        self.assertEqual(response.status_code, 403, 'Authorization token not passed to server')
+        self.assertEqual(response.status_code, 401, 'Authorization token not passed to server')
 
         # Authorization argument without valid token
         response = self.client.post('/filemanager/api/',
@@ -82,11 +129,10 @@ class TestUploadAPIRoutes(TestCase):
                                     #        content_type='application/gzip')
                                     content_type='multipart/form-data')
 
-        self.assertEqual(response.status_code, 403, 'Empty authorization token passed to server')
+        self.assertEqual(response.status_code, 401, 'Empty authorization token passed to server')
 
         # Create an INVALID token for writing to upload workspace
-        token = generate_token(self.app,
-                               {'scope': ['delete:upload', 'hack:upload']})
+        token = generate_token(self.app, [auth.scopes.READ_UPLOAD])
 
         # Create path to test file
         cwd = os.getcwd()
@@ -113,8 +159,8 @@ class TestUploadAPIRoutes(TestCase):
         #       This requires updating to NEW auth/z implementation. Soon!
 
         # Create a VALID token for writing to upload workspace
-        token = generate_token(self.app,
-                               {'scope': ['read:upload', 'write:upload']})
+        token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                          auth.scopes.WRITE_UPLOAD])
 
         # File payload missing
         response = self.client.post('/filemanager/api/',
@@ -155,6 +201,8 @@ class TestUploadAPIRoutes(TestCase):
         #testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
         testfiles_dir = '/tmp'
         filepath = os.path.join(testfiles_dir, 'nullfile')
+        open(filepath, 'wb').close()    # touch
+
 
         # Upload empty/null file
         response = self.client.post('/filemanager/api/',
@@ -185,8 +233,8 @@ class TestUploadAPIRoutes(TestCase):
             schema = json.load(f)
 
         # Create a token for writing to upload workspace
-        token = generate_token(self.app,
-                               {'scope': ['read:upload', 'write:upload']})
+        token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                          auth.scopes.WRITE_UPLOAD])
 
         created = datetime.now()
         modified = datetime.now()
@@ -255,9 +303,8 @@ class TestUploadAPIRoutes(TestCase):
 
         """
         # Create a token for writing to upload workspace
-        token = generate_token(self.app,
-                               {'scope': ['read:upload', 'write:upload']})
-
+        token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                          auth.scopes.WRITE_UPLOAD])
 
         # Upload a gzipped tar archive package containing files to delete.
         cwd = os.getcwd()
@@ -410,8 +457,8 @@ class TestUploadAPIRoutes(TestCase):
 
         """
         # Create a token for writing to upload workspace
-        token = generate_token(self.app,
-                               {'scope': ['read:upload', 'write:upload']})
+        token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                          auth.scopes.WRITE_UPLOAD])
 
         # Upload a gzipped tar archive package containing files to delete.
         cwd = os.getcwd()
@@ -488,16 +535,16 @@ class TestUploadAPIRoutes(TestCase):
         # TODO: Need to work on this code after imlementing delete workspace.
 
         # Create a token for writing to upload workspace
-        token = generate_token(self.app,
-                               {'scope': ['read:upload', 'write:upload']})
+        token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                          auth.scopes.WRITE_UPLOAD])
 
         # Delete the workspace
 
         # Create admin token for deleting upload workspace
 
-        admin_token = generate_token(self.app,
-                                     {'scope': ['read:upload', 'write:upload',
-                                                'admin:upload']})
+        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                                auth.scopes.WRITE_UPLOAD,
+                                                auth.scopes.ADMIN_UPLOAD])
         print(f"ADMIN Token (for possible use in manual browser tests): {admin_token}\n")
 
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
@@ -528,8 +575,8 @@ class TestUploadAPIRoutes(TestCase):
             schema = json.load(f)
 
         # Create a token for writing to upload workspace
-        token = generate_token(self.app,
-                               {'scope': ['read:upload', 'write:upload']})
+        token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                          auth.scopes.WRITE_UPLOAD])
 
         created = datetime.now()
         modified = datetime.now()
@@ -615,9 +662,9 @@ class TestUploadAPIRoutes(TestCase):
         # Delete the workspace
 
         # Create admin token for deleting upload workspace
-        admin_token = generate_token(self.app,
-                                   {'scope': ['read:upload', 'write:upload',
-                                              'admin:upload']})
+        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                                auth.scopes.WRITE_UPLOAD,
+                                                auth.scopes.ADMIN_UPLOAD])
         print(f"ADMIN Token (for possible use in manual browser tests): {admin_token}\n")
 
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",

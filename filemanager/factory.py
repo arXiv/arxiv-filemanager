@@ -4,12 +4,16 @@
 
 from flask import Flask
 from celery import Celery
-from arxiv.base import Base
-from filemanager import celeryconfig
 
+from arxiv.base import Base
+from arxiv.base.middleware import wrap
+
+from filemanager import celeryconfig
 from filemanager.encode import ISO8601JSONEncoder
 from filemanager.routes import upload_api
 from filemanager.services import uploads
+
+from arxiv.users import auth
 
 celery_app = Celery(__name__, results=celeryconfig.result_backend,
                     broker=celeryconfig.broker_url)
@@ -25,7 +29,9 @@ def create_web_app() -> Flask:
     uploads.init_app(app)
 
     Base(app)    # Gives us access to the base UI templates and resources.
+    auth.Auth(app)
     app.register_blueprint(upload_api.blueprint)
+    wrap(app, [auth.middleware.AuthMiddleware])
 
     celery_app.config_from_object(celeryconfig)
     celery_app.autodiscover_tasks(['filemanager'], related_name='tasks', force=True)

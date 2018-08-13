@@ -62,7 +62,7 @@ class TestUploadGetter(TestCase):
 
         mock_query.side_effect = raise_op_error
         with self.assertRaises(IOError):
-            self.uploads.retrieve(1)  # type: ignore
+            self.uploads.retrieve(1, skip_cache=True)  # type: ignore
 
 
 class TestUploadCreator(TestCase):

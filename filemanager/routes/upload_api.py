@@ -9,11 +9,25 @@ from werkzeug.exceptions import NotFound, Forbidden, Unauthorized, \
     InternalServerError, HTTPException, BadRequest
 from arxiv.base import routes as base_routes
 from arxiv import status
-from filemanager import authorization
+from arxiv.users import domain as auth_domain
+from arxiv.users.auth import scopes
 
+from arxiv.users.auth.decorators import scoped
+
+from filemanager.services import uploads
 from filemanager.controllers import upload
 
 blueprint = Blueprint('upload_api', __name__, url_prefix='/filemanager/api')
+
+
+def is_owner(session: auth_domain.Session, upload_id: str, **kwargs) -> bool:
+    """User must be the upload owner, or an admin."""
+    if scopes.ADMIN_UPLOAD in session.authorizations.scopes:
+        return True
+    upload_obj = uploads.retrieve(upload_id)
+    if upload_obj is None:
+        return True
+    return session.user.user_id == uploads.retrieve(upload_id).owner_user_id
 
 
 @blueprint.route('/status', methods=['GET'])
@@ -23,7 +37,7 @@ def service_status() -> tuple:
 
 
 @blueprint.route('/', methods=['POST'])
-@authorization.scoped('write:upload')
+@scoped(scopes.WRITE_UPLOAD)
 def new_upload() -> tuple:
     """Initial upload where workspace (upload_id) does not yet exist.
 
@@ -42,12 +56,14 @@ def new_upload() -> tuple:
     file = request.files.get('file', None)
 
     # Collect arguments and call main upload controller
-    data, status_code, headers = upload.upload(None, file, archive_arg)
+    data, status_code, headers = upload.upload(None, file, archive_arg,
+                                               request.session.user)
 
     return jsonify(data), status_code, headers
 
+
 @blueprint.route('<int:upload_id>', methods=['GET', 'POST'])
-@authorization.scoped('write:upload')
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def upload_files(upload_id: int) -> tuple:
     """Upload individual files or compressed archive
     and add to existing upload workspace. Multiple uploads accepted."""
@@ -59,7 +75,8 @@ def upload_files(upload_id: int) -> tuple:
         file = request.files.get('file', None)
 
         # Attempt to process upload
-        data, status_code, headers = upload.upload(upload_id, file, archive_arg)
+        data, status_code, headers = upload.upload(upload_id, file, archive_arg,
+                                                   request.session.user)
 
     if request.method == 'GET':
         data, status_code, headers = upload.upload_summary(upload_id)
@@ -69,8 +86,9 @@ def upload_files(upload_id: int) -> tuple:
 
     return jsonify(data), status_code, headers
 
+
 @blueprint.route('<int:upload_id>/<path:public_file_path>', methods=['DELETE'])
-@authorization.scoped('write:upload')
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def delete_file(upload_id: int, public_file_path: str) -> tuple:
     """Delete individual file."""
 
@@ -80,7 +98,7 @@ def delete_file(upload_id: int, public_file_path: str) -> tuple:
 
 
 @blueprint.route('<int:upload_id>/delete_all', methods=['POST'])
-@authorization.scoped('write:upload')
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def delete_all_files(upload_id: int) -> tuple:
     """Delete all files in specified workspace."""
 
@@ -91,7 +109,7 @@ def delete_all_files(upload_id: int) -> tuple:
 
 
 @blueprint.route('<int:upload_id>', methods=['DELETE'])
-@authorization.scoped('admin:upload')
+@scoped(scopes.ADMIN_UPLOAD)
 def workspace_delete(upload_id: int) -> tuple:
     """Delete the specified workspace."""
 
@@ -109,7 +127,7 @@ def workspace_delete(upload_id: int) -> tuple:
 # Will upload GET always return list of files?
 #
 # @blueprint.route('/manifest/<int:upload_id>', methods=['GET'])
-# @authorization.scoped('read:upload')
+# @scoped('read:upload')
 # def manifest(upload_id: int) -> tuple:
 #    """Manifest of files contained in upload package."""
 #    #data, status_code, headers = upload.generate_manifest(upload_id)
@@ -118,7 +136,7 @@ def workspace_delete(upload_id: int) -> tuple:
 
 # Or would 'download' be a better request? 'disseminate'?
 @blueprint.route('/content/<int:upload_id>', methods=['GET'])
-@authorization.scoped('read:upload')
+@scoped(scopes.READ_UPLOAD)
 def get_files(upload_id: int) -> tuple:
     """Return compressed archive containing files."""
     data, status_code, headers = upload.package_content(upload_id)
@@ -127,7 +145,7 @@ def get_files(upload_id: int) -> tuple:
 
 # This could be freeze instead of lock
 @blueprint.route('/lock/<int:upload_id>', methods=['GET'])
-@authorization.scoped('write:upload')
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def lock(upload_id: int) -> tuple:
     """Lock submission (read-only mode) while other services are
     processing (major state transitions are occurring)."""
@@ -137,7 +155,7 @@ def lock(upload_id: int) -> tuple:
 
 # This could be thaw or release instead of unlock
 @blueprint.route('/unlock/<int:upload_id>', methods=['GET'])
-@authorization.scoped('write:upload')
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def unlock(upload_id: int) -> tuple:
     """Unlock submission and enable write mode."""
     data, status_code, headers = upload.upload_unlock(upload_id)
@@ -146,7 +164,7 @@ def unlock(upload_id: int) -> tuple:
 
 # This could be remove or delete instead of release
 @blueprint.route('/release/<int:upload_id>', methods=['GET'])
-@authorization.scoped('write:upload')
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def release(upload_id: int) -> tuple:
     """Client indicates they are finished with submission.
     File management service is free to remove submissions files,
@@ -157,14 +175,16 @@ def release(upload_id: int) -> tuple:
 
 # This could be get_logs or retrieve_logs instead of logs
 @blueprint.route('/logs/<int:upload_id>', methods=['GET'])
-@authorization.scoped('write:upload')
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def logs(upload_id: int) -> tuple:
     """Retreive log files related to submission. Indicates
     history or actions on submission package."""
     data, status_code, headers = upload.upload_logs(upload_id)
     return jsonify(data), status_code, headers
 
+
 # Exception handling
+
 
 @blueprint.errorhandler(NotFound)
 @blueprint.errorhandler(InternalServerError)

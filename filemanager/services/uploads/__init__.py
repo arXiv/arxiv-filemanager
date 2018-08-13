@@ -7,13 +7,15 @@ from sqlalchemy.exc import OperationalError
 from filemanager.domain import Upload
 from .models import db, DBUpload
 
+from arxiv.base.globals import get_application_global
+
 
 def init_app(app: Optional[LocalProxy]) -> None:
     """Set configuration defaults and attach session to the application."""
     db.init_app(app)
 
 
-def retrieve(upload_id: int) -> Optional[Upload]:
+def retrieve(upload_id: int, skip_cache: bool = False) -> Optional[Upload]:
     """
     Get data about a upload.
 
@@ -21,6 +23,10 @@ def retrieve(upload_id: int) -> Optional[Upload]:
     ----------
     upload_id : int
         Unique identifier for the upload.
+    skip_cache : bool
+        If `True`, will load fresh data regardless of what might already be
+        around. Otherwise, will only load the same :class:`Upload` instance
+        once.
 
     Returns
     -------
@@ -33,12 +39,27 @@ def retrieve(upload_id: int) -> Optional[Upload]:
         When there is a problem querying the database.
 
     """
-    try:
-        upload_data = db.session.query(DBUpload).get(upload_id)
-    except OperationalError as e:
-        raise IOError('Could not query database: %s' % e.detail) from e
-    if upload_data is None:
-        return None
+    # We use the application global object to create a simple cache for
+    # loaded uploads. This allows us to avoid multiple queries on the same
+    # state when different parts of the application need access to the same
+    # upload.
+    g = get_application_global()
+    if g and 'uploads' not in g:
+        g.uploads = {}
+
+    if g and not skip_cache and upload_id in g.uploads:
+        upload_data = g.uploads[upload_id]
+    else:
+        try:
+            upload_data = db.session.query(DBUpload).get(upload_id)
+        except OperationalError as e:
+            raise IOError('Could not query database: %s' % e.detail) from e
+
+        if upload_data is None:
+            return None
+
+        if g:
+            g.uploads[upload_id] = upload_data      # Cache for next time.
 
     args = {}
     args['upload_id'] = upload_data.upload_id
