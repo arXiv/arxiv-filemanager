@@ -161,7 +161,7 @@ def delete_workspace(upload_id: int) -> Response:
             upload_db_data.state = 'DELETED'
 
             # Store in DB
-            uploads.update()
+            uploads.update(upload_db_data)
 
     except IOError:
         logger.error(f"{upload_id}: Delete workspace request failed ")
