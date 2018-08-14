@@ -43,19 +43,19 @@ logger.propagate = False
 # End logging configuration
 
 # exceptions
-UPLOAD_MISSING_FILE = {'missing file/archive payload'}
-UPLOAD_MISSING_FILENAME = {'file argument missing filename or file not selected'}
+UPLOAD_MISSING_FILE = 'missing file/archive payload'
+UPLOAD_MISSING_FILENAME = 'file argument missing filename or file not selected'
 # UPLOAD_FILE_EMPTY = {'file payload is zero length'}
 
-UPLOAD_NOT_FOUND = {'upload workspace not found'}
-UPLOAD_DB_ERROR = {'unable to create/insert new upload workspace into database'}
-UPLOAD_IO_ERROR = {'encountered an IOError'}
-UPLOAD_UNKNOWN_ERROR = {'unknown error'}
-UPLOAD_DELETED_FILE = {'deleted file'}
-UPLOAD_DELETED_WORKSPACE = {'deleted workspace'}
-UPLOAD_FILE_NOT_FOUND = {'file not found'}
-UPLOAD_DELETED_ALL_FILES = {'deleted all files'}
-UPLOAD_WORKSPACE_NOT_FOUND = {'workspace not found'}
+UPLOAD_NOT_FOUND = 'upload workspace not found'
+UPLOAD_DB_ERROR = 'unable to create/insert new upload workspace into database'
+UPLOAD_IO_ERROR = 'encountered an IOError'
+UPLOAD_UNKNOWN_ERROR = 'unknown error'
+UPLOAD_DELETED_FILE = 'deleted file'
+UPLOAD_DELETED_WORKSPACE = 'deleted workspace'
+UPLOAD_FILE_NOT_FOUND = 'file not found'
+UPLOAD_DELETED_ALL_FILES = 'deleted all files'
+UPLOAD_WORKSPACE_NOT_FOUND = 'workspace not found'
 
 # upload status codes
 INVALID_UPLOAD_ID = {'reason': 'invalid upload identifier'}
@@ -68,26 +68,18 @@ REQUEST_NOT_IMPLEMENTED = {'request not implemented'}
 NO_SUCH_THING = {'reason': 'there is no upload'}
 THING_WONT_COME = {'reason': 'could not get the upload'}
 
-ERROR_RETRIEVING_UPLOAD = {'upload not found'}
+ERROR_RETRIEVING_UPLOAD = 'upload not found'
 # UPLOAD_DOESNT_EXIST = {'upload does not exist'}
-CANT_CREATE_UPLOAD = {'could not create the upload'}  #
-CANT_UPLOAD_FILE = {'could not upload file'}
-CANT_DELETE_FILE = {'could not delete file'}
-CANT_DELETE_ALL_FILES = {'could not delete all files'}
+CANT_CREATE_UPLOAD = 'could not create the upload'  #
+CANT_UPLOAD_FILE = 'could not upload file'
+CANT_DELETE_FILE = 'could not delete file'
+CANT_DELETE_ALL_FILES = 'could not delete all files'
 
 ACCEPTED = {'reason': 'upload in progress'}
 
 MISSING_NAME = {'an upload needs a name'}
 
 SOME_ERROR = {'Need to define and assign better error'}
-
-# task related exceptions
-INVALID_TASK_ID = {'reason': 'invalid task id'}
-TASK_DOES_NOT_EXIST = {'reason': 'task not found'}
-
-TASK_IN_PROGRESS = {'status': 'in progress'}
-TASK_FAILED = {'status': 'failed'}
-TASK_COMPLETE = {'status': 'complete'}
 
 Response = Tuple[Optional[dict], int, dict]
 
@@ -178,7 +170,7 @@ def delete_workspace(upload_id: int) -> Response:
     # 401-unautorized and 403-forbidden are handled at routes level.
     # Add 400 response to openapi.yaml
 
-    response_data = UPLOAD_DELETED_WORKSPACE  # Get rid of pylint error
+    response_data = {'reason': UPLOAD_DELETED_WORKSPACE}  # Get rid of pylint error
     status_code = status.HTTP_200_OK
     return response_data, status_code, {}
 
@@ -239,9 +231,7 @@ def client_delete_file(upload_id: str, public_file_path: str) -> Response:
                     + f" Add except clauses for '{ue}'. DO IT NOW!")
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    #status_code = status.HTTP_204_NO_CONTENT
-    #return f"Going to delete file", status_code, {}
-    response_data = UPLOAD_DELETED_FILE  # Get rid of pylint error
+    response_data = {'reason': UPLOAD_DELETED_FILE}  # Get rid of pylint error
     status_code = status.HTTP_200_OK
     return response_data, status_code, {}
 
@@ -297,7 +287,7 @@ def client_delete_all_files(upload_id: str) -> Response:
                     + f" Add except clauses for '{ue}'. DO IT NOW!")
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    response_data = UPLOAD_DELETED_ALL_FILES # Get rid of pylint error
+    response_data = {'reason': UPLOAD_DELETED_ALL_FILES} # Get rid of pylint error
     status_code = status.HTTP_200_OK
     return response_data, status_code, {}
 
@@ -647,71 +637,3 @@ def upload_logs(upload_id: int) -> Response:
     response_data = ACCEPTED
     status_code = status.HTTP_202_ACCEPTED
     return response_data, status_code, {}
-
-
-# Demo reference code
-# TODO: These ASYNC processing routines are likely going away if upload
-#       performs well.
-
-def upload_as_task(upload_id: int) -> Response:
-    """
-    Start sanitizing (a :class:`.Upload`.
-
-    Parameters
-    ----------
-    upload_id : int
-
-    Returns
-    -------
-    dict
-        Some data.
-    int
-        An HTTP status code.
-    dict
-        Some extra headers to add to the response.
-    """
-    result = sanitize_upload.delay(upload_id)
-    headers = {'Location': url_for('upload_api.upload_status',
-                                   task_id=result.task_id)}
-    return ACCEPTED, status.HTTP_202_ACCEPTED, headers
-
-
-def upload_as_task_status(task_id: str) -> Response:
-    """
-    Check the status of a mutation process.
-
-    Parameters
-    ----------
-    task_id : str
-        The ID of the mutation task.
-
-    Returns
-    -------
-    dict
-        Some data.
-    int
-        An HTTP status code.
-    dict
-        Some extra headers to add to the response.
-    """
-    try:
-        task_status, result = check_sanitize_status(task_id)
-    except ValueError as e:
-        print(str(e))  # get rid of pylint error - use e
-        return INVALID_TASK_ID, status.HTTP_400_BAD_REQUEST, {}
-
-    if task_status == 'PENDING':
-        return TASK_DOES_NOT_EXIST, status.HTTP_404_NOT_FOUND, {}
-    elif task_status in ['SENT', 'STARTED', 'RETRY']:
-        return TASK_IN_PROGRESS, status.HTTP_200_OK, {}
-    elif task_status == 'FAILURE':
-        reason = TASK_FAILED
-        reason.update({'reason': str(result)})
-        return reason, status.HTTP_200_OK, {}
-    elif task_status == 'SUCCESS':
-        reason = TASK_COMPLETE
-        reason.update({'result': result})
-        headers = {'Location': url_for('external_api.read_thing',
-                                       thing_id=result['thing_id'])}
-        return TASK_COMPLETE, status.HTTP_303_SEE_OTHER, headers
-    return TASK_DOES_NOT_EXIST, status.HTTP_404_NOT_FOUND, {}
