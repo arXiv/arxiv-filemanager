@@ -44,19 +44,19 @@ logger.propagate = False
 # End logging configuration
 
 # exceptions
-UPLOAD_MISSING_FILE = {'missing file/archive payload'}
-UPLOAD_MISSING_FILENAME = {'file argument missing filename or file not selected'}
+UPLOAD_MISSING_FILE = 'missing file/archive payload'
+UPLOAD_MISSING_FILENAME = 'file argument missing filename or file not selected'
 # UPLOAD_FILE_EMPTY = {'file payload is zero length'}
 
-UPLOAD_NOT_FOUND = {'upload workspace not found'}
-UPLOAD_DB_ERROR = {'unable to create/insert new upload workspace into database'}
-UPLOAD_IO_ERROR = {'encountered an IOError'}
-UPLOAD_UNKNOWN_ERROR = {'unknown error'}
-UPLOAD_DELETED_FILE = {'deleted file'}
-UPLOAD_FILE_NOT_FOUND = {'file not found'}
-UPLOAD_DELETED_ALL_FILES = {'deleted all files'}
-
-UPLOAD_DELETE_WORKSPACE = {'reason': 'workspace scheduled for deletion.'}
+UPLOAD_NOT_FOUND = 'upload workspace not found'
+UPLOAD_DB_ERROR = 'unable to create/insert new upload workspace into database'
+UPLOAD_IO_ERROR = 'encountered an IOError'
+UPLOAD_UNKNOWN_ERROR = 'unknown error'
+UPLOAD_DELETED_FILE = 'deleted file'
+UPLOAD_DELETED_WORKSPACE = 'deleted workspace'
+UPLOAD_FILE_NOT_FOUND = 'file not found'
+UPLOAD_DELETED_ALL_FILES = 'deleted all files'
+UPLOAD_WORKSPACE_NOT_FOUND = 'workspace not found'
 
 # upload status codes
 INVALID_UPLOAD_ID = {'reason': 'invalid upload identifier'}
@@ -69,12 +69,12 @@ REQUEST_NOT_IMPLEMENTED = {'request not implemented'}
 NO_SUCH_THING = {'reason': 'there is no upload'}
 THING_WONT_COME = {'reason': 'could not get the upload'}
 
-ERROR_RETRIEVING_UPLOAD = {'upload not found'}
+ERROR_RETRIEVING_UPLOAD = 'upload not found'
 # UPLOAD_DOESNT_EXIST = {'upload does not exist'}
-CANT_CREATE_UPLOAD = {'could not create the upload'}  #
-CANT_UPLOAD_FILE = {'could not upload file'}
-CANT_DELETE_FILE = {'could not delete file'}
-CANT_DELETE_ALL_FILES = {'could not delete all files'}
+CANT_CREATE_UPLOAD = 'could not create the upload'  #
+CANT_UPLOAD_FILE = 'could not upload file'
+CANT_DELETE_FILE = 'could not delete file'
+CANT_DELETE_ALL_FILES = 'could not delete all files'
 
 ACCEPTED = {'reason': 'upload in progress'}
 
@@ -82,61 +82,85 @@ MISSING_NAME = {'an upload needs a name'}
 
 SOME_ERROR = {'Need to define and assign better error'}
 
-# task related exceptions
-INVALID_TASK_ID = {'reason': 'invalid task id'}
-TASK_DOES_NOT_EXIST = {'reason': 'task not found'}
-
-TASK_IN_PROGRESS = {'status': 'in progress'}
-TASK_FAILED = {'status': 'failed'}
-TASK_COMPLETE = {'status': 'complete'}
-
 Response = Tuple[Optional[dict], int, dict]
 
 
 def delete_workspace(upload_id: int) -> Response:
-    """Delete workspace."""
+    """Delete workspace.
+
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for the upload workspace.
+
+    Returns
+    -------
+    dict
+        Complete summary of upload processing.
+    int
+        An HTTP status code.
+    dict
+        Some extra headers to add to the response.
+
+    """
+
     logger.info(f"{upload_id}: Deleting upload workspace.")
 
-    # TODO: This request was not really part if this sprint. Write down ideas and
-    #      come back to later.
 
     # Need to add several checks here
 
     # At this point I believe we know that caller is authorized to delete the
     # workspace. This is checked at the routes level.
 
-    # Does workspace exist? Has it already been deleted? Generate 400:BadRequest error.
-
+    # Does workspace exist? Has it already been deleted? Generate 400:NotFound error.
     # Do we care is workspace is ACTIVE state? And not released? NO. But log it...
-
+    # Do we want to stash source.log somewhere?
     # Do we care if workspace was modified recently...NO. Log it
 
-    try:
-        # Make sure we have an upload_obj to work with
-        upload_obj: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_obj is None:
-            # Invalid workspace identifier
+    try:
+        # Make sure we have an existing upload workspace to work with
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+
+        if upload_db_data is None:
+            # invalid workspace identifier
+            # Note: DB entry will exist for workspace that has already been
+            #       deleted
             raise NotFound(UPLOAD_NOT_FOUND)
         else:
-            # Any other conditions that raise red flags? Any that stop the
-            # deletion?
 
             # Actually remove entire workspace directory structure. Log
-            # something to global log since source log is being removed!
+            # everything to global log since source log is being removed!
 
             # Initiate workspace deletion
 
             # Update database (but keep around) for historical reference. Does not
             # consume very much space. What about source log?
+            # Create Upload object
+            if upload_db_data.state == 'DELETED':
+                logger.info(f"{upload_id}: Workspace has already been deleted:"
+                            f"current state is '{upload_db_data.state}'")
+                raise NotFound(UPLOAD_WORKSPACE_NOT_FOUND)
 
-            pass
+            upload_workspace = filemanager.process.upload.Upload(upload_id)
+
+            # Call routine that will do the actual work
+            upload_workspace.remove_workspace()
+
+            # update database
+            if upload_db_data.state != 'RELEASED':
+                logger.info(f"{upload_id}: Workspace currently in '{upload_db_data.state}' state.")
+
+            upload_db_data.state = 'DELETED'
+
+            # Store in DB
+            uploads.update(upload_db_data)
 
     except IOError:
-        logger.error(f"{upload_obj.upload_id}: Delete workspace request failed ")
+        logger.error(f"{upload_id}: Delete workspace request failed ")
         raise InternalServerError(CANT_DELETE_FILE)
     except NotFound as nf:
-        logger.info(f"{upload_id}: DeleteWorkspace: '{nf}'")
+        logger.info(f"{upload_id}: Delete Workspace: '{nf}'")
         raise
     except Exception as ue:
         logger.info("Unknown error in delete workspace. "
@@ -146,11 +170,10 @@ def delete_workspace(upload_id: int) -> Response:
     # API doesn't provide for returning errors resulting from delete.
     # 401-unautorized and 403-forbidden are handled at routes level.
     # Add 400 response to openapi.yaml
-    if upload_id:
-        raise NotImplemented(REQUEST_NOT_IMPLEMENTED)
 
-    #status_code = status.HTTP_204_NO_CONTENT
-    #return UPLOAD_DELETE_WORKSPACE, status_code, {}
+    response_data = {'reason': UPLOAD_DELETED_WORKSPACE}  # Get rid of pylint error
+    status_code = status.HTTP_200_OK
+    return response_data, status_code, {}
 
 
 def client_delete_file(upload_id: str, public_file_path: str) -> Response:
@@ -161,7 +184,7 @@ def client_delete_file(upload_id: str, public_file_path: str) -> Response:
     Parameters
     ----------
     upload_id : int
-        The unique identifier for the upload_obj in question.
+        The unique identifier for the upload_db_data in question.
     public_file_path: str
         relative path of file to be deleted.
 
@@ -178,23 +201,23 @@ def client_delete_file(upload_id: str, public_file_path: str) -> Response:
     logger.info(f"{upload_id}: Delete file '{public_file_path}'.")
 
     try:
-        # Make sure we have an upload_obj to work with
-        upload_obj: Optional[Upload] = uploads.retrieve(upload_id)
+        # Make sure we have an upload_db_data to work with
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_obj is None:
+        if upload_db_data is None:
             # Invalid workspace identifier
             raise NotFound(UPLOAD_NOT_FOUND)
         else:
 
             # Create Upload object
-            uploadObj = filemanager.process.upload.Upload(upload_id)
+            upload_workspace = filemanager.process.upload.Upload(upload_id)
 
             # Call routine that will do the actual work
-            uploadObj.client_remove_file(public_file_path)
+            upload_workspace.client_remove_file(public_file_path)
 
 
     except IOError:
-        logger.error(f"{upload_obj.upload_id}: Delete file request failed ")
+        logger.error(f"{upload_db_data.upload_id}: Delete file request failed ")
         raise InternalServerError(CANT_DELETE_FILE)
     except NotFound as nf:
         logger.info(f"{upload_id}: DeleteFile: {nf}")
@@ -209,9 +232,7 @@ def client_delete_file(upload_id: str, public_file_path: str) -> Response:
                     + f" Add except clauses for '{ue}'. DO IT NOW!")
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    #status_code = status.HTTP_204_NO_CONTENT
-    #return f"Going to delete file", status_code, {}
-    response_data = UPLOAD_DELETED_FILE  # Get rid of pylint error
+    response_data = {'reason': UPLOAD_DELETED_FILE}  # Get rid of pylint error
     status_code = status.HTTP_200_OK
     return response_data, status_code, {}
 
@@ -224,7 +245,7 @@ def client_delete_all_files(upload_id: str) -> Response:
     Parameters
     ----------
     upload_id : int
-        The unique identifier for the upload_obj in question.
+        The unique identifier for the upload_db_data in question.
     public_file_path: str
         relative path of file to be deleted.
 
@@ -242,22 +263,22 @@ def client_delete_all_files(upload_id: str) -> Response:
     logger.info(f"{upload_id}: Deleting all uploaded files from this workspace.")
 
     try:
-        # Make sure we have an upload_obj to work with
-        upload_obj: Optional[Upload] = uploads.retrieve(upload_id)
+        # Make sure we have an upload_db_data to work with
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_obj is None:
+        if upload_db_data is None:
             # Invalid workspace identifier
             raise NotFound(UPLOAD_NOT_FOUND)
         else:
 
             # Create Upload object
-            uploadObj = filemanager.process.upload.Upload(upload_id)
+            upload_workspace = filemanager.process.upload.Upload(upload_id)
 
-            uploadObj.client_remove_all_files()
+            upload_workspace.client_remove_all_files()
 
 
     except IOError:
-        logger.error(f"{upload_obj.upload_id}: Delete all files request failed ")
+        logger.error(f"{upload_db_data.upload_id}: Delete all files request failed ")
         raise InternalServerError(CANT_DELETE_ALL_FILES)
     except NotFound as nf:
         logger.info(f"{upload_id}: DeleteAllFiles: '{nf}'")
@@ -267,7 +288,7 @@ def client_delete_all_files(upload_id: str) -> Response:
                     + f" Add except clauses for '{ue}'. DO IT NOW!")
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    response_data = UPLOAD_DELETED_ALL_FILES # Get rid of pylint error
+    response_data = {'reason': UPLOAD_DELETED_ALL_FILES} # Get rid of pylint error
     status_code = status.HTTP_200_OK
     return response_data, status_code, {}
 
@@ -275,12 +296,12 @@ def client_delete_all_files(upload_id: str) -> Response:
 def upload(upload_id: int, file: FileStorage, archive: str,
            user: auth_domain.User) -> Response:
     """Upload individual files or compressed archive. Unpack and add
-    files to upload_obj workspace.
+    files to upload_db_data workspace.
 
     Parameters
     ----------
     upload_id : int
-        The unique identifier for the upload_obj in question.
+        The unique identifier for the upload_db_data in question.
     file : FileStorage
         File archive to be processed.
     archive: str
@@ -299,7 +320,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
 
     # TODO: Hook up async processing (celery/redis) - doesn't work now
     # TODO: Will likely delete this code if processing time is reasonable
-    # print(f'Controller: Schedule upload_obj task for {upload_id}')
+    # print(f'Controller: Schedule upload_db_data task for {upload_id}')
     #
     # result = sanitize_upload.delay(upload_id, file)
     #
@@ -369,9 +390,9 @@ def upload(upload_id: int, file: FileStorage, archive: str,
     # At this point we expect upload to exist in system
     try:
 
-        upload_obj: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_obj is None:
+        if upload_db_data is None:
             # Invalid workspace identifier
             raise NotFound(UPLOAD_NOT_FOUND)
         else:
@@ -380,88 +401,88 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             # NOTE: This will need to be migrated to task.py using Celery at
             #       some point in future. Depends in time it takes to process
             #       uploads.retrieve
-            logger.info(f"{upload_obj.upload_id}: Upload files to existing "
+            logger.info(f"{upload_db_data.upload_id}: Upload files to existing "
                         + f"workspace: file='{file.filename}'")
 
-            # Keep track of how long processing upload_obj takes
+            # Keep track of how long processing upload_db_data takes
             start_datetime = datetime.now()
 
             # Create Upload object
-            uploadObj = filemanager.process.upload.Upload(upload_id)
+            upload_workspace = filemanager.process.upload.Upload(upload_id)
 
-            # Process upload_obj
-            uploadObj.process_upload(file)
+            # Process upload_db_data
+            upload_workspace.process_upload(file)
 
             completion_datetime = datetime.now()
 
             # Keep track of files processed (this included deleted files)
-            file_list = uploadObj.create_file_upload_summary()
+            file_list = upload_workspace.create_file_upload_summary()
 
             # Determine readiness state of upload content
             upload_status = "READY"
 
-            if uploadObj.has_errors():
+            if upload_workspace.has_errors():
                 upload_status = "ERRORS"
-            elif uploadObj.has_warnings():
+            elif upload_workspace.has_warnings():
                 upload_status = "READY_WITH_WARNINGS"
 
             # Create combine list of errors and warnings
             # TODO: Should I do this in Upload package?? Likely...
             all_errors_and_warnings = []
 
-            for warn in uploadObj.get_warnings():
+            for warn in upload_workspace.get_warnings():
                 public_filepath, warning_message = warn
                 all_errors_and_warnings.append(['warn', public_filepath, warning_message])
 
-            for error in uploadObj.get_errors():
+            for error in upload_workspace.get_errors():
                 public_filepath, warning_message = error
                 # TODO: errors renamed fatal. Need to review 'errors' as to whether they are 'fatal'
                 all_errors_and_warnings.append(['fatal', public_filepath, warning_message])
 
-            # Prepare upload_obj details (DB). I'm assuming that in memory Redis
+            # Prepare upload_db_data details (DB). I'm assuming that in memory Redis
             # is not sufficient for results that may be needed in the distant future.
-            # errors_and_warnings = uploadObj.get_errors() + uploadObj.get_warnings()
+            # errors_and_warnings = upload_workspace.get_errors() + upload_workspace.get_warnings()
             errors_and_warnings = all_errors_and_warnings
-            upload_obj.lastupload_logs = str(errors_and_warnings)
-            upload_obj.lastupload_start_datetime = start_datetime
-            upload_obj.lastupload_completion_datetime = completion_datetime
-            upload_obj.lastupload_file_summary = json.dumps(file_list)
-            upload_obj.lastupload_upload_status = upload_status
-            upload_obj.state = 'ACTIVE'
+            upload_db_data.lastupload_logs = str(errors_and_warnings)
+            upload_db_data.lastupload_start_datetime = start_datetime
+            upload_db_data.lastupload_completion_datetime = completion_datetime
+            upload_db_data.lastupload_file_summary = json.dumps(file_list)
+            upload_db_data.lastupload_upload_status = upload_status
+            upload_db_data.state = 'ACTIVE'
 
             # Store in DB
-            uploads.update(upload_obj)
+            uploads.update(upload_db_data)
 
-            logger.info(f"{upload_obj.upload_id}: Processed upload. "
+            logger.info(f"{upload_db_data.upload_id}: Processed upload. "
                         + "Saved to DB. Preparing upload summary.")
 
             # Do we want affirmative log messages after processing each request
             # or maybe just report errors like:
-            #    logger.info(f"{upload_obj.upload_id}: Finished processing ...")
+            #    logger.info(f"{upload_db_data.upload_id}: Finished processing ...")
 
             # Upload action itself has very simple response
             headers = {'Location': url_for('upload_api.upload_files',
-                                           upload_id=upload_obj.upload_id)}
+                                           upload_id=upload_db_data.upload_id)}
 
             status_code = status.HTTP_201_CREATED
 
             response_data = {
-                'upload_id': upload_obj.upload_id,
-                'created_datetime': upload_obj.created_datetime,
-                'modified_datetime': upload_obj.modified_datetime,
-                'start_datetime': upload_obj.lastupload_start_datetime,
-                'completion_datetime': upload_obj.lastupload_completion_datetime,
-                'files': upload_obj.lastupload_file_summary,
-                'errors': upload_obj.lastupload_logs,
-                'upload_status': upload_obj.lastupload_upload_status,
-                'workspace_state': upload_obj.state,
-                'lock_state': upload_obj.lock
+                'upload_id': upload_db_data.upload_id,
+                'created_datetime': upload_db_data.created_datetime,
+                'modified_datetime': upload_db_data.modified_datetime,
+                'start_datetime': upload_db_data.lastupload_start_datetime,
+                'completion_datetime': upload_db_data.lastupload_completion_datetime,
+                'files': upload_db_data.lastupload_file_summary,
+                'errors': upload_db_data.lastupload_logs,
+                'upload_status': upload_db_data.lastupload_upload_status,
+                'workspace_state': upload_db_data.state,
+                'lock_state': upload_db_data.lock
             }
-            logger.info(f"{upload_obj.upload_id}: Generating upload summary.")
+            logger.info(f"{upload_db_data.upload_id}: Generating upload summary.")
             return response_data, status_code, headers
 
     except IOError:
-        logger.error(f"{upload_obj.upload_id}: File upload_obj request failed "
+        logger.error(f"{upload_db_data.upload_id}: File upload_db_data request failed "
                      + f"for file='{file.filename}'")
         raise InternalServerError(UPLOAD_IO_ERROR)
     except (TypeError, ValueError) as dbe:
@@ -490,7 +511,7 @@ def upload_summary(upload_id: int) -> Response:
        Returns
        -------
        dict
-           Detailed information about the upload_obj.
+           Detailed information about the upload_db_data.
 
            logs - Errors and Warnings
            files - list of file details
@@ -503,29 +524,29 @@ def upload_summary(upload_id: int) -> Response:
        """
 
     try:
-        # Make sure we have an upload_obj to work with
-        upload_obj: Optional[Upload] = uploads.retrieve(upload_id)
+        # Make sure we have an upload_db_data to work with
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_obj is None:
+        if upload_db_data is None:
             status_code = status.HTTP_404_NOT_FOUND
             response_data = UPLOAD_NOT_FOUND
             raise NotFound(UPLOAD_NOT_FOUND)
         else:
-            logger.info(f"{upload_obj.upload_id}: Upload summary request.")
+            logger.info(f"{upload_db_data.upload_id}: Upload summary request.")
             status_code = status.HTTP_200_OK
             response_data = {
-                'upload_id': upload_obj.upload_id,
-                'created_datetime': upload_obj.created_datetime,
-                'modified_datetime': upload_obj.modified_datetime,
-                'start_datetime': upload_obj.lastupload_start_datetime,
-                'completion_datetime': upload_obj.lastupload_completion_datetime,
-                'files': upload_obj.lastupload_file_summary,
-                'errors': upload_obj.lastupload_logs,
-                'upload_status': upload_obj.lastupload_upload_status,
-                'workspace_state': upload_obj.state,
-                'lock_state': upload_obj.lock
+                'upload_id': upload_db_data.upload_id,
+                'created_datetime': upload_db_data.created_datetime,
+                'modified_datetime': upload_db_data.modified_datetime,
+                'start_datetime': upload_db_data.lastupload_start_datetime,
+                'completion_datetime': upload_db_data.lastupload_completion_datetime,
+                'files': upload_db_data.lastupload_file_summary,
+                'errors': upload_db_data.lastupload_logs,
+                'upload_status': upload_db_data.lastupload_upload_status,
+                'workspace_state': upload_db_data.state,
+                'lock_state': upload_db_data.lock
             }
-            logger.info(f"{upload_obj.upload_id}: Upload summary request.")
+            logger.info(f"{upload_db_data.upload_id}: Upload summary request.")
 
     except IOError:
         # response_data = ERROR_RETRIEVING_UPLOAD
@@ -618,71 +639,3 @@ def upload_logs(upload_id: int) -> Response:
     response_data = ACCEPTED
     status_code = status.HTTP_202_ACCEPTED
     return response_data, status_code, {}
-
-
-# Demo reference code
-# TODO: These ASYNC processing routines are likely going away if upload
-#       performs well.
-
-def upload_as_task(upload_id: int) -> Response:
-    """
-    Start sanitizing (a :class:`.Upload`.
-
-    Parameters
-    ----------
-    upload_id : int
-
-    Returns
-    -------
-    dict
-        Some data.
-    int
-        An HTTP status code.
-    dict
-        Some extra headers to add to the response.
-    """
-    result = sanitize_upload.delay(upload_id)
-    headers = {'Location': url_for('upload_api.upload_status',
-                                   task_id=result.task_id)}
-    return ACCEPTED, status.HTTP_202_ACCEPTED, headers
-
-
-def upload_as_task_status(task_id: str) -> Response:
-    """
-    Check the status of a mutation process.
-
-    Parameters
-    ----------
-    task_id : str
-        The ID of the mutation task.
-
-    Returns
-    -------
-    dict
-        Some data.
-    int
-        An HTTP status code.
-    dict
-        Some extra headers to add to the response.
-    """
-    try:
-        task_status, result = check_sanitize_status(task_id)
-    except ValueError as e:
-        print(str(e))  # get rid of pylint error - use e
-        return INVALID_TASK_ID, status.HTTP_400_BAD_REQUEST, {}
-
-    if task_status == 'PENDING':
-        return TASK_DOES_NOT_EXIST, status.HTTP_404_NOT_FOUND, {}
-    elif task_status in ['SENT', 'STARTED', 'RETRY']:
-        return TASK_IN_PROGRESS, status.HTTP_200_OK, {}
-    elif task_status == 'FAILURE':
-        reason = TASK_FAILED
-        reason.update({'reason': str(result)})
-        return reason, status.HTTP_200_OK, {}
-    elif task_status == 'SUCCESS':
-        reason = TASK_COMPLETE
-        reason.update({'result': result})
-        headers = {'Location': url_for('external_api.read_thing',
-                                       thing_id=result['thing_id'])}
-        return TASK_COMPLETE, status.HTTP_303_SEE_OTHER, headers
-    return TASK_DOES_NOT_EXIST, status.HTTP_404_NOT_FOUND, {}
