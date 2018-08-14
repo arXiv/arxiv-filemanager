@@ -128,7 +128,7 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertEqual(response.status_code, 400, 'Upload file payload not passed to server')
 
-        expected_data = {'reason': ['missing file/archive payload']}
+        expected_data = {'reason': 'missing file/archive payload'}
         self.assertDictEqual(json.loads(response.data), expected_data)
 
         # TODO: Looks like this condition is not possible, though online forum
@@ -147,7 +147,7 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertEqual(response.status_code, 400, 'Valid authorization token not passed to server')
 
-        expected_data = {'reason': ['missing file/archive payload']}
+        expected_data = {'reason': 'missing file/archive payload'}
         self.assertDictEqual(json.loads(response.data), expected_data)
 
         # Set up new test
@@ -169,7 +169,7 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertEqual(response.status_code, 400, 'Empty file uploaded to server')
 
-        expected_data = {'reason': ['file payload is zero length']}
+        expected_data = {'reason': 'file payload is zero length'}
         self.assertDictEqual(json.loads(response.data), expected_data)
 
         # TODO: Think of other potential create upload errors.
@@ -226,7 +226,7 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertEqual(response.status_code, 404, "Accepted uploaded Submission Contents")
 
-        expected_data = {'reason': ['upload workspace not found']}
+        expected_data = {'reason': 'upload workspace not found'}
 
         self.maxDiff = None
         self.assertDictEqual(json.loads(response.data), expected_data)
@@ -236,7 +236,7 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertEqual(response.status_code, 404, "Accepted uploaded Submission Contents")
 
-        expected_data = {'reason': ['upload workspace not found']}
+        expected_data = {'reason': 'upload workspace not found'}
 
         self.maxDiff = None
         self.assertDictEqual(json.loads(response.data), expected_data)
@@ -309,6 +309,9 @@ class TestUploadAPIRoutes(TestCase):
         self.assertEqual(response.status_code, 200,
                          "Delete an individual file: '{public_file_path}'.")
 
+        expected_data = {'reason': 'deleted file'}
+        self.assertDictEqual(json.loads(response.data), expected_data)
+
         # Now try to break delete
 
         # This file path is a potential security threat. Attempt to detect such deviant
@@ -320,6 +323,8 @@ class TestUploadAPIRoutes(TestCase):
         print(f"Delete hacker file path Response:'{public_file_path}'\n" + str(response.data) + '\n')
         self.assertEqual(response.status_code, 404,
                          f"Delete a file outside of workspace: '{public_file_path}'.")
+        expected_data = {'reason': 'file not found'}
+        self.assertDictEqual(json.loads(response.data), expected_data)
 
         # Another file path is a potential security threat. Attempt to detect such deviant
         # file deletions without alerting the client.
@@ -359,6 +364,9 @@ class TestUploadAPIRoutes(TestCase):
         print(f"Delete file in subdirectory anc Response:'{public_file_path}'\n" + str(response.data) + '\n')
         self.assertEqual(response.status_code, 200,
                          f"Delete file in subdirectory: '{public_file_path}'.")
+
+        expected_data = {'reason': 'deleted file'}
+        self.assertDictEqual(json.loads(response.data), expected_data)
 
         # Try to delete file in subdirectory - valid file deletion
         public_file_path = "anc/fig8.PNG"
@@ -452,12 +460,15 @@ class TestUploadAPIRoutes(TestCase):
         print("Delete All Files Response:\n" + str(response.data) + '\n')
         self.assertEqual(response.status_code, 200, "Delete all user-uploaded files.")
 
+        expected_data = {'reason': 'deleted all files'}
+        self.assertDictEqual(json.loads(response.data), expected_data)
+
         # There are really not many exceptions we can generate as long as the upload workspace
         # exists. If upload workspace exists this command will remove all files and directories
         # under src directory. At this point I don't anticipate generating exception when src
         # directory is already empty.
 
-        # Delete all files in my workspace (normal)
+        # Delete all files in my workspace (that doesn't exist)
         response = self.client.post(f"/filemanager/api/999999/delete_all",
                                     headers={'Authorization': token},
                                     content_type='multipart/form-data')
@@ -465,6 +476,8 @@ class TestUploadAPIRoutes(TestCase):
         self.assertEqual(response.status_code, 404,
                          "Delete all user-uploaded files for non-existent workspace.")
 
+        expected_data = {'reason': 'upload workspace not found'}
+        self.assertDictEqual(json.loads(response.data), expected_data)
 
 
         # Try an delete an individual file ...we'll know if delete all files really worked.
@@ -476,6 +489,8 @@ class TestUploadAPIRoutes(TestCase):
         self.assertEqual(response.status_code, 404,
                          f"Delete already deleted file in subdirectory: '{public_file_path}'.")
 
+        expected_data = {'reason': 'file not found'}
+        self.assertDictEqual(json.loads(response.data), expected_data)
 
     def test_delete_upload_workspace(self) -> None:
         """
@@ -543,6 +558,7 @@ class TestUploadAPIRoutes(TestCase):
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
                                       headers={'Authorization': admin_token}
                                       )
+        print("Delete Response:\n" + str(response.data) + '\n')
 
         self.assertEqual(response.status_code, 404, "Delete non-existent workspace.")
 
