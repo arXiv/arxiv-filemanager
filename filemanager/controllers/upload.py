@@ -19,7 +19,6 @@ from filemanager.shared import url_for
 
 from filemanager.domain import Upload
 from filemanager.services import uploads
-from filemanager.tasks import sanitize_upload, check_sanitize_status
 
 from filemanager.arxiv.file import File
 
@@ -137,7 +136,7 @@ def delete_workspace(upload_id: int) -> Response:
             # Update database (but keep around) for historical reference. Does not
             # consume very much space. What about source log?
             # Create Upload object
-            if upload_db_data.state == 'DELETED':
+            if upload_db_data.state == Upload.DELETED:
                 logger.info(f"{upload_id}: Workspace has already been deleted:"
                             f"current state is '{upload_db_data.state}'")
                 raise NotFound(UPLOAD_WORKSPACE_NOT_FOUND)
@@ -148,10 +147,10 @@ def delete_workspace(upload_id: int) -> Response:
             upload_workspace.remove_workspace()
 
             # update database
-            if upload_db_data.state != 'RELEASED':
+            if upload_db_data.state != Upload.RELEASED:
                 logger.info(f"{upload_id}: Workspace currently in '{upload_db_data.state}' state.")
 
-            upload_db_data.state = 'DELETED'
+            upload_db_data.state = Upload.DELETED
 
             # Store in DB
             uploads.update(upload_db_data)
@@ -370,7 +369,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             new_upload = Upload(owner_user_id=user_id, archive=arch,
                                 created_datetime=datetime.now(),
                                 modified_datetime=datetime.now(),
-                                state='ACTIVE')
+                                state=Upload.ACTIVE)
             # Store in DB
             uploads.store(new_upload)
 
@@ -419,12 +418,12 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             file_list = upload_workspace.create_file_upload_summary()
 
             # Determine readiness state of upload content
-            upload_status = "READY"
+            upload_status = Upload.READY
 
             if upload_workspace.has_errors():
-                upload_status = "ERRORS"
+                upload_status = Upload.ERRORS
             elif upload_workspace.has_warnings():
-                upload_status = "READY_WITH_WARNINGS"
+                upload_status = Upload.READY_WITH_WARNINGS
 
             # Create combine list of errors and warnings
             # TODO: Should I do this in Upload package?? Likely...
@@ -448,7 +447,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             upload_db_data.lastupload_completion_datetime = completion_datetime
             upload_db_data.lastupload_file_summary = json.dumps(file_list)
             upload_db_data.lastupload_upload_status = upload_status
-            upload_db_data.state = 'ACTIVE'
+            upload_db_data.state = Upload.ACTIVE
 
             # Store in DB
             uploads.update(upload_db_data)

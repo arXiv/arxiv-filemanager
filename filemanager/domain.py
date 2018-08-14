@@ -71,6 +71,38 @@ class Data(object):
 class Upload(Data):
     """All information about an upload.
     """
+    # Various state settings
+
+    # Upload workspace is actively being used.
+    ACTIVE = 'ACTIVE'
+    # Client/Admin/System indicate release to indicate upload workspace is no
+    # longer user.
+    RELEASED = 'RELEASED'
+    # After upload workspace files are deleted the state of workspace in
+    # database is set to deleted. Database entry is retained indefinitely.
+    DELETED = 'DELETED'
+
+    # Indicates upload workspace is lock and cannot be updated. The workspace
+    # might be locked during publish or when admins are updating uploaded
+    # files.
+    LOCKED = 'LOCKED'
+    # When workspace is unlocked updates are allowed (workspace is normally
+    # in this state).
+    UNLOCKED = 'UNLOCKED'
+
+    # Overall state of upload files is good with no warnings or errors
+    # reported.
+    READY = 'READY'
+    # Upload processing reported warnings which do not prohibit client
+    # from continuing on to compilation and submit steps.
+    READY_WITH_WARNINGS = 'READY_WITH_WARNINGS'
+
+    # There were errors reported while processing upload files. Subsequent
+    # steps [compilation, submit, publish] should reject working with such
+    # an upload package.
+    ERRORS = 'ERRORS'
+
+
 
     upload_id = Property('upload_id', int)
 
