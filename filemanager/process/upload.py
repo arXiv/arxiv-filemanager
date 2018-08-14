@@ -13,11 +13,11 @@ from werkzeug.utils import secure_filename
 
 from filemanager.arxiv.file import File
 
-UPLOAD_FILE_EMPTY = {'file payload is zero length'}
-UPLOAD_DELETE_FILE_FAILED = {'unable to delete file'}
-UPLOAD_DELETE_ALL_FILE_FAILED = {'unable to delete all file'}
-UPLOAD_FILE_NOT_FOUND = {'file not found'}
-UPLOAD_WORKSPACE_NOT_FOUND = {'workspcae not found'}
+UPLOAD_FILE_EMPTY = 'file payload is zero length'
+UPLOAD_DELETE_FILE_FAILED = 'unable to delete file'
+UPLOAD_DELETE_ALL_FILE_FAILED = 'unable to delete all file'
+UPLOAD_FILE_NOT_FOUND = 'file not found'
+UPLOAD_WORKSPACE_NOT_FOUND = 'workspcae not found'
 
 # TODO: Need to move to config file
 UPLOAD_BASE_DIRECTORY = '/tmp/filemanagment/submissions'
