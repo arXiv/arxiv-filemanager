@@ -410,6 +410,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             upload_workspace = filemanager.process.upload.Upload(upload_id)
 
             # Process upload_db_data
+            print('!', file)
             upload_workspace.process_upload(file)
 
             completion_datetime = datetime.now()
@@ -442,7 +443,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             # is not sufficient for results that may be needed in the distant future.
             # errors_and_warnings = upload_workspace.get_errors() + upload_workspace.get_warnings()
             errors_and_warnings = all_errors_and_warnings
-            upload_db_data.lastupload_logs = str(errors_and_warnings)
+            upload_db_data.lastupload_logs = json.dumps(errors_and_warnings)
             upload_db_data.lastupload_start_datetime = start_datetime
             upload_db_data.lastupload_completion_datetime = completion_datetime
             upload_db_data.lastupload_file_summary = json.dumps(file_list)
@@ -471,8 +472,8 @@ def upload(upload_id: int, file: FileStorage, archive: str,
                 'modified_datetime': upload_db_data.modified_datetime,
                 'start_datetime': upload_db_data.lastupload_start_datetime,
                 'completion_datetime': upload_db_data.lastupload_completion_datetime,
-                'files': upload_db_data.lastupload_file_summary,
-                'errors': upload_db_data.lastupload_logs,
+                'files': file_list,
+                'errors': errors_and_warnings,
                 'upload_status': upload_db_data.lastupload_upload_status,
                 'workspace_state': upload_db_data.state,
                 'lock_state': upload_db_data.lock
@@ -539,8 +540,8 @@ def upload_summary(upload_id: int) -> Response:
                 'modified_datetime': upload_db_data.modified_datetime,
                 'start_datetime': upload_db_data.lastupload_start_datetime,
                 'completion_datetime': upload_db_data.lastupload_completion_datetime,
-                'files': upload_db_data.lastupload_file_summary,
-                'errors': upload_db_data.lastupload_logs,
+                'files': json.loads(upload_db_data.lastupload_file_summary),
+                'errors': json.loads(upload_db_data.lastupload_logs),
                 'upload_status': upload_db_data.lastupload_upload_status,
                 'workspace_state': upload_db_data.state,
                 'lock_state': upload_db_data.lock

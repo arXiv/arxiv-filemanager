@@ -22,8 +22,6 @@ blueprint = Blueprint('upload_api', __name__, url_prefix='/filemanager/api')
 
 def is_owner(session: auth_domain.Session, upload_id: str, **kwargs) -> bool:
     """User must be the upload owner, or an admin."""
-    if scopes.ADMIN_UPLOAD in session.authorizations.scopes:
-        return True
     upload_obj = uploads.retrieve(upload_id)
     if upload_obj is None:
         return True
@@ -62,24 +60,17 @@ def new_upload() -> tuple:
     return jsonify(data), status_code, headers
 
 
-@blueprint.route('<int:upload_id>', methods=['GET', 'POST'])
+@blueprint.route('<int:upload_id>', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def upload_files(upload_id: int) -> tuple:
     """Upload individual files or compressed archive
     and add to existing upload workspace. Multiple uploads accepted."""
 
-    if request.method == 'POST':
-
-        archive_arg = request.args.get('archive')
-
-        file = request.files.get('file', None)
-
-        # Attempt to process upload
-        data, status_code, headers = upload.upload(upload_id, file, archive_arg,
-                                                   request.session.user)
-
-    if request.method == 'GET':
-        data, status_code, headers = upload.upload_summary(upload_id)
+    archive_arg = request.args.get('archive')
+    file = request.files.get('file', None)
+    # Attempt to process upload
+    data, status_code, headers = upload.upload(upload_id, file, archive_arg,
+                                               request.session.user)
 
    # if request.method == 'DELETE':
     #    data, status_code, headers = upload.delete_workspace(upload_id)
@@ -87,13 +78,20 @@ def upload_files(upload_id: int) -> tuple:
     return jsonify(data), status_code, headers
 
 
+# Separated this out so that we can support auth granularity. -E
+@blueprint.route('<int:upload_id>', methods=['GET'])
+@scoped(scopes.READ_UPLOAD, authorizer=is_owner)
+def get_upload_files(upload_id: int) -> tuple:
+    data, status_code, headers = upload.upload_summary(upload_id)
+    return jsonify(data), status_code, headers
+
+
 @blueprint.route('<int:upload_id>/<path:public_file_path>', methods=['DELETE'])
-@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
+@scoped(scopes.DELETE_UPLOAD_FILE, authorizer=is_owner)
 def delete_file(upload_id: int, public_file_path: str) -> tuple:
     """Delete individual file."""
-
-    data, status_code, headers = upload.client_delete_file(upload_id, public_file_path)
-
+    data, status_code, headers = upload.client_delete_file(upload_id,
+                                                           public_file_path)
     return jsonify(data), status_code, headers
 
 
@@ -101,20 +99,15 @@ def delete_file(upload_id: int, public_file_path: str) -> tuple:
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def delete_all_files(upload_id: int) -> tuple:
     """Delete all files in specified workspace."""
-
     data, status_code, headers = upload.client_delete_all_files(upload_id)
-
     return jsonify(data), status_code, headers
 
 
-
 @blueprint.route('<int:upload_id>', methods=['DELETE'])
-@scoped(scopes.ADMIN_UPLOAD)
+@scoped(scopes.DELETE_UPLOAD_WORKSPACE)
 def workspace_delete(upload_id: int) -> tuple:
     """Delete the specified workspace."""
-
     data, status_code, headers = upload.delete_workspace(upload_id)
-
     return jsonify(data), status_code, headers
 
 

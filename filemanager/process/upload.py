@@ -518,6 +518,7 @@ submitter."""
 
         # Sanitize file name before saving it
         filename = secure_filename(basename)
+        print('.', filename)
 
         if basename != filename:
             self.log(f'Secured filename: {filename} (basename + )')
