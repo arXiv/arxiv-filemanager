@@ -19,9 +19,6 @@ from filemanager.controllers import upload
 
 blueprint = Blueprint('upload_api', __name__, url_prefix='/filemanager/api')
 
-user_id = ''
-scope = ''
-username = ''
 
 def is_owner(session: auth_domain.Session, upload_id: str, **kwargs) -> bool:
     """User must be the upload owner, or an admin."""
@@ -30,11 +27,9 @@ def is_owner(session: auth_domain.Session, upload_id: str, **kwargs) -> bool:
     upload_obj = uploads.retrieve(upload_id)
     if upload_obj is None:
         return True
-    global user_id, username, scope
-    user_id = session.user.user_id
-    username = session.user.username
-    scope = ''.join(session.authorizations.scopes)
+    
     return session.user.user_id == uploads.retrieve(upload_id).owner_user_id
+
 
 @blueprint.route('/status', methods=['GET'])
 def service_status() -> tuple:
