@@ -565,6 +565,24 @@ def upload_summary(upload_id: int) -> Response:
             raise NotFound(UPLOAD_NOT_FOUND)
         else:
             logger.info("%s: Upload summary request.", upload_db_data.upload_id)
+
+            # Create Upload object
+            upload_workspace = filemanager.process.upload.Upload(upload_id)
+            file_list = upload_workspace.create_file_list()
+
+            details_list = []
+            for fileObj in file_list:
+                file_details = {
+                    'name': fileObj.name,
+                    'public_filepath': fileObj.public_filepath,
+                    'size': fileObj.size,
+                    'type': fileObj.type_string,
+                    'modified_datetime': fileObj.modified_datetime
+                }
+                if not fileObj.removed:
+                    details_list.append(file_details)
+
+
             status_code = status.HTTP_200_OK
             response_data = {
                 'upload_id': upload_db_data.upload_id,
@@ -572,8 +590,8 @@ def upload_summary(upload_id: int) -> Response:
                 'modified_datetime': upload_db_data.modified_datetime,
                 'start_datetime': upload_db_data.lastupload_start_datetime,
                 'completion_datetime': upload_db_data.lastupload_completion_datetime,
-                'files': json.loads(upload_db_data.lastupload_file_summary),
-                'errors': json.loads(upload_db_data.lastupload_logs),
+                'files': details_list,
+                'errors': [],
                 'upload_status': upload_db_data.lastupload_upload_status,
                 'workspace_state': upload_db_data.state,
                 'lock_state': upload_db_data.lock
