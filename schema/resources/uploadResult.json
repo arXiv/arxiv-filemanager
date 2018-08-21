@@ -2,7 +2,13 @@
   "title": "UploadResult",
   "description": "Describes the result of a source upload processing.",
   "additionalProperties": false,
-  "required": ["upload_id", "upload_status", "workspace_state", "created_datetime", "modified_datetime"],
+  "required": [
+    "upload_id",
+    "upload_status",
+    "workspace_state",
+    "created_datetime",
+    "modified_datetime"
+  ],
   "type": "object",
   "properties": {
     "upload_id": {
@@ -12,17 +18,28 @@
     "workspace_state": {
       "description": "State of the upload workspace.",
       "type": "string",
-      "enum": ["ACTIVE", "RELEASED", "DELETED"]
+      "enum": [
+        "ACTIVE",
+        "RELEASED",
+        "DELETED"
+      ]
     },
     "lock_state": {
       "description": "Indicates whether upload workspace may be updated. Normally used when important system process is processing upload files.",
       "type": "string",
-      "enum": ["LOCKED", "UNLOCKED"]
+      "enum": [
+        "LOCKED",
+        "UNLOCKED"
+      ]
     },
     "upload_status": {
       "description": "Status of the upload content. READY means content passed checks and did not raise any warnings/errors. Workspace content in READY or READY_WITH_WARNINGS state may be submitted. ERRORS indicate content has problems and will not be accepted.",
       "type": "string",
-      "enum": ["READY", "READY_WITH_WARNINGS", "ERRORS"]
+      "enum": [
+        "READY",
+        "READY_WITH_WARNINGS",
+        "ERRORS"
+      ]
     },
     "created_datetime": {
       "description": "The date-time when upload created.",
@@ -45,17 +62,37 @@
       "format": "datetime"
     },
     "files": {
-      "description": "Complete list of uploaded files. Includes details for UI",
-      "type": "string",
+      "description": "Files",
+      "type": "array",
       "items": {
-        "type": "string"
+        "type": "object",
+        "required": [
+          "name",
+          "public_filepath",
+          "size",
+          "type"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "public_filepath": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
       }
     },
     "errors": {
       "description": "Includes errors or other information that may be relevant for debugging upload issues. Each error will contain type of error [fatal/warn/info], a concise message, and optional file name.",
-      "type": "string",
+      "type": "array",
       "items": {
-        "type": "string"
+        "type": "array"
       }
     }
   }
