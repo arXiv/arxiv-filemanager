@@ -922,6 +922,7 @@ submitter."""
                     'public_filepath': fileObj.public_filepath,
                     'size': fileObj.size,
                     'type': fileObj.type_string,
+                    'modified_datetime': fileObj.modified_datetime
                 }
                 #if fileObj.removed:
                 #    file_details['removed'] = fileObj.removed
