@@ -24,7 +24,7 @@ def generate_token(app: Flask, scope: List[str]) -> str:
     """Helper function for generating a JWT."""
     secret = app.config.get('JWT_SECRET')
     start = datetime.now(tz=timezone('US/Eastern'))
-    end = start + timedelta(seconds=36000)   # Make this as long as you want.
+    end = start + timedelta(seconds=36000)  # Make this as long as you want.
     user_id = '1'
     email = 'foo@bar.com'
     username = 'theuser'
@@ -114,7 +114,7 @@ class TestUploadAPIRoutes(TestCase):
                                         'file': '',
                                     },
                                     # Missing authorization field
-                                    #headers={'Authorization': ''},
+                                    # headers={'Authorization': ''},
                                     content_type='multipart/form-data')
 
         self.assertEqual(response.status_code, 401, 'Authorization token not passed to server')
@@ -184,7 +184,6 @@ class TestUploadAPIRoutes(TestCase):
         response = self.client.post('/filemanager/api/',
                                     data={
                                         # filename is null
-                                        #'file': (open(filepath, 'rb'), ''),
                                         'file': (open(filepath, 'rb'), ''),
                                     },
                                     # Good Token
@@ -198,17 +197,15 @@ class TestUploadAPIRoutes(TestCase):
 
         # Set up new test
 
-        #testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
+        # testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
         testfiles_dir = '/tmp'
         filepath = os.path.join(testfiles_dir, 'nullfile')
-        open(filepath, 'wb').close()    # touch
-
+        open(filepath, 'wb').close()  # touch
 
         # Upload empty/null file
         response = self.client.post('/filemanager/api/',
                                     data={
                                         # filename is null
-                                        # 'file': (open(filepath, 'rb'), ''),
                                         'file': (open(filepath, 'rb'), 'Empty'),
                                     },
                                     # Good Token
@@ -242,7 +239,7 @@ class TestUploadAPIRoutes(TestCase):
                          'status': "SUCCEEDED",
                          'create_datetime': created.isoformat(),
                          'modify_datetime': modified.isoformat()
-                        }
+                         }
 
         cwd = os.getcwd()
         testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
@@ -251,15 +248,7 @@ class TestUploadAPIRoutes(TestCase):
         # Prepare gzipped tar submission for upload
         filename = os.path.basename(filepath)
 
-
         # Post a test submission to upload API
-
-        #token1 = str(token.encode("ascii"))
-        print(f"Token (for possible use in manual browser tests): {token}\n")
-
-        print("\nMake request to upload gzipped tar file to non existent workspace. \n"
-              + "\t[Warnings and errors are currently printed to console.\n"
-              + "\tLogs coming soon.]\n")
 
         bad_upload_id = '9999'
 
@@ -293,7 +282,6 @@ class TestUploadAPIRoutes(TestCase):
         # TODO: Lock/unlock, release/unrelease. (when implements)
 
         # TODO: Add size checks (when implemented)
-
 
     def test_delete_file(self) -> None:
         """
@@ -341,9 +329,6 @@ class TestUploadAPIRoutes(TestCase):
         # Try a few valid deletions
 
         # Delete a file (normal call)
-        # public_file_path = "../../subdir/this_file"
-        # public_file_path = "this_file"
-        #public_file_path = "lipics-logo-bw.pdf"
         public_file_path = "accessibilityMeta.sty"
 
         encoded_file_path = quote(public_file_path, safe='')
@@ -353,11 +338,11 @@ class TestUploadAPIRoutes(TestCase):
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
                                       headers={'Authorization': token})
         print(f"Delete File Response:'{public_file_path}'\n" + str(response.data) + '\n')
-        self.assertEqual(response.status_code, 200,
+        self.assertEqual(response.status_code, 204,
                          "Delete an individual file: '{public_file_path}'.")
 
-        expected_data = {'reason': 'deleted file'}
-        self.assertDictEqual(json.loads(response.data), expected_data)
+        #expected_data = {'reason': 'deleted file'}
+        #self.assertDictEqual(json.loads(response.data), expected_data)
 
         # Now try to break delete
 
@@ -409,11 +394,8 @@ class TestUploadAPIRoutes(TestCase):
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
                                       headers={'Authorization': token})
         print(f"Delete file in subdirectory anc Response:'{public_file_path}'\n" + str(response.data) + '\n')
-        self.assertEqual(response.status_code, 200,
+        self.assertEqual(response.status_code, 204,
                          f"Delete file in subdirectory: '{public_file_path}'.")
-
-        expected_data = {'reason': 'deleted file'}
-        self.assertDictEqual(json.loads(response.data), expected_data)
 
         # Try to delete file in subdirectory - valid file deletion
         public_file_path = "anc/fig8.PNG"
@@ -421,7 +403,7 @@ class TestUploadAPIRoutes(TestCase):
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
                                       headers={'Authorization': token})
         print(f"Delete file in subdirectory anc Response:'{public_file_path}'\n" + str(response.data) + '\n')
-        self.assertEqual(response.status_code, 200,
+        self.assertEqual(response.status_code, 204,
                          f"Delete file in subdirectory: '{public_file_path}'.")
 
         # Try an delete file a second time...we'll know if first delete really worked.
@@ -504,11 +486,8 @@ class TestUploadAPIRoutes(TestCase):
         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
                                     headers={'Authorization': token},
                                     content_type='multipart/form-data')
-        print("Delete All Files Response:\n" + str(response.data) + '\n')
-        self.assertEqual(response.status_code, 200, "Delete all user-uploaded files.")
 
-        expected_data = {'reason': 'deleted all files'}
-        self.assertDictEqual(json.loads(response.data), expected_data)
+        self.assertEqual(response.status_code, 204, "Delete all user-uploaded files.")
 
         # There are really not many exceptions we can generate as long as the upload workspace
         # exists. If upload workspace exists this command will remove all files and directories
@@ -519,20 +498,20 @@ class TestUploadAPIRoutes(TestCase):
         response = self.client.post(f"/filemanager/api/999999/delete_all",
                                     headers={'Authorization': token},
                                     content_type='multipart/form-data')
-        print("Delete All Files for invalid workspace Response:\n" + str(response.data) + '\n')
+
         self.assertEqual(response.status_code, 404,
                          "Delete all user-uploaded files for non-existent workspace.")
 
         expected_data = {'reason': 'upload workspace not found'}
         self.assertDictEqual(json.loads(response.data), expected_data)
 
-
         # Try an delete an individual file ...we'll know if delete all files really worked.
         public_file_path = "anc/manuscript_Na2.7Ru4O9.tex"
         public_file_path = quote(public_file_path, safe='')
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
                                       headers={'Authorization': token})
-        print(f"Delete already deleted file in subdirectory anc Response:'{public_file_path}'\n" + str(response.data) + '\n')
+        print(f"Delete already deleted file in subdirectory anc Response:'{public_file_path}'\n" + str(
+            response.data) + '\n')
         self.assertEqual(response.status_code, 404,
                          f"Delete already deleted file in subdirectory: '{public_file_path}'.")
 
@@ -590,7 +569,6 @@ class TestUploadAPIRoutes(TestCase):
         admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
                                                 auth.scopes.WRITE_UPLOAD,
                                                 auth.scopes.ADMIN_UPLOAD])
-        print(f"ADMIN Token (for possible use in manual browser tests): {admin_token}\n")
 
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
                                       headers={'Authorization': admin_token}
@@ -623,14 +601,238 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertEqual(response.status_code, 404, "Delete workspace using bogus upload_id.")
 
-
-
         # TODO: Need to add more tests for auth/z for submitter and admin
 
+    def test_lock_unlock(self) -> None:
+        """Test workspace lock and unlock requests.
 
+        Locking workspace prevents updates to workspace.
 
+        Returns
+        -------
 
+        """
+        # Create a token for writing to upload workspace
+        token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                          auth.scopes.WRITE_UPLOAD])
+        cwd = os.getcwd()
+        testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
+        filepath = os.path.join(testfiles_dir, '1801.03879-1.tar.gz')
 
+        # Prepare gzipped tar submission for upload
+        filename = os.path.basename(filepath)
+
+        # Post a test submission to upload API
+
+        response = self.client.post('/filemanager/api/',
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        #      'file': (open(filepath, 'rb'), 'test.tar.gz'),
+                                        'file': (open(filepath, 'rb'), filename),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, 201, "Processed uploaded Submission Contents")
+
+        # Extract response into dictionary
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+        # Create admin token for deleting upload workspace
+        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                                auth.scopes.WRITE_UPLOAD,
+                                                auth.scopes.ADMIN_UPLOAD])
+        # Now test lock
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/lock",
+                                    headers={'Authorization': admin_token}
+                                    )
+        self.assertEqual(response.status_code, 200, f"Lock workspace '{upload_data['upload_id']}'.")
+
+        print("Lock:\n" + str(response.data) + '\n')
+
+        # Try to perform actions on locked upload workspace
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
+                                    data={
+                                        'file': (open(filepath, 'rb'), filename),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, 403, "Upload files to locked workspace.")
+        print("Upload files to locked workspace:\n" + str(response.data) + '\n')
+
+        # Try to perform actions on locked upload workspace
+        response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}",
+                                   headers={'Authorization': token}
+                                   )
+
+        self.assertEqual(response.status_code, 200, "Request upload summary on locked workspace (OK)")
+
+        public_file_path = 'somefile'
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+                                      headers={'Authorization': token})
+        print(f"Delete File Response(locked):'{public_file_path}'\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 403,
+                         "Delete an individual file: '{public_file_path}' from locked workspace.")
+
+        # Delete all files in my workspace (normal)
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
+                                    headers={'Authorization': token},
+                                    content_type='multipart/form-data')
+        print("Delete All Files Response(locked):\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 403, "Delete all user-uploaded "
+                                                    "files from locked workspace.")
+
+        # Now test unlock
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/unlock",
+                                    headers={'Authorization': admin_token}
+                                    )
+        self.assertEqual(response.status_code, 200, f"Unlock workspace '{upload_data['upload_id']}'.")
+
+        print("Unlock:\n" + str(response.data) + '\n')
+
+        # Try request that failed while upload workspace was locked
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
+                                    headers={'Authorization': token},
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, 204, "Delete all user-uploaded "
+                                                    "files from locked workspace.")
+
+        # Clean up after ourselves
+
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+                                      headers={'Authorization': admin_token}
+                                      )
+
+        self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
+
+        # Done test
+
+    def test_release_unrelease(self) -> None:
+        """Test workspace release and unrelease requests.
+
+        Releasing workspace allows system to clean up workspace files.
+
+        Returns
+        -------
+
+        """
+
+        # Create a token for writing to upload workspace
+        token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                          auth.scopes.WRITE_UPLOAD])
+        cwd = os.getcwd()
+        testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
+        filepath = os.path.join(testfiles_dir, '1801.03879-1.tar.gz')
+
+        # Prepare gzipped tar submission for upload
+        filename = os.path.basename(filepath)
+
+        # Post a test submission to upload API
+        response = self.client.post('/filemanager/api/',
+                                    data={
+                                        'file': (open(filepath, 'rb'), filename),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, 201, "Processed uploaded Submission Contents")
+
+        # Extract response into dictionary
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+        # Create admin token for releasing upload workspace
+        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                                auth.scopes.WRITE_UPLOAD,
+                                                auth.scopes.ADMIN_UPLOAD])
+        # Now test release
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/release",
+                                    headers={'Authorization': admin_token}
+                                    )
+        self.assertEqual(response.status_code, 200, f"Release workspace '{upload_data['upload_id']}'.")
+
+        print("Release:\n" + str(response.data) + '\n')
+
+        # Repeat tests
+
+        # Try to perform actions on released upload workspace
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
+                                    data={
+                                        'file': (open(filepath, 'rb'), filename),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, 403, "Processed uploaded Submission Contents")
+
+        #
+
+        # Try to perform actions on locked upload workspace
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
+                                    data={
+                                        'file': (open(filepath, 'rb'), filename),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, 403, "Upload files to released workspace.")
+        print("Upload files to released workspace:\n" + str(response.data) + '\n')
+
+        # Try to perform actions on locked upload workspace
+        response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}",
+                                   headers={'Authorization': token}
+                                   )
+
+        self.assertEqual(response.status_code, 200, "Request upload summary from released workspace (OK)")
+
+        public_file_path = 'somefile'
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+                                      headers={'Authorization': token})
+        print(f"Delete File from released workspace Response:'{public_file_path}'\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 403,
+                         "Delete an individual file: '{public_file_path}' from released workspace.")
+
+        # Delete all files in my workspace (normal)
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
+                                    headers={'Authorization': token},
+                                    content_type='multipart/form-data')
+        print("Delete All Files Response(released):\n" + str(response.data) + '\n')
+        self.assertEqual(response.status_code, 403, "Delete all user-uploaded "
+                                                    "files from released workspace.")
+
+        #
+
+        # Now test unrelease
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/unrelease",
+                                    headers={'Authorization': admin_token}
+                                    )
+        self.assertEqual(response.status_code, 200, f"Unrelease workspace '{upload_data['upload_id']}'.")
+
+        print("Unrelease:\n" + str(response.data) + '\n')
+
+        # Try request that failed while upload workspace was released
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
+                                    headers={'Authorization': token},
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, 204, "Delete all user-uploaded "
+                                                    "files from released workspace.")
+
+        # Clean up after ourselves
+
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+                                      headers={'Authorization': admin_token}
+                                      )
+
+        self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
+
+        # Done test
 
     # Upload a submission package
     def test_upload_files_normal(self) -> None:
@@ -655,7 +857,7 @@ class TestUploadAPIRoutes(TestCase):
                          'status': "SUCCEEDED",
                          'create_datetime': created.isoformat(),
                          'modify_datetime': modified.isoformat()
-                        }
+                         }
 
         cwd = os.getcwd()
         testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
@@ -675,7 +877,6 @@ class TestUploadAPIRoutes(TestCase):
         response = self.client.post('/filemanager/api/',
                                     data={
                                         # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
-                                  #      'file': (open(filepath, 'rb'), 'test.tar.gz'),
                                         'file': (open(filepath, 'rb'), filename),
                                     },
                                     headers={'Authorization': token},
@@ -687,10 +888,10 @@ class TestUploadAPIRoutes(TestCase):
         self.maxDiff = None
 
         with open('schema/resources/uploadResult.json') as f:
-            summary_schema = json.load(f)
+            result_schema = json.load(f)
 
         try:
-            jsonschema.validate(json.loads(response.data), summary_schema)
+            jsonschema.validate(json.loads(response.data), result_schema)
         except jsonschema.exceptions.SchemaError as e:
             self.fail(e)
 
@@ -698,37 +899,34 @@ class TestUploadAPIRoutes(TestCase):
 
         # Get summary of upload
 
-        with open('schema/resources/uploadResult.json') as f:
-            status_schema = json.load(f)
+        # with open('schema/resources/uploadResult.json') as f:
+        #   status_schema = json.load(f)
 
         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}",
                                    headers={'Authorization': token})
 
         try:
-            jsonschema.validate(json.loads(response.data), status_schema)
+            jsonschema.validate(json.loads(response.data), result_schema)
         except jsonschema.exceptions.SchemaError as e:
             self.fail(e)
 
         # Delete a file (normal call)
-        #public_file_path = "../../subdir/this_file"
-        #public_file_path = "this_file"
         public_file_path = "lipics-logo-bw.pdf"
         from requests.utils import quote
         encoded_file_path = quote(public_file_path, safe='')
-        #encoded_file_path = public_file_path
         print(f"ENCODED:{encoded_file_path}\n")
-        #response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{encoded_file_path}",
+        # response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{encoded_file_path}",
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
-                                   headers={'Authorization': token})
-        print("Delete File Response:\n" + str(response.data) + '\n')
-        self.assertEqual(response.status_code, 200, "Delete an individual file.")
+                                      headers={'Authorization': token})
+
+        self.assertEqual(response.status_code, 204, "Delete an individual file.")
 
         # Delete all files in my workspace (normal)
         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
-                                   headers={'Authorization': token},
-                                   content_type='multipart/form-data')
-        print("Delete All Files Response:\n" + str(response.data) + '\n')
-        self.assertEqual(response.status_code, 200, "Delete all user-uploaded files.")
+                                    headers={'Authorization': token},
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, 204, "Delete all user-uploaded files.")
 
         # Delete the workspace
 
@@ -742,7 +940,7 @@ class TestUploadAPIRoutes(TestCase):
                                       headers={'Authorization': admin_token}
                                       )
 
-        #print("Delete Response:\n" + str(response.data) + '\n')
+        # print("Delete Response:\n" + str(response.data) + '\n')
 
         # This cleans out the workspace. Comment out if you want to inspect files
         # in workspace. Source log is saved to 'deleted_workspace_logs' directory.

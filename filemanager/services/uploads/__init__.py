@@ -4,10 +4,9 @@ from typing import Any, Dict, Optional
 from datetime import datetime
 from werkzeug.local import LocalProxy
 from sqlalchemy.exc import OperationalError
+from arxiv.base.globals import get_application_global
 from filemanager.domain import Upload
 from .models import db, DBUpload
-
-from arxiv.base.globals import get_application_global
 
 
 def init_app(app: Optional[LocalProxy]) -> None:
@@ -59,7 +58,7 @@ def retrieve(upload_id: int, skip_cache: bool = False) -> Optional[Upload]:
             return None
 
         if g:
-            g.uploads[upload_id] = upload_data      # Cache for next time.
+            g.uploads[upload_id] = upload_data  # Cache for next time.
 
     args = {}
     args['upload_id'] = upload_data.upload_id

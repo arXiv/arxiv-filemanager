@@ -27,6 +27,7 @@ def is_owner(session: auth_domain.Session, upload_id: str, **kwargs) -> bool:
     upload_obj = uploads.retrieve(upload_id)
     if upload_obj is None:
         return True
+    
     return session.user.user_id == uploads.retrieve(upload_id).owner_user_id
 
 
@@ -69,7 +70,6 @@ def upload_files(upload_id: int) -> tuple:
     and add to existing upload workspace. Multiple uploads accepted."""
 
     if request.method == 'POST':
-
         archive_arg = request.args.get('archive')
 
         file = request.files.get('file', None)
@@ -80,9 +80,6 @@ def upload_files(upload_id: int) -> tuple:
 
     if request.method == 'GET':
         data, status_code, headers = upload.upload_summary(upload_id)
-
-   # if request.method == 'DELETE':
-    #    data, status_code, headers = upload.delete_workspace(upload_id)
 
     return jsonify(data), status_code, headers
 
@@ -107,7 +104,6 @@ def delete_all_files(upload_id: int) -> tuple:
     return jsonify(data), status_code, headers
 
 
-
 @blueprint.route('<int:upload_id>', methods=['DELETE'])
 @scoped(scopes.ADMIN_UPLOAD)
 def workspace_delete(upload_id: int) -> tuple:
@@ -115,6 +111,48 @@ def workspace_delete(upload_id: int) -> tuple:
 
     data, status_code, headers = upload.delete_workspace(upload_id)
 
+    return jsonify(data), status_code, headers
+
+
+# Lock and unlock upload workspace
+
+@blueprint.route('/<int:upload_id>/lock', methods=['POST'])
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
+def lock(upload_id: int) -> tuple:
+    """Lock submission (read-only mode) while other services are
+    processing (major state transitions are occurring)."""
+    data, status_code, headers = upload.upload_lock(upload_id)
+    return jsonify(data), status_code, headers
+
+
+# This could be thaw or release instead of unlock
+@blueprint.route('/<int:upload_id>/unlock', methods=['POST'])
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
+def unlock(upload_id: int) -> tuple:
+    """Unlock submission and enable write mode."""
+    data, status_code, headers = upload.upload_unlock(upload_id)
+    return jsonify(data), status_code, headers
+
+
+# This could be remove or delete instead of release
+@blueprint.route('/<int:upload_id>/release', methods=['POST'])
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
+def release(upload_id: int) -> tuple:
+    """Client indicates they are finished with submission.
+    File management service is free to remove submissions files,
+    or schedule files for removal at later time."""
+    data, status_code, headers = upload.upload_release(upload_id)
+    return jsonify(data), status_code, headers
+
+
+# This could be remove or delete instead of release
+@blueprint.route('/<int:upload_id>/unrelease', methods=['POST'])
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
+def unrelease(upload_id: int) -> tuple:
+    """Client indicates they are finished with submission.
+    File management service is free to remove submissions files,
+    or schedule files for removal at later time."""
+    data, status_code, headers = upload.upload_unrelease(upload_id)
     return jsonify(data), status_code, headers
 
 
@@ -135,43 +173,27 @@ def workspace_delete(upload_id: int) -> tuple:
 
 
 # Or would 'download' be a better request? 'disseminate'?
-@blueprint.route('/content/<int:upload_id>', methods=['GET'])
+
+# Get content
+
+@blueprint.route('/<int:upload_id>/content', methods=['GET'])
 @scoped(scopes.READ_UPLOAD)
-def get_files(upload_id: int) -> tuple:
+def get_content(upload_id: int) -> tuple:
     """Return compressed archive containing files."""
     data, status_code, headers = upload.package_content(upload_id)
     return jsonify(data), status_code, headers
 
 
-# This could be freeze instead of lock
-@blueprint.route('/lock/<int:upload_id>', methods=['GET'])
-@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
-def lock(upload_id: int) -> tuple:
-    """Lock submission (read-only mode) while other services are
-    processing (major state transitions are occurring)."""
-    data, status_code, headers = upload.upload_lock(upload_id)
+# Or would 'download' be a better request? 'disseminate'?
+@blueprint.route('/<int:upload_id>/<path:public_file_path>/content', methods=['GET'])
+@scoped(scopes.READ_UPLOAD)
+def get_file(upload_id: int) -> tuple:
+    """Return compressed archive containing files."""
+    data, status_code, headers = upload.package_content(upload_id)  # same as content
     return jsonify(data), status_code, headers
 
 
-# This could be thaw or release instead of unlock
-@blueprint.route('/unlock/<int:upload_id>', methods=['GET'])
-@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
-def unlock(upload_id: int) -> tuple:
-    """Unlock submission and enable write mode."""
-    data, status_code, headers = upload.upload_unlock(upload_id)
-    return jsonify(data), status_code, headers
-
-
-# This could be remove or delete instead of release
-@blueprint.route('/release/<int:upload_id>', methods=['GET'])
-@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
-def release(upload_id: int) -> tuple:
-    """Client indicates they are finished with submission.
-    File management service is free to remove submissions files,
-    or schedule files for removal at later time."""
-    data, status_code, headers = upload.upload_release(upload_id)
-    return jsonify(data), status_code, headers
-
+# Get logs
 
 # This could be get_logs or retrieve_logs instead of logs
 @blueprint.route('/logs/<int:upload_id>', methods=['GET'])
