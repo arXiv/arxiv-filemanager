@@ -234,14 +234,14 @@ def client_delete_file(upload_id: str, public_file_path: str) -> Response:
         raise InternalServerError(CANT_DELETE_FILE)
     except NotFound as nf:
         logger.info("%s: DeleteFile: %s", upload_id, nf)
-        raise
+        raise nf
     except SecurityError as secerr:
         logger.info("%s: %s", upload_id, secerr.description)
         # TODO: Should this be BadRequest or NotFound. I'm leaning towards
         # NotFound in order to provide as little feedback as posible to client.
         raise NotFound(UPLOAD_FILE_NOT_FOUND)
     except Forbidden as forb:
-        logger.info("%s: Upload failed: %s.", upload_id, forb)
+        logger.info("%s: Delete file forbidden: %s.", upload_id, forb)
         raise forb
     except Exception as ue:
         logger.info("Unknown error in delete file. "
@@ -249,7 +249,7 @@ def client_delete_file(upload_id: str, public_file_path: str) -> Response:
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     response_data = {'reason': UPLOAD_DELETED_FILE}  # Get rid of pylint error
-    status_code = status.HTTP_200_OK
+    status_code = status.HTTP_204_NO_CONTENT
     return response_data, status_code, {}
 
 
@@ -313,7 +313,7 @@ def client_delete_all_files(upload_id: str) -> Response:
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     response_data = {'reason': UPLOAD_DELETED_ALL_FILES}  # Get rid of pylint error
-    status_code = status.HTTP_200_OK
+    status_code = status.HTTP_204_NO_CONTENT
     return response_data, status_code, {}
 
 
@@ -472,7 +472,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             # is not sufficient for results that may be needed in the distant future.
             # errors_and_warnings = upload_workspace.get_errors() + upload_workspace.get_warnings()
             errors_and_warnings = all_errors_and_warnings
-            upload_db_data.lastupload_logs = str(errors_and_warnings)
+            upload_db_data.lastupload_logs = json.dumps(errors_and_warnings)
             upload_db_data.lastupload_start_datetime = start_datetime
             upload_db_data.lastupload_completion_datetime = completion_datetime
             upload_db_data.lastupload_file_summary = json.dumps(file_list)
@@ -501,8 +501,8 @@ def upload(upload_id: int, file: FileStorage, archive: str,
                 'modified_datetime': upload_db_data.modified_datetime,
                 'start_datetime': upload_db_data.lastupload_start_datetime,
                 'completion_datetime': upload_db_data.lastupload_completion_datetime,
-                'files': upload_db_data.lastupload_file_summary,
-                'errors': upload_db_data.lastupload_logs,
+                'files': json.loads(upload_db_data.lastupload_file_summary),
+                'errors': json.loads(upload_db_data.lastupload_logs),
                 'upload_status': upload_db_data.lastupload_upload_status,
                 'workspace_state': upload_db_data.state,
                 'lock_state': upload_db_data.lock
@@ -572,8 +572,8 @@ def upload_summary(upload_id: int) -> Response:
                 'modified_datetime': upload_db_data.modified_datetime,
                 'start_datetime': upload_db_data.lastupload_start_datetime,
                 'completion_datetime': upload_db_data.lastupload_completion_datetime,
-                'files': upload_db_data.lastupload_file_summary,
-                'errors': upload_db_data.lastupload_logs,
+                'files': json.loads(upload_db_data.lastupload_file_summary),
+                'errors': json.loads(upload_db_data.lastupload_logs),
                 'upload_status': upload_db_data.lastupload_upload_status,
                 'workspace_state': upload_db_data.state,
                 'lock_state': upload_db_data.lock
