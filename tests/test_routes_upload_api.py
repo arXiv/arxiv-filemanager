@@ -905,21 +905,65 @@ class TestUploadAPIRoutes(TestCase):
         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}",
                                    headers={'Authorization': token})
 
+        self.assertEqual(response.status_code, 200, "File summary.")
         try:
             jsonschema.validate(json.loads(response.data), result_schema)
         except jsonschema.exceptions.SchemaError as e:
             self.fail(e)
 
+        # Check for file in upload result
+        summary_data: Dict[str, Any] = json.loads(response.data)
+        file_list = summary_data['files']
+        found = next((item for item in file_list if item["name"] == "lipics-v2016.cls"), False)
+        if next((item for item in file_list if item["name"] == "lipics-v2016.cls"), False):
+            print(f"FOUND UPLOADED FILE (Right Answer!): 'lipics-v2016.cls'")
+        else:
+            print(f"UPLOADED FILE NOT FOUND: 'lipics-v2016.cls' OOPS!")
+
+        self.assertTrue(found, "Uploaded file should exist in resulting file list.")
+
+
         # Delete a file (normal call)
         public_file_path = "lipics-logo-bw.pdf"
         from requests.utils import quote
         encoded_file_path = quote(public_file_path, safe='')
-        print(f"ENCODED:{encoded_file_path}\n")
+
         # response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{encoded_file_path}",
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
                                       headers={'Authorization': token})
 
         self.assertEqual(response.status_code, 204, "Delete an individual file.")
+
+        # Delete another file
+        public_file_path = "lipics-v2016.cls"
+        encoded_file_path = quote(public_file_path, safe='')
+
+        # response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{encoded_file_path}",
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+                                      headers={'Authorization': token})
+        self.assertEqual(response.status_code, 204, "Delete an individual file.")
+
+        # Get summary after deletions
+        response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}",
+                                   headers={'Authorization': token})
+
+        self.assertEqual(response.status_code, 200, "File summary after deletions.")
+
+        try:
+            jsonschema.validate(json.loads(response.data), result_schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+
+        # Check that deleted file is missing from file list summary
+        summary_data: Dict[str, Any] = json.loads(response.data)
+        file_list = summary_data['files']
+        found = next((item for item in file_list if item["name"] == "lipics-v2016.clsXX"), False)
+        self.assertFalse(found, "Uploaded file should exist in resulting file list.")
+
+        if next((item for item in file_list if item["name"] == public_file_path), False):
+            print(f"FOUND DELETED FILE: '{public_file_path}'")
+        else:
+            print(f"DELETED FILE NOT FOUND (Right Answer!): '{public_file_path}'")
 
         # Delete all files in my workspace (normal)
         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",

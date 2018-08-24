@@ -849,7 +849,7 @@ submitter."""
         """Check the uploaded files against individual and aggregate size limitations."""
         self.log('Coming soon! Check total file size is not implemented yet!')
 
-    def create_file_list(self) -> None:
+    def create_file_list(self) -> list:
         """Create list of File objects with details of each file in
         upload package."""
         # TODO: implement create file list
@@ -886,7 +886,7 @@ submitter."""
                 log_msg = f'{obj.name} \t[{obj.type}] in {obj.dir}'
                 self.log(log_msg)
 
-                # self.add_file(obj)
+        return list
 
     def create_file_upload_summary(self) -> list:
         """Returns a list files with details [dict]. Maybe be generated when upload
@@ -923,6 +923,7 @@ submitter."""
                     'public_filepath': fileObj.public_filepath,
                     'size': fileObj.size,
                     'type': fileObj.type_string,
+                    'modified_datetime': fileObj.modified_datetime
                 }
                 #if fileObj.removed:
                 #    file_details['removed'] = fileObj.removed

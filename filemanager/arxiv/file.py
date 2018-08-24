@@ -4,6 +4,7 @@
 
 import os.path
 import re
+import datetime
 
 from filemanager.arxiv.file_type import guess, _is_tex_type, name
 
@@ -20,6 +21,9 @@ to be displayed to the submitter."""
         self.__removed = 0
         self.__type = self.initialize_type()
         self.__size = os.path.getsize(self.filepath)
+        mtime = os.path.getmtime(filepath)
+        self.__modified_datetime = datetime.datetime.fromtimestamp(mtime).isoformat()
+
 
     @property
     def name(self) -> str:
@@ -144,6 +148,11 @@ to be displayed to the submitter."""
     def size(self) -> int:
         """Return size of file entity."""
         return self.__size
+
+    @property
+    def modified_datetime(self) -> int:
+        """Return modified datetime of file entity."""
+        return self.__modified_datetime
 
     @property
     def removed(self) -> int:

@@ -2,6 +2,7 @@ from unittest import TestCase
 from filemanager.arxiv.file import File
 
 import os.path
+import datetime
 
 
 class TestFileClass(TestCase):
@@ -36,6 +37,9 @@ class TestFileClass(TestCase):
         self.assertEquals(file.is_tex_type, False, "Check is_tex_type() method")
         self.assertEquals(file.ext, '.gif', "Check ext() method is '.gif'")
         self.assertEquals(file.size, 495, "Check size of '.gif' is 495")
+        mtime = os.path.getmtime(file.filepath)
+        modified_datetime = datetime.datetime.fromtimestamp(mtime).isoformat()
+        self.assertEquals(file.modified_datetime, modified_datetime, "Check modification time of file.")
 
     def test_file_subdirectory(self):
         """Pretend the file is in a subdirectory of submission workspace."""
