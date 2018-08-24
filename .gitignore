@@ -109,3 +109,4 @@ default.nix
 *#*
 *.#*
 
+.DS_Store
