@@ -547,7 +547,14 @@ submitter."""
 
         source_directory = self.get_source_directory()
 
+        # Since filenames may change during handling (e.g. rename files with
+        # illegal characters), we do not want to add them to the workspace
+        # (including their warnings and errors) until the final filename is
+        # known. We need to do this in several places, hence a function for
+        # convenience.
         def _add_file(fpath: str, warnings: list, errors: list) -> File:
+            """Add a file to the :class:`Upload` workspace."""
+
             # Since the filename may have changed, we re-instantiate
             # the File to get the most accurate representation.
             obj = File(fpath, source_directory)
