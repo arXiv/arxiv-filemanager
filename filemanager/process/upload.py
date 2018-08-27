@@ -547,6 +547,23 @@ submitter."""
 
         source_directory = self.get_source_directory()
 
+        def _add_file(fpath: str, warnings: list, errors: list) -> File:
+            # Since the filename may have changed, we re-instantiate
+            # the File to get the most accurate representation.
+            obj = File(fpath, source_directory)
+
+            # Add all files to upload file list as this will hold
+            # information about handling of file (removed)
+            self.add_file(obj)
+
+            # Add warnings and errors collected above, using the most
+            # up-to-date filename.
+            for msg in warnings:
+                self.add_warning(obj.public_filepath, msg)
+            for msg in errors:
+                self.add_error(obj.public_filepath, msg)
+            return obj
+
         for root_directory, directories, files in os.walk(source_directory):
             for directory in directories:
                 # Need to decide whether we need to do anything to directories
@@ -576,10 +593,10 @@ submitter."""
 
                 # Remove zero length files
                 if obj.size == 0:
-                    self.add_file(obj)  # Adding to preserve behavior.
                     msg = obj.name + " is empty (size is zero)"
                     # self.add_warning(obj.public_filepath, msg)
                     _warnings.append(msg)
+                    obj = _add_file(file_path, _warnings, _errors)
                     self.remove_file(obj, f"Removed: {msg}")
                     continue
 
@@ -655,7 +672,7 @@ submitter."""
 
                 # Filename starts with dot (.)
                 if file_name.startswith('.'):
-                    self.add_file(obj)  # Adding to preserve behavior.
+                    obj = _add_file(file_path, _warnings, _errors)
 
                     # Remove files starting with dot
                     msg = 'Removed hidden file'
@@ -669,7 +686,7 @@ submitter."""
 
                 # TeX: Remove hyperlink styles espcrc2 and lamuphys
                 if re.search(r'^(espcrc2|lamuphys)\.sty$', file_name):
-                    self.add_file(obj)  # Adding to preserve behavior.
+                    obj = _add_file(file_path, _warnings, _errors)
                     # TeX: styles that conflict with internal hypertex package
                     print("Found hyperlink-compatible package\n")
                     # TODO: Check the error/warning messaging for this check.
@@ -684,19 +701,19 @@ submitter."""
                         f"Possible submitter error. Unwanted '{file_name}'"
                     )
                 elif file_name == 'uufiles' or file_name == 'core' or file_name == 'splread.1st':
-                    self.add_file(obj)  # Adding to preserve behavior.
+                    obj = _add_file(file_path, _warnings, _errors)
                     # Remove these files
                     msg = 'File not allowed.'
                     self.remove_file(obj, msg)
                 elif re.search(r'^xxx\.(rsrc$|finfo$|cshrc$|nfs)', file_name) \
                         or re.search(r'\.[346]00gf$', file_name) \
                         or (re.search(r'\.desc$', file_name) and file_size < 10):
-                    self.add_file(obj)  # Adding to preserve behavior.
+                    obj = _add_file(file_path, _warnings, _errors)
                     # Remove these files
                     msg = 'File not allowed.'
                     self.remove_file(obj, msg)
                 elif re.search(r'(.*)\.bib$', file_name, re.IGNORECASE):
-                    self.add_file(obj)  # Adding to preserve behavior.
+                    obj = _add_file(file_path, _warnings, _errors)
                     # TeX: Remove bib file since we do not run BibTeX
                     # TODO: Generate bib warning bib()??
                     msg = 'Removing ' + file_name \
@@ -705,13 +722,13 @@ submitter."""
                 elif re.search(r'^(10pt\.rtx|11pt\.rtx|12pt\.rtx|aps\.rtx|'
                                + r'revsymb\.sty|revtex4\.cls|rmp\.rtx)$',
                                file_name):
-                    self.add_file(obj)  # Adding to preserve behavior.
+                    obj = _add_file(file_path, _warnings, _errors)
                     # TeX: submitter is including file already included
                     # in TeX Live release
                     # TODO: get revtex() warning message ???
                     self.remove_file(obj, msg)
                 elif re.search(r'^diagrams\.(sty|tex)$', file_name):
-                    self.add_file(obj)  # Adding to preserve behavior.
+                    obj = _add_file(file_path, _warnings, _errors)
                     # TeX: diagrams package contains a time bomb and stops
                     # working after a specified date. Use internal version
                     # with time bomb disable.
@@ -720,7 +737,7 @@ submitter."""
                     msg = ''
                     self.remove_file(obj, msg)
                 elif file_name == 'aa.dem':
-                    self.add_file(obj)  # Adding to preserve behavior.
+                    obj = _add_file(file_path, _warnings, _errors)
                     # TeX: Check for aa.dem
                     # This is demo file that authors seem to include with
                     # their submissions.
@@ -764,10 +781,12 @@ submitter."""
                         msg = "Renaming '" + file_name + "' to '" \
                               + new_file_name + "'."
                         _warnings.append(msg)
+                        file_name = new_file_name
+                        file_path = new_file_path
                     except os.error:
                         _warnings.append(f'Unable to rename {file_name}')
                 elif file_name.endswith('.doc') and type == 'failed':
-                    self.add_file(obj)  # Adding to preserve behavior.
+                    obj = _add_file(file_path, _warnings, _errors)
                     # Doc warning
                     # TODO: Get doc warning from message class
                     msg = ''
@@ -858,20 +877,7 @@ submitter."""
                     self.extract_uu(file_name, file_type)
                     pass
 
-                # Since the filename may have changed above, we re-instantiate
-                # the File to get the most accurate representation.
-                obj = File(file_path, source_directory)
-
-                # Add all files to upload file list as this will hold
-                # information about handling of file (removed)
-                self.add_file(obj)
-
-                # Add warnings and errors collected above, using the most
-                # up-to-date filename.
-                for msg in _warnings:
-                    self.add_warning(obj.public_filepath, msg)
-                for msg in _errors:
-                    self.add_error(obj.public_filepath, msg)
+                obj = _add_file(file_path, _warnings, _errors)
                 # End of file type checks
 
     def unmacify(self, file_name: str):

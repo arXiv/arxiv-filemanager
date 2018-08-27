@@ -292,7 +292,8 @@ class TestUploadAPIRoutes(TestCase):
         """
         # Create a token for writing to upload workspace
         token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
-                                          auth.scopes.WRITE_UPLOAD])
+                                          auth.scopes.WRITE_UPLOAD,
+                                          auth.scopes.DELETE_UPLOAD_FILE])
 
         # Upload a gzipped tar archive package containing files to delete.
         cwd = os.getcwd()
@@ -448,7 +449,8 @@ class TestUploadAPIRoutes(TestCase):
         """
         # Create a token for writing to upload workspace
         token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
-                                          auth.scopes.WRITE_UPLOAD])
+                                          auth.scopes.WRITE_UPLOAD,
+                                          auth.scopes.DELETE_UPLOAD_FILE])
 
         # Upload a gzipped tar archive package containing files to delete.
         cwd = os.getcwd()
@@ -566,9 +568,12 @@ class TestUploadAPIRoutes(TestCase):
 
         # Create admin token for deleting upload workspace
 
-        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
-                                                auth.scopes.WRITE_UPLOAD,
-                                                auth.scopes.ADMIN_UPLOAD])
+        admin_token = generate_token(
+            self.app,
+            [auth.scopes.READ_UPLOAD.as_global(),
+             auth.scopes.WRITE_UPLOAD.as_global(),
+             auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()]
+         )
 
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
                                       headers={'Authorization': admin_token}
@@ -642,7 +647,7 @@ class TestUploadAPIRoutes(TestCase):
         # Create admin token for deleting upload workspace
         admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
                                                 auth.scopes.WRITE_UPLOAD,
-                                                auth.scopes.ADMIN_UPLOAD])
+                                                auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
         # Now test lock
         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/lock",
                                     headers={'Authorization': admin_token}
@@ -748,7 +753,7 @@ class TestUploadAPIRoutes(TestCase):
         # Create admin token for releasing upload workspace
         admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
                                                 auth.scopes.WRITE_UPLOAD,
-                                                auth.scopes.ADMIN_UPLOAD])
+                                                auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
         # Now test release
         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/release",
                                     headers={'Authorization': admin_token}
@@ -849,7 +854,8 @@ class TestUploadAPIRoutes(TestCase):
 
         # Create a token for writing to upload workspace
         token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
-                                          auth.scopes.WRITE_UPLOAD])
+                                          auth.scopes.WRITE_UPLOAD,
+                                          auth.scopes.DELETE_UPLOAD_FILE])
 
         created = datetime.now()
         modified = datetime.now()
@@ -977,7 +983,7 @@ class TestUploadAPIRoutes(TestCase):
         # Create admin token for deleting upload workspace
         admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
                                                 auth.scopes.WRITE_UPLOAD,
-                                                auth.scopes.ADMIN_UPLOAD])
+                                                auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
         print(f"ADMIN Token (for possible use in manual browser tests): {admin_token}\n")
 
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
