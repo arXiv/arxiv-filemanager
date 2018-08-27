@@ -4,15 +4,19 @@
 
 import os.path
 import re
-import datetime
+from datetime import datetime
 
 from filemanager.arxiv.file_type import guess, _is_tex_type, name
 
 
 class File:
-    """This is file object that contains uploaded file related information,
-including the file type, human readable type name, and the directory
-to be displayed to the submitter."""
+    """
+    Represents a single file in an upload workspace.
+
+    This is file object that contains uploaded file related information,
+    including the file type, human readable type name, and the directory
+    to be displayed to the submitter.
+    """
 
     def __init__(self, filepath: str, base_dir: str) -> None:
         self.__filepath = filepath
@@ -22,17 +26,16 @@ to be displayed to the submitter."""
         self.__type = self.initialize_type()
         self.__size = os.path.getsize(self.filepath)
         mtime = os.path.getmtime(filepath)
-        self.__modified_datetime = datetime.datetime.fromtimestamp(mtime).isoformat()
-
+        self.__modified_datetime = datetime.fromtimestamp(mtime).isoformat()
 
     @property
     def name(self) -> str:
-        """The file name without path/directory info"""
+        """The file name without path/directory info."""
         return os.path.basename(self.filepath)
 
     @property
     def ext(self) -> str:
-        """Return file extension"""
+        """Return file extension."""
         fbase, ext = os.path.splitext(self.__filepath)
         return ext
 
