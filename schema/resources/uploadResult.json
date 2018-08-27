@@ -70,20 +70,30 @@
           "name",
           "public_filepath",
           "size",
-          "type"
+          "type",
+          "modified_datetime"
         ],
         "properties": {
           "name": {
+            "description": "Filename.",
             "type": "string"
           },
           "public_filepath": {
+            "description": "File path reletaive to root of upload workspace source directory.",
             "type": "string"
           },
           "size": {
+            "description": "File size in bytes.",
             "type": "integer"
           },
           "type": {
+            "description": "Type as identified by arXiv.",
             "type": "string"
+          },
+          "modified_datetime": {
+            "description": "Modified datetime in isoformat. Last modified time of file.",
+            "type": "string",
+            "format": "datetime"
           }
         }
       }
@@ -92,6 +102,7 @@
       "description": "Includes errors or other information that may be relevant for debugging upload issues. Each error will contain type of error [fatal/warn/info], a concise message, and optional file name.",
       "type": "array",
       "items": {
+        "description": "Each error entry array contains level[WARN,FATAL,INFO], file (optional), and an appropriate message for the type of warning or error.",
         "type": "array"
       }
     }
