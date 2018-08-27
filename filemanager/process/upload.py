@@ -518,6 +518,7 @@ submitter."""
 
         # Sanitize file name before saving it
         filename = secure_filename(basename)
+        print('.', filename)
 
         if basename != filename:
             self.log(f'Secured filename: {filename} (basename + )')
@@ -546,6 +547,30 @@ submitter."""
 
         source_directory = self.get_source_directory()
 
+        # Since filenames may change during handling (e.g. rename files with
+        # illegal characters), we do not want to add them to the workspace
+        # (including their warnings and errors) until the final filename is
+        # known. We need to do this in several places, hence a function for
+        # convenience.
+        def _add_file(fpath: str, warnings: list, errors: list) -> File:
+            """Add a file to the :class:`Upload` workspace."""
+
+            # Since the filename may have changed, we re-instantiate
+            # the File to get the most accurate representation.
+            obj = File(fpath, source_directory)
+
+            # Add all files to upload file list as this will hold
+            # information about handling of file (removed)
+            self.add_file(obj)
+
+            # Add warnings and errors collected above, using the most
+            # up-to-date filename.
+            for msg in warnings:
+                self.add_warning(obj.public_filepath, msg)
+            for msg in errors:
+                self.add_error(obj.public_filepath, msg)
+            return obj
+
         for root_directory, directories, files in os.walk(source_directory):
             for directory in directories:
                 # Need to decide whether we need to do anything to directories
@@ -555,11 +580,13 @@ submitter."""
                 # self.log(f'{directory} [{obj.type}] in {obj.filepath}')
 
             for file in files:
-                path = os.path.join(root_directory, file)
-                obj = File(path, source_directory)
-                # Add all files to upload file list as this will hold
-                # information about handling of file (removed)
-                self.add_file(obj)
+                # Hold these until we're done with the file, since file names
+                # can change here.
+                _warnings = []
+                _errors = []
+
+                file_path = os.path.join(root_directory, file)
+                obj = File(file_path, source_directory)
 
                 # Convert this to debugging
                 # print("  File is : " + file + " Size: " + str(
@@ -567,7 +594,6 @@ submitter."""
 
                 file_type = obj.type
                 file_name = obj.name
-                file_path = os.path.join(root_directory, file)
                 file_size = obj.size
 
                 # Update file timestamps
@@ -575,7 +601,9 @@ submitter."""
                 # Remove zero length files
                 if obj.size == 0:
                     msg = obj.name + " is empty (size is zero)"
-                    self.add_warning(obj.public_filepath, msg)
+                    # self.add_warning(obj.public_filepath, msg)
+                    _warnings.append(msg)
+                    obj = _add_file(file_path, _warnings, _errors)
                     self.remove_file(obj, f"Removed: {msg}")
                     continue
 
@@ -588,7 +616,7 @@ submitter."""
                     new_name = re.sub(r'^[A-Za-z]:\\(.*\\)?', '', file_name)
                     new_file_path = os.path.join(root_directory, new_name)
                     msg = 'Renaming ' + file_name + ' to ' + new_name + '.'
-                    self.add_warning(obj.public_filepath, msg)
+                    _warnings.append(msg)
                     os.rename(file_path, new_file_path)
                     # fix up local data
                     file_name = new_name
@@ -613,16 +641,19 @@ submitter."""
                 if re.search(r'[^\w\+\-\.\=\,]', file_name):
                     # Translate bad characters
                     new_file_name = re.sub(r'[^\w\+\-\.\=\,]', '_', file_name)
-                    self.add_warning(obj.public_filepath, "We only accept file names containing the characters: "
-                                     + "a-z A-Z 0-9 _ + - . , =")
-                    self.add_warning(obj.public_filepath, 'Attempting to rename ' + file_name
-                                     + ' to ' + new_file_name + '.')
+                    _warnings.append(
+                        "We only accept file names containing the characters: "
+                        "a-z A-Z 0-9 _ + - . , ="
+                    )
+                    _warnings.append(
+                        f'Attempting to rename {file_name} to {new_file_name}.'
+                    )
                     # Do the renaming
                     new_file_path = os.path.join(root_directory, new_file_name)
                     try:
                         os.rename(file_path, new_file_path)
                     except os.error:
-                        self.add_warning(obj.public_filepath, 'Unable to rename ' + file_name)
+                        _warnings.append(f'Unable to rename {file_name}')
 
                     # fix up local data
                     file_name = new_file_name
@@ -632,21 +663,24 @@ submitter."""
                 if file_name.startswith('-'):
                     # Replace dash (-) with underscore
                     new_file_name = re.sub('^-', '_', file_name)
-                    self.add_warning(obj.public_filepath, 'We do not accept files starting with a hyphen. '
-                                     + 'Attempting to rename \"' + file_name + '\" to \"'
-                                     + new_file_name + '\".')
+                    _warnings.append(
+                        'We do not accept files starting with a hyphen. '
+                        f'Attempting to rename {file_name} to {new_file_name}.'
+                    )
                     # Do the renaming
                     new_file_path = os.path.join(root_directory, new_file_name)
                     try:
                         os.rename(file_path, new_file_path)
                     except os.error:
-                        self.add_warning(obj.public_filepath, 'Unable to rename ' + file_name)
+                        _warnings.append(f'Unable to rename {file_name}')
                     # fix up local data
                     file_name = new_file_name
                     file_path = new_file_path
 
                 # Filename starts with dot (.)
                 if file_name.startswith('.'):
+                    obj = _add_file(file_path, _warnings, _errors)
+
                     # Remove files starting with dot
                     msg = 'Removed hidden file'
                     # self.add_warning(msg)
@@ -659,26 +693,34 @@ submitter."""
 
                 # TeX: Remove hyperlink styles espcrc2 and lamuphys
                 if re.search(r'^(espcrc2|lamuphys)\.sty$', file_name):
+                    obj = _add_file(file_path, _warnings, _errors)
                     # TeX: styles that conflict with internal hypertex package
                     print("Found hyperlink-compatible package\n")
                     # TODO: Check the error/warning messaging for this check.
                     self.remove_file(obj, msg)
-                    self.add_warning(obj.public_filepath, '    -- instead using hypertex-compatible local version')
+                    _warnings.append(
+                        '   -- instead using hypertex-compatible local version'
+                    )
                 elif re.search(r'^(espcrc2|lamuphys)\.tex$', file_name):
                     # TeX: source files that conflict with internal hypertex package
                     # I'm not sure why this is just a warning
-                    self.add_warning(obj.public_filepath, f"Possible submitter error. Unwanted '{file_name}'")
+                    _warnings.append(
+                        f"Possible submitter error. Unwanted '{file_name}'"
+                    )
                 elif file_name == 'uufiles' or file_name == 'core' or file_name == 'splread.1st':
+                    obj = _add_file(file_path, _warnings, _errors)
                     # Remove these files
                     msg = 'File not allowed.'
                     self.remove_file(obj, msg)
                 elif re.search(r'^xxx\.(rsrc$|finfo$|cshrc$|nfs)', file_name) \
                         or re.search(r'\.[346]00gf$', file_name) \
                         or (re.search(r'\.desc$', file_name) and file_size < 10):
+                    obj = _add_file(file_path, _warnings, _errors)
                     # Remove these files
                     msg = 'File not allowed.'
                     self.remove_file(obj, msg)
                 elif re.search(r'(.*)\.bib$', file_name, re.IGNORECASE):
+                    obj = _add_file(file_path, _warnings, _errors)
                     # TeX: Remove bib file since we do not run BibTeX
                     # TODO: Generate bib warning bib()??
                     msg = 'Removing ' + file_name \
@@ -687,11 +729,13 @@ submitter."""
                 elif re.search(r'^(10pt\.rtx|11pt\.rtx|12pt\.rtx|aps\.rtx|'
                                + r'revsymb\.sty|revtex4\.cls|rmp\.rtx)$',
                                file_name):
+                    obj = _add_file(file_path, _warnings, _errors)
                     # TeX: submitter is including file already included
                     # in TeX Live release
                     # TODO: get revtex() warning message ???
                     self.remove_file(obj, msg)
                 elif re.search(r'^diagrams\.(sty|tex)$', file_name):
+                    obj = _add_file(file_path, _warnings, _errors)
                     # TeX: diagrams package contains a time bomb and stops
                     # working after a specified date. Use internal version
                     # with time bomb disable.
@@ -700,14 +744,16 @@ submitter."""
                     msg = ''
                     self.remove_file(obj, msg)
                 elif file_name == 'aa.dem':
+                    obj = _add_file(file_path, _warnings, _errors)
                     # TeX: Check for aa.dem
                     # This is demo file that authors seem to include with
                     # their submissions.
                     self.remove_file(obj, msg)
-                    self.add_warning(obj.public_filepath, 'REMOVING ' + file_name
-                                     + ' on the assumption that it is the example '
-                                     + 'file for the Astronomy and '
-                                     + 'Astrophysics macro package aa.cls.')
+                    _warnings.append(
+                        f'REMOVING {file_name} on the assumption that it is '
+                        'the example file for the Astronomy and Astrophysics '
+                        'macro package aa.cls.'
+                    )
                 elif re.search(r'(.+)\.(log|aux|blg|dvi|ps|pdf)$', file_name,
                                re.IGNORECASE):
                     # TeX: Check for TeX processed output files (log, aux,
@@ -718,17 +764,20 @@ submitter."""
                     tex_file = os.path.join(root_directory, filebase, '.tex')
                     upper_case_tex_file = os.path.join(root_directory, filebase, '.TEX')
                     if os.path.exists(tex_file) or os.path.exists(upper_case_tex_file):
+                        self.add_file(obj)  # Adding to preserve behavior.
                         # Potential conflict / corruption by including TeX
                         # generated files in submission
-                        self.add_warning(obj.public_filepath, ' REMOVING $fn due to name conflict')
+                        _warnings.append(' REMOVING $fn due to name conflict')
                         self.remove_file(obj, msg)
                 elif re.search(r'[^\w\+\-\.\=\,]', file_name):
                     # File name contains unwanted bad characters - this is an Error
                     # We attempted to fix file_names with bad characters at
                     # beginning of this routine
-                    self.add_error(obj.public_filepath, 'Filename \"' + file_name
-                                   + '\" contains unwanted bad character \"$&\", '
-                                   + 'only allowed are a-z A-Z 0-9 _ + - . , =')
+                    _errors.append(
+                        f'Filename "{file_name}" contains unwanted bad '
+                        'character "$&", only allowed are '
+                        'a-z A-Z 0-9 _ + - . , ='
+                    )
                 elif re.search(r'([\.\-]t?[ga]?z)$', file_name):
                     # Fix filename
                     new_file_name = re.sub(r'([\.\-]t?[ga]?z)$', '', file_name,
@@ -738,15 +787,18 @@ submitter."""
                         os.rename(file_path, new_file_path)
                         msg = "Renaming '" + file_name + "' to '" \
                               + new_file_name + "'."
-                        self.add_warning(obj.public_filepath, msg)
+                        _warnings.append(msg)
+                        file_name = new_file_name
+                        file_path = new_file_path
                     except os.error:
-                        self.add_warning(obj.public_filepath, 'Unable to rename ' + file_name)
+                        _warnings.append(f'Unable to rename {file_name}')
                 elif file_name.endswith('.doc') and type == 'failed':
+                    obj = _add_file(file_path, _warnings, _errors)
                     # Doc warning
                     # TODO: Get doc warning from message class
                     msg = ''
                     # TODO: need to log error
-                    self.add_error(obj.public_filepath, msg)
+                    _errors.append(msg)
                     self.remove_file(obj, msg)
 
                 # Finished basic file checks
@@ -774,7 +826,7 @@ submitter."""
                 if file_type == 'dvi':
                     msg = file_name + ' is a TeX-produced DVI file. ' \
                           + ' Please submit the TeX source instead.'
-                    self.add_error(obj.public_filepath, msg)
+                    _errors.append(msg)
 
                 # Clean up any html
                 elif file_type == 'html':
@@ -806,7 +858,7 @@ submitter."""
                 # RAR
                 elif file_type == 'rar':
                     msg = "We do not support 'rar' files. Please use 'zip' or 'tar'."
-                    self.add_error(obj.public_filepath, msg)
+                    _errors.append(msg)
 
                 # unmacify files of type PC and MAC
                 elif file_type == 'pc' or file_type == 'mac':
@@ -832,6 +884,7 @@ submitter."""
                     self.extract_uu(file_name, file_type)
                     pass
 
+                obj = _add_file(file_path, _warnings, _errors)
                 # End of file type checks
 
     def unmacify(self, file_name: str):

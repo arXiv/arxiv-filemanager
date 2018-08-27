@@ -440,6 +440,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             upload_workspace = filemanager.process.upload.Upload(upload_id)
 
             # Process upload_db_data
+            print('!', file)
             upload_workspace.process_upload(file)
 
             completion_datetime = datetime.now()
