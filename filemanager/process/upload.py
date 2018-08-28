@@ -11,6 +11,7 @@ from werkzeug.exceptions import BadRequest, NotFound, SecurityError
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
+from arxiv.base.globals import get_application_config
 from filemanager.arxiv.file import File
 
 UPLOAD_FILE_EMPTY = 'file payload is zero length'
@@ -19,8 +20,11 @@ UPLOAD_DELETE_ALL_FILE_FAILED = 'unable to delete all file'
 UPLOAD_FILE_NOT_FOUND = 'file not found'
 UPLOAD_WORKSPACE_NOT_FOUND = 'workspcae not found'
 
-# TODO: Need to move to config file
-UPLOAD_BASE_DIRECTORY = '/tmp/filemanagment/submissions'
+
+def _get_base_directory() -> str:
+    config = get_application_config()
+    return config.get('UPLOAD_BASE_DIRECTORY',
+                      '/tmp/filemanagment/submissions')
 
 
 class Upload:
@@ -245,7 +249,7 @@ submitter."""
 
         if os.path.exists(log_path):
             # Does directory exist to stash log
-            deleted_workspace_logs = os.path.join(UPLOAD_BASE_DIRECTORY,
+            deleted_workspace_logs = os.path.join(_get_base_directory(),
                                                   'deleted_workspace_logs')
             if not os.path.exists(deleted_workspace_logs):
                 # Create the directory for deleted workspace logs
@@ -411,19 +415,19 @@ submitter."""
             Top level directory path for upload workspace.
         """
 
-        root_path = UPLOAD_BASE_DIRECTORY
+        root_path = _get_base_directory()
         upload_directory = os.path.join(root_path, str(self.upload_id))
         return upload_directory
 
     def create_upload_directory(self):
         """Create the base directory for upload workarea"""
 
-        root_path = UPLOAD_BASE_DIRECTORY
+        root_path = _get_base_directory()
 
         if not os.path.exists(root_path):
             # Create path for submissions
             # TODO determine if we need to set owner/modes
-            os.makedirs(UPLOAD_BASE_DIRECTORY, 0o755)
+            os.makedirs(_get_base_directory(), 0o755)
             # Stick this entry in service log?
             print("Created file management service workarea\n")
 

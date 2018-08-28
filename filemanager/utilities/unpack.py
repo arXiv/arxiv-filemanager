@@ -113,12 +113,18 @@ def unpack_archive(upload: Upload) -> None:
                             # These get handled in checks and logged.
 
                             # Extract files and directories for now
+                            dest = os.path.join(target_directory, tarinfo.name)
+                            # Tarfiles may contain relative paths! We must
+                            # ensure that each file is not going to escape the
+                            # upload source directory _before_ we extract it.
+                            if source_directory not in os.path.normpath(dest):
+                                continue
+
                             if tarinfo.isreg():
                                 # log this? ("Reg File")
                                 tar.extract(tarinfo, target_directory)
                                 # Update access and modified times to now.
-                                dest = os.path.join(target_directory,
-                                                    tarinfo.name)
+
                                 os.utime(dest)
                             elif tarinfo.isdir():
                                 # log this? ("Dir")
