@@ -250,16 +250,24 @@ paths:
        required: true
        schema:
          type: string
+
+    head:
+      operationId: checkUploadContentExists
+      summary: Verify that upload content exists.
+      responses:
+        '200':
+          description: Content exists for this upload package.
+          headers:
+            ETag:
+              description: |
+                Base64-encoded MD5 checksum of the upload package (as a
+                tarball).
+              schema:
+                type: str
+
     get:
       operationId: getUploadContent
       summary: Retrieve the sanitized/processed upload package.
-      parameters:
-        -in: path
-         name: upload_id
-         description: Unique long-lived identifier for the upload.
-         required: true
-         schema:
-           type: string
       responses:
         '200':
           description: Returns the sanitized/processed upload package.
@@ -268,6 +276,13 @@ paths:
               schema:
                 type: string
                 format: binary
+          headers:
+            ETag:
+              description: |
+                Base64-encoded MD5 checksum of the upload package (as a
+                tarball).
+              schema:
+                type: str
         '401':
           description: Unauthorized. Missing valid authentication information.
         '403':
