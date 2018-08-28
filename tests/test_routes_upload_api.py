@@ -4,6 +4,9 @@ from unittest import TestCase, mock
 from datetime import datetime, timedelta
 from pytz import timezone
 import json
+import tempfile
+from io import BytesIO
+import tarfile
 import os
 import uuid
 import os.path
@@ -17,6 +20,7 @@ from filemanager.factory import create_web_app
 from filemanager.services import uploads
 
 from arxiv.users import domain, auth
+from arxiv import status
 
 
 # Generate authentication token
@@ -995,3 +999,22 @@ class TestUploadAPIRoutes(TestCase):
         # This cleans out the workspace. Comment out if you want to inspect files
         # in workspace. Source log is saved to 'deleted_workspace_logs' directory.
         self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
+
+        response = self.client.head(
+            f"/filemanager/api/{upload_data['upload_id']}/content",
+            headers={'Authorization': admin_token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+
+        response = self.client.get(
+            f"/filemanager/api/{upload_data['upload_id']}/content",
+            headers={'Authorization': admin_token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+        workdir = tempfile.mkdtemp()
+        with tarfile.open(fileobj=BytesIO(response.data)) as tar:
+            tar.extractall(path=workdir)
+        print(os.listdir(workdir))

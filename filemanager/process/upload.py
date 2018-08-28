@@ -1160,9 +1160,23 @@ submitter."""
             self.pack_content()
         return open(self.get_content_path(), 'rb')
 
+    @property
+    def content_package_exists(self) -> bool:
+        return os.path.exists(self.get_content_path())
+
+    @property
+    def content_package_modified(self) -> datetime:
+        return datetime.utcfromtimestamp(
+            os.path.getmtime(self.get_content_path())
+        )
+
+    @property
+    def content_package_stale(self) -> bool:
+        return self.last_modified > self.content_package_modified
+
     def content_checksum(self) -> str:
         """Return b64-encoded MD5 hash of the packed content tarball."""
-        if not os.path.exists(self.get_content_path()):
+        if not self.content_package_exists or self.content_package_stale:
             self.pack_content()
 
         hash_md5 = md5()

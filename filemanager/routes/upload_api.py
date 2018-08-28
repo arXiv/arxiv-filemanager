@@ -4,7 +4,7 @@ import json
 
 from flask.json import jsonify
 from flask import Blueprint, render_template, redirect, request, url_for, \
-    Response, make_response
+    Response, make_response, send_file
 from werkzeug.exceptions import NotFound, Forbidden, Unauthorized, \
     InternalServerError, HTTPException, BadRequest
 from arxiv.base import routes as base_routes
@@ -170,12 +170,22 @@ def unrelease(upload_id: int) -> tuple:
 
 # Get content
 
+@blueprint.route('/<int:upload_id>/content', methods=['HEAD'])
+@scoped(scopes.READ_UPLOAD)
+def get_content_status(upload_id: int) -> tuple:
+    """Return compressed archive containing files."""
+    data, status_code, headers = upload.package_content_status(upload_id)
+    return jsonify(data), status_code, headers
+
+
 @blueprint.route('/<int:upload_id>/content', methods=['GET'])
 @scoped(scopes.READ_UPLOAD)
 def get_content(upload_id: int) -> tuple:
     """Return compressed archive containing files."""
     data, status_code, headers = upload.package_content(upload_id)
-    return jsonify(data), status_code, headers
+    response = send_file(data, mimetype="application/tar+gzip")
+    response.set_etag(headers.get('ETag'))
+    return response
 
 
 # Or would 'download' be a better request? 'disseminate'?

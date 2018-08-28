@@ -865,19 +865,35 @@ def upload_unrelease(upload_id: int) -> Response:
     return response_data, status_code, {}
 
 
-# TBI
-
-
 def package_content(upload_id: int) -> Response:
-    """Package up files for downloading. Create a compressed gzipped tar file."""
-    # response_data = ERROR_REQUEST_NOT_IMPLEMENTED
-    # status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-    if 1 + upload_id:  # Get rid of pylint complaint
-        print(upload_id)  # make pylint happy - increase my score!
-        raise NotImplementedError(REQUEST_NOT_IMPLEMENTED)
-    response_data = ACCEPTED  # Get rid of pylint error
-    status_code = status.HTTP_202_ACCEPTED
-    return response_data, status_code, {}
+    """Package up files for downloading as a compressed gzipped tar file."""
+    upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+
+    if upload_db_data is None:
+        raise NotFound(UPLOAD_NOT_FOUND)
+    upload_workspace = filemanager.process.upload.Upload(upload_id)
+    checksum = upload_workspace.content_checksum()
+    filepointer = upload_workspace.get_content()
+    headers = {
+        "Content-disposition": f"filename={filepointer.name}",
+        'ETag': checksum
+    }
+    return filepointer, status.HTTP_200_OK, headers
+
+
+def package_content_status(upload_id: int) -> Response:
+    """Verify that the package content exists/is available."""
+    upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+
+    if upload_db_data is None:
+        raise NotFound(UPLOAD_NOT_FOUND)
+
+    logger.info("%s: Upload content summary request.", upload_id)
+    upload_workspace = filemanager.process.upload.Upload(upload_id)
+    checksum = upload_workspace.content_checksum()
+    return {}, status.HTTP_200_OK, {'ETag': checksum}
+
+# TBI
 
 
 def upload_logs(upload_id: int) -> Response:
