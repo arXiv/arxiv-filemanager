@@ -72,7 +72,6 @@ def upload_files(upload_id: int) -> tuple:
     # Attempt to process upload
     data, status_code, headers = upload.upload(upload_id, file, archive_arg,
                                                request.session.user)
-
     return jsonify(data), status_code, headers
 
 

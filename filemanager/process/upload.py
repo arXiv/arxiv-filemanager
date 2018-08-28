@@ -554,7 +554,6 @@ submitter."""
         # convenience.
         def _add_file(fpath: str, warnings: list, errors: list) -> File:
             """Add a file to the :class:`Upload` workspace."""
-
             # Since the filename may have changed, we re-instantiate
             # the File to get the most accurate representation.
             obj = File(fpath, source_directory)
@@ -979,7 +978,6 @@ submitter."""
                 }
                 #if fileObj.removed:
                 #    file_details['removed'] = fileObj.removed
-
                 if not fileObj.removed:
                     file_list.append(file_details)
 
