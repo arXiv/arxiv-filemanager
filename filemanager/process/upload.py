@@ -1,18 +1,23 @@
 """Provides functions that sanitizes :class:`.Upload."""
 
 import os
-import os.path
 import re
+from datetime import datetime
 import shutil
 import tarfile
 import logging
+from hashlib import md5
+from base64 import b64encode
+import io
 
 from werkzeug.exceptions import BadRequest, NotFound, SecurityError
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from arxiv.base.globals import get_application_config
-from filemanager.arxiv.file import File
+from filemanager.arxiv.file import File as File
+from filemanager.utilities.unpack import unpack_archive
+
 
 UPLOAD_FILE_EMPTY = 'file payload is zero length'
 UPLOAD_DELETE_FILE_FAILED = 'unable to delete file'
@@ -198,7 +203,7 @@ submitter."""
 
         Parameters
         ----------
-        file : File
+        file : :class:`File`
             File to be removed from source directory.
         msg
             Message indicating reason for removal.
@@ -988,8 +993,6 @@ submitter."""
             return file_list
         return file_list
 
-
-
     def set_file_permissions(self) -> None:
         """Set the file permissions for all files and directories in upload."""
 
@@ -1109,7 +1112,6 @@ submitter."""
 
         self.log('\n******** File Upload Processing *****\n\n')
 
-        from filemanager.utilities.unpack import unpack_archive
         # Unpack upload archive (if necessary). Completes minor cleanup.
         unpack_archive(self)
 
@@ -1128,3 +1130,43 @@ submitter."""
         self.log('\n******** File Upload Finished *****\n\n')
 
         self.log(f'\n******** Errors: {self.has_errors()} *****\n\n')
+
+    def get_content_path(self) -> str:
+        """
+        Get the path for the packed content tarball.
+
+        Note that the tarball itself may or may not exist yet.
+        """
+        return os.path.join(self.get_upload_directory(),
+                            f'{self.upload_id}.tar.gz')
+
+    def pack_content(self) -> str:
+        """Pack the entire source directory into a tarball."""
+        with tarfile.open(self.get_content_path(), "w:gz") as tar:
+            tar.add(self.get_source_directory(), arcname=os.path.sep)
+        return self.get_content_path()
+
+    @property
+    def last_modified(self):
+        """The time of the most recent change to a file in the workspace."""
+        most_recent = max(os.path.getmtime(root)
+                          for root, _, _
+                          in os.walk(self.get_source_directory()))
+        return datetime.utcfromtimestamp(most_recent)
+
+    def get_content(self) -> io.BytesIO:
+        """Get a file-pointer for the packed content tarball."""
+        if not os.path.exists(self.get_content_path()):
+            self.pack_content()
+        return open(self.get_content_path(), 'rb')
+
+    def content_checksum(self) -> str:
+        """Return b64-encoded MD5 hash of the packed content tarball."""
+        if not os.path.exists(self.get_content_path()):
+            self.pack_content()
+
+        hash_md5 = md5()
+        with open(self.get_content_path(), "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+        return b64encode(hash_md5.digest()).decode('utf-8')
