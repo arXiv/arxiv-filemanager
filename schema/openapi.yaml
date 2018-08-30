@@ -240,8 +240,6 @@ paths:
                 type: string
                 format: binary
 
-  # These are a bit different from what is currently implemented in
-  # routes/ui.py. Maybe this provides a bit more RESTful semantics?
   /{upload_id}/content:
     parameters:
       -in: path
