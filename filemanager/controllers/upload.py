@@ -400,9 +400,9 @@ def upload(upload_id: int, file: FileStorage, archive: str,
 
             upload_id = new_upload.upload_id
 
-        except IOError:
-            logger.info("Error creating new workspace.")
-            raise InternalServerError(UPLOAD_IO_ERROR)
+        except IOError as e:
+            logger.info("Error creating new workspace: %s", e)
+            raise InternalServerError(f'{UPLOAD_IO_ERROR}: {e}')
         except (TypeError, ValueError) as dbe:
             logger.info("Error adding new workspace to database: '%s'.", dbe)
             raise InternalServerError(UPLOAD_DB_ERROR)
@@ -421,8 +421,10 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             raise NotFound(UPLOAD_NOT_FOUND)
         elif upload_db_data.state != Upload.ACTIVE:
             # Do we log anything for these requests
+            logger.debug('Forbidden, workspace not active')
             raise Forbidden(UPLOAD_NOT_ACTIVE)
         elif upload_db_data.lock == Upload.LOCKED:
+            logger.debug('Forbidden, workspace locked')
             raise Forbidden(UPLOAD_WORKSPACE_LOCKED)
         else:
             # Now handle upload package - process file or gzipped tar archive
@@ -440,7 +442,6 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             upload_workspace = filemanager.process.upload.Upload(upload_id)
 
             # Process upload_db_data
-            print('!', file)
             upload_workspace.process_upload(file)
 
             completion_datetime = datetime.now()
@@ -511,10 +512,10 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             logger.info("%s: Generating upload summary.", upload_db_data.upload_id)
             return response_data, status_code, headers
 
-    except IOError:
+    except IOError as e:
         logger.error("%s: File upload_db_data request failed "
                      "for file='%s'", upload_db_data.upload_id, file.filename)
-        raise InternalServerError(UPLOAD_IO_ERROR)
+        raise InternalServerError(f'{UPLOAD_IO_ERROR}: {e}') from e
     except (TypeError, ValueError) as dbe:
         logger.info("Error updating database: '%s'", dbe)
         raise InternalServerError(UPLOAD_DB_ERROR)
@@ -573,6 +574,7 @@ def upload_summary(upload_id: int) -> Response:
 
             details_list = []
             for fileObj in file_list:
+                print(type(fileObj.modified_datetime))
                 file_details = {
                     'name': fileObj.name,
                     'public_filepath': fileObj.public_filepath,

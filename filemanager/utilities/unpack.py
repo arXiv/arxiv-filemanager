@@ -116,9 +116,14 @@ def unpack_archive(upload: Upload) -> None:
                             if tarinfo.isreg():
                                 # log this? ("Reg File")
                                 tar.extract(tarinfo, target_directory)
+                                # Update access and modified times to now.
+                                dest = os.path.join(target_directory,
+                                                    tarinfo.name)
+                                os.utime(dest)
                             elif tarinfo.isdir():
                                 # log this? ("Dir")
                                 tar.extract(tarinfo, target_directory)
+                                os.utime(dest)
                             else:
                                 # Warn about entities we don't want to see in
                                 # upload archives

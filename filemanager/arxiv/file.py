@@ -6,7 +6,11 @@ import os.path
 import re
 from datetime import datetime
 
+from arxiv.base import logging
+
 from filemanager.arxiv.file_type import guess, _is_tex_type, name
+
+logger = logging.getLogger(__name__)
 
 
 class File:
@@ -26,7 +30,7 @@ class File:
         self.__type = self.initialize_type()
         self.__size = os.path.getsize(self.filepath)
         mtime = os.path.getmtime(filepath)
-        self.__modified_datetime = datetime.fromtimestamp(mtime).isoformat()
+        self.__modified_datetime = datetime.utcfromtimestamp(mtime)
 
     @property
     def name(self) -> str:
@@ -59,15 +63,19 @@ class File:
 
     @property
     def public_dir(self) -> str:
-        """Subdirectory in the base_dir which contains file.
-        Does not include preceding / but does end in /."""
+        """
+        Subdirectory in the :prop:`base_dir` which contains file.
+
+        Does not include preceding / but does end in /.
+        """
         pdir = os.path.dirname(self.filepath)
         if pdir == self.__base_dir:
             return ''
         elif self.dir:
             return pdir.replace(self.base_dir + '/', "")
         else:
-            # For directories self.dir is empty, must get rest of path from filepath
+            # For directories self.dir is empty, must get rest of path from
+            # filepath
             public_dir = pdir.replace(self.base_dir + '/', "")
             name = re.sub(r'[\+]/\\\+', '', self.name)
             regex = name + '$'
@@ -153,9 +161,15 @@ class File:
         return self.__size
 
     @property
-    def modified_datetime(self) -> int:
+    def modified_datetime(self) -> str:
         """Return modified datetime of file entity."""
-        return self.__modified_datetime
+        # Doing this at call time, since the modified time may change after
+        # the File is instantiated.
+        logger.debug('Get modified_datetime')
+        if os.path.exists(self.filepath):
+            mt = os.path.getmtime(self.filepath)
+            self.__modified_datetime = datetime.utcfromtimestamp(mt)
+        return self.__modified_datetime.isoformat()
 
     @property
     def removed(self) -> int:
