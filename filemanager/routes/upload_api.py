@@ -150,6 +150,34 @@ def unrelease(upload_id: int) -> tuple:
     return jsonify(data), status_code, headers
 
 
+# Get content
+
+@blueprint.route('/<int:upload_id>/content', methods=['HEAD'])
+@scoped(scopes.READ_UPLOAD)
+def check_upload_content_exists(upload_id: int) -> tuple:
+    """
+    Verify that upload content exists.
+
+    Returns an ``ETag`` header with the current source package checksum.
+    """
+    data, status_code, headers = upload.check_upload_content_exists(upload_id)
+    return jsonify(data), status_code, headers
+
+
+@blueprint.route('/<int:upload_id>/content', methods=['GET'])
+@scoped(scopes.READ_UPLOAD)
+def get_upload_content(upload_id: int) -> tuple:
+    """
+    Get the upload content as a compressed tarball.
+
+    Returns a stream with mimetype ``application/tar+gzip``, and an ``ETag``
+    header with the current source package checksum.
+    """
+    data, status_code, headers = upload.get_upload_content(upload_id)
+    response = send_file(data, mimetype="application/tar+gzip")
+    response.set_etag(headers.get('ETag'))
+    return response
+
 # TODO: The requests below need to be evaluated and/or implemented
 
 # Was debating about 'manifest' request but upload GET request
@@ -167,25 +195,6 @@ def unrelease(upload_id: int) -> tuple:
 
 
 # Or would 'download' be a better request? 'disseminate'?
-
-# Get content
-
-@blueprint.route('/<int:upload_id>/content', methods=['HEAD'])
-@scoped(scopes.READ_UPLOAD)
-def get_content_status(upload_id: int) -> tuple:
-    """Return compressed archive containing files."""
-    data, status_code, headers = upload.package_content_status(upload_id)
-    return jsonify(data), status_code, headers
-
-
-@blueprint.route('/<int:upload_id>/content', methods=['GET'])
-@scoped(scopes.READ_UPLOAD)
-def get_content(upload_id: int) -> tuple:
-    """Return compressed archive containing files."""
-    data, status_code, headers = upload.package_content(upload_id)
-    response = send_file(data, mimetype="application/tar+gzip")
-    response.set_etag(headers.get('ETag'))
-    return response
 
 
 # Or would 'download' be a better request? 'disseminate'?

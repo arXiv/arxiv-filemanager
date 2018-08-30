@@ -62,11 +62,9 @@ class TestPackContent(TestCase):
         mock_get_base_dir.return_value = self.base_directory
         self.upload.pack_content()
         checksum = self.upload.content_checksum()
-        for i in range(50):
-            self.upload.pack_content()
-            self.assertEqual(checksum, self.upload.content_checksum(),
-                             'The checksum should remain the same across '
-                             'rebuilds of the same content.')
+        self.assertEqual(checksum, self.upload.content_checksum(),
+                         'The checksum should remain the same.')
+
 
     @mock.patch(f'{upload.__name__}._get_base_directory')
     def test_get_content(self, mock_get_base_dir):

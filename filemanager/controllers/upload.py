@@ -865,7 +865,7 @@ def upload_unrelease(upload_id: int) -> Response:
     return response_data, status_code, {}
 
 
-def package_content(upload_id: int) -> Response:
+def get_upload_content(upload_id: int) -> Response:
     """Package up files for downloading as a compressed gzipped tar file."""
     upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
@@ -881,7 +881,7 @@ def package_content(upload_id: int) -> Response:
     return filepointer, status.HTTP_200_OK, headers
 
 
-def package_content_status(upload_id: int) -> Response:
+def check_upload_content_exists(upload_id: int) -> Response:
     """Verify that the package content exists/is available."""
     upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
