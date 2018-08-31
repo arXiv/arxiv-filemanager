@@ -893,8 +893,8 @@ def check_upload_content_exists(upload_id: int) -> Response:
     checksum = upload_workspace.content_checksum()
     return {}, status.HTTP_200_OK, {'ETag': checksum}
 
-# TBI
 
+# TBI
 
 def upload_logs(upload_id: int) -> Response:
     """Return logs. Are we talking logs in database or full
