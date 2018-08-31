@@ -46,3 +46,6 @@ ARXIV_LIBRARY_URL = os.environ.get('ARXIV_LIBRARY_URL',
 
 # Need to set maximum allowed upload
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024
+
+UPLOAD_BASE_DIRECTORY = os.environ.get('UPLOAD_BASE_DIRECTORY',
+                                       '/tmp/filemanagment/submissions')
