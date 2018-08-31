@@ -16,7 +16,6 @@ import zipfile
 
 from filemanager.arxiv.file import File
 
-from filemanager.process.upload import Upload
 
 ERROR_MSG_PRE = 'There were problems unpacking "'
 ERROR_MSG_SUF = '" -- continuing. Please try again and confirm your files.'
@@ -26,7 +25,7 @@ ERROR_MSG_SUF = '" -- continuing. Please try again and confirm your files.'
 DEBUG = 0
 
 
-def unpack_archive(upload: Upload) -> None:
+def unpack_archive(upload: 'Upload') -> None:
     """
     Uppack specified archive and recursively traverse the source directory
     and unpack any additional gzipped/tar archives contained within original
