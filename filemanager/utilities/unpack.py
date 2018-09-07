@@ -59,10 +59,42 @@ def unpack_archive(upload: 'Upload') -> None:
         # TODO debug logging ("\n*****ROUND " + str(round) + '  Packed: '
         # + str(packed_file) + '*****\n')
 
-        for root_directory, _, files in os.walk(source_directory):
+        for root_directory, subdirs, files in os.walk(source_directory):
             # TODO debug logging (f"---> Dir {root_directory} contains the
             # directories {b} and the files {c}")
             # ignoring directories using '_' above
+
+            for dir in subdirs:
+                # create path
+                path = os.path.join(root_directory, dir)
+
+                # wrap in our File encapsulation class
+                obj = File(path, source_directory)
+
+                if obj.name == '__MACOSX':
+                    upload.add_warning(obj.public_filepath, "Removed '__MACOSX' directory.")
+                    # Remove __MACOSX directory
+                    if os.path.exists(path):
+                        shutil.rmtree(path)
+                    # Remove deleted directory from os.walk
+                    subdirs.remove(dir)
+                elif obj.name == 'processed':  # and from_paper_id
+                    # TODO: Need to investigate what's going on here so we
+                    # TODO: understand what needs to be done.
+                    #
+                    # Deletion of 'processed' directory depends on
+                    # from_paper_id also being set.
+                    #
+                    # This appears to be related to replacing a submission
+                    # where files are imported/copied from previous version of paper.
+                    #
+                    # Legacy action is to delete 'processed' directory when
+                    # from_paper_id is set.
+                    #
+                    # We have not reached the point of implementing this yet so
+                    # I will only issue a warning for now.
+                    upload.add_warning(obj.public_filepath, "Detected 'processed' directory. Please check.")
+
             for file in files:
 
                 # os.walk provides a list of files with the root directory so
@@ -140,7 +172,7 @@ def unpack_archive(upload: 'Upload') -> None:
                                 elif tarinfo.islnk():  # hard link
                                     upload.add_warning(obj.public_filepath, 'Hard links are not allowed. Removing ')
                                 elif tarinfo.ischr():
-                                    upload.add_warning(obj.public_filepath, 'Hard links are not allowed. Removing ')
+                                    upload.add_warning(obj.public_filepath, 'Character devices are not allowed. Removing ')
                                 elif tarinfo.isblk():
                                     upload.add_warning(obj.public_filepath, 'Block devices are not allowed. Removing ')
                                 elif tarinfo.isfifo():
