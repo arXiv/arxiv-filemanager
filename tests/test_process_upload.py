@@ -15,6 +15,7 @@ from filemanager.process.upload import Upload
 UPLOAD_BASE_DIRECTORY = '/tmp/filemanagment/submissions'
 
 TEST_FILES_DIRECTORY = os.path.join(os.getcwd(), 'tests/test_files_upload')
+UNPACK_TEST_FILES_DIRECTORY = os.path.join(os.getcwd(), 'tests/test_files_unpack')
 
 # General upload tests format:
 #
@@ -52,8 +53,6 @@ upload_tests.append(['upload-nested-zip-and-tar.zip', '9903.1013', True,
 upload_tests.append(['upload7.tar.gz', '9903.1007', True, 'Removing top level directory',
                      'Test removing top level directory.'])
 
-
-
 upload_tests.append(['UploadTestWindowCDrive.tar.gz', '12345639', True,
                      r'Renaming c:\\data\\windows\.txt',
                      'Test renaming of Windows filename'])
@@ -64,6 +63,17 @@ upload_tests.append(['Upload9BadFileNames.tar.gz', '12345640', True,
 
 upload_tests.append(['source_with_dir.tar.gz', '9903.1009', True, 'Removing top level directory',
                      'Removing top level directory'])
+
+# These tests may eventually migrate to thier own file
+unpack_tests = []
+
+unpack_tests.append(['with__MACOSX_hidden.tar', '9912.0001', True,
+                     r"Removed '__MACOSX' directory.",
+                     'Test detection and removal of __MACOSX directory'])
+
+unpack_tests.append(['with__processed_directory.tar', '9912.0002', True,
+                     r"Detected 'processed' directory. Please check.",
+                     "Test detection and warning about 'processed' directory"])
 
 
 # Debugging tests
@@ -194,34 +204,11 @@ class TestUpload(TestCase):
             ret = upload.process_upload(file)
 
     # TODO: Keep these old tests around for when I need specialized tests
-
-    def XXtest_process_tgz_upload(self) -> None:
-
-        """Try to process bzip2 archive upload"""
-        # upload_id = 20180228
-        upload = Upload(20180228)
-
-        filename = os.path.join(TEST_FILES_DIRECTORY, 'upload6.tgz')
-
-        # For testing purposes, clean out existing workspace directory
-        workspace_dir = upload.create_upload_workspace()
-        if os.path.exists(workspace_dir):
-            shutil.rmtree(workspace_dir)
-
-        self.assertTrue(os.path.exists(filename), 'Test zip archive is available')
-        # Recreate FileStroage object that flask will be passing in
-        file = None
-        with open(filename, 'rb') as fp:
-            file = FileStorage(fp)
-            ret = upload.process_upload(file)
-
-        print("Process tgz upload: " + ret)
-
     def XXtest_process_compressed_upload(self) -> None:
 
         """Try to process compressed archive upload"""
-        # upload_id = 20180229
-        upload = Upload(20180229)
+        upload_id = 20180229
+        upload = Upload(upload_id)
 
         filename = os.path.join(TEST_FILES_DIRECTORY, 'BorelPaper.tex.Z')
 
@@ -235,9 +222,79 @@ class TestUpload(TestCase):
         file = None
         with open(filename, 'rb') as fp:
             file = FileStorage(fp)
+            # Now create upload instance
+            upload = Upload(upload_id)
             ret = upload.process_upload(file)
 
         print("Process tgz upload: " + ret)
+
+    def test_process_unpack(self) -> None:
+        """
+        Test upload service's archive unpack routine.
+
+        Returns
+        -------
+
+        """
+
+        test_file_directory = UNPACK_TEST_FILES_DIRECTORY
+
+        for unpack_test in unpack_tests:
+
+            test_file, upload_id, warnings, warnings_match, *extras = unpack_test + [None] * 2
+
+            self.assertIsNotNone(upload_id, "Test must have upload identifier.")
+
+            if not upload_id:
+                print("Test metadata is missing upload identifier. Skipping text.")
+                continue
+
+            # Create path to test upload archive
+            new_path = os.path.join(test_file_directory, test_file)
+
+            # Make sure test file exists
+            self.assertTrue(os.path.exists(new_path), 'Test unpack ' + new_path + ' exists!')
+
+            # Create Uplaod object - this instance gets cleaned out
+            upload = Upload(upload_id)
+
+            # For testing purposes only, clean out existing workspace directory
+            workspace_dir = upload.get_upload_directory()
+            if os.path.exists(workspace_dir):
+                shutil.rmtree(workspace_dir)
+
+            print(f"Run test upload checks against test file: '{test_file}'")
+
+            # Recreate FileStroage object that flask will be passing in
+            file = None
+            with open(new_path, 'rb') as fp:
+                file = FileStorage(fp)
+                # Now create upload instance
+                upload = Upload(upload_id)
+                # Process upload
+                upload.process_upload(file)
+
+                # For the case where we are expecting warnings make sure upload has the right ones
+                if warnings:
+
+                    self.assertTrue(upload.has_warnings(), "This test is expected to generate warnings!")
+
+                    # Look for specific warning we are attempting to generate
+                    if upload.has_warnings():
+                        # print ("Upload process had warnings as expected")
+                        # print("Search for warning: '" + warnings_match + "'")
+                        # Complain if we didn't find expected warning
+                        string = f'This test is expected to generate specific warning: "{warnings_match}"'
+                        self.assertTrue(upload.search_warnings(warnings_match), string)
+
+                        # if upload.search_warnings(warnings_match):
+                        # print("Found expected warning")
+                        # else:
+                    # print("Failed to find expected warning")
+                    else:
+                        print("Upload completed without warnings (not expected)")
+                else:
+                    self.assertFalse(upload.has_warnings(), 'Not expecting warnings!')
 
     def test_process_general_upload(self) -> None:
         """Test series of uniform test cases with specified outcomes"""
@@ -268,7 +325,7 @@ class TestUpload(TestCase):
             if os.path.exists(workspace_dir):
                 shutil.rmtree(workspace_dir)
 
-            print('Run test upload checks against file: ' + test_file)
+            print(f"Run test upload checks against test file: '{test_file}'")
 
             # Recreate FileStroage object that flask will be passing in
             file = None
@@ -289,8 +346,9 @@ class TestUpload(TestCase):
                         # print ("Upload process had warnings as expected")
                         # print("Search for warning: '" + warnings_match + "'")
                         # Complain if we didn't find speocfied warning
-                        self.assertTrue(upload.search_warnings(warnings_match),
-                                        f'This test is expected to generate specific warning: "{warnings_match}"')
+                        string = f'This test is expected to generate specific warning: "{warnings_match}"'
+                        self.assertTrue(upload.search_warnings(warnings_match), string)
+
                         # if upload.search_warnings(warnings_match):
                         # print("Found expected warning")
                         # else:
