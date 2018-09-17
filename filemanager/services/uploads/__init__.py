@@ -2,11 +2,14 @@
 
 from typing import Any, Dict, Optional
 from datetime import datetime
+from pytz import timezone
 from werkzeug.local import LocalProxy
 from sqlalchemy.exc import OperationalError
 from arxiv.base.globals import get_application_global
 from filemanager.domain import Upload
 from .models import db, DBUpload
+
+EST = timezone('US/Eastern')
 
 
 def init_app(app: Optional[LocalProxy]) -> None:
@@ -65,16 +68,16 @@ def retrieve(upload_id: int, skip_cache: bool = False) -> Optional[Upload]:
     args['owner_user_id'] = upload_data.owner_user_id
     args['archive'] = upload_data.archive
 
-    args['created_datetime'] = upload_data.created_datetime
-    args['modified_datetime'] = upload_data.modified_datetime
+    args['created_datetime'] = upload_data.created_datetime.astimezone(EST)
+    args['modified_datetime'] = upload_data.modified_datetime.astimezone(EST)
     args['state'] = upload_data.state
     args['lock'] = upload_data.lock
 
     if upload_data.lastupload_start_datetime is not None:
-        args['lastupload_start_datetime'] = upload_data.lastupload_start_datetime
+        args['lastupload_start_datetime'] = upload_data.lastupload_start_datetime.astimezone(EST)
 
     if upload_data.lastupload_completion_datetime is not None:
-        args['lastupload_completion_datetime'] = upload_data.lastupload_completion_datetime
+        args['lastupload_completion_datetime'] = upload_data.lastupload_completion_datetime.astimezone(EST)
 
     if upload_data.lastupload_logs is not None:
         args['lastupload_logs'] = upload_data.lastupload_logs
@@ -103,6 +106,7 @@ def store(new_upload_data: Upload) -> Upload:
     RuntimeError
         When there is some other problem.
     """
+    print(new_upload_data.created_datetime)
     upload_data = DBUpload(owner_user_id=new_upload_data.owner_user_id,
                            archive=new_upload_data.archive,
                            created_datetime=new_upload_data.created_datetime,
@@ -157,7 +161,7 @@ def update(upload_update_data: Upload) -> None:
     upload_data.lock = upload_update_data.lock
 
     # Always set this when workspace DB entry is updated
-    upload_data.modified_datetime = datetime.now()
+    upload_data.modified_datetime = datetime.utcnow().astimezone(EST)
 
     # TODO: Would user ever need to set the modification time manually?
     # upload_data.modified_datetime = upload_update_data.modified_datetime

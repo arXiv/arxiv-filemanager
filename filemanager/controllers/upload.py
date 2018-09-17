@@ -2,6 +2,7 @@
 
 from typing import Tuple, Optional
 from datetime import datetime
+from pytz import timezone
 import json
 import logging
 
@@ -91,6 +92,8 @@ ACCEPTED = {'reason': 'upload in progress'}
 MISSING_NAME = {'an upload needs a name'}
 
 SOME_ERROR = {'Need to define and assign better error'}
+
+EST = timezone('US/Eastern')
 
 Response = Tuple[Optional[dict], int, dict]
 
@@ -391,9 +394,10 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             else:
                 arch = archive
 
+            current_time = datetime.utcnow().astimezone(EST)
             new_upload = Upload(owner_user_id=user_id, archive=arch,
-                                created_datetime=datetime.now(),
-                                modified_datetime=datetime.now(),
+                                created_datetime=current_time,
+                                modified_datetime=current_time,
                                 state=Upload.ACTIVE)
             # Store in DB
             uploads.store(new_upload)
@@ -436,7 +440,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
                         "workspace: file='%s'", upload_db_data.upload_id, file.filename)
 
             # Keep track of how long processing upload_db_data takes
-            start_datetime = datetime.now()
+            start_datetime = datetime.utcnow().astimezone(EST)
 
             # Create Upload object
             upload_workspace = filemanager.process.upload.Upload(upload_id)
@@ -444,7 +448,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             # Process upload_db_data
             upload_workspace.process_upload(file)
 
-            completion_datetime = datetime.now()
+            completion_datetime = datetime.utcnow().astimezone(EST)
 
             # Keep track of files processed (this included deleted files)
             file_list = upload_workspace.create_file_upload_summary()
