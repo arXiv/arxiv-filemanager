@@ -321,7 +321,7 @@ def client_delete_all_files(upload_id: str) -> Response:
 
 
 def upload(upload_id: int, file: FileStorage, archive: str,
-           user: auth_domain.User) -> Response:
+           user: auth_domain.User, ancillary: bool = False) -> Response:
     """Upload individual files or compressed archive. Unpack and add
     files to upload_db_data workspace.
 
@@ -329,11 +329,15 @@ def upload(upload_id: int, file: FileStorage, archive: str,
     ----------
     upload_id : int
         The unique identifier for the upload_db_data in question.
-    file : FileStorage
+    file : :class:`FileStorage`
         File archive to be processed.
-    archive: str
+    archive : str
         Archive submission is targeting. Oversize thresholds are curently
         specified at the archive level.
+    ancillary : bool
+        If ``True``, the file is to be treated as an ancillary file. This means
+        (presently) that the file is stored in a special subdirectory within
+        the source package.
 
     Returns
     -------
@@ -446,7 +450,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             upload_workspace = filemanager.process.upload.Upload(upload_id)
 
             # Process upload_db_data
-            upload_workspace.process_upload(file)
+            upload_workspace.process_upload(file, ancillary=ancillary)
 
             completion_datetime = datetime.utcnow().astimezone(EST)
 

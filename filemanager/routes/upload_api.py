@@ -66,12 +66,13 @@ def new_upload() -> tuple:
 def upload_files(upload_id: int) -> tuple:
     """Upload individual files or compressed archive
     and add to existing upload workspace. Multiple uploads accepted."""
-
-    archive_arg = request.args.get('archive')
+    archive_arg = request.form.get('archive')
+    ancillary = request.form.get('ancillary', None) is not None
     file = request.files.get('file', None)
     # Attempt to process upload
     data, status_code, headers = upload.upload(upload_id, file, archive_arg,
-                                               request.session.user)
+                                               request.session.user,
+                                               ancillary=ancillary)
     return jsonify(data), status_code, headers
 
 

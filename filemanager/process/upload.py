@@ -40,6 +40,15 @@ class Upload:
 various file checks that might cause errors to be displayed to the
 submitter."""
 
+    SOURCE_PREFIX = 'src'
+    """The name of the source directory within the upload workspace."""
+
+    REMOVED_PREFIX = 'removed'
+    """The name of the removed directory within the upload workspace."""
+
+    ANCILLARY_PREFIX = 'anc'
+    """The directory within source directory where ancillary files are kept."""
+
     def __init__(self, upload_id: int):
         """
         Initialize Upload object.
@@ -452,20 +461,25 @@ submitter."""
 
     def get_source_directory(self) -> str:
         """Return directory where source files get deposited."""
-
-        base = self.get_upload_directory()
-        src_dir = os.path.join(base, 'src')
-        return src_dir
+        return os.path.join(self.get_upload_directory(), self.SOURCE_PREFIX)
 
     def get_removed_directory(self) -> str:
-        """Return directory where source archive files get moved after unpacking."""
-        base = self.get_upload_directory()
-        rem_dir = os.path.join(base, 'removed')
-        return rem_dir
+        """Get directory where source archive files get moved when unpacked."""
+        return os.path.join(self.get_upload_directory(), self.REMOVED_PREFIX)
+
+    def get_ancillary_directory(self) -> str:
+        """
+        Get directory where ancillary files are stored.
+
+        If the directory does not already exist, it will be created.
+        """
+        path = os.path.join(self.get_source_directory(), self.ANCILLARY_PREFIX)
+        if not os.path.exists(path):
+            os.mkdir(path)
+        return path
 
     def create_upload_workspace(self):
         """Create directories for upload work area."""
-
         # Create main directory
         base_dir = self.create_upload_directory()
 
@@ -490,7 +504,6 @@ submitter."""
 
     def create_upload_log(self):
         """Create a source log to record activity for this upload."""
-
         # Grab standard logger and customized it
         logger = logging.getLogger(__name__)
         log_path = os.path.join(self.get_upload_directory(), 'source.log')
@@ -506,18 +519,21 @@ submitter."""
         self.__log = logger
 
     def log(self, message: str):
-        """Write message to upload log"""
+        """Write message to upload log."""
         self.__log.info(message)
 
-    def deposit_upload(self, file: FileStorage) -> str:
+    def deposit_upload(self, file: FileStorage, ancillary: bool = False) \
+            -> str:
         """
         Deposit uploaded archive/file into workspace source directory.
 
         Parameters
         ----------
-        file
+        file : :class:`FileStorage`
             Archive containing one or more files to be added to source files
             for this upload.
+        ancillary : bool
+            If ``True``, file will be deposited in the ancillary directory.
 
         Returns
         -------
@@ -525,7 +541,6 @@ submitter."""
             Full path of archive file.
 
         """
-
         basename = os.path.basename(file.filename)
 
         # Sanitize file name before saving it
@@ -535,14 +550,15 @@ submitter."""
         if basename != filename:
             self.log(f'Secured filename: {filename} (basename + )')
 
-        # Store uploaded file/archive in source directory
-        src_directory = self.get_source_directory()
+        if ancillary:   # Put the file in the ancillary directory.
+            src_directory = self.get_ancillary_directory()
+        else:   # Store uploaded file/archive in source directory
+            src_directory = self.get_source_directory()
+
         upload_path = os.path.join(src_directory, filename)
         file.save(upload_path)
-
         if os.stat(upload_path).st_size == 0:
             raise BadRequest(UPLOAD_FILE_EMPTY)
-
         return upload_path
 
     def check_files(self) -> None:
@@ -634,7 +650,8 @@ submitter."""
                     file_path = new_file_path
 
                 # Keep an eye out for special ancillary 'anc' directory
-                anc_dir = os.path.join(self.get_source_directory(), 'anc')
+                anc_dir = os.path.join(self.get_source_directory(),
+                                       self.ANCILLARY_PREFIX)
                 if file_path.startswith(anc_dir):
                     statinfo = os.stat(file_path)
                     kilos = statinfo.st_size
@@ -1011,51 +1028,51 @@ submitter."""
                 dir_path = os.path.join(root_directory, dir)
                 os.chmod(dir_path, 0o775)
 
-    def fix_top_level_directory(self):
+    def fix_top_level_directory(self) -> None:
         """
-        Eliminate single top-level directory. Intended for case where submitter
-        creates archive with submission files in subdirectory.
+        Eliminate single top-level directory.
 
-        Returns
-        -------
-
+        Intended for case where submitter creates archive with submission
+        files in subdirectory.
         """
-
         source_directory = self.get_source_directory()
 
         entries = os.listdir(source_directory)
 
-        if len(entries) == 1:
+        # If all of the upload content is within a single top-level directory,
+        # move everything up one level and remove the directory. But don't
+        # clobber the ancillary directory!
+        if (len(entries) == 1
+                and os.path.isdir(os.path.join(source_directory, entries[0]))
+                and entries[0] != self.ANCILLARY_PREFIX):
 
-            if os.path.isdir(os.path.join(source_directory, entries[0])):
+            self.add_warning(entries[0], "Removing top level directory")
+            single_directory = os.path.join(source_directory, entries[0])
 
-                self.add_warning(entries[0], "Removing top level directory")
-                single_directory = os.path.join(source_directory, entries[0])
+            # Save copy in removed directory
+            save_filename = os.path.join(self.get_removed_directory(),
+                                         'move_source.tar.gz')
+            with tarfile.open(save_filename, "w:gz") as tar:
+                tar.add(single_directory, arcname=os.path.sep)
 
-                # Save copy in removed directory
-                save_filename = os.path.join(self.get_removed_directory(),
-                                             'move_source.tar.gz')
-                with tarfile.open(save_filename, "w:gz") as tar:
-                    tar.add(single_directory, arcname=os.path.sep)
+            # Remove existing directory
+            if os.path.exists(single_directory):
+                shutil.rmtree(single_directory)
 
-                # Remove existing directory
-                if os.path.exists(single_directory):
-                    shutil.rmtree(single_directory)
+            # Replace files
+            if os.path.exists(save_filename):
+                tar = tarfile.open(save_filename)
+                # untar file into source directory
+                tar.extractall(path=source_directory)
+                tar.close()
+            else:
+                self.add_error('Failed to remove top level directory.')
 
-                # Replace files
-                if os.path.exists(save_filename):
-                    tar = tarfile.open(save_filename)
-                    # untar file into source directory
-                    tar.extractall(path=source_directory)
-                    tar.close()
-                else:
-                    self.add_error('Failed to remove top level directory.')
+            # Set permissions
+            self.set_file_permissions()
 
-                # Set permissions
-                self.set_file_permissions()
-
-                # Rebuild file list
-                self.create_file_list()
+            # Rebuild file list
+            self.create_file_list()
 
     def finalize_upload(self):
         """For file type checks that cannot be done until all files
@@ -1073,14 +1090,17 @@ submitter."""
         # Eliminate top directory when only single directory
         self.fix_top_level_directory()
 
-    def process_upload(self, file: FileStorage) -> None:
+    def process_upload(self, file: FileStorage, ancillary: bool = False) \
+            -> None:
         """
         Main entry point for processing uploaded files.
 
         Parameters
         ----------
-        file
+        file : :class:`FileStorage`
             File object received from flask request.
+        ancillary : bool
+            If ``True``, file will be deposited in the ancillary directory.
 
         Returns
         -------
@@ -1111,7 +1131,7 @@ submitter."""
         self.log('\n********** File Upload ************\n\n')
 
         # Move uploaded archive/file to source directory
-        self.deposit_upload(file)
+        self.deposit_upload(file, ancillary=ancillary)
 
         self.log('\n******** File Upload Processing *****\n\n')
 
