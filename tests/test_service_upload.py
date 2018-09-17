@@ -2,11 +2,13 @@
 
 from unittest import TestCase, mock
 from datetime import datetime
-
+from pytz import timezone
 from typing import Any
 import sqlalchemy
 from filemanager.services import uploads
 from filemanager.domain import Upload
+
+EST = timezone('US/Eastern')
 
 
 class TestUploadGetter(TestCase):
@@ -28,8 +30,8 @@ class TestUploadGetter(TestCase):
         uploads.db.create_all()
 
         self.data = dict(owner_user_id='dlf2', archive='physics',
-                         created_datetime=datetime.now(),
-                         modified_datetime=datetime.now(),
+                         created_datetime=datetime.utcnow().astimezone(EST),
+                         modified_datetime=datetime.utcnow().astimezone(EST),
                          state="ACTIVE")
         self.dbupload = self.uploads.DBUpload(**self.data)  # type: ignore
         self.uploads.db.session.add(self.dbupload)  # type: ignore
