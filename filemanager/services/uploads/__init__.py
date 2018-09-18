@@ -65,18 +65,16 @@ def retrieve(upload_id: int, skip_cache: bool = False) -> Optional[Upload]:
     args['upload_id'] = upload_data.upload_id
     args['owner_user_id'] = upload_data.owner_user_id
     args['archive'] = upload_data.archive
-
     args['created_datetime'] = upload_data.created_datetime.replace(tzinfo=UTC)
     args['modified_datetime'] = upload_data.modified_datetime.replace(tzinfo=UTC)
     args['state'] = upload_data.state
     args['lock'] = upload_data.lock
 
     if upload_data.lastupload_start_datetime is not None:
-        args['lastupload_start_datetime'] = upload_data.lastupload_start_datetime.astimezone(UTC)
+        args['lastupload_start_datetime'] = upload_data.lastupload_start_datetime.replace(tzinfo=UTC)
 
     if upload_data.lastupload_completion_datetime is not None:
-        args['lastupload_completion_datetime'] = upload_data.lastupload_completion_datetime.astimezone(UTC)
-
+        args['lastupload_completion_datetime'] = upload_data.lastupload_completion_datetime.replace(tzinfo=UTC)
     if upload_data.lastupload_logs is not None:
         args['lastupload_logs'] = upload_data.lastupload_logs
 
@@ -104,7 +102,6 @@ def store(new_upload_data: Upload) -> Upload:
     RuntimeError
         When there is some other problem.
     """
-    print(new_upload_data.created_datetime)
     upload_data = DBUpload(owner_user_id=new_upload_data.owner_user_id,
                            archive=new_upload_data.archive,
                            created_datetime=new_upload_data.created_datetime,
