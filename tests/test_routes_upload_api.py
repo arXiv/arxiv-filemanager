@@ -287,6 +287,148 @@ class TestUploadAPIRoutes(TestCase):
 
         # TODO: Add size checks (when implemented)
 
+
+    def test_various_log_download_requests(self) -> None:
+        """
+        Test service and source log download requests.
+
+        Returns
+        -------
+        Requested log file.
+
+        """
+        # Create a token for writing to upload workspace
+        token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                          auth.scopes.WRITE_UPLOAD,
+                                          auth.scopes.DELETE_UPLOAD_FILE])
+
+        # Upload a gzipped tar archive package containing files to delete.
+        cwd = os.getcwd()
+        testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
+        upload_package_name = 'upload2.tar.gz'
+        filepath = os.path.join(testfiles_dir, upload_package_name)
+        # Prepare gzipped tar submission for upload
+        filename = os.path.basename(filepath)
+
+        # Upload some files so we can delete them
+        # response = self.client.post('/filemanager/api/',
+        response = self.client.post('/filemanager/api/',
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        #      'file': (open(filepath, 'rb'), 'test.tar.gz'),
+                                        'file': (open(filepath, 'rb'), filename),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+        # Create unauthorized admin token (can't read logs)
+        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                                auth.scopes.WRITE_UPLOAD,
+                                                auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
+
+        # Source logs
+
+        # Attempt to check if source log exists
+        response = self.client.head(
+            f"/filemanager/api/{upload_data['upload_id']}/log",
+            headers={'Authorization': admin_token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+        response = self.client.get(
+            f"/filemanager/api/{upload_data['upload_id']}/log",
+            headers={'Authorization': admin_token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+        # Add READ_UPLOAD_LOGS authorization to admin token
+        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                                auth.scopes.WRITE_UPLOAD,
+                                                auth.scopes.READ_UPLOAD_LOGS,
+                                                auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
+
+        # Attempt to check if source log exists
+        response = self.client.head(
+            f"/filemanager/api/{upload_data['upload_id']}/log",
+            headers={'Authorization': admin_token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+        response = self.client.get(
+            f"/filemanager/api/{upload_data['upload_id']}/log",
+            headers={'Authorization': admin_token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+        # Look for something in upload source log
+        self.assertIn(rb'unpack gzipped upload2.tar.gz to dir', response.data,
+                      'Test that upload file is in log.')
+
+        # Write service log to file
+        workdir = tempfile.mkdtemp()
+        upload_log_filename = "upload_log_" + str(upload_data['upload_id'])
+        log_path = os.path.join(workdir, upload_log_filename)
+        fileH = open(log_path, 'wb')
+        fileH.write(response.data)
+
+        # Highlight log download. Remove at some point.
+        print(f"FYI: SAVED UPLOAD SOURCE LOG FILE TO DISK: {log_path}\n")
+
+        # Service logs
+
+        # Try to check whether log exits without appropriate authorization
+        response = self.client.head(
+            f"/filemanager/api/log",
+            headers={'Authorization': admin_token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        response = self.client.get(
+            f"/filemanager/api/log",
+            headers={'Authorization': admin_token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Create admin token for deleting upload workspace
+        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                                auth.scopes.WRITE_UPLOAD,
+                                                auth.scopes.READ_UPLOAD_SERVICE_LOGS,
+                                                auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
+
+        # Try to check whether log exits with correct authorization
+        response = self.client.head(
+            f"/filemanager/api/log",
+            headers={'Authorization': admin_token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+        # Try to download service log
+        response = self.client.get(
+            f"/filemanager/api/log",
+            headers={'Authorization': admin_token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+        # Write service log to file (to save temporary directory where we saved source_log)
+        log_path = os.path.join(workdir, "service_log")
+        fileH = open(log_path, 'wb')
+        fileH.write(response.data)
+
+        # Highlight log download. Remove at some point.
+        print(f"FYI: SAVED SERVICE LOG FILE TO DISK AT: {log_path}\n")
+
+
     def test_delete_file(self) -> None:
         """
         Test delete file operation.
@@ -845,7 +987,7 @@ class TestUploadAPIRoutes(TestCase):
 
     # Upload a submission package
     def test_upload_files_normal(self) -> None:
-        """Test normal well-behaved upload.
+        """Test normal well-behaved upload requests.
 
         This series of tests uploads files with the expectation of success.
 
@@ -932,6 +1074,35 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertTrue(found, "Uploaded file should exist in resulting file list.")
 
+        # Download content before we start deleting files
+
+        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                                auth.scopes.WRITE_UPLOAD,
+                                                auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
+
+        # Check if content exists
+        response = self.client.head(
+            f"/filemanager/api/{upload_data['upload_id']}/content",
+            headers={'Authorization': admin_token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+        # Download content
+        response = self.client.get(
+            f"/filemanager/api/{upload_data['upload_id']}/content",
+            headers={'Authorization': admin_token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+        workdir = tempfile.mkdtemp()
+        with tarfile.open(fileobj=BytesIO(response.data)) as tar:
+            tar.extractall(path=workdir)
+
+        print(f'List downloaded content directory: {workdir}\:n')
+        print(os.listdir(workdir))
+
+        # WARNING: THE TESTS BELOW DELETE INDIVIDUAL FILES AND THEN THE ENTIRE WORKSPACE
 
         # Delete a file (normal call)
         public_file_path = "lipics-logo-bw.pdf"
@@ -975,6 +1146,7 @@ class TestUploadAPIRoutes(TestCase):
         else:
             print(f"DELETED FILE NOT FOUND (Right Answer!): '{public_file_path}'")
 
+
         # Delete all files in my workspace (normal)
         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
                                     headers={'Authorization': token},
@@ -982,39 +1154,18 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertEqual(response.status_code, 204, "Delete all user-uploaded files.")
 
+
         # Delete the workspace
 
         # Create admin token for deleting upload workspace
         admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
                                                 auth.scopes.WRITE_UPLOAD,
                                                 auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
-        print(f"ADMIN Token (for possible use in manual browser tests): {admin_token}\n")
 
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
                                       headers={'Authorization': admin_token}
                                       )
 
-        # print("Delete Response:\n" + str(response.data) + '\n')
-
         # This cleans out the workspace. Comment out if you want to inspect files
         # in workspace. Source log is saved to 'deleted_workspace_logs' directory.
         self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
-
-        response = self.client.head(
-            f"/filemanager/api/{upload_data['upload_id']}/content",
-            headers={'Authorization': admin_token}
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('ETag', response.headers, "Returns an ETag header")
-
-
-        response = self.client.get(
-            f"/filemanager/api/{upload_data['upload_id']}/content",
-            headers={'Authorization': admin_token}
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('ETag', response.headers, "Returns an ETag header")
-        workdir = tempfile.mkdtemp()
-        with tarfile.open(fileobj=BytesIO(response.data)) as tar:
-            tar.extractall(path=workdir)
-        print(os.listdir(workdir))
