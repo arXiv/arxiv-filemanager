@@ -5,13 +5,11 @@
 import os.path
 import re
 from datetime import datetime
-from pytz import timezone
+from pytz import UTC
 
 from arxiv.base import logging
 
 from filemanager.arxiv.file_type import guess, _is_tex_type, name
-
-EST = timezone('US/Eastern')
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +31,7 @@ class File:
         self.__type = self.initialize_type()
         self.__size = os.path.getsize(self.filepath)
         mtime = os.path.getmtime(filepath)
-        mtime_est = datetime.utcfromtimestamp(mtime).astimezone(EST)
-        self.__modified_datetime = mtime_est
+        self.__modified_datetime = datetime.fromtimestamp(mtime, tz=UTC)
 
     @property
     def name(self) -> str:
@@ -172,8 +169,7 @@ class File:
         logger.debug('Get modified_datetime')
         if os.path.exists(self.filepath):
             mt = os.path.getmtime(self.filepath)
-            mt_et = datetime.utcfromtimestamp(mt).astimezone(EST)
-            self.__modified_datetime = mt_et
+            self.__modified_datetime = datetime.fromtimestamp(mt, tz=UTC)
         return self.__modified_datetime.isoformat()
 
     @property

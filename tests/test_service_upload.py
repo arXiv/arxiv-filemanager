@@ -2,13 +2,11 @@
 
 from unittest import TestCase, mock
 from datetime import datetime
-from pytz import timezone
+from pytz import UTC
 from typing import Any
 import sqlalchemy
 from filemanager.services import uploads
 from filemanager.domain import Upload
-
-EST = timezone('US/Eastern')
 
 
 class TestUploadGetter(TestCase):
@@ -30,8 +28,8 @@ class TestUploadGetter(TestCase):
         uploads.db.create_all()
 
         self.data = dict(owner_user_id='dlf2', archive='physics',
-                         created_datetime=datetime.utcnow().astimezone(EST),
-                         modified_datetime=datetime.utcnow().astimezone(EST),
+                         created_datetime=datetime.now(UTC),
+                         modified_datetime=datetime.now(UTC),
                          state="ACTIVE")
         self.dbupload = self.uploads.DBUpload(**self.data)  # type: ignore
         self.uploads.db.session.add(self.dbupload)  # type: ignore
@@ -85,8 +83,8 @@ class TestUploadCreator(TestCase):
         self.uploads.db.app = app  # type: ignore
         self.uploads.db.create_all()  # type: ignore
 
-        self.data = {'owner_user_id': 'dlf2', 'archive': 'physics', 'created_datetime': datetime.now(),
-                     'modified_datetime': datetime.now(), 'state': "ACTIVE"}
+        self.data = {'owner_user_id': 'dlf2', 'archive': 'physics', 'created_datetime': datetime.now(UTC),
+                     'modified_datetime': datetime.now(UTC), 'state': "ACTIVE"}
         self.dbupload = self.uploads.DBUpload(**self.data)  # type: ignore
         self.uploads.db.session.add(self.dbupload)  # type: ignore
         self.uploads.db.session.commit()  # type: ignore
@@ -100,8 +98,8 @@ class TestUploadCreator(TestCase):
 
     def test_store_an_upload(self) -> None:
         """A new row is added for the upload."""
-        existing_upload = Upload(owner_user_id='dlf2', archive='physics', created_datetime=datetime.now(),
-                                 modified_datetime=datetime.now(), state="ACTIVE")
+        existing_upload = Upload(owner_user_id='dlf2', archive='physics', created_datetime=datetime.now(UTC),
+                                 modified_datetime=datetime.now(UTC), state="ACTIVE")
 
         self.uploads.store(existing_upload)  # type: ignore
         self.assertGreater(existing_upload.upload_id, 0, "Upload.id is updated with pk id")
@@ -129,7 +127,7 @@ class TestUploadUpdater(TestCase):
         self.uploads.db.app = app  # type: ignore
         self.uploads.db.create_all()  # type: ignore
 
-        self.data = dict(owner_user_id='dlf2', archive='physics', created_datetime=datetime.now())
+        self.data = dict(owner_user_id='dlf2', archive='physics', created_datetime=datetime.now(UTC))
         self.dbupload = self.uploads.DBUpload(**self.data)  # type: ignore
         self.uploads.db.session.add(self.dbupload)  # type: ignore
         self.uploads.db.session.commit()  # type: ignore

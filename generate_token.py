@@ -1,6 +1,6 @@
 import click
 
-from pytz import timezone
+from pytz import UTC
 import uuid
 from datetime import timedelta, datetime
 from arxiv.users import auth, domain
@@ -41,7 +41,7 @@ def generate_token(user_id: str, email: str, username: str,
                    scope: str = 'upload:read,upload:write,upload:admin') \
         -> None:
     # Specify the validity period for the session.
-    start = datetime.now(tz=timezone('US/Eastern'))
+    start = datetime.now(tz=UTC)
     end = start + timedelta(seconds=36000)   # Make this as long as you want.
 
     # Create a user with endorsements in astro-ph.CO and .GA.

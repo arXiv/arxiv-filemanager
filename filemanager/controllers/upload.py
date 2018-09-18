@@ -2,7 +2,7 @@
 
 from typing import Tuple, Optional
 from datetime import datetime
-from pytz import timezone
+from pytz import UTC
 import json
 import logging
 
@@ -72,7 +72,7 @@ UPLOAD_WORKSPACE_ALREADY_DELETED = 'Request failed. Workspace has been deleted.'
 # MISSING_UPLOAD_ID = {'reason': 'missing upload id'}
 
 # Indicate requests that have not been implemented yet.
-REQUEST_NOT_IMPLEMENTED = {'request not implemented'}
+REQUUTC_NOT_IMPLEMENTED = {'request not implemented'}
 
 # upload status
 NO_SUCH_THING = {'reason': 'there is no upload'}
@@ -92,8 +92,6 @@ ACCEPTED = {'reason': 'upload in progress'}
 MISSING_NAME = {'an upload needs a name'}
 
 SOME_ERROR = {'Need to define and assign better error'}
-
-EST = timezone('US/Eastern')
 
 Response = Tuple[Optional[dict], int, dict]
 
@@ -398,7 +396,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             else:
                 arch = archive
 
-            current_time = datetime.utcnow().astimezone(EST)
+            current_time = datetime.now(UTC)
             new_upload = Upload(owner_user_id=user_id, archive=arch,
                                 created_datetime=current_time,
                                 modified_datetime=current_time,
@@ -444,7 +442,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
                         "workspace: file='%s'", upload_db_data.upload_id, file.filename)
 
             # Keep track of how long processing upload_db_data takes
-            start_datetime = datetime.utcnow().astimezone(EST)
+            start_datetime = datetime.now(UTC)
 
             # Create Upload object
             upload_workspace = filemanager.process.upload.Upload(upload_id)
@@ -452,7 +450,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             # Process upload_db_data
             upload_workspace.process_upload(file, ancillary=ancillary)
 
-            completion_datetime = datetime.utcnow().astimezone(EST)
+            completion_datetime = datetime.now(UTC)
 
             # Keep track of files processed (this included deleted files)
             file_list = upload_workspace.create_file_upload_summary()
@@ -680,7 +678,7 @@ def upload_lock(upload_id: int) -> Response:
 
 def upload_unlock(upload_id: int) -> Response:
     """Unlock upload workspace."""
-    # response_data = ERROR_REQUEST_NOT_IMPLEMENTED
+    # response_data = ERROR_REQUUTC_NOT_IMPLEMENTED
     # status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     logger.info("%s: Unlock upload workspace.", upload_id)
 
@@ -907,11 +905,11 @@ def check_upload_content_exists(upload_id: int) -> Response:
 def upload_logs(upload_id: int) -> Response:
     """Return logs. Are we talking logs in database or full
     source logs. Need to implement logs first!!! """
-    # response_data = ERROR_REQUEST_NOT_IMPLEMENTED
+    # response_data = ERROR_REQUUTC_NOT_IMPLEMENTED
     # status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     if 1 + upload_id:
         print(upload_id)  # make pylint happy - increase my score!
-        raise NotImplementedError(REQUEST_NOT_IMPLEMENTED)
+        raise NotImplementedError(REQUUTC_NOT_IMPLEMENTED)
     response_data = ACCEPTED
     status_code = status.HTTP_202_ACCEPTED
     return response_data, status_code, {}

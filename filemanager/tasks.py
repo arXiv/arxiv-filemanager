@@ -42,7 +42,7 @@ def sanitize_upload(upload_id: int, file: FileStorage, with_sleep: int = 15) -> 
         # Revisit how to handle error
         raise RuntimeError('No such thing! %s' % upload_id)
 
-    start_datetime = datetime.now()
+    start_datetime = datetime.now(UTC)
     #uploadObj = filemanager.process.Upload.process_upload(upload)
     uploadObj = filemanager.process.upload.Upload(upload_id)
 
@@ -52,7 +52,7 @@ def sanitize_upload(upload_id: int, file: FileStorage, with_sleep: int = 15) -> 
     # Process upload
     uploadObj.process_upload(file)
 
-    completion_datetime = datetime.now()
+    completion_datetime = datetime.now(UTC)
 
     # Colect information we want to retain
     upload.lastupload_logs = str(uploadObj.get_warnings())

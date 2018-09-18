@@ -3,7 +3,7 @@
 import os
 import re
 from datetime import datetime
-from pytz import timezone
+from pytz import UTC
 import shutil
 import tarfile
 import logging
@@ -25,8 +25,6 @@ UPLOAD_DELETE_FILE_FAILED = 'unable to delete file'
 UPLOAD_DELETE_ALL_FILE_FAILED = 'unable to delete all file'
 UPLOAD_FILE_NOT_FOUND = 'file not found'
 UPLOAD_WORKSPACE_NOT_FOUND = 'workspcae not found'
-
-EST = timezone('US/Eastern')
 
 
 def _get_base_directory() -> str:
@@ -1175,7 +1173,7 @@ submitter."""
         most_recent = max(os.path.getmtime(root)
                           for root, _, _
                           in os.walk(self.get_source_directory()))
-        return datetime.utcfromtimestamp(most_recent).astimezone(EST)
+        return datetime.fromtimestamp(most_recent, tz=UTC)
 
     def get_content(self) -> io.BytesIO:
         """Get a file-pointer for the packed content tarball."""
@@ -1189,9 +1187,10 @@ submitter."""
 
     @property
     def content_package_modified(self) -> datetime:
-        return datetime.utcfromtimestamp(
-            os.path.getmtime(self.get_content_path())
-        ).astimezone(EST)
+        return datetime.fromtimestamp(
+            os.path.getmtime(self.get_content_path()),
+            tz=UTC
+        )
 
     @property
     def content_package_stale(self) -> bool:
