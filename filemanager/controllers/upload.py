@@ -4,6 +4,7 @@ from typing import Tuple, Optional
 from datetime import datetime
 import json
 import logging
+import os.path
 
 from werkzeug.exceptions import NotFound, BadRequest, InternalServerError, \
     NotImplemented, SecurityError, Forbidden
@@ -13,6 +14,7 @@ from flask.json import jsonify
 
 from arxiv import status
 from arxiv.users import domain as auth_domain
+from arxiv.base.globals import get_application_config
 
 import filemanager
 from filemanager.shared import url_for
@@ -28,7 +30,23 @@ logging.basicConfig(level=logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 
-file_handler = logging.FileHandler('upload.log', 'a')
+def _get_service_logs_directory() -> str:
+    """
+    Return path to service logs directory. We may eventually
+    have multiple 'logs'.
+
+    Returns
+    -------
+    Directory where service logs are to be stored.
+
+    """
+    config = get_application_config()
+    return config.get('UPLOAD_SERVICE_LOG_DIRECTORY', '')
+
+service_log_path = os.path.join(_get_service_logs_directory(), 'upload.log')
+
+file_handler = logging.FileHandler(service_log_path, 'a')
+
 # Default arXiv log format.
 # fmt = ("application %(asctime)s - %(name)s - %(requestid)s"
 #          " - [arxiv:%(paperid)s] - %(levelname)s: \"%(message)s\"")
@@ -49,6 +67,7 @@ UPLOAD_MISSING_FILENAME = 'file argument missing filename or file not selected'
 
 UPLOAD_NOT_FOUND = 'upload workspace not found'
 UPLOAD_DB_ERROR = 'unable to create/insert new upload workspace into database'
+UPLOAD_DB_CONNECT_ERROR = "There was a problem connecting to database."
 UPLOAD_IO_ERROR = 'encountered an IOError'
 UPLOAD_UNKNOWN_ERROR = 'unknown error'
 UPLOAD_DELETED_FILE = 'deleted file'
@@ -864,10 +883,34 @@ def upload_unrelease(upload_id: int) -> Response:
 
     return response_data, status_code, {}
 
+# Content download controllers
+
+def check_upload_content_exists(upload_id: int) -> Response:
+    """Verify that the package content exists/is available."""
+
+    try:
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+    except IOError:
+        logger.error("%s: ContentExistsCheck: There was a problem connecting to database.",
+                     upload_db_data.upload_id)
+        raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
+
+    if upload_db_data is None:
+        raise NotFound(UPLOAD_NOT_FOUND)
+
+    logger.info("%s: Upload content summary request.", upload_id)
+    upload_workspace = filemanager.process.upload.Upload(upload_id)
+    checksum = upload_workspace.content_checksum()
+    return {}, status.HTTP_200_OK, {'ETag': checksum}
 
 def get_upload_content(upload_id: int) -> Response:
     """Package up files for downloading as a compressed gzipped tar file."""
-    upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+    try:
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+    except IOError:
+        logger.error("%s: ContentDownload: There was a problem connecting to database.",
+                     upload_db_data.upload_id)
+        raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
 
     if upload_db_data is None:
         raise NotFound(UPLOAD_NOT_FOUND)
@@ -881,29 +924,129 @@ def get_upload_content(upload_id: int) -> Response:
     return filepointer, status.HTTP_200_OK, headers
 
 
-def check_upload_content_exists(upload_id: int) -> Response:
-    """Verify that the package content exists/is available."""
-    upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+
+
+# Log controllers
+
+def check_upload_source_log_exists(upload_id: int) -> Response:
+    """
+    Get the source log associated with upload workspace.
+
+    Parameters
+    ----------
+    upload_id
+
+    Returns
+    -------
+
+    Note: This routine currently retrieves the source log for active upload
+    workspaces. Technically, the upload source log is available for a 'deleted'
+    workspace, since we stash this away before we actually delete the workspace.
+    The justification to save is because the upload source log contains useful
+    information that the admins sometime desire after a submission has been
+    published and the associated workspace deleted.
+    """
+    try:
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+    except IOError:
+        logger.error("%s: SourceLogExistCheck: There was a problem connecting to database.",
+                     upload_db_data.upload_id)
+        raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
 
     if upload_db_data is None:
         raise NotFound(UPLOAD_NOT_FOUND)
 
-    logger.info("%s: Upload content summary request.", upload_id)
+    logger.info("%s: Test for source log.", upload_id)
     upload_workspace = filemanager.process.upload.Upload(upload_id)
-    checksum = upload_workspace.content_checksum()
-    return {}, status.HTTP_200_OK, {'ETag': checksum}
+    source_log_path = upload_workspace.get_upload_source_log_path()
+
+    checksum = upload_workspace.checksum(source_log_path)
+    size = os.path.getsize(source_log_path)
+    modified = upload_workspace.last_modified_file(source_log_path)
+
+    return {}, status.HTTP_200_OK, {'ETag': checksum,
+                                    'Content-Length': size,
+                                    'Last-Modified': modified}
+
+def get_upload_source_log(upload_id: int) -> Response:
+    """
+
+    Parameters
+    ----------
+    upload_id
+
+    Returns
+    -------
+
+    """
+    try:
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+    except IOError:
+        logger.error("%s: GetSourceLog: There was a problem connecting to database.",
+                     upload_db_data.upload_id)
+        raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
+
+    if upload_db_data is None:
+        raise NotFound(UPLOAD_NOT_FOUND)
+
+    upload_workspace = filemanager.process.upload.Upload(upload_id)
+
+    source_log_path = upload_workspace.get_upload_source_log_path()
+    checksum = filemanager.process.upload.Upload.checksum(source_log_path)
+    size = os.path.getsize(source_log_path)
+    modified = upload_workspace.last_modified_file(source_log_path)
+    filepointer = upload_workspace.get_open_file_pointer(source_log_path)
+    headers = {
+        "Content-disposition": f"filename={filepointer.name}",
+        'ETag': checksum,
+        'Content-Length': size,
+        'Last-Modified': modified
+    }
+    return filepointer, status.HTTP_200_OK, headers
+
+def check_upload_service_log_exists() -> Response:
+    """
+    Check whether service log exists. (it should exist but just in case)
+
+    Returns
+    -------
+
+    """
+
+    # Need path to upload.log which is currently stored at top level
+    # of filemanager service.
+
+    logger.info("%s: Check whether upload service log exists.")
+
+    # service_log_path is global set during startup log init
+    checksum = filemanager.process.upload.Upload.checksum(service_log_path)
+    size = os.path.getsize(service_log_path)
+    modified = filemanager.process.upload.Upload.last_modified_file(service_log_path)
+    return {}, status.HTTP_200_OK, {'ETag': checksum,
+                                    'Content-Length': size,
+                                    'Last-Modified': modified
+                                    }
 
 
-# TBI
+def get_upload_service_log() -> Response:
+    """
+    Return the service-level file management service log. This log records
+    high level events for all upload workspaces.
 
-def upload_logs(upload_id: int) -> Response:
-    """Return logs. Are we talking logs in database or full
-    source logs. Need to implement logs first!!! """
-    # response_data = ERROR_REQUEST_NOT_IMPLEMENTED
-    # status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-    if 1 + upload_id:
-        print(upload_id)  # make pylint happy - increase my score!
-        raise NotImplementedError(REQUEST_NOT_IMPLEMENTED)
-    response_data = ACCEPTED
-    status_code = status.HTTP_202_ACCEPTED
-    return response_data, status_code, {}
+    Returns
+    -------
+
+    """
+
+    # service_log_path is global set during startup log init
+    checksum = filemanager.process.upload.Upload.checksum(service_log_path)
+    size = os.path.getsize(service_log_path)
+    modified = filemanager.process.upload.Upload.last_modified_file(service_log_path)
+    filepointer = filemanager.process.upload.Upload.get_open_file_pointer(service_log_path)
+    headers = {
+        "Content-disposition": f"filename={filepointer.name}",
+        'ETag': checksum,
+        'Content-Length': size,
+        'Last-Modified': modified
+    }
+    return filepointer, status.HTTP_200_OK, headers
