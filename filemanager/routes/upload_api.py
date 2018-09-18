@@ -91,6 +91,7 @@ def delete_file(upload_id: int, public_file_path: str) -> tuple:
                                                            public_file_path)
     return jsonify(data), status_code, headers
 
+# File and workspace deletion
 
 @blueprint.route('<int:upload_id>/delete_all', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
@@ -177,6 +178,81 @@ def get_upload_content(upload_id: int) -> tuple:
     response = send_file(data, mimetype="application/tar+gzip")
     response.set_etag(headers.get('ETag'))
     return response
+
+# TODO Need to implement single file download.
+
+# Get logs
+
+@blueprint.route('/<int:upload_id>/log', methods=['HEAD'])
+@scoped(scopes.READ_UPLOAD_LOGS)
+def check_upload_source_log_exists(upload_id: int) -> tuple:
+    """
+    Check that upload source log exists.
+
+    Parameters
+    ----------
+    upload_id: int
+
+    Returns
+    -------
+    Returns an ``ETag`` header with the current source package checksum.
+
+    """
+    data, status_code, headers = upload.check_upload_source_log_exists(upload_id)
+    return jsonify(data), status_code, headers
+
+@blueprint.route('/<int:upload_id>/log', methods=['GET'])
+@scoped(scopes.READ_UPLOAD_LOGS)
+def get_upload_source_log(upload_id: int) -> tuple:
+    """
+    Get the upload source log for specified upload workspace. This provides details of all
+    upload/deletion activity on specified workspace.
+
+    Parameters
+    ----------
+    upload_id : int
+
+    Returns
+    -------
+
+    """
+    data, status_code, headers = upload.get_upload_source_log(upload_id)
+    response = send_file(data, mimetype="application/tar+gzip")
+    response.set_etag(headers.get('ETag'))
+    return response
+
+@blueprint.route('/log', methods=['HEAD'])
+@scoped(scopes.READ_UPLOAD_SERVICE_LOGS)
+def check_upload_service_log_exists() -> tuple:
+    """
+    Check that upload source log exists.
+
+    Returns
+    -------
+    Returns an ``ETag`` header with the current source package checksum.
+
+    """
+    data, status_code, headers = upload.check_upload_service_log_exists()
+    return jsonify(data), status_code, headers
+
+@blueprint.route('/log', methods=['GET'])
+@scoped(scopes.READ_UPLOAD_SERVICE_LOGS)
+def get_upload_service_log() -> tuple:
+    """
+    Return the top level file management service log that records high-level requests along with
+    important errors/warnings. Details for specific upload workspace are found in workspace
+    source log.
+
+    Returns
+    -------
+
+    """
+    data, status_code, headers = upload.get_upload_service_log()
+    response = send_file(data, mimetype="application/tar+gzip")
+    response.set_etag(headers.get('ETag'))
+    return response
+
+
 
 # TODO: The requests below need to be evaluated and/or implemented
 
