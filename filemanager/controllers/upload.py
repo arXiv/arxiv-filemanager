@@ -72,7 +72,7 @@ UPLOAD_WORKSPACE_ALREADY_DELETED = 'Request failed. Workspace has been deleted.'
 # MISSING_UPLOAD_ID = {'reason': 'missing upload id'}
 
 # Indicate requests that have not been implemented yet.
-REQUUTC_NOT_IMPLEMENTED = {'request not implemented'}
+REQUEST_NOT_IMPLEMENTED = {'request not implemented'}
 
 # upload status
 NO_SUCH_THING = {'reason': 'there is no upload'}
@@ -678,7 +678,7 @@ def upload_lock(upload_id: int) -> Response:
 
 def upload_unlock(upload_id: int) -> Response:
     """Unlock upload workspace."""
-    # response_data = ERROR_REQUUTC_NOT_IMPLEMENTED
+    # response_data = ERROR_REQUEST_NOT_IMPLEMENTED
     # status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     logger.info("%s: Unlock upload workspace.", upload_id)
 
@@ -905,11 +905,11 @@ def check_upload_content_exists(upload_id: int) -> Response:
 def upload_logs(upload_id: int) -> Response:
     """Return logs. Are we talking logs in database or full
     source logs. Need to implement logs first!!! """
-    # response_data = ERROR_REQUUTC_NOT_IMPLEMENTED
+    # response_data = ERROR_REQUEST_NOT_IMPLEMENTED
     # status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     if 1 + upload_id:
         print(upload_id)  # make pylint happy - increase my score!
-        raise NotImplementedError(REQUUTC_NOT_IMPLEMENTED)
+        raise NotImplementedError(REQUEST_NOT_IMPLEMENTED)
     response_data = ACCEPTED
     status_code = status.HTTP_202_ACCEPTED
     return response_data, status_code, {}
