@@ -314,8 +314,6 @@ class TestUploadAPIRoutes(TestCase):
         # response = self.client.post('/filemanager/api/',
         response = self.client.post('/filemanager/api/',
                                     data={
-                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
-                                        #      'file': (open(filepath, 'rb'), 'test.tar.gz'),
                                         'file': (open(filepath, 'rb'), filename),
                                     },
                                     headers={'Authorization': token},
