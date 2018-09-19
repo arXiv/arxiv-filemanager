@@ -67,11 +67,11 @@ upload_tests.append(['source_with_dir.tar.gz', '9903.1009', True, 'Removing top 
 # These tests may eventually migrate to thier own file
 unpack_tests = []
 
-unpack_tests.append(['with__MACOSX_hidden.tar', '9912.0001', True,
+unpack_tests.append(['with__MACOSX_hidden.tar.gz', '9912.0001', True,
                      r"Removed '__MACOSX' directory.",
                      'Test detection and removal of __MACOSX directory'])
 
-unpack_tests.append(['with__processed_directory.tar', '9912.0002', True,
+unpack_tests.append(['with__processed_directory.tar.gz', '9912.0002', True,
                      r"Detected 'processed' directory. Please check.",
                      "Test detection and warning about 'processed' directory"])
 
