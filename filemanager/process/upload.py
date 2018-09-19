@@ -485,12 +485,17 @@ submitter."""
 
         return base_dir
 
+    def get_upload_source_log_path(self):
+        """Generate path for upload source log."""
+        return os.path.join(self.get_upload_directory(), 'source.log')
+
     def create_upload_log(self):
         """Create a source log to record activity for this upload."""
 
         # Grab standard logger and customized it
         logger = logging.getLogger(__name__)
-        log_path = os.path.join(self.get_upload_directory(), 'source.log')
+        #log_path = os.path.join(self.get_upload_directory(), 'source.log')
+        log_path = self.get_upload_source_log_path()
         file_handler = logging.FileHandler(log_path)
 
         formatter = logging.Formatter('%(asctime)s %(message)s', '%d/%b/%Y:%H:%M:%S %z')
@@ -1131,6 +1136,8 @@ submitter."""
 
         self.log(f'\n******** Errors: {self.has_errors()} *****\n\n')
 
+    # Content
+
     def get_content_path(self) -> str:
         """
         Get the path for the packed content tarball.
@@ -1175,7 +1182,10 @@ submitter."""
         return self.last_modified > self.content_package_modified
 
     def content_checksum(self) -> str:
-        """Return b64-encoded MD5 hash of the packed content tarball."""
+        """Return b64-encoded MD5 hash of the packed content tarball.
+
+        Triggers building content package when pre-existing package is not found or stale
+        relative to source files."""
         if not self.content_package_exists or self.content_package_stale:
             self.pack_content()
 
@@ -1184,3 +1194,63 @@ submitter."""
             for chunk in iter(lambda: f.read(4096), b""):
                 hash_md5.update(chunk)
         return b64encode(hash_md5.digest()).decode('utf-8')
+
+
+    @classmethod
+    def checksum(cls, filepath: str):
+        """
+        Generic routine to calculate checksum for arbitrary file argument.
+
+        Parameters
+        ----------
+        filepath: str
+            Path to file we want to generate checksum for.
+
+        Returns
+        -------
+        Returns Null string if file does not exist otherwise
+        return b64-encoded MD5 hash of the specified file.
+
+        """
+        if os.path.exists(filepath):
+            hash_md5 = md5()
+            with open(filepath, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_md5.update(chunk)
+            return b64encode(hash_md5.digest()).decode('utf-8')
+        else:
+            return ""
+
+
+    @classmethod
+    def get_open_file_pointer(cls, filepath : str):
+        """
+        Open specified file and return file pointer.
+
+        Parameters
+        ----------
+        filepath : str
+
+        Returns
+        -------
+        File pointer or Null string when filepath does not exist.
+
+        """
+        if os.path.exists(filepath):
+            return open(filepath, 'rb')
+        else:
+            return ""
+
+    @classmethod
+    def last_modified_file(cls, filepath: str) -> datetime:
+        """
+        Return last modified time for specified file/package.
+        Parameters
+        ----------
+        filepath
+
+        Returns
+        -------
+
+        """
+        return datetime.utcfromtimestamp(os.path.getmtime(filepath))

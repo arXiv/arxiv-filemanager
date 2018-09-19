@@ -16,7 +16,7 @@ pyjwt = "*"
 jsonschema = "*"
 celery = "*"
 redis = "*"
-arxiv-auth = "==0.1.0rc10"
+arxiv-auth = "==0.1.0rc15"
 
 [dev-packages]
 

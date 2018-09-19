@@ -21,6 +21,27 @@ paths:
               schema:
                 $ref: 'resources/serviceStatus.json'
 
+  /logs:
+    get:
+      operationId: getServiceLogs
+      summary: |
+        Retrieve service-level log files. Indicates history or actions
+        on file management service.
+      responses:
+        '200':
+          description: Activity log for file management service.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/Log.json'
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to access logs for this
+            workspace.
+
+
   /:
     post:
       operationId: uploadPackage
