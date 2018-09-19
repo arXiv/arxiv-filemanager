@@ -2,6 +2,7 @@
 
 from typing import Any, Dict, Optional
 from datetime import datetime
+from pytz import UTC
 from werkzeug.local import LocalProxy
 from sqlalchemy.exc import OperationalError
 from arxiv.base.globals import get_application_global
@@ -64,18 +65,16 @@ def retrieve(upload_id: int, skip_cache: bool = False) -> Optional[Upload]:
     args['upload_id'] = upload_data.upload_id
     args['owner_user_id'] = upload_data.owner_user_id
     args['archive'] = upload_data.archive
-
-    args['created_datetime'] = upload_data.created_datetime
-    args['modified_datetime'] = upload_data.modified_datetime
+    args['created_datetime'] = upload_data.created_datetime.replace(tzinfo=UTC)
+    args['modified_datetime'] = upload_data.modified_datetime.replace(tzinfo=UTC)
     args['state'] = upload_data.state
     args['lock'] = upload_data.lock
 
     if upload_data.lastupload_start_datetime is not None:
-        args['lastupload_start_datetime'] = upload_data.lastupload_start_datetime
+        args['lastupload_start_datetime'] = upload_data.lastupload_start_datetime.replace(tzinfo=UTC)
 
     if upload_data.lastupload_completion_datetime is not None:
-        args['lastupload_completion_datetime'] = upload_data.lastupload_completion_datetime
-
+        args['lastupload_completion_datetime'] = upload_data.lastupload_completion_datetime.replace(tzinfo=UTC)
     if upload_data.lastupload_logs is not None:
         args['lastupload_logs'] = upload_data.lastupload_logs
 
@@ -157,7 +156,7 @@ def update(upload_update_data: Upload) -> None:
     upload_data.lock = upload_update_data.lock
 
     # Always set this when workspace DB entry is updated
-    upload_data.modified_datetime = datetime.now()
+    upload_data.modified_datetime = datetime.now(UTC)
 
     # TODO: Would user ever need to set the modification time manually?
     # upload_data.modified_datetime = upload_update_data.modified_datetime

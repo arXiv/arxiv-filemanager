@@ -13,9 +13,9 @@ app.app_context().push()
 def populate_database():
     """Initialize the search index."""
     uploads.db.create_all()
-    uploads.db.session.add(uploads.DBUpload(name='The first upload', created_datetime=datetime.now(),submission_id='1234567'))
-    uploads.db.session.add(uploads.DBUpload(name='The second upload', created_datetime=datetime.now(),submission_id='1234568'))
-    uploads.db.session.add(uploads.DBUpload(name='The third upload', created_datetime=datetime.now(),submission_id='1234569'))
+    uploads.db.session.add(uploads.DBUpload(name='The first upload', created_datetime=datetime.now(UTC),submission_id='1234567'))
+    uploads.db.session.add(uploads.DBUpload(name='The second upload', created_datetime=datetime.now(UTC),submission_id='1234568'))
+    uploads.db.session.add(uploads.DBUpload(name='The third upload', created_datetime=datetime.now(UTC),submission_id='1234569'))
     uploads.db.session.commit()
 
 

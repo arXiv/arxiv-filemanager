@@ -3,6 +3,7 @@ from filemanager.arxiv.file import File
 
 import os.path
 import datetime
+from pytz import UTC
 
 
 class TestFileClass(TestCase):
@@ -38,7 +39,7 @@ class TestFileClass(TestCase):
         self.assertEquals(file.ext, '.gif', "Check ext() method is '.gif'")
         self.assertEquals(file.size, 495, "Check size of '.gif' is 495")
         mtime = os.path.getmtime(file.filepath)
-        modified_datetime = datetime.datetime.utcfromtimestamp(mtime).isoformat()
+        modified_datetime = datetime.datetime.fromtimestamp(mtime, tz=UTC).isoformat()
         self.assertEquals(file.modified_datetime, modified_datetime, "Check modification time of file.")
 
     def test_file_subdirectory(self):

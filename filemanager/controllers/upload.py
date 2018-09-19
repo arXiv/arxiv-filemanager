@@ -2,6 +2,7 @@
 
 from typing import Tuple, Optional
 from datetime import datetime
+from pytz import UTC
 import json
 import logging
 import os.path
@@ -337,7 +338,7 @@ def client_delete_all_files(upload_id: str) -> Response:
 
 
 def upload(upload_id: int, file: FileStorage, archive: str,
-           user: auth_domain.User) -> Response:
+           user: auth_domain.User, ancillary: bool = False) -> Response:
     """Upload individual files or compressed archive. Unpack and add
     files to upload_db_data workspace.
 
@@ -345,11 +346,15 @@ def upload(upload_id: int, file: FileStorage, archive: str,
     ----------
     upload_id : int
         The unique identifier for the upload_db_data in question.
-    file : FileStorage
+    file : :class:`FileStorage`
         File archive to be processed.
-    archive: str
+    archive : str
         Archive submission is targeting. Oversize thresholds are curently
         specified at the archive level.
+    ancillary : bool
+        If ``True``, the file is to be treated as an ancillary file. This means
+        (presently) that the file is stored in a special subdirectory within
+        the source package.
 
     Returns
     -------
@@ -410,9 +415,10 @@ def upload(upload_id: int, file: FileStorage, archive: str,
             else:
                 arch = archive
 
+            current_time = datetime.now(UTC)
             new_upload = Upload(owner_user_id=user_id, archive=arch,
-                                created_datetime=datetime.now(),
-                                modified_datetime=datetime.now(),
+                                created_datetime=current_time,
+                                modified_datetime=current_time,
                                 state=Upload.ACTIVE)
             # Store in DB
             uploads.store(new_upload)
@@ -455,15 +461,15 @@ def upload(upload_id: int, file: FileStorage, archive: str,
                         "workspace: file='%s'", upload_db_data.upload_id, file.filename)
 
             # Keep track of how long processing upload_db_data takes
-            start_datetime = datetime.now()
+            start_datetime = datetime.now(UTC)
 
             # Create Upload object
             upload_workspace = filemanager.process.upload.Upload(upload_id)
 
             # Process upload_db_data
-            upload_workspace.process_upload(file)
+            upload_workspace.process_upload(file, ancillary=ancillary)
 
-            completion_datetime = datetime.now()
+            completion_datetime = datetime.now(UTC)
 
             # Keep track of files processed (this included deleted files)
             file_list = upload_workspace.create_file_upload_summary()

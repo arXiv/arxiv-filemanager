@@ -5,6 +5,7 @@
 import os.path
 import re
 from datetime import datetime
+from pytz import UTC
 
 from arxiv.base import logging
 
@@ -30,7 +31,7 @@ class File:
         self.__type = self.initialize_type()
         self.__size = os.path.getsize(self.filepath)
         mtime = os.path.getmtime(filepath)
-        self.__modified_datetime = datetime.utcfromtimestamp(mtime)
+        self.__modified_datetime = datetime.fromtimestamp(mtime, tz=UTC)
 
     @property
     def name(self) -> str:
@@ -168,7 +169,7 @@ class File:
         logger.debug('Get modified_datetime')
         if os.path.exists(self.filepath):
             mt = os.path.getmtime(self.filepath)
-            self.__modified_datetime = datetime.utcfromtimestamp(mt)
+            self.__modified_datetime = datetime.fromtimestamp(mt, tz=UTC)
         return self.__modified_datetime.isoformat()
 
     @property

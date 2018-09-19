@@ -2,7 +2,7 @@
 
 from unittest import TestCase, mock
 from datetime import datetime, timedelta
-from pytz import timezone
+from pytz import UTC
 import json
 import tempfile
 from io import BytesIO
@@ -27,7 +27,7 @@ from arxiv import status
 def generate_token(app: Flask, scope: List[str]) -> str:
     """Helper function for generating a JWT."""
     secret = app.config.get('JWT_SECRET')
-    start = datetime.now(tz=timezone('US/Eastern'))
+    start = datetime.now(tz=UTC)
     end = start + timedelta(seconds=36000)  # Make this as long as you want.
     user_id = '1'
     email = 'foo@bar.com'
@@ -237,8 +237,8 @@ class TestUploadAPIRoutes(TestCase):
         token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
                                           auth.scopes.WRITE_UPLOAD])
 
-        created = datetime.now()
-        modified = datetime.now()
+        created = datetime.now(UTC)
+        modified = datetime.now(UTC)
         expected_data = {'upload_id': 5,
                          'status': "SUCCEEDED",
                          'create_datetime': created.isoformat(),
@@ -1001,8 +1001,8 @@ class TestUploadAPIRoutes(TestCase):
                                           auth.scopes.WRITE_UPLOAD,
                                           auth.scopes.DELETE_UPLOAD_FILE])
 
-        created = datetime.now()
-        modified = datetime.now()
+        created = datetime.now(UTC)
+        modified = datetime.now(UTC)
         expected_data = {'upload_id': 5,
                          'status': "SUCCEEDED",
                          'create_datetime': created.isoformat(),

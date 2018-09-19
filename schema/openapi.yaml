@@ -123,6 +123,7 @@ paths:
         '403':
           description: |
             Forbidden. Client is not authorized to access this upload.
+
     post:
       operationId: addFilesToPackage
       summary: |
