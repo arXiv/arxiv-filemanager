@@ -180,7 +180,33 @@ def get_upload_content(upload_id: int) -> tuple:
     response.set_etag(headers.get('ETag'))
     return response
 
-# TODO Need to implement single file download.
+@blueprint.route('/<int:upload_id>/<path:public_file_path>/content', methods=['HEAD'])
+@scoped(scopes.READ_UPLOAD)
+def check_file_exists(upload_id: int, public_file_path: str) -> tuple:
+    """
+    Verify specified file exists.
+
+    Returns an ``ETag`` header with the current source file checksum.
+    """
+    data, status_code, headers = upload.check_upload_file_content_exists(upload_id, public_file_path)
+
+    return jsonify(data), status_code, headers
+
+
+@blueprint.route('/<int:upload_id>/<path:public_file_path>/content', methods=['GET'])
+@scoped(scopes.READ_UPLOAD)
+def get_file_content(upload_id: int, public_file_path: str) -> tuple:
+    """
+    Return content of specified file.
+
+    """
+
+    data, status_code, headers = upload.get_upload_file_content(upload_id, public_file_path)
+
+    response = send_file(data, mimetype="application/*")
+    response.set_etag(headers.get('ETag'))
+    return response
+
 
 # Get logs
 
@@ -252,34 +278,6 @@ def get_upload_service_log() -> tuple:
     response = send_file(data, mimetype="application/tar+gzip")
     response.set_etag(headers.get('ETag'))
     return response
-
-
-
-# TODO: The requests below need to be evaluated and/or implemented
-
-# Was debating about 'manifest' request but upload GET request
-# seems to do same thing (though that one returns file information
-# generated during file processing.
-#
-# Will upload GET always return list of files?
-#
-# @blueprint.route('/manifest/<int:upload_id>', methods=['GET'])
-# @scoped('read:upload')
-# def manifest(upload_id: int) -> tuple:
-#    """Manifest of files contained in upload package."""
-#    #data, status_code, headers = upload.generate_manifest(upload_id)
-#    return jsonify(data), status_code, headers
-
-
-# Or would 'download' be a better request? 'disseminate'?
-
-
-# Or would 'download' be a better request? 'disseminate'?
-@blueprint.route('/<int:upload_id>/<path:public_file_path>/content', methods=['GET'])
-@scoped(scopes.READ_UPLOAD)
-def get_file(upload_id: int) -> tuple:
-    """Return compressed archive containing files."""
-    pass
 
 # Exception handling
 
