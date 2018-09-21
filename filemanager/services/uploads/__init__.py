@@ -71,10 +71,13 @@ def retrieve(upload_id: int, skip_cache: bool = False) -> Optional[Upload]:
     args['lock'] = upload_data.lock
 
     if upload_data.lastupload_start_datetime is not None:
-        args['lastupload_start_datetime'] = upload_data.lastupload_start_datetime.replace(tzinfo=UTC)
+        args['lastupload_start_datetime'] = \
+            upload_data.lastupload_start_datetime.replace(tzinfo=UTC)
 
     if upload_data.lastupload_completion_datetime is not None:
-        args['lastupload_completion_datetime'] = upload_data.lastupload_completion_datetime.replace(tzinfo=UTC)
+        args['lastupload_completion_datetime'] = \
+            upload_data.lastupload_completion_datetime.replace(tzinfo=UTC)
+
     if upload_data.lastupload_logs is not None:
         args['lastupload_logs'] = upload_data.lastupload_logs
 
