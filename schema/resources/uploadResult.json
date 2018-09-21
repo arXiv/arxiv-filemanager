@@ -4,6 +4,7 @@
   "additionalProperties": false,
   "required": [
     "upload_id",
+    "upload_total_size",
     "upload_status",
     "workspace_state",
     "created_datetime",
@@ -13,6 +14,10 @@
   "properties": {
     "upload_id": {
       "description": "Unique long-lived identifier for the upload processing result.",
+      "type": "integer"
+    },
+    "upload_total_size": {
+      "description": "Total size of uploaded content.",
       "type": "integer"
     },
     "workspace_state": {

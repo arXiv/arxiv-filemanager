@@ -279,21 +279,7 @@ def get_upload_service_log() -> tuple:
 @scoped(scopes.READ_UPLOAD)
 def get_file(upload_id: int) -> tuple:
     """Return compressed archive containing files."""
-    data, status_code, headers = upload.package_content(upload_id)  # same as content
-    return jsonify(data), status_code, headers
-
-
-# Get logs
-
-# This could be get_logs or retrieve_logs instead of logs
-@blueprint.route('/logs/<int:upload_id>', methods=['GET'])
-@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
-def logs(upload_id: int) -> tuple:
-    """Retreive log files related to submission. Indicates
-    history or actions on submission package."""
-    data, status_code, headers = upload.upload_logs(upload_id)
-    return jsonify(data), status_code, headers
-
+    pass
 
 # Exception handling
 

@@ -287,7 +287,6 @@ class TestUploadAPIRoutes(TestCase):
 
         # TODO: Add size checks (when implemented)
 
-
     def test_various_log_download_requests(self) -> None:
         """
         Test service and source log download requests.
@@ -338,13 +337,11 @@ class TestUploadAPIRoutes(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-
         response = self.client.get(
             f"/filemanager/api/{upload_data['upload_id']}/log",
             headers={'Authorization': admin_token}
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
 
         # Add READ_UPLOAD_LOGS authorization to admin token
         admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
@@ -426,7 +423,6 @@ class TestUploadAPIRoutes(TestCase):
         # Highlight log download. Remove at some point.
         print(f"FYI: SAVED SERVICE LOG FILE TO DISK AT: {log_path}\n")
 
-
     def test_delete_file(self) -> None:
         """
         Test delete file operation.
@@ -486,8 +482,8 @@ class TestUploadAPIRoutes(TestCase):
         self.assertEqual(response.status_code, 204,
                          "Delete an individual file: '{public_file_path}'.")
 
-        #expected_data = {'reason': 'deleted file'}
-        #self.assertDictEqual(json.loads(response.data), expected_data)
+        # expected_data = {'reason': 'deleted file'}
+        # self.assertDictEqual(json.loads(response.data), expected_data)
 
         # Now try to break delete
 
@@ -717,7 +713,7 @@ class TestUploadAPIRoutes(TestCase):
             [auth.scopes.READ_UPLOAD.as_global(),
              auth.scopes.WRITE_UPLOAD.as_global(),
              auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()]
-         )
+        )
 
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
                                       headers={'Authorization': admin_token}
@@ -983,7 +979,7 @@ class TestUploadAPIRoutes(TestCase):
 
         # Done test
 
-    # Upload a submission package
+    # Upload a submission package and perform normal operations on upload
     def test_upload_files_normal(self) -> None:
         """Test normal well-behaved upload requests.
 
@@ -1046,6 +1042,11 @@ class TestUploadAPIRoutes(TestCase):
             self.fail(e)
 
         upload_data: Dict[str, Any] = json.loads(response.data)
+
+        # Check that upload_total_size is in summary response
+        self.assertIn('upload_total_size', upload_data, "Returns total upload size.")
+        self.assertEqual(upload_data['upload_total_size'], 275781,
+                         "Expected total upload size matches")
 
         # Get summary of upload
 
@@ -1144,6 +1145,27 @@ class TestUploadAPIRoutes(TestCase):
         else:
             print(f"DELETED FILE NOT FOUND (Right Answer!): '{public_file_path}'")
 
+        # Now check to see if size total upload size decreased
+        # Get summary and check upload_total_size
+        response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}",
+                                   headers={'Authorization': token})
+
+        self.assertEqual(response.status_code, 200, "File summary.")
+        try:
+            jsonschema.validate(json.loads(response.data), result_schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+        # Check that upload_total_size is in summary response
+        self.assertIn('upload_total_size', upload_data, "Returns total upload size.")
+        self.assertNotEqual(upload_data['upload_total_size'], 275781,
+                            "Expected total upload size should not match "
+                            "pre - delete total")
+        # upload total size is deffinitely smaller than original 275781 bytes
+        # after we deleted a few files.
+        self.assertEqual(upload_data['upload_total_size'], 237116,
+                         "Expected smaller total upload size.")
 
         # Delete all files in my workspace (normal)
         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
@@ -1152,6 +1174,27 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertEqual(response.status_code, 204, "Delete all user-uploaded files.")
 
+        # Finally, after deleting all files, check the total upload size
+
+        # Get summary and check upload_total_size
+        response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}",
+                                   headers={'Authorization': token})
+
+        self.assertEqual(response.status_code, 200, "File summary.")
+        try:
+            jsonschema.validate(json.loads(response.data), result_schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+        # Check that upload_total_size is in summary response
+        self.assertIn('upload_total_size', upload_data, "Returns total upload size.")
+
+        # upload total size is definitely smaller than original 275781 bytes
+        # after we deleted everything we uploaded!!
+        self.assertEqual(upload_data['upload_total_size'], 0,
+                         "Expected smaller total upload size after deleting all files.")
 
         # Delete the workspace
 
@@ -1167,3 +1210,5 @@ class TestUploadAPIRoutes(TestCase):
         # This cleans out the workspace. Comment out if you want to inspect files
         # in workspace. Source log is saved to 'deleted_workspace_logs' directory.
         self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
+
+        # At this point workspace has been removed/deleted.

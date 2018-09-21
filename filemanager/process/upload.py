@@ -19,7 +19,6 @@ from arxiv.base.globals import get_application_config
 from filemanager.arxiv.file import File as File
 from filemanager.utilities.unpack import unpack_archive
 
-
 UPLOAD_FILE_EMPTY = 'file payload is zero length'
 UPLOAD_DELETE_FILE_FAILED = 'unable to delete file'
 UPLOAD_DELETE_ALL_FILE_FAILED = 'unable to delete all file'
@@ -62,9 +61,16 @@ submitter."""
         self.__warnings = []
         self.__errors = []
         self.__files = []
+
+        # total client upload workspace source directory size (in bytes)
+        self.__total_upload_size = 0
+
         self.__log = ''
         self.create_upload_workspace()
         self.create_upload_log()
+        # Calculate size just in case client is making request that does
+        # not upload or delete files. Those requests update total size.
+        self.calculate_client_upload_size()
 
     # Files
 
@@ -110,7 +116,7 @@ submitter."""
 
         # Add to internal list to make it easier to manipulate
         entry = [public_filepath, msg]
-        #self.__warnings.append(msg)
+        # self.__warnings.append(msg)
         self.__warnings.append(entry)
 
     def has_warnings(self):
@@ -242,6 +248,9 @@ submitter."""
         # Add reason for removal to File object
         file.remove(msg)
 
+        # We won't recalculate size here because we know total size will be
+        # recalculated after all file checks (uses this routine) are complete.
+
     def remove_workspace(self) -> bool:
         """Remove upload workspace. This request completely removes the upload
         workspace directory. No backup is made here (system backups may have files
@@ -285,10 +294,7 @@ submitter."""
         if os.path.exists(workspace_directory):
             shutil.rmtree(workspace_directory)
 
-
         return True
-
-
 
     def client_remove_file(self, public_file_path: str) -> bool:
         """Delete a single file.
@@ -372,20 +378,19 @@ submitter."""
             removed_path = os.path.join(self.get_removed_directory(), clean_public_path)
             self.log(f"Delete file: '{filename}'")
 
-
             if shutil.move(file_path, removed_path):
-                # lmsg = "*** File " + file.name + f" has been removed. Reason: {msg} ***"
-                #lmsg = f"Removed hidden file {file.name}."
-                #self.add_warning(file.public_filepath, lmsg)
                 self.log(f"Moved file from {file_path} to {removed_path}")
                 return True
             else:
                 self.log(f"*** FAILED to remove file '{file_path}'/{clean_public_path} ***")
                 return False
+
+            # Recalculate total upload workspace source directory size
+            self.calculate_client_upload_size()
+
         else:
             self.log(f"File to delete not found: '{public_file_path}' '{filename}'")
             raise NotFound(UPLOAD_FILE_NOT_FOUND)
-
 
     def client_remove_all_files(self) -> bool:
         """Delete all files uploaded by client from specified workspace.
@@ -419,6 +424,8 @@ submitter."""
                 self.log(f"Error while removing all files: '{rme}'")
                 raise
 
+        # Recalculate total upload workspace source directory size
+        self.calculate_client_upload_size()
 
     def get_upload_directory(self) -> str:
         """
@@ -508,7 +515,7 @@ submitter."""
         """Create a source log to record activity for this upload."""
         # Grab standard logger and customized it
         logger = logging.getLogger(__name__)
-        #log_path = os.path.join(self.get_upload_directory(), 'source.log')
+        # log_path = os.path.join(self.get_upload_directory(), 'source.log')
         log_path = self.get_upload_source_log_path()
         file_handler = logging.FileHandler(log_path)
 
@@ -553,9 +560,9 @@ submitter."""
         if basename != filename:
             self.log(f'Secured filename: {filename} (basename + )')
 
-        if ancillary:   # Put the file in the ancillary directory.
+        if ancillary:  # Put the file in the ancillary directory.
             src_directory = self.get_ancillary_directory()
-        else:   # Store uploaded file/archive in source directory
+        else:  # Store uploaded file/archive in source directory
             src_directory = self.get_source_directory()
 
         upload_path = os.path.join(src_directory, filename)
@@ -928,9 +935,60 @@ submitter."""
         self.log(f'Looking for uu attachment in {file_name} of type {file_type}')
         self.log(f"I'm sorry Dave I'm afraid I can't do that. uu extract not implemented YET.")
 
-    def check_size(self):
-        """Check the uploaded files against individual and aggregate size limitations."""
-        self.log('Coming soon! Check total file size is not implemented yet!')
+    @property
+    def total_upload_size(self) -> int:
+        """
+        Total size of client's uploaded content. This only refers to client
+        files stored in workspace source subdirectory. This does not include
+        backups, removed files/archives, or log files.
+
+        Returns
+        -------
+        Total upload workspace in bytes.
+        """
+        return self.__total_upload_size
+
+    @total_upload_size.setter
+    def total_upload_size(self, total_size: int) -> None:
+        """
+        Set total submission size.
+
+        Parameters
+        ----------
+        total_size in bytes
+
+        """
+        self.__total_upload_size = total_size
+
+    def calculate_client_upload_size(self):
+        """
+        Calculate total size of client's upload workspace source files.
+
+
+        Returns
+        -------
+
+        """
+
+        # Calculate total upload workspace source directory size.
+        source_directory = self.get_source_directory()
+
+        total_upload_size = 0
+
+        list = []
+        for root_directory, directories, files in os.walk(source_directory):
+            for file in files:
+                path = os.path.join(root_directory, file)
+                obj = File(path, source_directory)
+
+                total_upload_size += obj.size
+
+        total_upload_size_kb = total_upload_size / 1024.0
+        total_upload_size_kb_str = '{:.2f}'.format(total_upload_size_kb)
+        self.log(f'Total upload workspace size is {total_upload_size_kb_str} KB.')
+
+        # Record total submission size
+        self.total_upload_size = total_upload_size
 
     def create_file_list(self) -> list:
         """Create list of File objects with details of each file in
@@ -1008,8 +1066,7 @@ submitter."""
                     'type': fileObj.type_string,
                     'modified_datetime': fileObj.modified_datetime
                 }
-                #if fileObj.removed:
-                #    file_details['removed'] = fileObj.removed
+
                 if not fileObj.removed:
                     file_list.append(file_details)
 
@@ -1148,7 +1205,7 @@ submitter."""
         self.check_files()
 
         # Check total file size
-        self.check_size()
+        self.calculate_client_upload_size()
 
         # Final cleanup
         self.finalize_upload()
@@ -1217,7 +1274,6 @@ submitter."""
                 hash_md5.update(chunk)
         return b64encode(hash_md5.digest()).decode('utf-8')
 
-
     @classmethod
     def checksum(cls, filepath: str):
         """
@@ -1243,9 +1299,8 @@ submitter."""
         else:
             return ""
 
-
     @classmethod
-    def get_open_file_pointer(cls, filepath : str):
+    def get_open_file_pointer(cls, filepath: str):
         """
         Open specified file and return file pointer.
 
