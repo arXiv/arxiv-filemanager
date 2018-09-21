@@ -296,6 +296,67 @@ submitter."""
 
         return True
 
+    def resolve_public_file_path(self, public_file_path: str) -> str:
+        """
+        Resolve a relative file path to an absolute file path.
+
+        Returns
+        -------
+        Null if file does not exist.
+        Otherwise returns fully qualified path to content file.
+
+        """
+        # Sanitize file name
+        filename = secure_filename(public_file_path)
+
+        # Our UI will never attempt to delete a file path containing components that attempt
+        # to escape out of workspace and this would be removed by secure_filename().
+        # This error must be propagated to wider notification level beyond source log.
+        if re.search(r'^/|^\.\./|\.\./', public_file_path):
+            # should never start with '/' or '../' or contain '..' anywhere in path.
+            message = f"SECURITY WARNING: file to delete contains illegal constructs: '{public_file_path}'"
+            self.log(message)
+            raise SecurityError(message)
+
+        # Secure filename should not change length of valid file path (but it will
+        # mess with directory slashes '/')
+        # TODO: Come up with better file path checker. We allow subdirectories
+        # TODO: and secure_filename strips them (/ => _)
+        # The length of file path should not change (need to check secure_filename)
+        # so if length changes generate warning.
+        if len(public_file_path) != len(filename):
+            message = f"SECURITY WARNING: sanitized file is different length: '{filename}' <=> '{public_file_path}'"
+            self.log(message)
+            raise SecurityError(message)
+
+        # Resolve relative path of file to filesystem
+        src_directory = self.get_source_directory()
+        file_path = os.path.join(src_directory, filename)
+
+        # secure_filename will eliminate '/' making paths to subdirectories
+        # impossible to resolve. Make assumption we caught bad actors with checks above.
+
+        # Check if original path might be subdirectory.
+        # We've made it past serious threat checks above.
+        if not os.path.exists(file_path) and re.search(r'_', filename) and re.search(r'/', public_file_path):
+            if len(filename) == len(public_file_path):
+                # May be issue of directory delimiter converted to '_'
+                # Check if raw path exists
+                check_path = os.path.join(src_directory, public_file_path)
+                if os.path.exists(check_path):
+                    self.log(f"Path appears to be valid and contain "
+                             + f"subdirectory: '{public_file_path}' <=> '{filename}'")
+                    # TODO: Can someone hurt us here? Is it now safe to use original
+                    # TODO: path or should I edit 'secure' path. I believe what I'm doing is ok.
+                    file_path = check_path
+                    filename = public_file_path
+
+        if os.path.exists(file_path):
+            return file_path
+        else:
+            return ""
+
+
     def client_remove_file(self, public_file_path: str) -> bool:
         """Delete a single file.
 
@@ -322,6 +383,8 @@ submitter."""
 
         # Check whether client is trying to damage system with invalid path
 
+        # TODO: Switch to use resolve relative file path to eliminate duplicate code
+
         # Sanitize file name
         filename = secure_filename(public_file_path)
 
@@ -345,7 +408,7 @@ submitter."""
             self.log(message)
             raise SecurityError(message)
 
-        # Resolve reletive path of file to filesystem
+        # Resolve relative path of file to filesystem
         src_directory = self.get_source_directory()
         file_path = os.path.join(src_directory, filename)
 
@@ -1224,6 +1287,16 @@ submitter."""
         """
         return os.path.join(self.get_upload_directory(),
                             f'{self.upload_id}.tar.gz')
+
+    def get_content_file_path(self, public_file_path: str) -> str:
+        """
+        Return the absolute path of content file given relative pointer.
+
+        Returns
+        -------
+        Null if file does not exist.
+        """
+        return self.resolve_public_file_path(public_file_path)
 
     def pack_content(self) -> str:
         """Pack the entire source directory into a tarball."""
