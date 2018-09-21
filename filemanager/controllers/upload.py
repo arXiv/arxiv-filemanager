@@ -524,6 +524,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
 
             response_data = {
                 'upload_id': upload_db_data.upload_id,
+                'upload_total_size':upload_workspace.total_upload_size,
                 'created_datetime': upload_db_data.created_datetime,
                 'modified_datetime': upload_db_data.modified_datetime,
                 'start_datetime': upload_db_data.lastupload_start_datetime,
@@ -599,7 +600,6 @@ def upload_summary(upload_id: int) -> Response:
 
             details_list = []
             for fileObj in file_list:
-                print(type(fileObj.modified_datetime))
                 file_details = {
                     'name': fileObj.name,
                     'public_filepath': fileObj.public_filepath,
@@ -614,6 +614,7 @@ def upload_summary(upload_id: int) -> Response:
             status_code = status.HTTP_200_OK
             response_data = {
                 'upload_id': upload_db_data.upload_id,
+                'upload_total_size': upload_workspace.total_upload_size,
                 'created_datetime': upload_db_data.created_datetime,
                 'modified_datetime': upload_db_data.modified_datetime,
                 'start_datetime': upload_db_data.lastupload_start_datetime,
