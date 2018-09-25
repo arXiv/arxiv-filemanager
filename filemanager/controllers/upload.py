@@ -6,6 +6,9 @@ from pytz import UTC
 import json
 import logging
 import os.path
+from hashlib import md5
+from base64 import b64encode
+import io
 
 from werkzeug.exceptions import NotFound, BadRequest, InternalServerError, \
     NotImplemented, SecurityError, Forbidden
@@ -910,25 +913,15 @@ def check_upload_content_exists(upload_id: int) -> Response:
     logger.info("%s: Upload content summary request.", upload_id)
     upload_workspace = filemanager.process.upload.Upload(upload_id)
 
-    # We need content path in order to collect additional size/modified metadata
-    content_path = upload_workspace.get_content_path()
-    checksum = ''
+    # This will potentially build content package if it does not exist
+    checksum = upload_workspace.content_checksum()
     modified = ''
     size = 0
 
-    # If content package doesn't exist it's difficult to calculate
-    # the checksum or for it ever to show it exists via the HEAD
-    # request.
-    if not os.path.exists(content_path):
-        # At least try to build content package, we don't do much
-        # error checking at this point.
-        upload_workspace.pack_content()
-
-    # Let's return size and last modification date
-    if os.path.exists(content_path):
-        size = os.path.getsize(content_path)
-        modified = upload_workspace.last_modified_file(content_path)
-        checksum = upload_workspace.content_checksum()
+    # Double check package exists
+    if upload_workspace.content_package_exists:
+        modified = upload_workspace.content_package_modified
+        size = upload_workspace.content_package_size
         return {}, status.HTTP_200_OK, {'ETag': checksum,
                                         'Content-Length': size,
                                         'Last-Modified': modified
@@ -977,20 +970,15 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
 
         upload_workspace = filemanager.process.upload.Upload(upload_id)
 
-        # Returns path if file exists
-        path_to_file = upload_workspace.get_content_file_path(public_file_path)
-
-        checksum = ''
-
-
-        if path_to_file:
-            size = os.path.getsize(path_to_file)
-            modified = upload_workspace.last_modified_file(path_to_file)
-            checksum = upload_workspace.checksum(path_to_file)
+        # file exists
+        if upload_workspace.content_file_exists(public_file_path):
+            size = upload_workspace.content_file_size(public_file_path)
+            modified = upload_workspace.content_file_last_modified(public_file_path)
+            checksum = upload_workspace.content_file_checksum(public_file_path)
             return {}, status.HTTP_200_OK, {'ETag': checksum,
-                                        'Content-Length': size,
-                                        'Last-Modified': modified
-                                        }
+                                            'Content-Length': size,
+                                            'Last-Modified': modified
+                                            }
         else:
             raise NotFound(f"File '{public_file_path}' not found.")
 
@@ -1012,7 +1000,6 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
         logger.info("Unknown error in delete file. "
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
-
 
     return {}, status.HTTP_200_OK, {'ETag': checksum}
 
@@ -1053,23 +1040,11 @@ def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
         upload_workspace = filemanager.process.upload.Upload(upload_id)
 
         # Returns path if file exists
-        path_to_file = upload_workspace.get_content_file_path(public_file_path)
-
-        checksum = ''
-        size = 0
-        modified = ''
-        filepointer = ''
-        headers = {
-            "Content-disposition": "",
-            'ETag': ''
-        }
-
-
-        if path_to_file:
-            size = os.path.getsize(path_to_file)
-            modified = upload_workspace.last_modified_file(path_to_file)
-            checksum = upload_workspace.checksum(path_to_file)
-            filepointer = upload_workspace.get_open_file_pointer(path_to_file)
+        if upload_workspace.content_file_exists(public_file_path):
+            size = upload_workspace.content_file_size(public_file_path)
+            modified = upload_workspace.content_file_last_modified(public_file_path)
+            checksum = upload_workspace.content_file_checksum(public_file_path)
+            filepointer = upload_workspace.content_file_pointer(public_file_path)
             headers = {
                 "Content-disposition": f"filename={filepointer.name}",
                 'ETag': checksum,
@@ -1097,7 +1072,6 @@ def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
         logger.info("Unknown error in delete file. "
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
-
 
     return filepointer, status.HTTP_200_OK, headers
 
@@ -1134,11 +1108,10 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
 
     logger.info("%s: Test for source log.", upload_id)
     upload_workspace = filemanager.process.upload.Upload(upload_id)
-    source_log_path = upload_workspace.get_upload_source_log_path()
 
-    checksum = upload_workspace.checksum(source_log_path)
-    size = os.path.getsize(source_log_path)
-    modified = upload_workspace.last_modified_file(source_log_path)
+    checksum = upload_workspace.source_log_checksum
+    size = upload_workspace.source_log_size
+    modified = upload_workspace.source_log_last_modofied
 
     return {}, status.HTTP_200_OK, {'ETag': checksum,
                                     'Content-Length': size,
@@ -1168,18 +1141,53 @@ def get_upload_source_log(upload_id: int) -> Response:
 
     upload_workspace = filemanager.process.upload.Upload(upload_id)
 
-    source_log_path = upload_workspace.get_upload_source_log_path()
-    checksum = filemanager.process.upload.Upload.checksum(source_log_path)
-    size = os.path.getsize(source_log_path)
-    modified = upload_workspace.last_modified_file(source_log_path)
-    filepointer = upload_workspace.get_open_file_pointer(source_log_path)
+    checksum = upload_workspace.source_log_checksum
+    size = upload_workspace.source_log_size
+    modified = upload_workspace.source_log_last_modofied
+
+    filepointer = upload_workspace.source_log_file_pointer()
+    if filepointer:
+        name = filepointer.name
+    else:
+        name = ""
+
+
     headers = {
-        "Content-disposition": f"filename={filepointer.name}",
+        "Content-disposition": f"filename={name}",
         'ETag': checksum,
         'Content-Length': size,
         'Last-Modified': modified
     }
     return filepointer, status.HTTP_200_OK, headers
+
+
+# Service log routine + support routine
+
+def __checksum(filepath: str) -> str:
+    """Return b64-encoded MD5 hash of file."""
+
+    if os.path.exists(filepath):
+        hash_md5 = md5()
+        with open(filepath, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+        return b64encode(hash_md5.digest()).decode('utf-8')
+    else:
+        return ""
+
+
+def __last_modified(filepath: str) -> str:
+    """Return last modified time of file. """
+
+    return datetime.utcfromtimestamp(os.path.getmtime(filepath))
+
+def __content_pointer(service_log_path) -> io.BytesIO:
+        """Get a file-pointer for service log."""
+
+        if os.path.exists(service_log_path):
+            return open(service_log_path, 'rb')
+        else:
+            return ""
 
 
 def check_upload_service_log_exists() -> Response:
@@ -1197,9 +1205,9 @@ def check_upload_service_log_exists() -> Response:
     logger.info("%s: Check whether upload service log exists.")
 
     # service_log_path is global set during startup log init
-    checksum = filemanager.process.upload.Upload.checksum(service_log_path)
+    checksum = __checksum(service_log_path)
     size = os.path.getsize(service_log_path)
-    modified = filemanager.process.upload.Upload.last_modified_file(service_log_path)
+    modified = __last_modified(service_log_path)
     return {}, status.HTTP_200_OK, {'ETag': checksum,
                                     'Content-Length': size,
                                     'Last-Modified': modified
@@ -1217,10 +1225,10 @@ def get_upload_service_log() -> Response:
     """
 
     # service_log_path is global set during startup log init
-    checksum = filemanager.process.upload.Upload.checksum(service_log_path)
+    checksum = __checksum(service_log_path)
     size = os.path.getsize(service_log_path)
-    modified = filemanager.process.upload.Upload.last_modified_file(service_log_path)
-    filepointer = filemanager.process.upload.Upload.get_open_file_pointer(service_log_path)
+    modified = __last_modified(service_log_path)
+    filepointer = __content_pointer(service_log_path)
     headers = {
         "Content-disposition": f"filename={filepointer.name}",
         'ETag': checksum,
