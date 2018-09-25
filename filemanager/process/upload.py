@@ -296,9 +296,12 @@ submitter."""
 
         return True
 
-    def resolve_public_file_path(self, public_file_path: str) -> str:
+    def resolve_public_file_path(self, public_file_path: str) -> File:
         """
-        Resolve a relative file path to an absolute file path.
+        Resolve a relative file path to a arXiv File object.
+
+        Note: We are being very cautious here and spending most of this routine
+        checking for deviant relevant file paths.
 
         Returns
         -------
@@ -330,8 +333,8 @@ submitter."""
             raise SecurityError(message)
 
         # Resolve relative path of file to filesystem
-        src_directory = self.get_source_directory()
-        file_path = os.path.join(src_directory, filename)
+        source_directory = self.get_source_directory()
+        file_path = os.path.join(source_directory, filename)
 
         # secure_filename will eliminate '/' making paths to subdirectories
         # impossible to resolve. Make assumption we caught bad actors with checks above.
@@ -342,7 +345,7 @@ submitter."""
             if len(filename) == len(public_file_path):
                 # May be issue of directory delimiter converted to '_'
                 # Check if raw path exists
-                check_path = os.path.join(src_directory, public_file_path)
+                check_path = os.path.join(source_directory, public_file_path)
                 if os.path.exists(check_path):
                     self.log(f"Path appears to be valid and contain "
                              + f"subdirectory: '{public_file_path}' <=> '{filename}'")
@@ -351,11 +354,13 @@ submitter."""
                     file_path = check_path
                     filename = public_file_path
 
+        # We have a file path that exists
         if os.path.exists(file_path):
-            return file_path
+            # Build arguments for File object
+            file_obj = File(file_path, source_directory)
+            return file_obj
         else:
-            return ""
-
+            return None
 
     def client_remove_file(self, public_file_path: str) -> bool:
         """Delete a single file.
@@ -1277,7 +1282,7 @@ submitter."""
 
         self.log(f'\n******** Errors: {self.has_errors()} *****\n\n')
 
-    # Content
+    # Content package routines
 
     def get_content_path(self) -> str:
         """
@@ -1287,16 +1292,6 @@ submitter."""
         """
         return os.path.join(self.get_upload_directory(),
                             f'{self.upload_id}.tar.gz')
-
-    def get_content_file_path(self, public_file_path: str) -> str:
-        """
-        Return the absolute path of content file given relative pointer.
-
-        Returns
-        -------
-        Null if file does not exist.
-        """
-        return self.resolve_public_file_path(public_file_path)
 
     def pack_content(self) -> str:
         """Pack the entire source directory into a tarball."""
@@ -1330,6 +1325,10 @@ submitter."""
         )
 
     @property
+    def content_package_size(self) -> int:
+        return os.path.getsize(self.get_content_path())
+
+    @property
     def content_package_stale(self) -> bool:
         return self.last_modified > self.content_package_modified
 
@@ -1347,8 +1346,66 @@ submitter."""
                 hash_md5.update(chunk)
         return b64encode(hash_md5.digest()).decode('utf-8')
 
-    @classmethod
-    def checksum(cls, filepath: str):
+    # Content file routines
+
+    def content_file_path(self, public_file_path: str) -> str:
+        """
+        Return the absolute path of content file given relative pointer.
+
+        Returns
+        -------
+        Null if file does not exist.
+        """
+        file_obj = self.resolve_public_file_path(public_file_path)
+
+        if file_obj is not None:
+            return file_obj.filepath
+        else:
+            return ""
+
+    def content_file_exists(self, public_file_path: str) -> bool:
+        """
+        Indicate whether files exists.
+
+        Parameters
+        ----------
+        public_file_path : str
+            Relative path of file in upload workspace.
+
+        Returns
+        -------
+        True if file exists, False otherwise.
+
+        """
+
+        file_obj = self.resolve_public_file_path(public_file_path)
+
+        if file_obj is not None:
+            return os.path.exists(file_obj.filepath)
+        else:
+            return False
+
+    def content_file_size(self, public_file_path: str) -> int:
+        """
+        Return size of specified file.
+
+        Parameters
+        ----------
+        public_file_path
+
+        Returns
+        -------
+
+        """
+        file_obj = self.resolve_public_file_path(public_file_path)
+
+        if file_obj is not None:
+            return file_obj.size
+        else:
+            return 0
+
+
+    def content_file_checksum(self, public_file_path: str) -> str:
         """
         Generic routine to calculate checksum for arbitrary file argument.
 
@@ -1363,17 +1420,15 @@ submitter."""
         return b64-encoded MD5 hash of the specified file.
 
         """
-        if os.path.exists(filepath):
-            hash_md5 = md5()
-            with open(filepath, "rb") as f:
-                for chunk in iter(lambda: f.read(4096), b""):
-                    hash_md5.update(chunk)
-            return b64encode(hash_md5.digest()).decode('utf-8')
+
+        file_obj = self.resolve_public_file_path(public_file_path)
+
+        if file_obj is not None:
+            return file_obj.checksum
         else:
             return ""
 
-    @classmethod
-    def get_open_file_pointer(cls, filepath: str):
+    def content_file_pointer(self, public_file_path: str) -> io.BytesIO:
         """
         Open specified file and return file pointer.
 
@@ -1386,13 +1441,15 @@ submitter."""
         File pointer or Null string when filepath does not exist.
 
         """
-        if os.path.exists(filepath):
-            return open(filepath, 'rb')
+
+        file_obj = self.resolve_public_file_path(public_file_path)
+
+        if file_obj is not None and os.path.exists(file_obj.filepath):
+            return open(file_obj.filepath, 'rb')
         else:
             return ""
 
-    @classmethod
-    def last_modified_file(cls, filepath: str) -> datetime:
+    def content_file_last_modified(self, public_file_path: str) -> datetime:
         """
         Return last modified time for specified file/package.
         Parameters
@@ -1403,4 +1460,83 @@ submitter."""
         -------
 
         """
-        return datetime.utcfromtimestamp(os.path.getmtime(filepath))
+        file_obj = self.resolve_public_file_path(public_file_path)
+
+        print(f"File modified: {file_obj.modified_datetime}")
+        dt = datetime.utcfromtimestamp(os.path.getmtime(file_obj.filepath))
+        print(f"New File modified: {dt}")
+        return datetime.utcfromtimestamp(os.path.getmtime(file_obj.filepath))
+
+    # Source log methods
+
+    @property
+    def source_log_exists(self) -> bool:
+        """
+        Indicate whether source log exists.
+
+        Returns
+        -------
+        True if source log file exists, otherwise returns False.
+
+        """
+        source_log_path = self.get_upload_source_log_path()
+
+        return os.path.exists(source_log_path)
+
+    @property
+    def source_log_size(self) -> int:
+        """
+        Return size of source log.
+
+        Returns
+        -------
+        Size in bytes.
+
+        """
+        source_log_path = self.get_upload_source_log_path()
+        return os.path.getsize(source_log_path)
+
+    @property
+    def source_log_last_modofied(self) -> str:
+        """
+        Last modified date of source log (UTC).
+
+        Returns
+        -------
+
+        """
+        source_log_path = self.get_upload_source_log_path()
+        return datetime.utcfromtimestamp(os.path.getmtime(source_log_path))
+
+    @property
+    def source_log_checksum(self) -> str:
+        """
+        Return checksum for source log.
+
+        Returns
+        -------
+        Returns Null string if file does not exist otherwise
+        return b64-encoded MD5 hash of the specified file.
+
+        """
+
+        source_log_path = self.get_upload_source_log_path()
+
+        if os.path.exists(source_log_path):
+            hash_md5 = md5()
+            with open(source_log_path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_md5.update(chunk)
+            return b64encode(hash_md5.digest()).decode('utf-8')
+        else:
+            return ""
+
+    def source_log_file_pointer(self) -> io.BytesIO:
+        """Get a file-pointer for source log."""
+
+        source_log_path = self.get_upload_source_log_path()
+        print(f"SOURCE LOG PATH: {source_log_path}")
+        if os.path.exists(source_log_path):
+            return open(source_log_path, 'rb')
+        else:
+            return ""
