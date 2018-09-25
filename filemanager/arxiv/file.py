@@ -6,7 +6,8 @@ import os.path
 import re
 from datetime import datetime
 from pytz import UTC
-
+from hashlib import md5
+from base64 import b64encode
 from arxiv.base import logging
 
 from filemanager.arxiv.file_type import guess, _is_tex_type, name
@@ -139,6 +140,28 @@ class File:
     def sha256sum(self) -> str:
         """Calculate sha256 Checksum."""
         return 'NOT IMPLEMENTED YET'
+
+    @property
+    def checksum(self) -> str:
+        """
+        Calculate MD5 checksum for file.
+
+        Returns
+        -------
+        Returns Null string if file does not exist otherwise
+        return b64-encoded MD5 hash of the specified file.
+
+        """
+
+        if os.path.exists(self.filepath):
+            hash_md5 = md5()
+            with open(self.filepath, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_md5.update(chunk)
+            return b64encode(hash_md5.digest()).decode('utf-8')
+        else:
+            return ""
+
 
     @property
     def description(self) -> str:
