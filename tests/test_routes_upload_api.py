@@ -423,6 +423,100 @@ class TestUploadAPIRoutes(TestCase):
         # Highlight log download. Remove at some point.
         print(f"FYI: SAVED SERVICE LOG FILE TO DISK AT: {log_path}\n")
 
+    def test_individual_file_content_download(self) -> None:
+        """
+        Test download of individual content files.
+
+        Try our best to break things.
+
+        """
+        # Create a token for writing to upload workspace
+        token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                          auth.scopes.WRITE_UPLOAD,
+                                          auth.scopes.DELETE_UPLOAD_FILE])
+
+        # Upload a gzipped tar archive package containing files to delete.
+        cwd = os.getcwd()
+        testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
+        upload_package_name = 'upload2.tar.gz'
+        filepath = os.path.join(testfiles_dir, upload_package_name)
+        # Prepare gzipped tar submission for upload
+        filename = os.path.basename(filepath)
+
+        # Upload some files so we can delete them
+        # response = self.client.post('/filemanager/api/',
+        response = self.client.post('/filemanager/api/',
+                                    data={
+                                        'file': (open(filepath, 'rb'), filename),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+
+        # Check if content file exists
+        response = self.client.head(
+            f"/filemanager/api/{upload_data['upload_id']}/main_a.tex/content",
+            headers={'Authorization': token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+        # Download content file
+        response = self.client.get(
+            f"/filemanager/api/{upload_data['upload_id']}/main_a.tex/content",
+            headers={'Authorization': token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+        workdir = tempfile.mkdtemp()
+
+        # Write out file (to save temporary directory where we saved source_log)
+        log_path = os.path.join(workdir, "main_a.tex")
+        fileH = open(log_path, 'wb')
+        fileH.write(response.data)
+
+        print(f'List downloaded content directory: {workdir}\n')
+        print(os.listdir(workdir))
+
+
+        # Test for file that doesn't exist
+        response = self.client.head(
+            f"/filemanager/api/{upload_data['upload_id']}/doesntexist.tex/content",
+            headers={'Authorization': token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND,
+                         "Trying to check non-existent should fail.")
+        #self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+        # Try to download non-existent file anyways
+        response = self.client.get(
+            f"/filemanager/api/{upload_data['upload_id']}/doesntexist.tex/content",
+            headers={'Authorization': token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+        # Try to be naughty and download something outside of workspace
+
+        # Assume these crazy developers stick their workspaces in an obvious
+        # place like /tmp/filemanagement/submissions/<upload_id>
+        crazy_path = "../../../etc/passwd"
+        quote_crazy_path = quote(crazy_path, safe='')
+        response = self.client.head(
+            f"/filemanager/api/{upload_data['upload_id']}/{quote_crazy_path}/content",
+            headers={'Authorization': token}
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND,
+                         "Trying to check non-existent should fail.")
+
+
     def test_delete_file(self) -> None:
         """
         Test delete file operation.
@@ -1047,6 +1141,7 @@ class TestUploadAPIRoutes(TestCase):
         self.assertIn('upload_total_size', upload_data, "Returns total upload size.")
         self.assertEqual(upload_data['upload_total_size'], 275781,
                          "Expected total upload size matches")
+
 
         # Get summary of upload
 

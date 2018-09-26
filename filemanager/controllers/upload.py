@@ -6,6 +6,9 @@ from pytz import UTC
 import json
 import logging
 import os.path
+from hashlib import md5
+from base64 import b64encode
+import io
 
 from werkzeug.exceptions import NotFound, BadRequest, InternalServerError, \
     NotImplemented, SecurityError, Forbidden
@@ -31,6 +34,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 
+
 def _get_service_logs_directory() -> str:
     """
     Return path to service logs directory. We may eventually
@@ -43,6 +47,7 @@ def _get_service_logs_directory() -> str:
     """
     config = get_application_config()
     return config.get('UPLOAD_SERVICE_LOG_DIRECTORY', '')
+
 
 service_log_path = os.path.join(_get_service_logs_directory(), 'upload.log')
 
@@ -524,7 +529,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
 
             response_data = {
                 'upload_id': upload_db_data.upload_id,
-                'upload_total_size':upload_workspace.total_upload_size,
+                'upload_total_size': upload_workspace.total_upload_size,
                 'created_datetime': upload_db_data.created_datetime,
                 'modified_datetime': upload_db_data.modified_datetime,
                 'start_datetime': upload_db_data.lastupload_start_datetime,
@@ -609,7 +614,6 @@ def upload_summary(upload_id: int) -> Response:
                 }
                 if not fileObj.removed:
                     details_list.append(file_details)
-
 
             status_code = status.HTTP_200_OK
             response_data = {
@@ -890,6 +894,7 @@ def upload_unrelease(upload_id: int) -> Response:
 
     return response_data, status_code, {}
 
+
 # Content download controllers
 
 def check_upload_content_exists(upload_id: int) -> Response:
@@ -907,8 +912,23 @@ def check_upload_content_exists(upload_id: int) -> Response:
 
     logger.info("%s: Upload content summary request.", upload_id)
     upload_workspace = filemanager.process.upload.Upload(upload_id)
+
+    # This will potentially build content package if it does not exist
     checksum = upload_workspace.content_checksum()
+    modified = ''
+    size = 0
+
+    # Double check package exists
+    if upload_workspace.content_package_exists:
+        modified = upload_workspace.content_package_modified
+        size = upload_workspace.content_package_size
+        return {}, status.HTTP_200_OK, {'ETag': checksum,
+                                        'Content-Length': size,
+                                        'Last-Modified': modified
+                                        }
+
     return {}, status.HTTP_200_OK, {'ETag': checksum}
+
 
 def get_upload_content(upload_id: int) -> Response:
     """Package up files for downloading as a compressed gzipped tar file."""
@@ -931,6 +951,129 @@ def get_upload_content(upload_id: int) -> Response:
     return filepointer, status.HTTP_200_OK, headers
 
 
+def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> Response:
+    """Verify that the specified content file exists/is available."""
+
+    try:
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+    except IOError:
+        logger.error("%s: ContentFileExistsCheck: There was a problem connecting to database.",
+                     upload_db_data.upload_id)
+        raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
+
+    if upload_db_data is None:
+        raise NotFound(UPLOAD_NOT_FOUND)
+
+    logger.info("%s: Upload content file exissts request.", upload_id)
+
+    try:
+
+        upload_workspace = filemanager.process.upload.Upload(upload_id)
+
+        # file exists
+        if upload_workspace.content_file_exists(public_file_path):
+            size = upload_workspace.content_file_size(public_file_path)
+            modified = upload_workspace.content_file_last_modified(public_file_path)
+            checksum = upload_workspace.content_file_checksum(public_file_path)
+            return {}, status.HTTP_200_OK, {'ETag': checksum,
+                                            'Content-Length': size,
+                                            'Last-Modified': modified
+                                            }
+        else:
+            raise NotFound(f"File '{public_file_path}' not found.")
+
+    except IOError:
+        logger.error("%s: Delete file request failed ", upload_db_data.upload_id)
+        raise InternalServerError(CANT_DELETE_FILE)
+    except NotFound as nf:
+        logger.info("%s: DeleteFile: %s", upload_id, nf)
+        raise nf
+    except SecurityError as secerr:
+        logger.info("%s: %s", upload_id, secerr.description)
+        # TODO: Should this be BadRequest or NotFound. I'm leaning towards
+        # NotFound in order to provide as little feedback as posible to client.
+        raise NotFound(UPLOAD_FILE_NOT_FOUND)
+    except Forbidden as forb:
+        logger.info("%s: Delete file forbidden: %s.", upload_id, forb)
+        raise forb
+    except Exception as ue:
+        logger.info("Unknown error in delete file. "
+                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+
+    return {}, status.HTTP_200_OK, {'ETag': checksum}
+
+
+def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
+    """
+
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for the upload_db_data in question.
+    public_file_path: str
+        relative path of file to be deleted.
+
+    Returns
+    -------
+    dict
+        Complete summary of upload processing.
+    int
+        An HTTP status code.
+    dict
+        Some extra headers to add to the response.
+
+    """
+
+    try:
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+    except IOError:
+        logger.error("%s: ContentFileDownload: There was a problem connecting to database.",
+                     upload_db_data.upload_id)
+        raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
+
+    if upload_db_data is None:
+        raise NotFound(UPLOAD_NOT_FOUND)
+
+    try:
+
+        upload_workspace = filemanager.process.upload.Upload(upload_id)
+
+        # Returns path if file exists
+        if upload_workspace.content_file_exists(public_file_path):
+            size = upload_workspace.content_file_size(public_file_path)
+            modified = upload_workspace.content_file_last_modified(public_file_path)
+            checksum = upload_workspace.content_file_checksum(public_file_path)
+            filepointer = upload_workspace.content_file_pointer(public_file_path)
+            headers = {
+                "Content-disposition": f"filename={filepointer.name}",
+                'ETag': checksum,
+                'Content-Length': size,
+                'Last-Modified': modified
+            }
+        else:
+            raise NotFound(f"File '{public_file_path}' not found.")
+
+    except IOError:
+        logger.error("%s: Delete file request failed ", upload_db_data.upload_id)
+        raise InternalServerError(CANT_DELETE_FILE)
+    except NotFound as nf:
+        logger.info("%s: DeleteFile: %s", upload_id, nf)
+        raise nf
+    except SecurityError as secerr:
+        logger.info("%s: %s", upload_id, secerr.description)
+        # TODO: Should this be BadRequest or NotFound. I'm leaning towards
+        # NotFound in order to provide as little feedback as posible to client.
+        raise NotFound(UPLOAD_FILE_NOT_FOUND)
+    except Forbidden as forb:
+        logger.info("%s: Delete file forbidden: %s.", upload_id, forb)
+        raise forb
+    except Exception as ue:
+        logger.info("Unknown error in delete file. "
+                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+
+    return filepointer, status.HTTP_200_OK, headers
 
 
 # Log controllers
@@ -965,15 +1108,15 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
 
     logger.info("%s: Test for source log.", upload_id)
     upload_workspace = filemanager.process.upload.Upload(upload_id)
-    source_log_path = upload_workspace.get_upload_source_log_path()
 
-    checksum = upload_workspace.checksum(source_log_path)
-    size = os.path.getsize(source_log_path)
-    modified = upload_workspace.last_modified_file(source_log_path)
+    checksum = upload_workspace.source_log_checksum
+    size = upload_workspace.source_log_size
+    modified = upload_workspace.source_log_last_modofied
 
     return {}, status.HTTP_200_OK, {'ETag': checksum,
                                     'Content-Length': size,
                                     'Last-Modified': modified}
+
 
 def get_upload_source_log(upload_id: int) -> Response:
     """
@@ -998,18 +1141,54 @@ def get_upload_source_log(upload_id: int) -> Response:
 
     upload_workspace = filemanager.process.upload.Upload(upload_id)
 
-    source_log_path = upload_workspace.get_upload_source_log_path()
-    checksum = filemanager.process.upload.Upload.checksum(source_log_path)
-    size = os.path.getsize(source_log_path)
-    modified = upload_workspace.last_modified_file(source_log_path)
-    filepointer = upload_workspace.get_open_file_pointer(source_log_path)
+    checksum = upload_workspace.source_log_checksum
+    size = upload_workspace.source_log_size
+    modified = upload_workspace.source_log_last_modofied
+
+    filepointer = upload_workspace.source_log_file_pointer()
+    if filepointer:
+        name = filepointer.name
+    else:
+        name = ""
+
+
     headers = {
-        "Content-disposition": f"filename={filepointer.name}",
+        "Content-disposition": f"filename={name}",
         'ETag': checksum,
         'Content-Length': size,
         'Last-Modified': modified
     }
     return filepointer, status.HTTP_200_OK, headers
+
+
+# Service log routine + support routine
+
+def __checksum(filepath: str) -> str:
+    """Return b64-encoded MD5 hash of file."""
+
+    if os.path.exists(filepath):
+        hash_md5 = md5()
+        with open(filepath, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+        return b64encode(hash_md5.digest()).decode('utf-8')
+    else:
+        return ""
+
+
+def __last_modified(filepath: str) -> str:
+    """Return last modified time of file. """
+
+    return datetime.utcfromtimestamp(os.path.getmtime(filepath))
+
+def __content_pointer(service_log_path) -> io.BytesIO:
+        """Get a file-pointer for service log."""
+
+        if os.path.exists(service_log_path):
+            return open(service_log_path, 'rb')
+        else:
+            return ""
+
 
 def check_upload_service_log_exists() -> Response:
     """
@@ -1026,9 +1205,9 @@ def check_upload_service_log_exists() -> Response:
     logger.info("%s: Check whether upload service log exists.")
 
     # service_log_path is global set during startup log init
-    checksum = filemanager.process.upload.Upload.checksum(service_log_path)
+    checksum = __checksum(service_log_path)
     size = os.path.getsize(service_log_path)
-    modified = filemanager.process.upload.Upload.last_modified_file(service_log_path)
+    modified = __last_modified(service_log_path)
     return {}, status.HTTP_200_OK, {'ETag': checksum,
                                     'Content-Length': size,
                                     'Last-Modified': modified
@@ -1046,10 +1225,10 @@ def get_upload_service_log() -> Response:
     """
 
     # service_log_path is global set during startup log init
-    checksum = filemanager.process.upload.Upload.checksum(service_log_path)
+    checksum = __checksum(service_log_path)
     size = os.path.getsize(service_log_path)
-    modified = filemanager.process.upload.Upload.last_modified_file(service_log_path)
-    filepointer = filemanager.process.upload.Upload.get_open_file_pointer(service_log_path)
+    modified = __last_modified(service_log_path)
+    filepointer = __content_pointer(service_log_path)
     headers = {
         "Content-disposition": f"filename={filepointer.name}",
         'ETag': checksum,

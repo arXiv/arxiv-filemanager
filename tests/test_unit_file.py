@@ -33,6 +33,7 @@ class TestFileClass(TestCase):
 
         # TODO implement sha256sum function
         self.assertEquals(file.sha256sum, "NOT IMPLEMENTED YET", "Check sha256sum method()")
+        self.assertEquals(file.checksum, "8KwlZuQvByH23+4HIcANGQ==", "Generate checksum (MD5)")
         file.description = 'This is my favorite photo.'
         self.assertEquals(file.description, 'This is my favorite photo.', "Check description() method")
         self.assertEquals(file.is_tex_type, False, "Check is_tex_type() method")
