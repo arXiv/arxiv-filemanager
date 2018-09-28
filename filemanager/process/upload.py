@@ -1255,7 +1255,6 @@ submitter."""
         # print("\n---> Upload id: " + str(self.upload_id) + " FilenamePath: " + file.filename
         #      + " FilenameBase: " + os.path.basename(file.filename)
         #      + " Mime: " + file.mimetype + '\n')
-
         self.log('\n********** File Upload ************\n\n')
 
         # Move uploaded archive/file to source directory

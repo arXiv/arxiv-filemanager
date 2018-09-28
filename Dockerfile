@@ -22,6 +22,8 @@ RUN chmod 777 upload.log
 
 EXPOSE 8000
 
+ENV LOGLEVEL 10
+
 ENTRYPOINT ["pipenv", "run"]
 CMD ["uwsgi", "--http-socket", ":8000", \
      "-M", \
