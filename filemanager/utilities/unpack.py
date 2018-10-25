@@ -211,12 +211,13 @@ def unpack_archive(upload: 'Upload') -> None:
 
                 # Hanlde .zip files
                 elif obj.type == 'zip' and zipfile.is_zipfile(path):
+                    target_directory = os.path.join(source_directory, root_directory)
                     print("*******Process zip archive: " + path)
-                    msg = f"***** unpack {obj.type} {file} to dir: {source_directory}"
+                    msg = f"***** unpack {obj.type} {file} to dir: {target_directory}"
                     upload.log(msg)
                     try:
                         with zipfile.ZipFile(path, "r") as zip_ref:
-                            zip_ref.extractall(source_directory)
+                            zip_ref.extractall(target_directory)
                             # Now move zip file out of way to removed directory
                             rem_path = os.path.join(removed_directory, os.path.basename(path))
                             msg = f"Removed packed file {file}"
