@@ -240,7 +240,10 @@ submitter."""
 
         if shutil.move(filepath, removed_path):
             # lmsg = "*** File " + file.name + f" has been removed. Reason: {msg} ***"
-            lmsg = f"Removed hidden file {file.name}."
+            if msg:
+                lmsg = msg
+            else:
+                lmsg = f"Removed file {file.name}."
             self.add_warning(file.public_filepath, lmsg)
         else:
             self.add_warning("*** FAILED to remove file " + filepath + " ***")
@@ -636,6 +639,9 @@ submitter."""
         upload_path = os.path.join(src_directory, filename)
         file.save(upload_path)
         if os.stat(upload_path).st_size == 0:
+            # Might be a good to delete zero length file we just deposited
+            # in upload workspace.
+            os.remove(upload_path)
             raise BadRequest(UPLOAD_FILE_EMPTY)
         return upload_path
 
@@ -709,7 +715,7 @@ submitter."""
                     # self.add_warning(obj.public_filepath, msg)
                     _warnings.append(msg)
                     obj = _add_file(file_path, _warnings, _errors)
-                    self.remove_file(obj, f"Removed: {msg}")
+                    self.remove_file(obj, f"Removed {obj.name} [file is empty]")
                     continue
 
                 # Remove 10240 byte all-null files (bad user tar attempts?)
