@@ -1101,6 +1101,8 @@ submitter."""
                 log_msg = f'{obj.name} \t[{obj.type}] in {obj.dir}'
                 self.log(log_msg)
 
+        self.__files = list
+
         return list
 
     def create_file_upload_summary(self) -> list:
