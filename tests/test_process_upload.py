@@ -206,11 +206,11 @@ class TestUpload(TestCase):
     # TODO: Keep these old tests around for when I need specialized tests
     def XXtest_process_compressed_upload(self) -> None:
 
-        """Try to process compressed archive upload"""
+        """Test that we are generating warnings when zero length files are uploaded."""
         upload_id = 20180229
         upload = Upload(upload_id)
 
-        filename = os.path.join(TEST_FILES_DIRECTORY, 'BorelPaper.tex.Z')
+        filename = os.path.join(TEST_FILES_DIRECTORY, 'upload1.tar.gz')
 
         # For testing purposes, clean out existing workspace directory
         workspace_dir = upload.create_upload_workspace()
@@ -226,7 +226,10 @@ class TestUpload(TestCase):
             upload = Upload(upload_id)
             ret = upload.process_upload(file)
 
-        print("Process tgz upload: " + ret)
+        if upload.has_warnings():
+            print("Upload has warnings")
+            for warn in upload.get_warnings():
+                print(f"Warning: {warn}")
 
     def test_process_unpack(self) -> None:
         """

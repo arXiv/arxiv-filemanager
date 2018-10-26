@@ -1073,6 +1073,115 @@ class TestUploadAPIRoutes(TestCase):
 
         # Done test
 
+
+    def XXtest_multiple_errors_on_upload(self) -> None:
+        """
+        This test is intended to be manually edited for debugging purposes.
+
+        This test currently replicates bug where zero length file appears in
+        file summary. Bug has been fixed.
+
+        :return:
+        """
+        cwd = os.getcwd()
+        testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
+        #filepath = os.path.join(testfiles_dir, 'upload1.tar.gz')
+        #filepath = os.path.join(testfiles_dir, '-p')
+        filepath = os.path.join(testfiles_dir, 'zero.txt')
+
+        # Prepare gzipped tar submission for upload
+        filename = os.path.basename(filepath)
+
+        # Create a token for writing to upload workspace
+        token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                          auth.scopes.WRITE_UPLOAD,
+                                          auth.scopes.DELETE_UPLOAD_FILE])
+
+        # Trying to replicate zero file upload behavior
+        # Lets upload a file before uploading the zero length file
+
+        filepath1 = os.path.join(testfiles_dir, 'README.md')
+        filename1 = os.path.basename(filepath1)
+        response = self.client.post('/filemanager/api/',
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        'file': (open(filepath1, 'rb'), filename1),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        print("Upload README Response:\n" + str(response.data) + "\nEnd Data")
+
+        self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
+        self.maxDiff = None
+
+        with open('schema/resources/uploadResult.json') as f:
+            result_schema = json.load(f)
+
+        try:
+            jsonschema.validate(json.loads(response.data), result_schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+        test_id = upload_data['upload_id']
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        'file': (open(filepath, 'rb'), filename),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+        print("Upload zero.txt Response:\n" + str(response.data) + "\nEnd Data")
+
+        # Check response and extract upload_id from response
+        self.assertEqual(response.status_code, 400, "Accepted and processed uploaded Submission Contents")
+
+        self.maxDiff = None
+
+        #with open('schema/resources/uploadResult.json') as f:
+        #    result_schema = json.load(f)
+
+        #try:
+        #    jsonschema.validate(json.loads(response.data), result_schema)
+        #except jsonschema.exceptions.SchemaError as e:
+        #    self.fail(e)
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+        print("Response:\n" + str(response.data) + "\nEnd Data")
+
+        # Next get summary
+        # Get summary of upload
+
+        # with open('schema/resources/uploadResult.json') as f:
+        #   status_schema = json.load(f)
+
+        response = self.client.get(f"/filemanager/api/{test_id}",
+                                   headers={'Authorization': token})
+
+        self.assertEqual(response.status_code, 200, "File summary.")
+        try:
+            jsonschema.validate(json.loads(response.data), result_schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+
+        print("Summary:\n" + str(response.data) + "\nEnd Data")
+
+        # Finally, Delete the workspace
+
+        # Create admin token for deleting upload workspace
+        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                                auth.scopes.WRITE_UPLOAD,
+                                                auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
+
+        response = self.client.delete(f"/filemanager/api/{test_id}",
+                                      headers={'Authorization': admin_token}
+                                      )
+
+
     # Upload a submission package and perform normal operations on upload
     def test_upload_files_normal(self) -> None:
         """Test normal well-behaved upload requests.
@@ -1134,7 +1243,7 @@ class TestUploadAPIRoutes(TestCase):
             jsonschema.validate(json.loads(response.data), result_schema)
         except jsonschema.exceptions.SchemaError as e:
             self.fail(e)
-
+        print("After Upload Response:\n" + str(response.data) + "\nEnd Data")
         upload_data: Dict[str, Any] = json.loads(response.data)
 
         # Check that upload_total_size is in summary response
@@ -1221,7 +1330,7 @@ class TestUploadAPIRoutes(TestCase):
         # Get summary after deletions
         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}",
                                    headers={'Authorization': token})
-
+        print("After Delete Summary Response:\n" + str(response.data) + "\nEnd Data")
         self.assertEqual(response.status_code, 200, "File summary after deletions.")
 
         try:
