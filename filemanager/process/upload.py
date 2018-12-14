@@ -1136,8 +1136,6 @@ submitter."""
             elif type == 'mac':
                 outfile.write(re.sub(b"\r\n?", b"\n", s.read()))
 
-            print(f"ls -l {filepath} {new_filepath}")
-
             new_file_obj = File(new_filepath, os.path.dirname(new_filepath))
 
             # Check if file was changed
