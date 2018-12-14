@@ -10,6 +10,8 @@ import logging
 from hashlib import md5
 from base64 import b64encode
 import io
+import mmap
+import filecmp
 
 from werkzeug.exceptions import BadRequest, NotFound, SecurityError
 from werkzeug.datastructures import FileStorage
@@ -61,6 +63,7 @@ submitter."""
         self.__warnings = []
         self.__errors = []
         self.__files = []
+        self.__debug = False
 
         # total client upload workspace source directory size (in bytes)
         self.__total_upload_size = 0
@@ -71,6 +74,19 @@ submitter."""
         # Calculate size just in case client is making request that does
         # not upload or delete files. Those requests update total size.
         self.calculate_client_upload_size()
+
+    # Debug
+    def set_debug(self, set: bool):
+        """
+        Activate/deactivate debugging
+        :param set:
+        :return:
+        """
+        self.__debug = set
+
+    def debug(self):
+        return self.__debug
+
 
     # Files
 
@@ -800,8 +816,8 @@ submitter."""
 
                     continue
 
-                # Following checks can only occur once in current file
-                # all are tied together with if / elif
+                # Following checks may only occur once in current file
+                # as all are tied together with if / elif
 
                 # TeX: Remove hyperlink styles espcrc2 and lamuphys
                 if re.search(r'^(espcrc2|lamuphys)\.sty$', file_name):
@@ -924,7 +940,7 @@ submitter."""
                 # Placeholder for future checks/notes
 
                 # TeX: Files that indicate user error
-                # TODO: Investigate missfont.log error - possibly move handling here
+                # TODO: Investigate misfont.log error - possibly move handling here
 
                 # TODO: diagrams detection script (does not exist in legacy system)
                 # TeX: Detect various diagrams files where user changes name
@@ -999,10 +1015,142 @@ submitter."""
                 obj = _add_file(file_path, _warnings, _errors)
                 # End of file type checks
 
-    def unmacify(self, file_name: str):
+
+    def check_file_termination(self, file_obj: File):
+        """
+        The original unmacify/unpcify routine attemtps to cleanup the last few
+        characters in a file regardless or whether the file is pc/mac generated.
+        For that reason I have refactored the code into a seperate routine for
+        ease of testing. This also simplifies the unmacify routine.
+
+        This code basically seeks to the end of file and removes any end of file \377,
+        end of transmission ^D (\004), or  characters ^Z (\032).
+
+        At the current time this routine will get called anytime unmacify routine
+        is called.
+
+
+        :param file_obj:
+        :return:
+        """
+
+        # Check for special characters at end of file.
+        # Remove EOT/EOF
+
+        # Get the absolute file path
+        filepath = file_obj.filepath
+
+        if self.debug():
+            self.log(f"Checking file termination for {filepath}.")
+
+        if os.path.exists(filepath):
+            with open(filepath, "rb+") as f:
+
+                # Seek to last two bytes of file
+                f.seek(-2, 2)
+
+                # Examine bytes for characters we want to strip.
+                input_bytes = f.read(2)
+
+                if self.debug():
+                    print(f"\nRead '{input_bytes}' from {file_obj.name}\n")
+
+                byte_found = False
+                if input_bytes[0]== 0x01A or input_bytes[0]==0x4 \
+                        or input_bytes[0]==0xFF:
+                    byte_found = True
+
+                    f.seek(-2, 2)
+                    fsize = f.tell()
+                    f.truncate(fsize)
+                elif input_bytes[1]==0x01A or input_bytes[1]==0x4 \
+                        or input_bytes[1]==0xFF:
+                    byte_found = True
+                    f.seek(-1, 2)
+                    fsize = f.tell()
+                    f.truncate(fsize)
+
+                if byte_found:
+                    msg = ""
+
+                    if input_bytes[0] == 0x01A or input_bytes[1] == 0x01A:
+                        msg += "trailing ^Z "
+                    if input_bytes[0] == 0x4 or input_bytes[1] == 0x4:
+                        msg += "trailing ^D "
+                    if input_bytes[0] == 0xFF or input_bytes[1] == 0xFF:
+                        msg += "trailing =FF "
+                    if input_bytes[1] == 0x0A:
+                        self.log(f"{file_obj.public_filepath} [stripped newline] ")
+
+                    self.add_warning(file_obj.public_filepath,
+                                     f"{msg}stripped from {file_obj.public_filepath}.")
+
+                # Check of last character of file is newline character
+                # Seek to last two bytes of file
+                f.seek(-1, 2)
+                last_byte = f.read(1)
+                if last_byte != 0x0A:
+                    self.add_warning(file_obj.public_filepath,
+                                     f"File {file_obj.public_filepath} does not end with \\n, TRUNCATED?.")
+
+        else:
+            self.log(f"Check termination: File '{filepath}' doesn't exist.")
+
+
+
+    def unmacify(self, file_obj: File):
+        """
+        This legacy routine appears to clean up files that contain carriage returns
+        and line feeds.
+
+        Jake informs me there is a bug in the Perl unmacify routine.
+
+        :param file_name:
+        :return:
+        """
+
+        # Determine type of file we are dealing with PC or MAC
+        type = 'mac'
+
+        # Get the absolute file path
+        filepath = file_obj.filepath
+
+        # Check whether file contains '\r\n' sequence
+        with open(filepath, 'rb', 0) as file, \
+            mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ) as s:
+            if s.find(b"\r\n") != -1:
+                type = 'pc'
+
         """Fix up carriage returns and newlines."""
-        self.log(f'Unmacify file {file_name}')
-        self.log(f"I'm sorry Dave I'm afraid I can't do that. unmacify not implemented YET.")
+        self.log(f'Un{type}ify file {file_obj.filepath}')
+
+        # Open file and look for carriage return.
+        #
+        new_filepath = filepath + ".new"
+        with open(filepath, 'rb', 0) as infile, \
+            open(new_filepath, 'wb', 0) as outfile, \
+                mmap.mmap(infile.fileno(), 0, access=mmap.ACCESS_READ) as s:
+
+            if type == 'pc':
+                outfile.write(re.sub(b"\r\n", b"\n", s.read()))
+            elif type == 'mac':
+                outfile.write(re.sub(b"\r\n?", b"\n", s.read()))
+
+            print(f"ls -l {filepath} {new_filepath}")
+
+            new_file_obj = File(new_filepath, os.path.dirname(new_filepath))
+
+            # Check if file was changed
+            is_same = filecmp.cmp(filepath, new_filepath)
+
+            if is_same:
+                os.remove(new_filepath)
+            else:
+                shutil.copy(new_filepath, filepath)
+
+            # Check for unwanted termination character
+            self.check_file_termination(file_obj)
+
 
     def extract_uu(self, file_name: str, file_type: str):
         """Extract uuencode content from file."""
