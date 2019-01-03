@@ -203,21 +203,27 @@ class TestUpload(TestCase):
             file = FileStorage(fp)
             ret = upload.process_upload(file)
 
-    # TODO: Keep these old tests around for when I need specialized tests
-    def XXtest_process_compressed_upload(self) -> None:
+    # Modified handling of bib/bbl to reduce published papers with 'missing refs'
+    def test_process_bib_bbl_handling(self) -> None:
 
-        """Test that we are generating warnings when zero length files are uploaded."""
-        upload_id = 20180229
+        """Test changes to reduce missing refs."""
+        upload_id = 20189999
         upload = Upload(upload_id)
 
-        filename = os.path.join(TEST_FILES_DIRECTORY, 'upload1.tar.gz')
+        filename = os.path.join(TEST_FILES_DIRECTORY, 'bad_bib_but_no_bbl.tar')
+        self.assertTrue(os.path.exists(filename), 'Test submission with missing .bbl file.')
 
         # For testing purposes, clean out existing workspace directory
         workspace_dir = upload.create_upload_workspace()
         if os.path.exists(workspace_dir):
             shutil.rmtree(workspace_dir)
 
-        self.assertTrue(os.path.exists(filename), 'Test compressed archive is available')
+
+        # Test common behavior of submitting .bib file without .bbl file and then follow by
+        # adding .bbl file to make submission whole.
+
+        # Step 1: Load submission that includes .bib file but is missing required .bbl; file
+
         # Recreate FileStroage object that flask will be passing in
         file = None
         with open(filename, 'rb') as fp:
@@ -226,10 +232,50 @@ class TestUpload(TestCase):
             upload = Upload(upload_id)
             ret = upload.process_upload(file)
 
-        if upload.has_warnings():
-            print("Upload has warnings")
-            for warn in upload.get_warnings():
-                print(f"Warning: {warn}")
+            self.assertTrue(upload.has_warnings(), "This test is expected to generate missing .bbl warning!")
+            self.assertTrue(upload.has_errors(), "This test is expected to generate missing .bbl error!")
+
+            error_match = 'Your submission contained'
+            string = f'This test is expected to generate missing .bbl error: "{error_match}"'
+            self.assertTrue(upload.search_errors(error_match), string)
+
+            warn_match = r'We do not run bibtex'
+            string = f'This test is expected to produce general warning: "{warn_match}"'
+            self.assertTrue(upload.search_warnings(warn_match), string)
+
+            # Step 2: Now load missing .bbl (and . bib should get removed)
+
+            filename = os.path.join(TEST_FILES_DIRECTORY, 'final.bbl')
+            self.assertTrue(os.path.exists(filename), 'Upload missing .bbl file.')
+
+            with open(filename, 'rb') as fp:
+                file = FileStorage(fp)
+                ret = upload.process_upload(file)
+
+                error_match = 'Your submission contained'
+                string = f'This test is NOT expected to generate missing .bbl error: "{error_match}"'
+                self.assertFalse(upload.search_errors(error_match), string)
+
+                warn_match = 'We do not run bibtex'
+                string = f'This test is expected to generate removing .bib warning: "{warn_match}"'
+                self.assertTrue(upload.search_warnings(warn_match), string)
+
+                warn_match = 'Removed the file final.bib.'
+                string = f'This test is expected to generate removing .bib warning: "{warn_match}"'
+                self.assertTrue(upload.search_warnings(warn_match), string)
+
+        # Try submission with .bbl file (Good)
+        filename = os.path.join(TEST_FILES_DIRECTORY, 'upload3.tar.gz')
+        self.assertTrue(os.path.exists(filename), 'Test well-formed submission with .bbl file.')
+
+        with open(filename, 'rb') as fp:
+            file = FileStorage(fp)
+            # Now create upload instance
+            upload = Upload(upload_id)
+            ret = upload.process_upload(file)
+
+            self.assertFalse(upload.has_warnings(), 'Test well-formed submission. No warnings.')
+            self.assertFalse(upload.has_errors(), 'Test well-formed submission. No errors.')
 
     def test_process_unpack(self) -> None:
         """
