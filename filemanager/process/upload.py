@@ -694,7 +694,7 @@ submitter."""
                       + f"submit without {basename}.bib; and remember to verify references)."
         return bbl_missing
 
-    def doc_warning(self):
+    def doc_warning(self) -> str:
         doc_warning = "Your submission has been rejected because it contains " \
                       "one or more files with extension .doc, assumed to be " \
                       "MSWord files. Sadly, MSWord is not an acceptable " \
@@ -707,6 +707,35 @@ submitter."""
                       "are not MSWord documents, please rename to a different"\
                       " extension and resubmit."
         return doc_warning
+
+    def graphic_error(self) -> str:
+        """
+        Unsupported graphic format
+        :return:
+        """
+        graphic_error = f"{format} is not a supported graphics format: most "\
+                "readers do not have the programs needed to view and print "\
+                        ".$format figures. Please save your [% format %] "\
+                        "figures instead as PostScript, PNG, JPEG, or GIF "\
+                        "(PNG/JPEG/GIF files can be viewed and printed with "\
+                        "any graphical web browser) -- see <href="/help/bitmap#software">bitmapping help</a> for more information."
+
+    def revtex_warning(self) -> str:
+        revtex_warning = "WILL REMOVE standard revtex4 style files from this "\
+                         "submission. revtex4 is now fully supported by arXiv "\
+                         "and all its mirrors, for details see the "\
+                         "<a href=\"/help/faq/revtex\">RevTeX FAQ</a>. If you "\
+                         "have modified these files in any way then you must "\
+                         "rename them before attempting to include them with your submission."
+        return revtex_warning
+
+    def diagrams_warning(self) -> str:
+        diagrams_warning = "REMOVING standard style files for Paul Taylor's "\
+                           "diagrams package. This package is supported in arXiv's TeX "\
+                           "tree and the style files are thus unnecessary. "\
+                           "Furthermore, they include 'time-bomb' code which will render submissions that "\
+                           "include them unprocessable at some time in the future."
+        return diagrams_warning
 
     def check_files(self) -> None:
         """
@@ -776,9 +805,9 @@ submitter."""
 
                 # Remove zero length files
                 if obj.size == 0:
-                    msg = f"File '{obj.name}'* is empty (size is zero)"
+                    msg = f"File '{obj.name}' is empty (size is zero)."
                     self.add_warning(obj.public_filepath, msg)
-                    self.remove_file(obj, f"Removed file '{obj.name}' [file is empty]")
+                    self.remove_file(obj, f"Removed file '{obj.name}' [file is empty].")
                     continue
 
                 # Remove 10240 byte all-null files (bad user tar attempts?)
@@ -857,7 +886,7 @@ submitter."""
                     # Remove files starting with dot
                     msg = 'Hidden file are not allowed.'
                     self.add_warning(obj.public_filepath, msg)
-                    self.remove_file(obj, f"Removed file '{obj.name}' [File not allowed]")
+                    self.remove_file(obj, f"Removed file '{obj.name}' [File not allowed].")
                     continue
 
                 # Following checks can only occur once in current file
@@ -869,10 +898,10 @@ submitter."""
                     # TeX: styles that conflict with internal hypertex package
                     print("Found hyperlink-compatible package\n")
                     # TODO: Check the error/warning messaging for this check.
+                    msg = f"Found hyperlink-compatible package '{file_name}'. "\
+                          "Will remove and use hypertex-compatible local version"
+
                     self.remove_file(obj, msg)
-                    _warnings.append(
-                        '   -- instead using hypertex-compatible local version'
-                    )
                 elif re.search(r'^(espcrc2|lamuphys)\.tex$', file_name):
                     # TeX: source files that conflict with internal hypertex package
                     # I'm not sure why this is just a warning
@@ -881,13 +910,11 @@ submitter."""
                     )
                 elif file_name == 'uufiles' or file_name == 'core' or file_name == 'splread.1st':
                     # Remove these files
-                    msg = f'Removed the file {file_name} [File not allowed].'
-                    self.add_warning(obj.public_filepath, msg)
+                    msg = f"Removed the file '{file_name}' [File not allowed]."
                     self.remove_file(obj, msg)
                 elif re.search(r'^xxx\.(rsrc$|finfo$|cshrc$|nfs)', file_name) \
                         or re.search(r'\.[346]00gf$', file_name) \
                         or (re.search(r'\.desc$', file_name) and file_size < 10):
-                    obj = _add_file(file_path, _warnings, _errors)
                     # Remove these files
                     msg = f"Removed file '{obj.name}' [File not allowed]."
                     self.remove_file(obj, msg)
@@ -924,10 +951,10 @@ submitter."""
                 elif re.search(r'^(10pt\.rtx|11pt\.rtx|12pt\.rtx|aps\.rtx|'
                                + r'revsymb\.sty|revtex4\.cls|rmp\.rtx)$',
                                file_name):
-                    obj = _add_file(file_path, _warnings, _errors)
                     # TeX: submitter is including file already included
                     # in TeX Live release
                     # TODO: get revtex() warning message ???
+                    msg = self.revtex_warning()
                     self.remove_file(obj, msg)
                 elif re.search(r'^diagrams\.(sty|tex)$', file_name):
                     obj = _add_file(file_path, _warnings, _errors)
@@ -936,7 +963,7 @@ submitter."""
                     # with time bomb disable.
 
                     # TODO: get diagrams warning
-                    msg = ''
+                    msg = self.diagrams_warning()
                     self.remove_file(obj, msg)
                 elif file_name == 'aa.dem':
                     # TeX: Check for aa.dem
@@ -946,7 +973,7 @@ submitter."""
                         'the example file for the Astronomy and Astrophysics ' \
                         'macro package aa.cls.'
                     )
-                    self.remove_file(obj, msg)
+                    self.remove_file(obj, "")
                 elif re.search('(.+)\.(log|aux|blg|dvi|ps|pdf)$', file_name,
                                re.IGNORECASE):
                     # TeX: Check for TeX processed output files (log, aux,
@@ -1000,7 +1027,6 @@ submitter."""
                 # We are done if file was marked as removed,
                 # otherwise continue with additional type checks below
                 if obj.removed:
-                    print("File was removed -- skipping to next file\n")
                     continue
 
                 # Placeholder for future checks/notes
