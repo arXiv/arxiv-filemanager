@@ -896,8 +896,6 @@ submitter."""
                 if re.search(r'^(espcrc2|lamuphys)\.sty$', file_name):
                     obj = _add_file(file_path, _warnings, _errors)
                     # TeX: styles that conflict with internal hypertex package
-                    print("Found hyperlink-compatible package\n")
-                    # TODO: Check the error/warning messaging for this check.
                     msg = f"Found hyperlink-compatible package '{file_name}'. "\
                           "Will remove and use hypertex-compatible local version"
 
