@@ -8,6 +8,7 @@ import tempfile
 from io import BytesIO
 import tarfile
 import os
+import re
 import uuid
 import os.path
 from typing import Any, Optional, Dict, List
@@ -1074,33 +1075,27 @@ class TestUploadAPIRoutes(TestCase):
         # Done test
 
 
-    def XXtest_multiple_errors_on_upload(self) -> None:
+    def test_missing_bbl_upload(self) -> None:
         """
-        This test is intended to be manually edited for debugging purposes.
-
-        This test currently replicates bug where zero length file appears in
-        file summary. Bug has been fixed.
+        This test exercises missing references (.bib/.bbl) logic.
 
         :return:
         """
         cwd = os.getcwd()
         testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
-        #filepath = os.path.join(testfiles_dir, 'upload1.tar.gz')
-        #filepath = os.path.join(testfiles_dir, '-p')
-        filepath = os.path.join(testfiles_dir, 'zero.txt')
 
-        # Prepare gzipped tar submission for upload
-        filename = os.path.basename(filepath)
+
 
         # Create a token for writing to upload workspace
         token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
                                           auth.scopes.WRITE_UPLOAD,
                                           auth.scopes.DELETE_UPLOAD_FILE])
 
-        # Trying to replicate zero file upload behavior
-        # Lets upload a file before uploading the zero length file
+        # Replicate bib/bbl upload behavior
 
-        filepath1 = os.path.join(testfiles_dir, 'README.md')
+        # Lets upload submission that is missing required .bbl file.
+
+        filepath1 = os.path.join(testfiles_dir, 'bad_bib_but_no_bbl.tar')
         filename1 = os.path.basename(filepath1)
         response = self.client.post('/filemanager/api/',
                                     data={
@@ -1110,8 +1105,6 @@ class TestUploadAPIRoutes(TestCase):
                                     headers={'Authorization': token},
                                     #        content_type='application/gzip')
                                     content_type='multipart/form-data')
-
-        print("Upload README Response:\n" + str(response.data) + "\nEnd Data")
 
         self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
         self.maxDiff = None
@@ -1124,8 +1117,19 @@ class TestUploadAPIRoutes(TestCase):
         except jsonschema.exceptions.SchemaError as e:
             self.fail(e)
 
+        # IMPORTANT: upload_status of 'ERRORS' should stop submission from
+        # proceeding until missing .bbl is provided OR .bib is removed.
+
         upload_data: Dict[str, Any] = json.loads(response.data)
+        self.assertIn('upload_status', upload_data, "Returns total upload status.")
+        self.assertEqual(upload_data['upload_status'], "ERRORS",
+                         "Expected total upload size matches")
+
+        # Get upload_id from previous file upload
         test_id = upload_data['upload_id']
+        # Upload missing .bbl
+        filepath = os.path.join(testfiles_dir, 'final.bbl')
+        filename = os.path.basename(filepath)
         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
                                     data={
                                         # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
@@ -1134,41 +1138,23 @@ class TestUploadAPIRoutes(TestCase):
                                     headers={'Authorization': token},
                                     #        content_type='application/gzip')
                                     content_type='multipart/form-data')
-        print("Upload zero.txt Response:\n" + str(response.data) + "\nEnd Data")
 
         # Check response and extract upload_id from response
-        self.assertEqual(response.status_code, 400, "Accepted and processed uploaded Submission Contents")
+        self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
 
         self.maxDiff = None
 
-        #with open('schema/resources/uploadResult.json') as f:
-        #    result_schema = json.load(f)
-
-        #try:
-        #    jsonschema.validate(json.loads(response.data), result_schema)
-        #except jsonschema.exceptions.SchemaError as e:
-        #    self.fail(e)
-
-        upload_data: Dict[str, Any] = json.loads(response.data)
-
-        print("Response:\n" + str(response.data) + "\nEnd Data")
-
-        # Next get summary
-        # Get summary of upload
-
-        # with open('schema/resources/uploadResult.json') as f:
-        #   status_schema = json.load(f)
-
-        response = self.client.get(f"/filemanager/api/{test_id}",
-                                   headers={'Authorization': token})
-
-        self.assertEqual(response.status_code, 200, "File summary.")
         try:
             jsonschema.validate(json.loads(response.data), result_schema)
         except jsonschema.exceptions.SchemaError as e:
             self.fail(e)
 
-        print("Summary:\n" + str(response.data) + "\nEnd Data")
+        # IMPORTANT: After we upload compiled .bbl file 'update_status' changes
+        # from ERRORS to READY_WITH_WARNINGS.
+        upload_data: Dict[str, Any] = json.loads(response.data)
+        self.assertIn('upload_status', upload_data, "Returns total upload status.")
+        self.assertEqual(upload_data['upload_status'], "READY_WITH_WARNINGS",
+                         "Expected total upload size matches")
 
         # Finally, Delete the workspace
 
@@ -1180,6 +1166,191 @@ class TestUploadAPIRoutes(TestCase):
         response = self.client.delete(f"/filemanager/api/{test_id}",
                                       headers={'Authorization': admin_token}
                                       )
+    def search_errors(self, mstring: str, mtype:str, filename: str, error_list: list) -> bool:
+        """
+        Search for specific warning in errors.
+        :return:
+        """
+        for error in error_list:
+            type, filepath, message = error
+            #print(f"Look for error '{mstring}' in \n\t'{message}'")
+            if re.search(mstring, message):
+                found = True
+
+                if mtype and mtype != type:
+                    found = False
+
+                if filename and filename != filepath:
+                    found = False
+
+                if found is True:
+                    return True
+
+        return False
+
+    def search_files(self, filename: str, files: list) -> bool:
+        """
+        Check if specific file is in list.
+        :param filename:
+        :param files:
+        :return:
+        """
+        for file in files:
+            mod, name, path, size, type = file
+            if filename == name:
+                return True
+        return False
+
+
+    def test_missing_warnings_and_errors(self) -> None:
+        """
+        This test is intended to be manually edited for debugging purposes.
+
+        This test currently exercises missing .bbl logic.
+
+        :return:
+        """
+        cwd = os.getcwd()
+        testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
+
+
+
+        # Create a token for writing to upload workspace
+        token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                          auth.scopes.WRITE_UPLOAD,
+                                          auth.scopes.DELETE_UPLOAD_FILE])
+
+        # Trying to replicate bib/bbl upload behavior
+        # Lets upload a file before uploading the zero length file
+
+        filepath1 = os.path.join(testfiles_dir, 'UploadRemoveFiles.tar')
+        filename1 = os.path.basename(filepath1)
+        response = self.client.post('/filemanager/api/',
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        'file': (open(filepath1, 'rb'), filename1),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        #print("Upload Response:\n" + str(response.data) + "\nEnd Data")
+        #print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
+
+        self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
+        self.maxDiff = None
+
+        with open('schema/resources/uploadResult.json') as f:
+            result_schema = json.load(f)
+
+        try:
+            jsonschema.validate(json.loads(response.data), result_schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+
+        # IMPORTANT RESULT upload_status of ERRORS should stop submission from
+        # proceeding until missing .bbl is provided OR .bib is removed.
+        upload_data: Dict[str, Any] = json.loads(response.data)
+        self.assertIn('upload_status', upload_data, "Returns total upload status.")
+        self.assertEqual(upload_data['upload_status'], "ERRORS",
+                         "Expected total upload size matches")
+
+        # Make sure we are seeing errors
+        self.assertTrue(self.search_errors("Removed file 'remove.desc' \[File not allowed].",
+                                           "warn", "remove.desc",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        self.assertFalse(self.search_files('remove.desc', upload_data['files']), "File was removed")
+
+        self.assertTrue(self.search_errors("Removed file '.junk' \[File not allowed]",
+                                           "warn", ".junk",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        self.assertTrue(self.search_errors("Removed the file 'core' \[File not allowed].",
+                                           "warn", "core",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        self.assertTrue(self.search_errors("REMOVING standard style files for Paul",
+                                           "warn", "diagrams.sty",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        self.assertTrue(self.search_errors("File 'zero.txt' is empty \(size is zero\)",
+                                           "warn", "zero.txt",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        self.assertTrue(self.search_errors("Removed file 'xxx.cshrc' \[File not allowed].",
+                                           "warn", "",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        self.assertTrue(self.search_errors("Removed the file 'uufiles' \[File not allowed].",
+                                           "warn", "uufiles",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        self.assertTrue(self.search_errors("Removed file 'xxx.cshrc' \[File not allowed].",
+                                           "warn", "xxx.cshrc",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        self.assertTrue(self.search_errors("Removed file 'final.aux' due to name conflict",
+                                           "warn", "final.aux",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        self.assertTrue(self.search_errors("We do not run bibtex in the auto",
+                                           "warn", "final.bib",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        self.assertTrue(self.search_errors("Removed the file 'final.bib'. Using 'final.bbl' for references.",
+                                           "warn", "final.bib",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        self.assertTrue(self.search_errors("Removing file 'aa.dem' on the assumption that it is the example "
+                                           + "file for the Astronomy and Astrophysics macro package aa.cls.",
+                                           "warn", "aa.dem",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        self.assertTrue(self.search_errors("Removed file 'aa.dem'.",
+                                           "warn", "aa.dem",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        self.assertTrue(self.search_errors("WILL REMOVE standard revtex4 style",
+                                           "warn", "revtex4.cls",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        self.assertTrue(self.search_errors("Found hyperlink-compatible package 'espcrc2.sty'.",
+                                           "warn", "espcrc2.sty",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        self.assertTrue(self.search_errors("Your submission has been rejected because",
+                                           "fatal", "something.doc",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+
+
+        # Uploaded DOC file is causing fatal error
+        filepath2 = os.path.join(testfiles_dir, 'README.md')
+        filename2 = os.path.basename(filepath2)
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        'file': (open(filepath2, 'rb'), filename2),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        #print("Upload#2 Response:\n" + str(response.data) + "\nEnd Data")
+        #print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
+
+        self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
+
+        try:
+            jsonschema.validate(json.loads(response.data), result_schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+        self.assertEqual(upload_data['upload_status'], "READY",
+                         "Removed file causing fatal error.")
 
 
     # Upload a submission package and perform normal operations on upload
@@ -1243,7 +1414,7 @@ class TestUploadAPIRoutes(TestCase):
             jsonschema.validate(json.loads(response.data), result_schema)
         except jsonschema.exceptions.SchemaError as e:
             self.fail(e)
-        print("After Upload Response:\n" + str(response.data) + "\nEnd Data")
+
         upload_data: Dict[str, Any] = json.loads(response.data)
 
         # Check that upload_total_size is in summary response
@@ -1330,7 +1501,7 @@ class TestUploadAPIRoutes(TestCase):
         # Get summary after deletions
         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}",
                                    headers={'Authorization': token})
-        print("After Delete Summary Response:\n" + str(response.data) + "\nEnd Data")
+
         self.assertEqual(response.status_code, 200, "File summary after deletions.")
 
         try:
