@@ -1323,6 +1323,15 @@ class TestUploadAPIRoutes(TestCase):
                                            "fatal", "something.doc",
                                            upload_data['errors']), "Expect this error to occur.")
 
+        self.assertTrue(self.search_errors("Removed file 'final.synctex'.",
+                                           "warn", "final.synctex",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        self.assertTrue(self.search_errors("Removed file 'final.out' due to name conflict.",
+                                           "warn", "final.out",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        # Uploaded DOC file is causing fatal error
 
 
         # Uploaded DOC file is causing fatal error
@@ -1351,6 +1360,47 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertEqual(upload_data['upload_status'], "READY",
                          "Removed file causing fatal error.")
+
+        # Upload files that we will warn about - but not remove.
+
+        filepath2 = os.path.join(testfiles_dir, 'FilesToWarnAbout.tar')
+        filename2 = os.path.basename(filepath2)
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        'file': (open(filepath2, 'rb'), filename2),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        #print("Upload#2 Response:\n" + str(response.data) + "\nEnd Data")
+        #print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+        # Normal emacs backup file
+        self.assertTrue(self.search_errors("File 'submission.tex~' may be a backup file. "\
+                                           "Please inspect and remove extraneous backup files.",
+                                           "warn", "submission.tex_",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        # Optional, we translate tilde to underscore thus this file appears. Leave just in case.
+        self.assertTrue(self.search_errors("File 'submission.tex_' may be a backup file. " \
+                                           "Please inspect and remove extraneous backup files.",
+                                           "warn", "submission.tex_",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        # Detect renaming of filename with tilde - since we loose original file name
+        self.assertTrue(self.search_errors("Attempting to rename submission.tex~ to submission.tex_.",
+                                           "warn", "submission.tex_",
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        # Another backup file
+        self.assertTrue(self.search_errors("File 'submission.tex.bak' may be a backup file. "\
+                                           "Please inspect and remove extraneous backup files.",
+                                           "warn", "submission.tex.bak",
+                                           upload_data['errors']), "Expect this error to occur.")
 
 
     # Upload a submission package and perform normal operations on upload

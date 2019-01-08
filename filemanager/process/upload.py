@@ -845,6 +845,13 @@ submitter."""
 
                 # Basic file checks
 
+                # We need to check this before tilde character gets translated to undderscore.
+                # Otherwise this warning never gets generated properly for .tex~
+                if re.search('(.+)\.(tex_|tex.bak|tex\~)$', file_name, re.IGNORECASE):
+                    msg = f"File '{file_name}' may be a backup file. Please "\
+                          "inspect and remove extraneous backup files."
+                    _warnings.append(msg)
+
                 # Attempt to rename filenames containing illegal characters
 
                 # Filename contains illegal characters+,-,/,=,
@@ -1000,8 +1007,7 @@ submitter."""
                     if os.path.exists(tex_file) or os.path.exists(upper_case_tex_file):
                         # Potential conflict / corruption by including TeX
                         # generated files in submission
-                        self.add_warning(obj.public_filepath,
-                                         f"Removed file '{obj.public_filepath}' due to name conflict")
+                        msg = f"Removed file '{obj.public_filepath}' due to name conflict."
                         self.remove_file(obj, msg)
                 elif re.search(r'[^\w\+\-\.\=\,]', file_name):
                     # File name contains unwanted bad characters - this is an Error
