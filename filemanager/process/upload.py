@@ -987,7 +987,7 @@ submitter."""
                     msg = f"Removed file '{file_name}'. SyncTeX files are not used by our" \
                           " system and may be large."
                     self.remove_file(obj, msg)
-                elif re.search('(.+)\.(log|aux|blg|dvi|ps|pdf)$', file_name,
+                elif re.search('(.+)\.(log|aux|out|blg|dvi|ps|pdf)$', file_name,
                                re.IGNORECASE):
                     # TeX: Check for TeX processed output files (log, aux,
                     # blg, dvi, ps, pdf, etc.)
