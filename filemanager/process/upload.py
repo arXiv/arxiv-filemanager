@@ -33,9 +33,15 @@ def _get_base_directory() -> str:
 
 
 class Upload:
-    """Handle uploaded files: unzipping, putting in the right place, doing
-various file checks that might cause errors to be displayed to the
-submitter."""
+    """
+    Programatic interface to fileystem-based upload workspace.
+
+    Manage uploaded files: extract files from gzipped tar archive, perform a
+    wide variety of checks on files and generate a list of warning/errors,
+    install files in the correct location, generate content archive for clients
+    to download.
+
+    """
 
     SOURCE_PREFIX = 'src'
     """The name of the source directory within the upload workspace."""
@@ -105,18 +111,20 @@ submitter."""
 
     def add_warning(self, public_filepath: str, msg: str) -> None:
         """
-        Record and log warning for this upload instance."
+        Record warning. Adds warning message to list of warning messages.
+
         Parameters
         ----------
-        msg
+        public_filepath : str
+            Optional public filepath intended to be displayed to end user.
+
+        msg : str
             User-friendly warning message. Intended to support corrective action.
 
         Returns
         -------
         None
-
         """
-
         # print('Warning: ' + msg) # temporary, until logging implemented
         # Log warning
         ##msg = 'Warning: ' + msg
@@ -149,7 +157,6 @@ submitter."""
         bool
             True if warning we are searching for exists. False otherwise.
         """
-
         for entry in self.__warnings:
             # Turn this into debugging
             #filename, warning = entry
@@ -194,7 +201,6 @@ submitter."""
         bool
             True if error we are searching for exists. False otherwise.
         """
-
         for entry in self.__errors:
             # Turn this into debugging
             #filename, error = entry
@@ -234,7 +240,7 @@ submitter."""
         """
         Remove file from source directory.
 
-        Moves specified file to 'removed' directory and marks File
+        Moves specified file to 'removed' directory and marks :class:`File`
         objects state as removed."
 
         Parameters
@@ -248,11 +254,7 @@ submitter."""
         -------
         None
 
-        Notes
-        -----
-
         """
-
         # Move file to removed directory
         filepath = file.filepath
         removed_path = os.path.join(self.get_removed_directory(), file.name)
@@ -278,15 +280,16 @@ submitter."""
         # recalculated after all file checks (uses this routine) are complete.
 
     def remove_workspace(self) -> bool:
-        """Remove upload workspace. This request completely removes the upload
+        """Remove upload workspace.
+
+        This request completely removes the upload
         workspace directory. No backup is made here (system backups may have files
         for period of time).
 
         Returns
         -------
-
+        True if source log was saved and workspace deleted.
         """
-
         self.log('********** Delete Workspace ************\n')
 
         # Think about stashing source.log, otherwise any logging is fruitless
@@ -391,7 +394,8 @@ submitter."""
     def client_remove_file(self, public_file_path: str) -> bool:
         """Delete a single file.
 
-        For a single file delete we will move it to 'removed' directory.
+        For a single file deletion we will move file to special 'removed'
+        directory.
 
         Parameters
         ----------
@@ -400,16 +404,14 @@ submitter."""
 
         Returns
         -------
-
         True on success.
 
         Notes
-        _____
+        -----
         We are logging messages to source log. Warnings are not passed
         back in response for non-upload requests so we skip issuing warnings/errors.
 
         """
-
         self.log('********** Delete File ************\n')
 
         # Check whether client is trying to damage system with invalid path
@@ -494,9 +496,9 @@ submitter."""
 
         Returns
         -------
+        True if all files were removed successfully. False otherwise.
 
         """
-
         self.log('********** Delete ALL Files ************\n')
 
         # Cycle through list of files under src directory and remove them.
@@ -523,21 +525,19 @@ submitter."""
 
     def get_upload_directory(self) -> str:
         """
-        Get top level workspace directory for submission."
+        Get top level workspace directory.
 
         Returns
         -------
         str
             Top level directory path for upload workspace.
         """
-
         root_path = _get_base_directory()
         upload_directory = os.path.join(root_path, str(self.upload_id))
         return upload_directory
 
     def create_upload_directory(self):
-        """Create the base directory for upload workarea"""
-
+        """Create the base directory for upload workarea."""
         root_path = _get_base_directory()
 
         if not os.path.exists(root_path):
@@ -671,6 +671,7 @@ submitter."""
     # TODO: Need to refactor these messages at some point
 
     def bib_with_bbl_warning(self) -> str:
+        """Unnecessary .bib file warning message."""
         bib_warning = "We do not run bibtex in the auto - TeXing " \
             "procedure. We do not run bibtex because the .bib database " \
             "files can be quite large, and the only thing necessary "\
@@ -678,6 +679,7 @@ submitter."""
         return bib_warning
 
     def bib_no_bbl_warning(self) -> str:
+        """Missing .bbl file explanation message."""
         bib_warning = "We do not run bibtex in the auto - TeXing " \
             "procedure. If you use it, include in your submission the .bbl file " \
             "which bibtex produces on your home machine; otherwise your " \
@@ -688,13 +690,14 @@ submitter."""
         return bib_warning
 
     def bbl_missing_error(self, basename: str) -> str:
-
+        """Missing .bbl file detailed warning message."""
         bbl_missing = f"Your submission contained {basename}.bib file, but no"\
                     + f" {basename}.bbl file (include {basename}.bbl, or " \
                       + f"submit without {basename}.bib; and remember to verify references)."
         return bbl_missing
 
     def doc_warning(self) -> str:
+        """DOC (MS Word) format not accepted warning message."""
         doc_warning = "Your submission has been rejected because it contains " \
                       "one or more files with extension .doc, assumed to be " \
                       "MSWord files. Sadly, MSWord is not an acceptable " \
@@ -709,18 +712,16 @@ submitter."""
         return doc_warning
 
     def graphic_error(self) -> str:
-        """
-        Unsupported graphic format
-        :return:
-        """
-        graphic_error = f"{format} is not a supported graphics format: most "\
-                "readers do not have the programs needed to view and print "\
-                        ".$format figures. Please save your [% format %] "\
-                        "figures instead as PostScript, PNG, JPEG, or GIF "\
-                        "(PNG/JPEG/GIF files can be viewed and printed with "\
-                        "any graphical web browser) -- see <href="/help/bitmap#software">bitmapping help</a> for more information."
+        """Unsupported graphic format error message."""
+        graphic_error = f"{format} is not a supported graphics format: most " \
+                        "readers do not have the programs needed to view and print " \
+                        ".$format figures. Please save your [% format %] " \
+                        "figures instead as PostScript, PNG, JPEG, or GIF " \
+                        "(PNG/JPEG/GIF files can be viewed and printed with " \
+                        "any graphical web browser) -- see <href=" / help / bitmap  # software">bitmapping help</a> for more information."
 
     def revtex_warning(self) -> str:
+        """Revtex warning message."""
         revtex_warning = "WILL REMOVE standard revtex4 style files from this "\
                          "submission. revtex4 is now fully supported by arXiv "\
                          "and all its mirrors, for details see the "\
@@ -730,6 +731,7 @@ submitter."""
         return revtex_warning
 
     def diagrams_warning(self) -> str:
+        """Diagrams warning message."""
         diagrams_warning = "REMOVING standard style files for Paul Taylor's "\
                            "diagrams package. This package is supported in arXiv's TeX "\
                            "tree and the style files are thus unnecessary. "\
@@ -738,6 +740,7 @@ submitter."""
         return diagrams_warning
 
     def missfont_warning(self):
+        """Missing fonts warning message."""
         missfont_warning = "Removed file 'missfont.log'. Detected 'missfont.log' file in uploaded files. This may indicate a problem "\
                            "with the fonts your submission uses. Please correct any issues with fonts and "\
                            "be sure to examine the fonts in the final preview PDF that our system generates."
@@ -745,6 +748,8 @@ submitter."""
 
     def check_files(self) -> None:
         """
+        Unpack, evaluate, and sanitize uploaded files.
+
         This is the main loop that goes through the list of files and performs
         a long list of checks that depend on file type, extension, and sometimes file name.
 
@@ -752,7 +757,6 @@ submitter."""
         -------
         None
         """
-
         self.log('\n******** Check Files *****\n\n')
 
         source_directory = self.get_source_directory()
@@ -1138,7 +1142,9 @@ submitter."""
     @property
     def total_upload_size(self) -> int:
         """
-        Total size of client's uploaded content. This only refers to client
+        Total size of client's uploaded content.
+
+        This only refers to client
         files stored in workspace source subdirectory. This does not include
         backups, removed files/archives, or log files.
 
@@ -1164,12 +1170,11 @@ submitter."""
         """
         Calculate total size of client's upload workspace source files.
 
-
-        Returns
-        -------
-
+        Note
+        ----
+        This does not include system generated files (source.log, generated
+        formats, or removed files.
         """
-
         # Calculate total upload workspace source directory size.
         source_directory = self.get_source_directory()
 
@@ -1191,11 +1196,7 @@ submitter."""
         self.total_upload_size = total_upload_size
 
     def create_file_list(self) -> list:
-        """Create list of File objects with details of each file in
-        upload package."""
-        # TODO: implement create file list
-
-        # TODO: Cleanup and test.
+        """Create list of File objects."""
         # Make sure file list creation is working in check files before enabling.
         #
         # Not ready to enable.
@@ -1232,7 +1233,10 @@ submitter."""
         return list
 
     def create_file_upload_summary(self) -> list:
-        """Returns a list files with details [dict]. Maybe be generated when upload
+        """
+        Generate a list of files with details [dict].
+
+        Maybe be generated when upload
         is processed or when run against existing upload directory.
 
         Return list of files created during upload processing or from list of
@@ -1244,8 +1248,11 @@ submitter."""
               the list generated during processing upload (includes removed files) may be
               different than the list generated against an existing source directory.
 
+        Returns
+        -------
+        List of files where each entry is a dictionary containing details about
+        file.
         """
-
         file_list = []
 
         if self.has_files():
@@ -1275,8 +1282,12 @@ submitter."""
         return file_list
 
     def set_file_permissions(self) -> None:
-        """Set the file permissions for all files and directories in upload."""
+        """
+        Set the file permissions for all uploaded files and directories.
 
+        Applies to files and directories in submitter's upload source
+        directory.
+        """
         # Start at directory containing source files
         source_directory = self.get_source_directory()
 
@@ -1293,8 +1304,8 @@ submitter."""
         """
         Eliminate single top-level directory.
 
-        Intended for case where submitter creates archive with submission
-        files in subdirectory.
+        Intended for case where submitter creates archive with all
+        uploaded files in a subdirectory.
         """
         source_directory = self.get_source_directory()
 
@@ -1336,14 +1347,16 @@ submitter."""
             self.create_file_list()
 
     def finalize_upload(self):
-        """For file type checks that cannot be done until all files
-        are uploaded, including total submission size.
+        """
+        Checks to be performed after files are uploaded and sanitized.
+
+        For file type checks that cannot be performed until all files
+        are uploaded.
 
         Build final list of files contained in upload.
 
         Remove single top level directory.
         """
-
         # Only do this if we haven't generated list already
         if not self.has_files():
             self.create_file_list()
@@ -1382,7 +1395,6 @@ submitter."""
         ----------
         Original Perl code is located in Upload.pm (in arXivLib/lib/arXiv/Submit)
         """
-
         # Upload_id and filename exists
         # Move this to log
         # print("\n---> Upload id: " + str(self.upload_id) + " FilenamePath: " + file.filename
@@ -1450,10 +1462,12 @@ submitter."""
 
     @property
     def content_package_exists(self) -> bool:
+        """Return True if content package exists."""
         return os.path.exists(self.get_content_path())
 
     @property
     def content_package_modified(self) -> datetime:
+        """Return modify datetime of content package."""
         return datetime.fromtimestamp(
             os.path.getmtime(self.get_content_path()),
             tz=UTC
@@ -1461,17 +1475,27 @@ submitter."""
 
     @property
     def content_package_size(self) -> int:
+        """Return size of content package."""
         return os.path.getsize(self.get_content_path())
 
     @property
     def content_package_stale(self) -> bool:
+        """
+        Check whether source has been modified since content package creation.
+
+        Returns
+        -------
+        True is content package is stale and needs to be regenerated.
+        """
         return self.last_modified > self.content_package_modified
 
     def content_checksum(self) -> str:
-        """Return b64-encoded MD5 hash of the packed content tarball.
+        """
+        Return b64-encoded MD5 hash of the packed content tarball.
 
         Triggers building content package when pre-existing package is not found or stale
-        relative to source files."""
+        relative to source files.
+        """
         if not self.content_package_exists or self.content_package_stale:
             self.pack_content()
 
@@ -1486,6 +1510,11 @@ submitter."""
     def content_file_path(self, public_file_path: str) -> str:
         """
         Return the absolute path of content file given relative pointer.
+
+        Parameters
+        ----------
+        public_file_path : str
+            Public file path relative to directory containing uploaded files.
 
         Returns
         -------
@@ -1505,14 +1534,13 @@ submitter."""
         Parameters
         ----------
         public_file_path : str
-            Relative path of file in upload workspace.
+           Public file path relative to directory containing uploaded files.
 
         Returns
         -------
         True if file exists, False otherwise.
 
         """
-
         file_obj = self.resolve_public_file_path(public_file_path)
 
         if file_obj is not None:
@@ -1530,7 +1558,7 @@ submitter."""
 
         Returns
         -------
-
+        Size in bytes.
         """
         file_obj = self.resolve_public_file_path(public_file_path)
 
@@ -1546,8 +1574,8 @@ submitter."""
 
         Parameters
         ----------
-        filepath: str
-            Path to file we want to generate checksum for.
+        public_file_path : str
+            Public file path relative to directory containing uploaded files.
 
         Returns
         -------
@@ -1555,7 +1583,6 @@ submitter."""
         return b64-encoded MD5 hash of the specified file.
 
         """
-
         file_obj = self.resolve_public_file_path(public_file_path)
 
         if file_obj is not None:
@@ -1569,14 +1596,14 @@ submitter."""
 
         Parameters
         ----------
-        filepath : str
+        public_file_path : str
+            Public file path relative to directory containing uploaded files.
 
         Returns
         -------
         File pointer or Null string when filepath does not exist.
 
         """
-
         file_obj = self.resolve_public_file_path(public_file_path)
 
         if file_obj is not None and os.path.exists(file_obj.filepath):
@@ -1587,13 +1614,15 @@ submitter."""
     def content_file_last_modified(self, public_file_path: str) -> datetime:
         """
         Return last modified time for specified file/package.
+
         Parameters
         ----------
-        filepath
+        public_file_path: str
+            Public file path relative to directory containing uploaded files.
 
         Returns
         -------
-
+        Last modified date string.
         """
         file_obj = self.resolve_public_file_path(public_file_path)
 
@@ -1632,13 +1661,13 @@ submitter."""
         return os.path.getsize(source_log_path)
 
     @property
-    def source_log_last_modofied(self) -> str:
+    def source_log_last_modified(self) -> str:
         """
         Last modified date of source log (UTC).
 
         Returns
         -------
-
+        Last modified date string.
         """
         source_log_path = self.get_upload_source_log_path()
         return datetime.utcfromtimestamp(os.path.getmtime(source_log_path))
@@ -1654,7 +1683,6 @@ submitter."""
         return b64-encoded MD5 hash of the specified file.
 
         """
-
         source_log_path = self.get_upload_source_log_path()
 
         if os.path.exists(source_log_path):
@@ -1668,7 +1696,6 @@ submitter."""
 
     def source_log_file_pointer(self) -> io.BytesIO:
         """Get a file-pointer for source log."""
-
         source_log_path = self.get_upload_source_log_path()
         print(f"SOURCE LOG PATH: {source_log_path}")
         if os.path.exists(source_log_path):
