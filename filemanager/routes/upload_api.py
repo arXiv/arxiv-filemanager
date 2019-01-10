@@ -38,12 +38,15 @@ def service_status() -> tuple:
 @blueprint.route('/', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD)
 def new_upload() -> tuple:
-    """Initial upload where workspace (upload_id) does not yet exist.
+    """
+    Create workspace and upload files.
+
+    Initial upload where workspace (upload_id) does not yet exist.
 
     This requests creates a new workspace. Upload package is processed normally.
 
-    Client response include upload_id which is necessary for subsequent requests."""
-
+    Client response include upload_id which is necessary for subsequent requests.
+    """
     # Optional category/archive - this is required to accurately calculate
     # whether submission is oversize.
     archive_arg = request.form.get('archive', None)
@@ -64,8 +67,18 @@ def new_upload() -> tuple:
 @blueprint.route('<int:upload_id>', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def upload_files(upload_id: int) -> tuple:
-    """Upload individual files or compressed archive
-    and add to existing upload workspace. Multiple uploads accepted."""
+    """
+    Upload files to existing workspace.
+
+    Upload individual files or compressed archive
+    and add to existing upload workspace. Multiple uploads accepted.
+
+    Parameters
+    ----------
+    upload_id : int
+        Workspace identifier
+
+    """
     archive_arg = request.form.get('archive')
     ancillary = request.form.get('ancillary', None) == 'True'
     file = request.files.get('file', None)
@@ -80,6 +93,14 @@ def upload_files(upload_id: int) -> tuple:
 @blueprint.route('<int:upload_id>', methods=['GET'])
 @scoped(scopes.READ_UPLOAD, authorizer=is_owner)
 def get_upload_files(upload_id: int) -> tuple:
+    """Upload summary.
+
+    Parameters
+    ----------
+    upload_id : int
+        Workspace identifier
+
+    """
     data, status_code, headers = upload.upload_summary(upload_id)
     return jsonify(data), status_code, headers
 
@@ -87,7 +108,17 @@ def get_upload_files(upload_id: int) -> tuple:
 @blueprint.route('<int:upload_id>/<path:public_file_path>', methods=['DELETE'])
 @scoped(scopes.DELETE_UPLOAD_FILE, authorizer=is_owner)
 def delete_file(upload_id: int, public_file_path: str) -> tuple:
-    """Delete individual file."""
+    """
+    Delete individual file.
+
+    Parameters
+    ----------
+    upload_id : int
+        Workspace identifier
+    public_file_path : str
+        Relative file path that uniquely identifies file to be removed.
+
+    """
     data, status_code, headers = upload.client_delete_file(upload_id,
                                                            public_file_path)
     return jsonify(data), status_code, headers
@@ -97,7 +128,15 @@ def delete_file(upload_id: int, public_file_path: str) -> tuple:
 @blueprint.route('<int:upload_id>/delete_all', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def delete_all_files(upload_id: int) -> tuple:
-    """Delete all files in specified workspace."""
+    """
+    Delete all files in specified workspace.
+
+    Parameters
+    ----------
+    upload_id : int
+        Workspace identifier
+
+    """
     data, status_code, headers = upload.client_delete_all_files(upload_id)
     return jsonify(data), status_code, headers
 
@@ -105,7 +144,15 @@ def delete_all_files(upload_id: int) -> tuple:
 @blueprint.route('<int:upload_id>', methods=['DELETE'])
 @scoped(scopes.DELETE_UPLOAD_WORKSPACE)
 def workspace_delete(upload_id: int) -> tuple:
-    """Delete the specified workspace."""
+    """
+    Delete the specified workspace.
+
+    Parameters
+    ----------
+    upload_id : int
+        Workspace identifier
+
+    """
     data, status_code, headers = upload.delete_workspace(upload_id)
     return jsonify(data), status_code, headers
 
@@ -115,8 +162,18 @@ def workspace_delete(upload_id: int) -> tuple:
 @blueprint.route('/<int:upload_id>/lock', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def lock(upload_id: int) -> tuple:
-    """Lock submission (read-only mode) while other services are
-    processing (major state transitions are occurring)."""
+    """
+    Lock submission workspace.
+
+    Lock submission (read-only mode) while other services are
+    processing (major state transitions are occurring).
+
+    Parameters
+    ----------
+    upload_id : int
+        Workspace identifier
+
+    """
     data, status_code, headers = upload.upload_lock(upload_id)
     return jsonify(data), status_code, headers
 
@@ -125,7 +182,7 @@ def lock(upload_id: int) -> tuple:
 @blueprint.route('/<int:upload_id>/unlock', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def unlock(upload_id: int) -> tuple:
-    """Unlock submission and enable write mode."""
+    """Unlock submission workspace and allow updates."""
     data, status_code, headers = upload.upload_unlock(upload_id)
     return jsonify(data), status_code, headers
 
@@ -134,9 +191,12 @@ def unlock(upload_id: int) -> tuple:
 @blueprint.route('/<int:upload_id>/release', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def release(upload_id: int) -> tuple:
-    """Client indicates they are finished with submission.
+    """
+    Client indicates they are finished with submission.
+
     File management service is free to remove submissions files,
-    or schedule files for removal at later time."""
+    or schedule workspace for removal.
+    """
     data, status_code, headers = upload.upload_release(upload_id)
     return jsonify(data), status_code, headers
 
@@ -145,9 +205,12 @@ def release(upload_id: int) -> tuple:
 @blueprint.route('/<int:upload_id>/unrelease', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def unrelease(upload_id: int) -> tuple:
-    """Client indicates they are finished with submission.
-    File management service is free to remove submissions files,
-    or schedule files for removal at later time."""
+    """
+    Client indicates they are NOT finished with submission.
+
+    Workspace was previously release by client. Client has changed their
+    mind and does not want to remove workspace.
+    """
     data, status_code, headers = upload.upload_unrelease(upload_id)
     return jsonify(data), status_code, headers
 
@@ -199,8 +262,10 @@ def get_file_content(upload_id: int, public_file_path: str) -> tuple:
     """
     Return content of specified file.
 
+    :param upload_id:
+    :param public_file_path:
+    :return: File content.
     """
-
     data, status_code, headers = upload.get_upload_file_content(upload_id, public_file_path)
 
     response = send_file(data, mimetype="application/*")
@@ -232,8 +297,10 @@ def check_upload_source_log_exists(upload_id: int) -> tuple:
 @scoped(scopes.READ_UPLOAD_LOGS)
 def get_upload_source_log(upload_id: int) -> tuple:
     """
+    Get upload workspace log.
+
     Get the upload source log for specified upload workspace. This provides details of all
-    upload/deletion activity on specified workspace.
+    upload/deletion/errors/warnings for specified workspace.
 
     Parameters
     ----------
@@ -241,6 +308,7 @@ def get_upload_source_log(upload_id: int) -> tuple:
 
     Returns
     -------
+    The source.log for specified upload workspace.
 
     """
     data, status_code, headers = upload.get_upload_source_log(upload_id)
@@ -266,12 +334,16 @@ def check_upload_service_log_exists() -> tuple:
 @scoped(scopes.READ_UPLOAD_SERVICE_LOGS)
 def get_upload_service_log() -> tuple:
     """
-    Return the top level file management service log that records high-level requests along with
-    important errors/warnings. Details for specific upload workspace are found in workspace
-    source log.
+    Get upload file manager service log.
+
+    Return the top level file manager service log that records high-level
+    events/requests along with important errors/warnings.
+
+    Does not include etails for a specific upload workspace.
 
     Returns
     -------
+    The log file for upload file manager service.
 
     """
     data, status_code, headers = upload.get_upload_service_log()
