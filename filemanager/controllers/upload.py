@@ -37,8 +37,7 @@ logger = logging.getLogger(__name__)
 
 def _get_service_logs_directory() -> str:
     """
-    Return path to service logs directory. We may eventually
-    have multiple 'logs'.
+    Return path to service logs directory.
 
     Returns
     -------
@@ -121,7 +120,8 @@ Response = Tuple[Optional[dict], int, dict]
 
 
 def delete_workspace(upload_id: int) -> Response:
-    """Delete workspace.
+    """
+    Delete workspace.
 
     Parameters
     ----------
@@ -138,7 +138,6 @@ def delete_workspace(upload_id: int) -> Response:
         Some extra headers to add to the response.
 
     """
-
     logger.info('%s: Deleting upload workspace.', upload_id)
 
     # Need to add several checks here
@@ -279,7 +278,8 @@ def client_delete_file(upload_id: str, public_file_path: str) -> Response:
 
 
 def client_delete_all_files(upload_id: str) -> Response:
-    """Delete all files uploaded by client from specified workspace.
+    """
+    Delete all files uploaded by client from specified workspace.
 
     This request is being received from API so we need to be extra careful.
 
@@ -300,7 +300,6 @@ def client_delete_all_files(upload_id: str) -> Response:
         Some extra headers to add to the response.
 
     """
-
     logger.info("%s: Deleting all uploaded files from this workspace.", upload_id)
 
     try:
@@ -344,8 +343,10 @@ def client_delete_all_files(upload_id: str) -> Response:
 
 def upload(upload_id: int, file: FileStorage, archive: str,
            user: auth_domain.User, ancillary: bool = False) -> Response:
-    """Upload individual files or compressed archive. Unpack and add
-    files to upload_db_data workspace.
+    """
+    Upload individual files or compressed archive into specified workspace.
+
+    Unpack, sanitize, and add files to upload workspace.
 
     Parameters
     ----------
@@ -370,7 +371,6 @@ def upload(upload_id: int, file: FileStorage, archive: str,
     dict
         Some extra headers to add to the response.
     """
-
     # TODO: Hook up async processing (celery/redis) - doesn't work now
     # TODO: Will likely delete this code if processing time is reasonable
     # print(f'Controller: Schedule upload_db_data task for {upload_id}')
@@ -566,28 +566,28 @@ def upload(upload_id: int, file: FileStorage, archive: str,
 
 
 def upload_summary(upload_id: int) -> Response:
-    """Provide summary of important upload workspace details.
+    """
+    Provide summary of important upload workspace details.
 
-       Parameters
-       ----------
-       upload_id : int
-           The unique identifier for upload workspace.
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for upload workspace.
 
-       Returns
-       -------
-       dict
-           Detailed information about the upload_db_data.
+    Returns
+    -------
+    dict
+        Detailed information about the upload_db_data.
 
-           logs - Errors and Warnings
-           files - list of file details
+        logs - Errors and Warnings
+        files - list of file details
 
 
-       int
-           An HTTP status code.
-       dict
-           Some extra headers to add to the response.
-       """
-
+    int
+        An HTTP status code.
+    dict
+        Some extra headers to add to the response.
+    """
     try:
         # Make sure we have an upload_db_data to work with
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
@@ -655,13 +655,27 @@ def upload_summary(upload_id: int) -> Response:
 # TODO: and submitter coordinate on changes to upload workspace.
 
 def upload_lock(upload_id: int) -> Response:
-    """Lock upload workspace. Prohibit all user operations on upload.
+    """
+    Lock upload workspace.
 
-    Lock may indicate process that might produce unknown results if
-    workspace is updated. Compile and publish are examples.
+    Prohibit all client operations on upload workspace.
 
-    Admins may unlock upload."""
+    Lock may indicate process is using workspace content that otherwise
+    might produce unknown results if workspace is updated during this process.
+    Compile and publish are examples.
 
+    Admins will be able to unlock upload workspace.
+
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for upload workspace.
+
+    Returns
+    -------
+    Standard Response tuple containing response content, HTTP status, and HTTP headers.
+
+    """
     logger.info("%s: Lock upload workspace.", upload_id)
 
     try:
@@ -701,7 +715,19 @@ def upload_lock(upload_id: int) -> Response:
 
 
 def upload_unlock(upload_id: int) -> Response:
-    """Unlock upload workspace."""
+    """
+    Unlock upload workspace.
+
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for upload workspace.
+
+    Returns
+    -------
+    Standard Response tuple containing response content, HTTP status, and HTTP headers.
+
+    """
     # response_data = ERROR_REQUEST_NOT_IMPLEMENTED
     # status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     logger.info("%s: Unlock upload workspace.", upload_id)
@@ -743,7 +769,8 @@ def upload_unlock(upload_id: int) -> Response:
 
 
 def upload_release(upload_id: int) -> Response:
-    """Release inidcates owner is done with upload workspace.
+    """
+    Release inidcates owner is done with upload workspace.
 
     System will schedule to remove files.
 
@@ -767,7 +794,6 @@ def upload_release(upload_id: int) -> Response:
            Some extra headers to add to the response.
 
     """
-
     # Again, as with delete workspace, authentication, authorization, and
     # existence of workspace is verified in route level
 
@@ -820,7 +846,13 @@ def upload_release(upload_id: int) -> Response:
 
 
 def upload_unrelease(upload_id: int) -> Response:
-    """Unrelease returns released workspace to active state.
+    """
+    Unrelease returns released workspace to active state.
+
+    Reverses previous request to release workspace.
+
+    Note that unrelease request does NOT restore workspace that has
+    already been removed from filesystem.
 
     Parameters
     ----------
@@ -842,7 +874,6 @@ def upload_unrelease(upload_id: int) -> Response:
            Some extra headers to add to the response.
 
     """
-
     # Again, as with delete workspace, authentication, authorization, and
     # existence of workspace is verified in route level
 
@@ -898,8 +929,19 @@ def upload_unrelease(upload_id: int) -> Response:
 # Content download controllers
 
 def check_upload_content_exists(upload_id: int) -> Response:
-    """Verify that the package content exists/is available."""
+    """
+    Verify that the package content exists/is available.
 
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for upload workspace.
+
+    Returns
+    -------
+    Standard Response tuple containing response content, HTTP status, and HTTP headers.
+
+    """
     try:
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
     except IOError:
@@ -931,7 +973,19 @@ def check_upload_content_exists(upload_id: int) -> Response:
 
 
 def get_upload_content(upload_id: int) -> Response:
-    """Package up files for downloading as a compressed gzipped tar file."""
+    """
+    Package up files for downloading as a compressed gzipped tar file.
+
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for upload workspace.
+
+    Returns
+    -------
+    Standard Response tuple containing compressed content, HTTP status, and HTTP headers.
+
+    """
     try:
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
     except IOError:
@@ -952,8 +1006,21 @@ def get_upload_content(upload_id: int) -> Response:
 
 
 def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> Response:
-    """Verify that the specified content file exists/is available."""
+    """
+    Verify that the specified content file exists/is available.
 
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for upload workspace.
+    public_file_path: str
+        relative path of file to be checked.
+
+    Returns
+    -------
+    Standard Response tuple containing content, HTTP status, and HTTP headers.
+
+    """
     try:
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
     except IOError:
@@ -1006,11 +1073,12 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
 
 def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
     """
+    Get the source log associated with upload workspace.
 
     Parameters
     ----------
     upload_id : int
-        The unique identifier for the upload_db_data in question.
+        The unique identifier for upload workspace.
     public_file_path: str
         relative path of file to be deleted.
 
@@ -1024,7 +1092,6 @@ def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
         Some extra headers to add to the response.
 
     """
-
     try:
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
     except IOError:
@@ -1080,15 +1147,15 @@ def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
 
 def check_upload_source_log_exists(upload_id: int) -> Response:
     """
-    Get the source log associated with upload workspace.
+    Determine if source log associated with upload workspace exists.
 
     Parameters
     ----------
-    upload_id
+    upload_id : int
+        The unique identifier for upload workspace.
 
     Returns
     -------
-
     Note: This routine currently retrieves the source log for active upload
     workspaces. Technically, the upload source log is available for a 'deleted'
     workspace, since we stash this away before we actually delete the workspace.
@@ -1120,14 +1187,19 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
 
 def get_upload_source_log(upload_id: int) -> Response:
     """
+    Get upload workspace log.
+
+    This log contains details of all actions/requests/warnings/errors/etc related
+    to specified upload workspace.
 
     Parameters
     ----------
-    upload_id
+    upload_id : int
+        The unique identifier for upload workspace.
 
     Returns
     -------
-
+    Standard Response tuple containing content, HTTP status, and HTTP headers.
     """
     try:
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
@@ -1165,7 +1237,6 @@ def get_upload_source_log(upload_id: int) -> Response:
 
 def __checksum(filepath: str) -> str:
     """Return b64-encoded MD5 hash of file."""
-
     if os.path.exists(filepath):
         hash_md5 = md5()
         with open(filepath, "rb") as f:
@@ -1177,13 +1248,33 @@ def __checksum(filepath: str) -> str:
 
 
 def __last_modified(filepath: str) -> str:
-    """Return last modified time of file. """
+    """Return last modified time of file.
 
+    Perameters
+    ----------
+    filepath : str
+        Absolute file path.
+
+    Returns
+    -------
+    Last modified date string for specified file.
+    """
     return datetime.utcfromtimestamp(os.path.getmtime(filepath))
 
 def __content_pointer(service_log_path) -> io.BytesIO:
-        """Get a file-pointer for service log."""
+        """Get a file-pointer for service log.
 
+        Parameters
+        ----------
+        service_log_path : str
+            Absolute path of file manager service log.
+
+        Returns
+        -------
+        Standard Response tuple containing service log content, HTTP status,
+        and HTTP headers.
+
+        """
         if os.path.exists(service_log_path):
             return open(service_log_path, 'rb')
         else:
@@ -1192,13 +1283,18 @@ def __content_pointer(service_log_path) -> io.BytesIO:
 
 def check_upload_service_log_exists() -> Response:
     """
-    Check whether service log exists. (it should exist but just in case)
+    Check whether service log exists.
+
+    Note
+    ----
+    Service log should exist. Response includes size of log and last
+    modified date which may be useful for inquiries where client does
+    not desire to download entire log file.
 
     Returns
     -------
-
+    Standard Response tuple containing content, HTTP status, and HTTP headers.
     """
-
     # Need path to upload.log which is currently stored at top level
     # of filemanager service.
 
@@ -1216,14 +1312,16 @@ def check_upload_service_log_exists() -> Response:
 
 def get_upload_service_log() -> Response:
     """
-    Return the service-level file management service log. This log records
-    high level events for all upload workspaces.
+    Return the service-level file manager service log.
+
+    The file manager service-wide log records high-level events and
+    significant workspace events. Detailed file upload/file checks details
+    will be recorded in workspace log.
 
     Returns
     -------
-
+    Standard Response tuple containing content, HTTP status, and HTTP headers.
     """
-
     # service_log_path is global set during startup log init
     checksum = __checksum(service_log_path)
     size = os.path.getsize(service_log_path)
