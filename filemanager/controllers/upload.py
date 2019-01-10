@@ -1111,7 +1111,7 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
 
     checksum = upload_workspace.source_log_checksum
     size = upload_workspace.source_log_size
-    modified = upload_workspace.source_log_last_modofied
+    modified = upload_workspace.source_log_last_modified
 
     return {}, status.HTTP_200_OK, {'ETag': checksum,
                                     'Content-Length': size,
@@ -1143,7 +1143,7 @@ def get_upload_source_log(upload_id: int) -> Response:
 
     checksum = upload_workspace.source_log_checksum
     size = upload_workspace.source_log_size
-    modified = upload_workspace.source_log_last_modofied
+    modified = upload_workspace.source_log_last_modified
 
     filepointer = upload_workspace.source_log_file_pointer()
     if filepointer:
