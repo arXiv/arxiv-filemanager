@@ -1023,6 +1023,8 @@ submitter."""
 
     def check_file_termination(self, file_obj: File):
         """
+        Check for unwanted characters at end of file.
+
         The original unmacify/unpcify routine attemtps to cleanup the last few
         characters in a file regardless or whether the file is pc/mac generated.
         For that reason I have refactored the code into a seperate routine for
@@ -1034,9 +1036,11 @@ submitter."""
         At the current time this routine will get called anytime unmacify routine
         is called.
 
+        Parameters
+        ----------
+        file_obj : File
+            File object containing details about file to unmacify.
 
-        :param file_obj:
-        :return:
         """
 
         # Check for special characters at end of file.
@@ -1048,70 +1052,74 @@ submitter."""
         if self.debug():
             self.log(f"Checking file termination for {filepath}.")
 
-        if os.path.exists(filepath):
-            with open(filepath, "rb+") as f:
-
-                # Seek to last two bytes of file
-                f.seek(-2, 2)
-
-                # Examine bytes for characters we want to strip.
-                input_bytes = f.read(2)
-
-                if self.debug():
-                    print(f"\nRead '{input_bytes}' from {file_obj.name}\n")
-
-                byte_found = False
-                if input_bytes[0]== 0x01A or input_bytes[0]==0x4 \
-                        or input_bytes[0]==0xFF:
-                    byte_found = True
-
-                    f.seek(-2, 2)
-                    fsize = f.tell()
-                    f.truncate(fsize)
-                elif input_bytes[1]==0x01A or input_bytes[1]==0x4 \
-                        or input_bytes[1]==0xFF:
-                    byte_found = True
-                    f.seek(-1, 2)
-                    fsize = f.tell()
-                    f.truncate(fsize)
-
-                if byte_found:
-                    msg = ""
-
-                    if input_bytes[0] == 0x01A or input_bytes[1] == 0x01A:
-                        msg += "trailing ^Z "
-                    if input_bytes[0] == 0x4 or input_bytes[1] == 0x4:
-                        msg += "trailing ^D "
-                    if input_bytes[0] == 0xFF or input_bytes[1] == 0xFF:
-                        msg += "trailing =FF "
-                    if input_bytes[1] == 0x0A:
-                        self.log(f"{file_obj.public_filepath} [stripped newline] ")
-
-                    self.add_warning(file_obj.public_filepath,
-                                     f"{msg}stripped from {file_obj.public_filepath}.")
-
-                # Check of last character of file is newline character
-                # Seek to last two bytes of file
-                f.seek(-1, 2)
-                last_byte = f.read(1)
-                if last_byte != 0x0A:
-                    self.add_warning(file_obj.public_filepath,
-                                     f"File {file_obj.public_filepath} does not end with \\n, TRUNCATED?.")
-
-        else:
+        if not os.path.exists(filepath):
             self.log(f"Check termination: File '{filepath}' doesn't exist.")
+            return
 
+        with open(filepath, "rb+") as f:
+
+            # Seek to last two bytes of file
+            f.seek(-2, 2)
+
+            # Examine bytes for characters we want to strip.
+            input_bytes = f.read(2)
+
+            if self.debug():
+                print(f"\nRead '{input_bytes}' from {file_obj.name}\n")
+
+            byte_found = False
+            if input_bytes[0] == 0x01A or input_bytes[0] == 0x4 \
+                    or input_bytes[0] == 0xFF:
+                byte_found = True
+
+                f.seek(-2, 2)
+                fsize = f.tell()
+                f.truncate(fsize)
+            elif input_bytes[1] == 0x01A or input_bytes[1] == 0x4 \
+                    or input_bytes[1] == 0xFF:
+                byte_found = True
+                f.seek(-1, 2)
+                fsize = f.tell()
+                f.truncate(fsize)
+
+            if byte_found:
+                msg = ""
+
+                if input_bytes[0] == 0x01A or input_bytes[1] == 0x01A:
+                    msg += "trailing ^Z "
+                if input_bytes[0] == 0x4 or input_bytes[1] == 0x4:
+                    msg += "trailing ^D "
+                if input_bytes[0] == 0xFF or input_bytes[1] == 0xFF:
+                    msg += "trailing =FF "
+                if input_bytes[1] == 0x0A:
+                    self.log(f"{file_obj.public_filepath} [stripped newline] ")
+
+                self.add_warning(file_obj.public_filepath,
+                                 f"{msg}stripped from {file_obj.public_filepath}.")
+
+            # Check of last character of file is newline character
+            # Seek to last two bytes of file
+            f.seek(-1, 2)
+            last_byte = f.read(1)
+            if last_byte != 0x0A:
+                self.add_warning(file_obj.public_filepath,
+                                     f"File {file_obj.public_filepath} does not end with \\n, TRUNCATED?.")
 
 
     def unmacify(self, file_obj: File):
         """
-        This legacy routine appears to clean up files that contain carriage returns
-        and line feeds.
+        unmacify cleans up files containing carriage returns and line feeds.
+
+        Files generated on Macs and Windows machines frequently have carriage
+        returns that we must clean up prior to compilation.
 
         Jake informs me there is a bug in the Perl unmacify routine.
 
-        :param file_name:
-        :return:
+        Parameters
+        ----------
+        file_obj : File
+            File object containing details about file to unmacify.
+
         """
 
         # Determine type of file we are dealing with PC or MAC
