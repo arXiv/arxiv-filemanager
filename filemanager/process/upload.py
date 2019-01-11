@@ -217,7 +217,8 @@ class Upload:
         """
         Clear out warnings, errors, and files.
 
-        :return:
+        Initialize lists that keep track of warnings, errors, and files.
+
         """
         self.__warnings = []
         self.__errors = []
