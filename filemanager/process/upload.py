@@ -52,6 +52,67 @@ class Upload:
     ANCILLARY_PREFIX = 'anc'
     """The directory within source directory where ancillary files are kept."""
 
+    # Unnecessary .bib file warning message.
+    bib_with_bbl_warning = (
+        "We do not run bibtex in the auto - TeXing "
+        "procedure. We do not run bibtex because the .bib database "
+        "files can be quite large, and the only thing necessary "
+        "to make the references for a given paper is the.bbl file."
+    )
+
+    # Missing .bbl file explanation message.
+    bib_no_bbl_warning = (
+        "We do not run bibtex in the auto - TeXing "
+        "procedure. If you use it, include in your submission the .bbl file "
+        "which bibtex produces on your home machine; otherwise your "
+        "references will not come out correctly. We do not run bibtex "
+        "because the .bib database files can be quite large, and the only "
+        "thing necessary to make the references for a given paper is "
+        "the.bbl file."
+    )
+
+    # DOC (MS Word) format not accepted warning message.
+    doc_warning = (
+        "Your submission has been rejected because it contains "
+        "one or more files with extension .doc, assumed to be "
+        "MSWord files. Sadly, MSWord is not an acceptable "
+        "submission format: see <a href=\"/help/submit\">"
+        "submission help</a> for details of accepted formats. "
+        "If your document was created using MSWord then it is "
+        "probably best to submit as PDF (MSWord can produce "
+        "marginal and/or non-compliant PostScript). If your "
+        "submission includes files with extension .doc which "
+        "are not MSWord documents, please rename to a different"
+        " extension and resubmit."
+    )
+
+    # Revtex warning message.
+    revtex_warning = (
+        "WILL REMOVE standard revtex4 style files from this "
+        "submission. revtex4 is now fully supported by arXiv "
+        "and all its mirrors, for details see the "
+        "<a href=\"/help/faq/revtex\">RevTeX FAQ</a>. If you "
+        "have modified these files in any way then you must "
+        "rename them before attempting to include them with your submission."
+    )
+
+    # Diagrams warning message.
+    diagrams_warning = (
+        "REMOVING standard style files for Paul Taylor's "
+        "diagrams package. This package is supported in arXiv's TeX "
+        "tree and the style files are thus unnecessary. "
+        "Furthermore, they include 'time-bomb' code which will render submissions that "
+        "include them unprocessable at some time in the future."
+    )
+
+    """Missing fonts warning message."""
+    missfont_warning = (
+        "Removed file 'missfont.log'. Detected 'missfont.log' file in uploaded files. This may indicate a problem "
+        "with the fonts your submission uses. Please correct any issues with fonts and "
+        "be sure to examine the fonts in the final preview PDF that our system generates."
+    )
+
+
     def __init__(self, upload_id: int):
         """
         Initialize Upload object.
@@ -669,83 +730,25 @@ class Upload:
             raise BadRequest(UPLOAD_FILE_EMPTY)
         return upload_path
 
-    # TODO: Need to refactor these messages at some point
+    # These messages take parameters
 
-    def bib_with_bbl_warning(self) -> str:
-        """Unnecessary .bib file warning message."""
-        bib_warning = "We do not run bibtex in the auto - TeXing " \
-            "procedure. We do not run bibtex because the .bib database " \
-            "files can be quite large, and the only thing necessary "\
-            "to make the references for a given paper is the.bbl file."
-        return bib_warning
-
-    def bib_no_bbl_warning(self) -> str:
-        """Missing .bbl file explanation message."""
-        bib_warning = "We do not run bibtex in the auto - TeXing " \
-            "procedure. If you use it, include in your submission the .bbl file " \
-            "which bibtex produces on your home machine; otherwise your " \
-            "references will not come out correctly. We do not run bibtex " \
-            "because the .bib database files can be quite large, and the only " \
-            "thing necessary to make the references for a given paper is " \
-            "the.bbl file."
-        return bib_warning
-
-    def bbl_missing_error(self, basename: str) -> str:
+    def bbl_missing_error(self, basename : str):
         """Missing .bbl file detailed warning message."""
-        bbl_missing = f"Your submission contained {basename}.bib file, but no"\
-                    + f" {basename}.bbl file (include {basename}.bbl, or " \
-                      + f"submit without {basename}.bib; and remember to verify references)."
-        return bbl_missing
+        bbl_missing_error = (f"Your submission contained {basename}.bib file, but no"
+                             f" {basename}.bbl file (include {basename}.bbl, or "
+                             f"submit without {basename}.bib; and remember to verify references)."
+                             )
+        return bbl_missing_error
 
-    def doc_warning(self) -> str:
-        """DOC (MS Word) format not accepted warning message."""
-        doc_warning = "Your submission has been rejected because it contains " \
-                      "one or more files with extension .doc, assumed to be " \
-                      "MSWord files. Sadly, MSWord is not an acceptable " \
-                      "submission format: see <a href=\"/help/submit\">" \
-                      "submission help</a> for details of accepted formats. " \
-                      "If your document was created using MSWord then it is " \
-                      "probably best to submit as PDF (MSWord can produce " \
-                      "marginal and/or non-compliant PostScript). If your " \
-                      "submission includes files with extension .doc which " \
-                      "are not MSWord documents, please rename to a different"\
-                      " extension and resubmit."
-        return doc_warning
-
-    def graphic_error(self) -> str:
+    def graphic_error(self, format: str) -> str:
         """Unsupported graphic format error message."""
-        graphic_error = f"{format} is not a supported graphics format: most " \
-                        "readers do not have the programs needed to view and print " \
-                        ".$format figures. Please save your [% format %] " \
-                        "figures instead as PostScript, PNG, JPEG, or GIF " \
-                        "(PNG/JPEG/GIF files can be viewed and printed with " \
-                        "any graphical web browser) -- see <href=" / help / bitmap  # software">bitmapping help</a> for more information."
-
-    def revtex_warning(self) -> str:
-        """Revtex warning message."""
-        revtex_warning = "WILL REMOVE standard revtex4 style files from this "\
-                         "submission. revtex4 is now fully supported by arXiv "\
-                         "and all its mirrors, for details see the "\
-                         "<a href=\"/help/faq/revtex\">RevTeX FAQ</a>. If you "\
-                         "have modified these files in any way then you must "\
-                         "rename them before attempting to include them with your submission."
-        return revtex_warning
-
-    def diagrams_warning(self) -> str:
-        """Diagrams warning message."""
-        diagrams_warning = "REMOVING standard style files for Paul Taylor's "\
-                           "diagrams package. This package is supported in arXiv's TeX "\
-                           "tree and the style files are thus unnecessary. "\
-                           "Furthermore, they include 'time-bomb' code which will render submissions that "\
-                           "include them unprocessable at some time in the future."
-        return diagrams_warning
-
-    def missfont_warning(self):
-        """Missing fonts warning message."""
-        missfont_warning = "Removed file 'missfont.log'. Detected 'missfont.log' file in uploaded files. This may indicate a problem "\
-                           "with the fonts your submission uses. Please correct any issues with fonts and "\
-                           "be sure to examine the fonts in the final preview PDF that our system generates."
-        return missfont_warning
+        graphic_error = (f"{format} is not a supported graphics format: most "
+                         "readers do not have the programs needed to view and print "
+                         ".$format figures. Please save your [% format %] "
+                         "figures instead as PostScript, PNG, JPEG, or GIF "
+                         "(PNG/JPEG/GIF files can be viewed and printed with "
+                         "any graphical web browser) -- for more information.")
+        return graphic_error
 
     def check_files(self) -> None:
         """
@@ -951,7 +954,7 @@ class Upload:
                         # warn submitter of this action
 
                         # Present general warning to user.
-                        msg = self.bib_with_bbl_warning()
+                        msg = Upload.bib_with_bbl_warning
                         _warnings.append(msg)
                         self.add_warning(obj.public_filepath, msg)
                         msg = f"Removed the file '{file_name}'. Using '{bbl_file}' for references."
@@ -960,9 +963,8 @@ class Upload:
                         # Missing .bbl (potential missing references)
                         # Generate an error and DO NOT DELETE .bib file
                         # Note: We are using .bib as flag until .bbl exists
-                        _warnings.append(self.bib_no_bbl_warning())
-                        mes = self.bbl_missing_error(filebase)
-                        _errors.append(mes)
+                        _warnings.append(Upload.bib_no_bbl_warning)
+                        _errors.append(self.bbl_missing_error(filebase))
 
                 elif re.search(r'^(10pt\.rtx|11pt\.rtx|12pt\.rtx|aps\.rtx|'
                                + r'revsymb\.sty|revtex4\.cls|rmp\.rtx)$',
@@ -970,7 +972,7 @@ class Upload:
                     # TeX: submitter is including file already included
                     # in TeX Live release
                     # TODO: get revtex() warning message ???
-                    msg = self.revtex_warning()
+                    msg = Upload.revtex_warning
                     self.remove_file(obj, msg)
                 elif re.search(r'^diagrams\.(sty|tex)$', file_name):
                     obj = _add_file(file_path, _warnings, _errors)
@@ -979,7 +981,7 @@ class Upload:
                     # with time bomb disable.
 
                     # TODO: get diagrams warning
-                    msg = self.diagrams_warning()
+                    msg = Upload.diagrams_warning
                     self.remove_file(obj, msg)
                 elif file_name == 'aa.dem':
                     # TeX: Check for aa.dem
@@ -991,7 +993,7 @@ class Upload:
                     )
                     self.remove_file(obj, "")
                 elif file_name == 'missfont.log':
-                    msg = self.missfont_warning()
+                    msg = Upload.missfont_warning
                     self.remove_file(obj, msg)
                 elif re.search(r'\.synctex$', file_name):
                     # .synctex files are generated by different TeX engine that we
@@ -1039,7 +1041,7 @@ class Upload:
                         _warnings.append(f'Unable to rename {file_name}')
                 elif re.search(r'\.doc$', file_name, re.IGNORECASE) and file_type == 'failed':
                     # Doc warning
-                    msg = self.doc_warning()
+                    msg = Upload.doc_warning
 
                     #_errors.append(msg)
                     self.add_error(obj.public_filepath, msg)
