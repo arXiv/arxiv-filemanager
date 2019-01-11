@@ -27,6 +27,9 @@ UPLOAD_DELETE_ALL_FILE_FAILED = 'unable to delete all file'
 UPLOAD_FILE_NOT_FOUND = 'file not found'
 UPLOAD_WORKSPACE_NOT_FOUND = 'workspcae not found'
 
+# File types unmacify is interested in
+PC  = 'pc'
+MAC = 'mac'
 
 def _get_base_directory() -> str:
     config = get_application_config()
@@ -1123,7 +1126,7 @@ submitter."""
         """
 
         # Determine type of file we are dealing with PC or MAC
-        type = 'mac'
+        file_type = MAC
 
         # Get the absolute file path
         filepath = file_obj.filepath
@@ -1132,7 +1135,7 @@ submitter."""
         with open(filepath, 'rb', 0) as file, \
             mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ) as s:
             if s.find(b"\r\n") != -1:
-                type = 'pc'
+                file_type = PC
 
         """Fix up carriage returns and newlines."""
         self.log(f'Un{type}ify file {file_obj.filepath}')
@@ -1144,9 +1147,9 @@ submitter."""
             open(new_filepath, 'wb', 0) as outfile, \
                 mmap.mmap(infile.fileno(), 0, access=mmap.ACCESS_READ) as s:
 
-            if type == 'pc':
+            if file_type == PC:
                 outfile.write(re.sub(b"\r\n", b"\n", s.read()))
-            elif type == 'mac':
+            elif file_type == MAC:
                 outfile.write(re.sub(b"\r\n?", b"\n", s.read()))
 
             new_file_obj = File(new_filepath, os.path.dirname(new_filepath))
