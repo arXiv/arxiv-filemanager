@@ -6,9 +6,12 @@ from datetime import datetime
 from filemanager.process import upload
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
+from filemanager.arxiv.file import File as File
 
 import os.path
 import shutil
+import tempfile
+import filecmp
 
 from filemanager.process.upload import Upload
 
@@ -144,6 +147,126 @@ class TestInternalSupportRoutines(TestCase):
             self.assertTrue(os.path.exists(path), "Deposited upload file.")
         else:
             self.assertTrue(os.path.exists(workspace_dir), "Workspace directory exists.")
+
+    def test_check_file_termination(self):
+        """
+        Test the filtering of unwanted characters from the end of file.
+        :return:
+        """
+
+        # Copy the files that will be modified to temporary location
+        tmp_dir = tempfile.mkdtemp()
+
+
+        upload = Upload(1234566)
+
+        #upload.set_debug(True)
+
+        # 1
+        tfilename = os.path.join(TEST_FILES_DIRECTORY, 'terminators1.txt')
+        destfilename = os.path.join(tmp_dir, 'terminators1.txt')
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, tmp_dir)
+
+        upload.check_file_termination(file_obj)
+
+        # Check that file generated is what we expected
+        reference = os.path.join(TEST_FILES_DIRECTORY, 'terminators1stripped.txt')
+        is_same = filecmp.cmp(destfilename, reference)
+        self.assertTrue(is_same, 'Eliminated unwanted CR characters from DOS file.')
+
+        # 2
+        tfilename = os.path.join(TEST_FILES_DIRECTORY, 'terminators2.txt')
+        destfilename = os.path.join(tmp_dir, 'terminators2.txt')
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, tmp_dir)
+
+        upload.check_file_termination(file_obj)
+
+        # Check that file generated is what we expected
+        reference = os.path.join(TEST_FILES_DIRECTORY, 'terminators2stripped.txt')
+        is_same = filecmp.cmp(destfilename, reference)
+        self.assertTrue(is_same, 'Eliminated unwanted CR characters from DOS file.')
+
+        # 3
+        # TODO: Having trouble creating example with \377 and non in production system.
+        tfilename = os.path.join(TEST_FILES_DIRECTORY, 'terminators3.txt')
+        destfilename = os.path.join(tmp_dir, 'terminators3.txt')
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, tmp_dir)
+        upload.check_file_termination(file_obj)
+
+        # Check that file generated is what we expected
+        #reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterUnPCify.eps')
+        #is_same = filecmp.cmp(destfilename, reference)
+        #self.assertTrue(is_same, 'Eliminated unwanted CR characters from DOS file.')
+
+        # 4
+        tfilename = os.path.join(TEST_FILES_DIRECTORY, 'BeforeUnPCify.eps')
+        destfilename = os.path.join(tmp_dir, 'BeforeUnPCify.eps')
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, tmp_dir)
+
+        upload.check_file_termination(file_obj)
+
+        # Check that file generated is what we expected
+        reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterTermUnPCify.eps')
+        is_same = filecmp.cmp(destfilename, reference)
+        self.assertTrue(is_same, 'Eliminated unwanted EOT terminators.')
+
+        # 5
+        tfilename = os.path.join(TEST_FILES_DIRECTORY, 'BeforeUnPCify2.eps')
+        destfilename = os.path.join(tmp_dir, 'BeforeUnPCify2.eps')
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, tmp_dir)
+
+        upload.check_file_termination(file_obj)
+
+        # Check that file generated is what we expected
+        reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterTermUnPCify2.eps')
+
+        is_same = filecmp.cmp(destfilename, reference)
+        self.assertTrue(is_same, 'Eliminated unwanted EOT terminators.')
+
+    def test_check_file_unmacify(self):
+        """
+        Test the filtering of unwanted CR characters from specified file.
+        :return:
+        """
+
+        # Copy the files that will be modified to temporary location
+        tmp_dir = tempfile.mkdtemp()
+
+        upload = Upload(1234566)
+
+        # UnPCify
+
+        tfilename = os.path.join(TEST_FILES_DIRECTORY, 'BeforeUnPCify.eps')
+        destfilename = os.path.join(tmp_dir, 'BeforeUnPCify.eps')
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, tmp_dir)
+
+        upload.unmacify(file_obj)
+
+        # Check that file generated is what we expected
+        reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterUnPCify.eps')
+        is_same = filecmp.cmp(destfilename, reference)
+        self.assertTrue(is_same, 'Eliminated unwanted CR characters from DOS file.')
+
+        # UnMACify
+
+        tfilename = os.path.join(TEST_FILES_DIRECTORY, 'BeforeUnMACify.eps')
+        destfilename = os.path.join(tmp_dir, 'BeforeUnMACify.eps')
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, tmp_dir)
+
+        upload.unmacify(file_obj)
+
+        # Check that file generated is what we expected
+        reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterUnMACify.eps')
+        is_same = filecmp.cmp(destfilename, reference)
+        self.assertTrue(is_same, 'Eliminated unwanted CR characters from MAC file.')
+
 
 
 class TestUpload(TestCase):
