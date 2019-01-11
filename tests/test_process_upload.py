@@ -260,7 +260,7 @@ class TestUpload(TestCase):
                 string = f'This test is expected to generate removing .bib warning: "{warn_match}"'
                 self.assertTrue(upload.search_warnings(warn_match), string)
 
-                warn_match = 'Removed the file final.bib.'
+                warn_match = "Removed the file 'final.bib'."
                 string = f'This test is expected to generate removing .bib warning: "{warn_match}"'
                 self.assertTrue(upload.search_warnings(warn_match), string)
 
