@@ -38,9 +38,15 @@ def _get_base_directory() -> str:
 
 
 class Upload:
-    """Handle uploaded files: unzipping, putting in the right place, doing
-various file checks that might cause errors to be displayed to the
-submitter."""
+    """
+    Programatic interface to fileystem-based upload workspace.
+
+    Manage uploaded files: extract files from gzipped tar archive, perform a
+    wide variety of checks on files and generate a list of warning/errors,
+    install files in the correct location, generate content archive for clients
+    to download.
+
+    """
 
     SOURCE_PREFIX = 'src'
     """The name of the source directory within the upload workspace."""
@@ -50,6 +56,67 @@ submitter."""
 
     ANCILLARY_PREFIX = 'anc'
     """The directory within source directory where ancillary files are kept."""
+
+    # Unnecessary .bib file warning message.
+    bib_with_bbl_warning = (
+        "We do not run bibtex in the auto - TeXing "
+        "procedure. We do not run bibtex because the .bib database "
+        "files can be quite large, and the only thing necessary "
+        "to make the references for a given paper is the.bbl file."
+    )
+
+    # Missing .bbl file explanation message.
+    bib_no_bbl_warning = (
+        "We do not run bibtex in the auto - TeXing "
+        "procedure. If you use it, include in your submission the .bbl file "
+        "which bibtex produces on your home machine; otherwise your "
+        "references will not come out correctly. We do not run bibtex "
+        "because the .bib database files can be quite large, and the only "
+        "thing necessary to make the references for a given paper is "
+        "the.bbl file."
+    )
+
+    # DOC (MS Word) format not accepted warning message.
+    doc_warning = (
+        "Your submission has been rejected because it contains "
+        "one or more files with extension .doc, assumed to be "
+        "MSWord files. Sadly, MSWord is not an acceptable "
+        "submission format: see <a href=\"/help/submit\">"
+        "submission help</a> for details of accepted formats. "
+        "If your document was created using MSWord then it is "
+        "probably best to submit as PDF (MSWord can produce "
+        "marginal and/or non-compliant PostScript). If your "
+        "submission includes files with extension .doc which "
+        "are not MSWord documents, please rename to a different"
+        " extension and resubmit."
+    )
+
+    # Revtex warning message.
+    revtex_warning = (
+        "WILL REMOVE standard revtex4 style files from this "
+        "submission. revtex4 is now fully supported by arXiv "
+        "and all its mirrors, for details see the "
+        "<a href=\"/help/faq/revtex\">RevTeX FAQ</a>. If you "
+        "have modified these files in any way then you must "
+        "rename them before attempting to include them with your submission."
+    )
+
+    # Diagrams warning message.
+    diagrams_warning = (
+        "REMOVING standard style files for Paul Taylor's "
+        "diagrams package. This package is supported in arXiv's TeX "
+        "tree and the style files are thus unnecessary. "
+        "Furthermore, they include 'time-bomb' code which will render submissions that "
+        "include them unprocessable at some time in the future."
+    )
+
+    """Missing fonts warning message."""
+    missfont_warning = (
+        "Removed file 'missfont.log'. Detected 'missfont.log' file in uploaded files. This may indicate a problem "
+        "with the fonts your submission uses. Please correct any issues with fonts and "
+        "be sure to examine the fonts in the final preview PDF that our system generates."
+    )
+
 
     def __init__(self, upload_id: int):
         """
@@ -116,22 +183,33 @@ submitter."""
         """Add a file to list."""
         self.__files.append(file)
 
+    def clear_file_list(self) -> None:
+        """Clear file list."""
+        self.__files = []
+
+    def remove_file_from_list(self, file: File) -> None:
+        """Remove file from list."""
+        if file in self.__files:
+            self.__files.remove(file)
+
     # Warnings
 
     def add_warning(self, public_filepath: str, msg: str) -> None:
         """
-        Record and log warning for this upload instance."
+        Record warning. Adds warning message to list of warning messages.
+
         Parameters
         ----------
-        msg
+        public_filepath : str
+            Optional public filepath intended to be displayed to end user.
+
+        msg : str
             User-friendly warning message. Intended to support corrective action.
 
         Returns
         -------
         None
-
         """
-
         # print('Warning: ' + msg) # temporary, until logging implemented
         # Log warning
         ##msg = 'Warning: ' + msg
@@ -164,11 +242,11 @@ submitter."""
         bool
             True if warning we are searching for exists. False otherwise.
         """
-
         for entry in self.__warnings:
             # Turn this into debugging
-            # print("Look for '" + search + '\' in \n\t \'' + warning +"'")
-            # print("ret: " + str(re.search(search, warning)))
+            #filename, warning = entry
+            #print(f"Look for '{search}' in \n\t '{warning}'")
+
 
             filename, warning = entry
             if re.match(search, warning):
@@ -184,7 +262,6 @@ submitter."""
 
     def add_error(self, public_filepath: str, msg: str) -> None:
         """Record error for this upload instance."""
-        print('Error: ' + msg)
         entry = [public_filepath, msg]
         self.__errors.append(entry)
 
@@ -209,17 +286,28 @@ submitter."""
         bool
             True if error we are searching for exists. False otherwise.
         """
-
         for entry in self.__errors:
             # Turn this into debugging
-            # print("Look for '" + search + '\' in \n\t \'' + warning +"'")
-            # print("ret: " + str(re.search(search, warning)))
+            #filename, error = entry
+            #print(f"Look for '{search}' in \n\t '{error}'")
+            #print("ret: " + str(re.search(search, warning)))
 
             filename, error = entry
             if re.match(search, error):
                 return True
 
         return False
+
+    def clear_warnings_and_errors(self):
+        """
+        Clear out warnings, errors, and files.
+
+        Initialize lists that keep track of warnings, errors, and files.
+
+        """
+        self.__warnings = []
+        self.__errors = []
+        self.__files = []
 
     def get_errors(self) -> list:
         """Get list of upload errors."""
@@ -238,7 +326,7 @@ submitter."""
         """
         Remove file from source directory.
 
-        Moves specified file to 'removed' directory and marks File
+        Moves specified file to 'removed' directory and marks :class:`File`
         objects state as removed."
 
         Parameters
@@ -252,11 +340,7 @@ submitter."""
         -------
         None
 
-        Notes
-        -----
-
         """
-
         # Move file to removed directory
         filepath = file.filepath
         removed_path = os.path.join(self.get_removed_directory(), file.name)
@@ -267,8 +351,11 @@ submitter."""
             if msg:
                 lmsg = msg
             else:
-                lmsg = f"Removed file {file.name}."
+                lmsg = f"Removed file '{file.name}'."
             self.add_warning(file.public_filepath, lmsg)
+
+            # Remove file from file list (just in case called from somewhere other than process)
+            self.remove_file_from_list(file)
         else:
             self.add_warning("*** FAILED to remove file " + filepath + " ***")
 
@@ -279,15 +366,16 @@ submitter."""
         # recalculated after all file checks (uses this routine) are complete.
 
     def remove_workspace(self) -> bool:
-        """Remove upload workspace. This request completely removes the upload
+        """Remove upload workspace.
+
+        This request completely removes the upload
         workspace directory. No backup is made here (system backups may have files
         for period of time).
 
         Returns
         -------
-
+        True if source log was saved and workspace deleted.
         """
-
         self.log('********** Delete Workspace ************\n')
 
         # Think about stashing source.log, otherwise any logging is fruitless
@@ -392,7 +480,8 @@ submitter."""
     def client_remove_file(self, public_file_path: str) -> bool:
         """Delete a single file.
 
-        For a single file delete we will move it to 'removed' directory.
+        For a single file deletion we will move file to special 'removed'
+        directory.
 
         Parameters
         ----------
@@ -401,16 +490,14 @@ submitter."""
 
         Returns
         -------
-
         True on success.
 
         Notes
-        _____
+        -----
         We are logging messages to source log. Warnings are not passed
         back in response for non-upload requests so we skip issuing warnings/errors.
 
         """
-
         self.log('********** Delete File ************\n')
 
         # Check whether client is trying to damage system with invalid path
@@ -495,9 +582,9 @@ submitter."""
 
         Returns
         -------
+        True if all files were removed successfully. False otherwise.
 
         """
-
         self.log('********** Delete ALL Files ************\n')
 
         # Cycle through list of files under src directory and remove them.
@@ -524,21 +611,19 @@ submitter."""
 
     def get_upload_directory(self) -> str:
         """
-        Get top level workspace directory for submission."
+        Get top level workspace directory.
 
         Returns
         -------
         str
             Top level directory path for upload workspace.
         """
-
         root_path = _get_base_directory()
         upload_directory = os.path.join(root_path, str(self.upload_id))
         return upload_directory
 
     def create_upload_directory(self):
-        """Create the base directory for upload workarea"""
-
+        """Create the base directory for upload workarea."""
         root_path = _get_base_directory()
 
         if not os.path.exists(root_path):
@@ -650,7 +735,7 @@ submitter."""
 
         # Sanitize file name before saving it
         filename = secure_filename(basename)
-        print('.', filename)
+        self.log(f"Uploded file '{filename}'.")
 
         if basename != filename:
             self.log(f'Secured filename: {filename} (basename + )')
@@ -669,8 +754,30 @@ submitter."""
             raise BadRequest(UPLOAD_FILE_EMPTY)
         return upload_path
 
+    # These messages take parameters
+
+    def bbl_missing_error(self, basename : str):
+        """Missing .bbl file detailed warning message."""
+        bbl_missing_error = (f"Your submission contained {basename}.bib file, but no"
+                             f" {basename}.bbl file (include {basename}.bbl, or "
+                             f"submit without {basename}.bib; and remember to verify references)."
+                             )
+        return bbl_missing_error
+
+    def graphic_error(self, format: str) -> str:
+        """Unsupported graphic format error message."""
+        graphic_error = (f"{format} is not a supported graphics format: most "
+                         "readers do not have the programs needed to view and print "
+                         ".$format figures. Please save your [% format %] "
+                         "figures instead as PostScript, PNG, JPEG, or GIF "
+                         "(PNG/JPEG/GIF files can be viewed and printed with "
+                         "any graphical web browser) -- for more information.")
+        return graphic_error
+
     def check_files(self) -> None:
         """
+        Unpack, evaluate, and sanitize uploaded files.
+
         This is the main loop that goes through the list of files and performs
         a long list of checks that depend on file type, extension, and sometimes file name.
 
@@ -678,10 +785,11 @@ submitter."""
         -------
         None
         """
-
         self.log('\n******** Check Files *****\n\n')
 
         source_directory = self.get_source_directory()
+
+        self.clear_file_list()
 
         # Since filenames may change during handling (e.g. rename files with
         # illegal characters), we do not want to add them to the workspace
@@ -735,11 +843,9 @@ submitter."""
 
                 # Remove zero length files
                 if obj.size == 0:
-                    msg = obj.name + " is empty (size is zero)"
-                    # self.add_warning(obj.public_filepath, msg)
-                    _warnings.append(msg)
-                    obj = _add_file(file_path, _warnings, _errors)
-                    self.remove_file(obj, f"Removed {obj.name} [file is empty]")
+                    msg = f"File '{obj.name}' is empty (size is zero)."
+                    self.add_warning(obj.public_filepath, msg)
+                    self.remove_file(obj, f"Removed file '{obj.name}' [file is empty].")
                     continue
 
                 # Remove 10240 byte all-null files (bad user tar attempts?)
@@ -770,6 +876,13 @@ submitter."""
                     ##continue
 
                 # Basic file checks
+
+                # We need to check this before tilde character gets translated to undderscore.
+                # Otherwise this warning never gets generated properly for .tex~
+                if re.search('(.+)\.(tex_|tex.bak|tex\~)$', file_name, re.IGNORECASE):
+                    msg = f"File '{file_name}' may be a backup file. Please "\
+                          "inspect and remove extraneous backup files."
+                    _warnings.append(msg)
 
                 # Attempt to rename filenames containing illegal characters
 
@@ -815,13 +928,10 @@ submitter."""
 
                 # Filename starts with dot (.)
                 if file_name.startswith('.'):
-                    obj = _add_file(file_path, _warnings, _errors)
-
                     # Remove files starting with dot
-                    msg = 'Removed hidden file'
-                    # self.add_warning(msg)
-                    self.remove_file(obj, msg)
-
+                    msg = 'Hidden file are not allowed.'
+                    self.add_warning(obj.public_filepath, msg)
+                    self.remove_file(obj, f"Removed file '{obj.name}' [File not allowed].")
                     continue
 
                 # Following checks may only occur once in current file
@@ -831,12 +941,10 @@ submitter."""
                 if re.search(r'^(espcrc2|lamuphys)\.sty$', file_name):
                     obj = _add_file(file_path, _warnings, _errors)
                     # TeX: styles that conflict with internal hypertex package
-                    print("Found hyperlink-compatible package\n")
-                    # TODO: Check the error/warning messaging for this check.
+                    msg = f"Found hyperlink-compatible package '{file_name}'. "\
+                          "Will remove and use hypertex-compatible local version"
+
                     self.remove_file(obj, msg)
-                    _warnings.append(
-                        '   -- instead using hypertex-compatible local version'
-                    )
                 elif re.search(r'^(espcrc2|lamuphys)\.tex$', file_name):
                     # TeX: source files that conflict with internal hypertex package
                     # I'm not sure why this is just a warning
@@ -844,31 +952,51 @@ submitter."""
                         f"Possible submitter error. Unwanted '{file_name}'"
                     )
                 elif file_name == 'uufiles' or file_name == 'core' or file_name == 'splread.1st':
-                    obj = _add_file(file_path, _warnings, _errors)
                     # Remove these files
-                    msg = 'File not allowed.'
+                    msg = f"Removed the file '{file_name}' [File not allowed]."
                     self.remove_file(obj, msg)
                 elif re.search(r'^xxx\.(rsrc$|finfo$|cshrc$|nfs)', file_name) \
                         or re.search(r'\.[346]00gf$', file_name) \
                         or (re.search(r'\.desc$', file_name) and file_size < 10):
-                    obj = _add_file(file_path, _warnings, _errors)
                     # Remove these files
-                    msg = 'File not allowed.'
+                    msg = f"Removed file '{obj.name}' [File not allowed]."
                     self.remove_file(obj, msg)
+
                 elif re.search(r'(.*)\.bib$', file_name, re.IGNORECASE):
+                    # New modified handling of .bib without .bbl.
+                    # We no longer delete .bib UNLESS we detect .bbl file
+                    # Generate error until we have .bbl
                     obj = _add_file(file_path, _warnings, _errors)
-                    # TeX: Remove bib file since we do not run BibTeX
-                    # TODO: Generate bib warning bib()??
-                    msg = 'Removing ' + file_name \
-                          + ". Please upload .bbl file instead."
-                    self.remove_file(obj, msg)
+
+                    # Create path to bbl file - assume uses same basename as .bib
+                    filebase, file_extension = os.path.splitext(file_name)
+                    bbl_file = filebase + ".bbl"
+                    bbl_path = os.path.join(source_directory, bbl_file)
+
+                    if os.path.exists(bbl_path):
+                        # If .bbl exists we go ahead and delete .bib file and
+                        # warn submitter of this action
+
+                        # Present general warning to user.
+                        msg = Upload.bib_with_bbl_warning
+                        _warnings.append(msg)
+                        self.add_warning(obj.public_filepath, msg)
+                        msg = f"Removed the file '{file_name}'. Using '{bbl_file}' for references."
+                        self.remove_file(obj, msg)
+                    else:
+                        # Missing .bbl (potential missing references)
+                        # Generate an error and DO NOT DELETE .bib file
+                        # Note: We are using .bib as flag until .bbl exists
+                        _warnings.append(Upload.bib_no_bbl_warning)
+                        _errors.append(self.bbl_missing_error(filebase))
+
                 elif re.search(r'^(10pt\.rtx|11pt\.rtx|12pt\.rtx|aps\.rtx|'
                                + r'revsymb\.sty|revtex4\.cls|rmp\.rtx)$',
                                file_name):
-                    obj = _add_file(file_path, _warnings, _errors)
                     # TeX: submitter is including file already included
                     # in TeX Live release
                     # TODO: get revtex() warning message ???
+                    msg = Upload.revtex_warning
                     self.remove_file(obj, msg)
                 elif re.search(r'^diagrams\.(sty|tex)$', file_name):
                     obj = _add_file(file_path, _warnings, _errors)
@@ -877,33 +1005,40 @@ submitter."""
                     # with time bomb disable.
 
                     # TODO: get diagrams warning
-                    msg = ''
+                    msg = Upload.diagrams_warning
                     self.remove_file(obj, msg)
                 elif file_name == 'aa.dem':
-                    obj = _add_file(file_path, _warnings, _errors)
                     # TeX: Check for aa.dem
                     # This is demo file that authors seem to include with
                     # their submissions.
-                    self.remove_file(obj, msg)
-                    _warnings.append(
-                        f'REMOVING {file_name} on the assumption that it is '
-                        'the example file for the Astronomy and Astrophysics '
+                    self.add_warning(obj.public_filepath, f"Removing file '{file_name}' on the assumption that it is " \
+                        'the example file for the Astronomy and Astrophysics ' \
                         'macro package aa.cls.'
                     )
-                elif re.search(r'(.+)\.(log|aux|blg|dvi|ps|pdf)$', file_name,
+                    self.remove_file(obj, "")
+                elif file_name == 'missfont.log':
+                    msg = Upload.missfont_warning
+                    self.remove_file(obj, msg)
+                elif re.search(r'\.synctex$', file_name):
+                    # .synctex files are generated by different TeX engine that we
+                    # do not use. We do not use.
+                    msg = f"Removed file '{file_name}'. SyncTeX files are not used by our" \
+                          " system and may be large."
+                    self.remove_file(obj, msg)
+                elif re.search('(.+)\.(log|aux|out|blg|dvi|ps|pdf)$', file_name,
                                re.IGNORECASE):
                     # TeX: Check for TeX processed output files (log, aux,
                     # blg, dvi, ps, pdf, etc.)
                     # Detect naming conflict, warn, remove offending files.
                     # Check if certain source files exist
                     filebase, file_extension = os.path.splitext(file_name)
-                    tex_file = os.path.join(root_directory, filebase, '.tex')
-                    upper_case_tex_file = os.path.join(root_directory, filebase, '.TEX')
+                    tex_file = os.path.join(root_directory, filebase + '.tex')
+                    upper_case_tex_file = os.path.join(root_directory, filebase + '.TEX')
+
                     if os.path.exists(tex_file) or os.path.exists(upper_case_tex_file):
-                        self.add_file(obj)  # Adding to preserve behavior.
                         # Potential conflict / corruption by including TeX
                         # generated files in submission
-                        _warnings.append(' REMOVING $fn due to name conflict')
+                        msg = f"Removed file '{obj.public_filepath}' due to name conflict."
                         self.remove_file(obj, msg)
                 elif re.search(r'[^\w\+\-\.\=\,]', file_name):
                     # File name contains unwanted bad characters - this is an Error
@@ -928,21 +1063,20 @@ submitter."""
                         file_path = new_file_path
                     except os.error:
                         _warnings.append(f'Unable to rename {file_name}')
-                elif file_name.endswith('.doc') and type == 'failed':
-                    obj = _add_file(file_path, _warnings, _errors)
+                elif re.search(r'\.doc$', file_name, re.IGNORECASE) and file_type == 'failed':
                     # Doc warning
-                    # TODO: Get doc warning from message class
-                    msg = ''
-                    # TODO: need to log error
-                    _errors.append(msg)
-                    self.remove_file(obj, msg)
+                    msg = Upload.doc_warning
+
+                    #_errors.append(msg)
+                    self.add_error(obj.public_filepath, msg)
+                    self.remove_file(obj, "")
+
 
                 # Finished basic file checks
 
                 # We are done if file was marked as removed,
                 # otherwise continue with additional type checks below
                 if obj.removed:
-                    print("File was removed -- skipping to next file\n")
                     continue
 
                 # Placeholder for future checks/notes
@@ -1002,7 +1136,7 @@ submitter."""
 
                 # Repair files of type PS_PC
                 elif file_type == 'ps_pc':
-                    # TODO: Implenent repair_ps
+                    # TODO: Implement repair_ps
                     pass
 
                 # Repair dos eps
@@ -1018,7 +1152,6 @@ submitter."""
                     print(f'File {obj.name} is TeX type. Needs further inspection. ***')
                     self.unmacify(file_name)
                     self.extract_uu(file_name, file_type)
-                    pass
 
                 obj = _add_file(file_path, _warnings, _errors)
                 # End of file type checks
@@ -1174,7 +1307,9 @@ submitter."""
     @property
     def total_upload_size(self) -> int:
         """
-        Total size of client's uploaded content. This only refers to client
+        Total size of client's uploaded content.
+
+        This only refers to client
         files stored in workspace source subdirectory. This does not include
         backups, removed files/archives, or log files.
 
@@ -1200,12 +1335,11 @@ submitter."""
         """
         Calculate total size of client's upload workspace source files.
 
-
-        Returns
-        -------
-
+        Note
+        ----
+        This does not include system generated files (source.log, generated
+        formats, or removed files.
         """
-
         # Calculate total upload workspace source directory size.
         source_directory = self.get_source_directory()
 
@@ -1227,11 +1361,7 @@ submitter."""
         self.total_upload_size = total_upload_size
 
     def create_file_list(self) -> list:
-        """Create list of File objects with details of each file in
-        upload package."""
-        # TODO: implement create file list
-
-        # TODO: Cleanup and test.
+        """Create list of File objects."""
         # Make sure file list creation is working in check files before enabling.
         #
         # Not ready to enable.
@@ -1268,7 +1398,10 @@ submitter."""
         return list
 
     def create_file_upload_summary(self) -> list:
-        """Returns a list files with details [dict]. Maybe be generated when upload
+        """
+        Generate a list of files with details [dict].
+
+        Maybe be generated when upload
         is processed or when run against existing upload directory.
 
         Return list of files created during upload processing or from list of
@@ -1280,8 +1413,11 @@ submitter."""
               the list generated during processing upload (includes removed files) may be
               different than the list generated against an existing source directory.
 
+        Returns
+        -------
+        List of files where each entry is a dictionary containing details about
+        file.
         """
-
         file_list = []
 
         if self.has_files():
@@ -1291,12 +1427,11 @@ submitter."""
             # count = len(uploadObj.get_files())
 
             for fileObj in self.get_files():
-
-                # print("\tFile:" + fileObj.name + "\tFilePath: " + fileObj.public_filepath
-                #      + "\tRemoved: " + str(fileObj.removed) + " Size: " + str(fileObj.size))
+                # Temp debug
+                #print("\tFile:" + fileObj.name + "\tFilePath: " + fileObj.public_filepath
+                #     + "\tRemoved: " + str(fileObj.removed) + " Size: " + str(fileObj.size))
 
                 # Collect details we would like to return to client
-                file_details = {}
                 file_details = {
                     'name': fileObj.name,
                     'public_filepath': fileObj.public_filepath,
@@ -1312,8 +1447,12 @@ submitter."""
         return file_list
 
     def set_file_permissions(self) -> None:
-        """Set the file permissions for all files and directories in upload."""
+        """
+        Set the file permissions for all uploaded files and directories.
 
+        Applies to files and directories in submitter's upload source
+        directory.
+        """
         # Start at directory containing source files
         source_directory = self.get_source_directory()
 
@@ -1330,8 +1469,8 @@ submitter."""
         """
         Eliminate single top-level directory.
 
-        Intended for case where submitter creates archive with submission
-        files in subdirectory.
+        Intended for case where submitter creates archive with all
+        uploaded files in a subdirectory.
         """
         source_directory = self.get_source_directory()
 
@@ -1373,14 +1512,16 @@ submitter."""
             self.create_file_list()
 
     def finalize_upload(self):
-        """For file type checks that cannot be done until all files
-        are uploaded, including total submission size.
+        """
+        Checks to be performed after files are uploaded and sanitized.
+
+        For file type checks that cannot be performed until all files
+        are uploaded.
 
         Build final list of files contained in upload.
 
         Remove single top level directory.
         """
-
         # Only do this if we haven't generated list already
         if not self.has_files():
             self.create_file_list()
@@ -1419,7 +1560,6 @@ submitter."""
         ----------
         Original Perl code is located in Upload.pm (in arXivLib/lib/arXiv/Submit)
         """
-
         # Upload_id and filename exists
         # Move this to log
         # print("\n---> Upload id: " + str(self.upload_id) + " FilenamePath: " + file.filename
@@ -1431,6 +1571,9 @@ submitter."""
         self.deposit_upload(file, ancillary=ancillary)
 
         self.log('\n******** File Upload Processing *****\n\n')
+
+        # Clear out any old warnings and errors from previous run
+        self.clear_warnings_and_errors()
 
         # Unpack upload archive (if necessary). Completes minor cleanup.
         unpack_archive(self)
@@ -1484,10 +1627,12 @@ submitter."""
 
     @property
     def content_package_exists(self) -> bool:
+        """Return True if content package exists."""
         return os.path.exists(self.get_content_path())
 
     @property
     def content_package_modified(self) -> datetime:
+        """Return modify datetime of content package."""
         return datetime.fromtimestamp(
             os.path.getmtime(self.get_content_path()),
             tz=UTC
@@ -1495,17 +1640,27 @@ submitter."""
 
     @property
     def content_package_size(self) -> int:
+        """Return size of content package."""
         return os.path.getsize(self.get_content_path())
 
     @property
     def content_package_stale(self) -> bool:
+        """
+        Check whether source has been modified since content package creation.
+
+        Returns
+        -------
+        True is content package is stale and needs to be regenerated.
+        """
         return self.last_modified > self.content_package_modified
 
     def content_checksum(self) -> str:
-        """Return b64-encoded MD5 hash of the packed content tarball.
+        """
+        Return b64-encoded MD5 hash of the packed content tarball.
 
         Triggers building content package when pre-existing package is not found or stale
-        relative to source files."""
+        relative to source files.
+        """
         if not self.content_package_exists or self.content_package_stale:
             self.pack_content()
 
@@ -1520,6 +1675,11 @@ submitter."""
     def content_file_path(self, public_file_path: str) -> str:
         """
         Return the absolute path of content file given relative pointer.
+
+        Parameters
+        ----------
+        public_file_path : str
+            Public file path relative to directory containing uploaded files.
 
         Returns
         -------
@@ -1539,14 +1699,13 @@ submitter."""
         Parameters
         ----------
         public_file_path : str
-            Relative path of file in upload workspace.
+           Public file path relative to directory containing uploaded files.
 
         Returns
         -------
         True if file exists, False otherwise.
 
         """
-
         file_obj = self.resolve_public_file_path(public_file_path)
 
         if file_obj is not None:
@@ -1564,7 +1723,7 @@ submitter."""
 
         Returns
         -------
-
+        Size in bytes.
         """
         file_obj = self.resolve_public_file_path(public_file_path)
 
@@ -1580,8 +1739,8 @@ submitter."""
 
         Parameters
         ----------
-        filepath: str
-            Path to file we want to generate checksum for.
+        public_file_path : str
+            Public file path relative to directory containing uploaded files.
 
         Returns
         -------
@@ -1589,7 +1748,6 @@ submitter."""
         return b64-encoded MD5 hash of the specified file.
 
         """
-
         file_obj = self.resolve_public_file_path(public_file_path)
 
         if file_obj is not None:
@@ -1603,14 +1761,14 @@ submitter."""
 
         Parameters
         ----------
-        filepath : str
+        public_file_path : str
+            Public file path relative to directory containing uploaded files.
 
         Returns
         -------
         File pointer or Null string when filepath does not exist.
 
         """
-
         file_obj = self.resolve_public_file_path(public_file_path)
 
         if file_obj is not None and os.path.exists(file_obj.filepath):
@@ -1621,13 +1779,15 @@ submitter."""
     def content_file_last_modified(self, public_file_path: str) -> datetime:
         """
         Return last modified time for specified file/package.
+
         Parameters
         ----------
-        filepath
+        public_file_path: str
+            Public file path relative to directory containing uploaded files.
 
         Returns
         -------
-
+        Last modified date string.
         """
         file_obj = self.resolve_public_file_path(public_file_path)
 
@@ -1666,13 +1826,13 @@ submitter."""
         return os.path.getsize(source_log_path)
 
     @property
-    def source_log_last_modofied(self) -> str:
+    def source_log_last_modified(self) -> str:
         """
         Last modified date of source log (UTC).
 
         Returns
         -------
-
+        Last modified date string.
         """
         source_log_path = self.get_upload_source_log_path()
         return datetime.utcfromtimestamp(os.path.getmtime(source_log_path))
@@ -1688,7 +1848,6 @@ submitter."""
         return b64-encoded MD5 hash of the specified file.
 
         """
-
         source_log_path = self.get_upload_source_log_path()
 
         if os.path.exists(source_log_path):
@@ -1702,7 +1861,6 @@ submitter."""
 
     def source_log_file_pointer(self) -> io.BytesIO:
         """Get a file-pointer for source log."""
-
         source_log_path = self.get_upload_source_log_path()
         print(f"SOURCE LOG PATH: {source_log_path}")
         if os.path.exists(source_log_path):
