@@ -79,8 +79,13 @@ submitter."""
     def set_debug(self, set: bool):
         """
         Activate/deactivate debugging
-        :param set:
-        :return:
+
+        Parameters
+        ----------
+        set : bool
+            Set debug to value of 'set' parameter. True turns on
+            debugging and False turns it off.
+
         """
         self.__debug = set
 
