@@ -1150,7 +1150,7 @@ class Upload:
                 elif obj.is_tex_type:
                     # TODO: Implement unmacify
                     print(f'File {obj.name} is TeX type. Needs further inspection. ***')
-                    self.unmacify(file_name)
+                    self.unmacify(obj)
                     self.extract_uu(file_name, file_type)
 
                 obj = _add_file(file_path, _warnings, _errors)
@@ -1867,3 +1867,23 @@ class Upload:
             return open(source_log_path, 'rb')
         else:
             return ""
+
+    @property
+    def source_format(self) -> str:
+        """
+        Determine high level format of files in upload workspace.
+
+        This routine uses a hueristic to make best attempt to determine source
+        format. Workspace may contain files of multiple formats. This routine
+        makes best guess at primary/dominant format.
+
+        May return source format of "Unknown" in case where there are no files
+        in workspace or we are not able to determine source format.
+
+        Returns
+        -------
+            String identifying source format. May be HTML, PDF, Postscript, TeX, Unknown.
+        """
+        # Let's get path to api client working first.
+        source_format = "LuaTeX"
+        return source_format
