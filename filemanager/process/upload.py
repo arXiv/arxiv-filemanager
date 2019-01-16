@@ -1868,10 +1868,56 @@ class Upload:
         else:
             return ""
 
+    def count_file_types(self) -> dict:
+        """
+        Count the number of files for each file format.
+
+        This routine simply creates a dictionary with file format name as
+        key and number of files of this format type as value.
+
+        Returns
+        -------
+
+        """
+        format_list = {}
+        format_list['ancillary'] = 0
+        format_list['all_files'] = 0
+
+        file_list = self.create_file_list()
+
+        for file in file_list:
+            # Keep track of total number of files (includes ancillary)
+            format_list['all_files'] = format_list['all_files'] + 1
+
+            if re.search('^anc/', file.public_filepath):
+                # For our current purposes we will ignore ancillary files when
+                # determining source format.
+                file.type = 'ancillary'
+
+            if file.type not in format_list:
+                format_list[file.type] = 1
+            else:
+                format_list[file.type] = format_list[file.type] + 1
+
+        # Calculate number of files in submission source (excludes ancillary files)
+        format_list['files'] = format_list['all_files'] - format_list['ancillary']
+
+        # Debugging
+        print("File Formats:")
+        for t,v in format_list.items():
+            print(f"\tFormat:{t}  Count:{v}")
+
+
+        self.log(f"All Files: {format_list['all_files']} files: " 
+                 f"{format_list['files']} ancillary: {format_list['ancillary']}")
+
+        return format_list
+
+
     @property
     def source_format(self) -> str:
         """
-        Determine high level format of files in upload workspace.
+        Determine high level format of all files in upload workspace.
 
         This routine uses a hueristic to make best attempt to determine source
         format. Workspace may contain files of multiple formats. This routine
@@ -1885,5 +1931,10 @@ class Upload:
             String identifying source format. May be HTML, PDF, Postscript, TeX, Unknown.
         """
         # Let's get path to api client working first.
+        self.log('\n********** Determine Source Format ************\n\n')
+
+        # Analyze format of submission files in user upload workspace
+        self.count_file_types()
+
         source_format = "LuaTeX"
         return source_format
