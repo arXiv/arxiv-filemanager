@@ -539,7 +539,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
                 'upload_status': upload_db_data.lastupload_upload_status,
                 'workspace_state': upload_db_data.state,
                 'lock_state': upload_db_data.lock,
-                'source_format': upload_workspace.source_format
+                'source_format': upload_workspace.determine_source_format()
             }
             logger.info("%s: Generating upload summary.", upload_db_data.upload_id)
             return response_data, status_code, headers
@@ -629,7 +629,7 @@ def upload_summary(upload_id: int) -> Response:
                 'upload_status': upload_db_data.lastupload_upload_status,
                 'workspace_state': upload_db_data.state,
                 'lock_state': upload_db_data.lock,
-                'source_format': upload_workspace.source_format
+                'source_format': upload_workspace.determine_source_format()
             }
             logger.info("%s: Upload summary request.", upload_db_data.upload_id)
 
