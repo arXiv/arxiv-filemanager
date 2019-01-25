@@ -1864,7 +1864,7 @@ class Upload:
     def source_log_file_pointer(self) -> io.BytesIO:
         """Get a file-pointer for source log."""
         source_log_path = self.get_upload_source_log_path()
-        print(f"SOURCE LOG PATH: {source_log_path}")
+
         if os.path.exists(source_log_path):
             return open(source_log_path, 'rb')
         else:
@@ -1883,8 +1883,8 @@ class Upload:
         """
         # Initialize file type accumulators and counters
         format_list = {'ancillary':0, 'all_files':0, 'directory':0, 'docx':0,
-                       'html':0, 'image':0, 'ignore':0, 'include':0,
-                       'invalid':0, 'pdf':0, 'postscript':0, 'readme':0}
+                       'html':0, 'image':0, 'ignore':0, 'include':0, 'odf':0,
+                       'invalid':0, 'pdf':0, 'postscript':0, 'readme':0, 'texaux':0}
 
         file_list = self.create_file_list()
 
@@ -1905,13 +1905,6 @@ class Upload:
         # Calculate number of files in submission source (excludes ancillary files)
         format_list['files'] = format_list['all_files'] - format_list['ancillary']
 
-        # Debugging - to be deleted
-        print("File Format Summary:")
-        for t,v in format_list.items():
-            if v > 0:
-                print(f"\tFormat:{t}  Count:{v}")
-
-
         self.log(f"All Files: {format_list['all_files']} files: " 
                  f"{format_list['files']} ancillary: {format_list['ancillary']}")
 
@@ -1930,7 +1923,8 @@ class Upload:
             Single File object. Returns nothing if single file is not found.
         """
         if self.__files and len(self.__files) == 1:
-            if self.__files[0].type != 'ancillary':
+            if self.__files[0].type != 'ancillary' and \
+                    self.__files[0].type != 'always_ignore':
                 return self.__files[0]
             else:
                 # This is an error, can't have submission that is composed
@@ -2010,22 +2004,27 @@ class Upload:
         new_path = os.path.join(file_obj.base_dir, new_file)
 
         # Rename the file
-        if shutil.move(file_obj.filepath, new_path):
-            msg = f"Renamed file '{file_obj.name}' to {new_file}."
-            self.add_warning(file_obj.public_filepath, msg)
+        try:
+            if shutil.move(file_obj.filepath, new_path):
+                msg = f"Renamed file '{file_obj.name}' to {new_file}."
+                self.add_warning(file_obj.public_filepath, msg)
 
-            # Remove file from file list (just in case called from somewhere
-            # other than process)
-            self.remove_file_from_list(file_obj)
+                # Remove file from file list (just in case called from somewhere
+                # other than process)
+                self.remove_file_from_list(file_obj)
 
-            # Create new file onject and add to list
-            file_path = os.path.join(file_obj.base_dir, new_file)
-            new_file_obj = File(file_path, file_obj.base_dir)
-            self.add_file(new_file_obj)
-            return new_file_obj
-        else:
-            self.add_error(f"renaming file {file.name} to have proper "
-                           f"'.{new_extension}' extension failed: [{new_file}]")
+                # Create new file onject and add to list
+                file_path = os.path.join(file_obj.base_dir, new_file)
+                new_file_obj = File(file_path, file_obj.base_dir)
+                self.add_file(new_file_obj)
+                return new_file_obj
+        except FileNotFoundError as nf:
+            self.add_error(file_obj.name, f"File '{file_obj.name}' to fix extension not found:"
+                           f"Error:{nf}")
+        except Exception as ce:
+            self.add_error(file_obj.name, f"renaming file '{file_obj.name}' to have proper "
+                           f"'.{new_extension}' extension failed: "
+                           f"[{new_file}]: Error:{ce}")
 
         # Update counts (assumine we are at point where counts are important)
         # Since we removed and added a file of same type I don't believe we need to
@@ -2044,6 +2043,8 @@ class Upload:
         -------
 
         """
+        pass
+
 
     def determine_source_format(self) -> str:
         """
@@ -2058,11 +2059,9 @@ class Upload:
 
         Returns
         -------
-            String identifying source format. May be HTML, PDF, Postscript, TeX, Unknown.
+            String identifying source format. May be HTML, PDF, Postscript,
+            TeX, Unknown.
         """
-        # Let's get path to api client working first.
-        self.log('\n********** Determine Source Format ************\n\n')
-        print("Determine Source Format")
         # Analyze files formats in user upload workspace
         formats = self.count_file_types()
 
@@ -2093,14 +2092,10 @@ class Upload:
             obj = self.get_single_file()
             name = obj.name
             file_type = obj.type
-            file_path = obj.file_path
+            file_path = obj.filepath
             public_file_path = obj.public_filepath
 
-            print(f"**Name: {obj.name}") # debug
-
             # Handle all cases where submission source format is single file.
-
-            # Almost all cases fall under this heading
 
             if formats['docx'] > 0:
                 # We no longer accept docx
@@ -2136,14 +2131,16 @@ class Upload:
                 new_file_obj = self.fix_file_ext(obj, 'ps')
                 if new_file_obj is not None:
                     obj = new_file_obj
-                    # TODO: PERFORM LIVE PS FORMAT CHECK
+                    # TODO: NEED TO PERFORM LIVE PS FORMAT CHECK
                     # TODO: Do we want to do something else when Postscript
-                    #       file fails to validate? We currently generate
-                    #       warning AND set format to 'ps' (as if it's
-                    #       possible to continue.
-                    self.source_format = 'pdf'
+                    # TODO: file fails to validate? We currently generate
+                    # TODO: warning AND set format to 'ps' (as if it's
+                    # TODO: possible to continue.
+                    self.source_format = 'postscript'
                 else:
-                    # TODO: What to do here?
+                    # TODO: What to do here? 'None' indicates error. This is
+                    # TODO: internal error. Error has been registered. Not
+                    # TODO: much user can do.
                     pass
             elif file_type == 'pdf':
                 # Rename
@@ -2153,7 +2150,9 @@ class Upload:
                     self.source_format = 'pdf'
                     # TODO: Check whether we need filename
                 else:
-                    # TODO: What to do here?
+                    # TODO: What to do here? 'None' indicates error. This is
+                    # TODO: internal error. Error has been registered. Not
+                    # TODO: much user can do.
                     pass
             elif file_type == 'html':
                 # Rename
@@ -2162,14 +2161,16 @@ class Upload:
                     obj = new_file_obj
                     self.source_format = 'html'
                 else:
-                    # TODO: What to do here?
+                    # TODO: What to do here?  'None' indicates error. This is
+                    # TODO: internal error. Error has been registered. Not
+                    # TODO: much user can do.
                     pass
             elif file_type == 'failed':
                 msg = f"Could not determine type of file '{public_file_path}'"
                 self.source_format = 'invalid'
                 self.add_error(public_file_path, msg)
             # Check whether type is TeX
-            elif obj.is_tex_type():
+            elif obj.is_tex_type:
                  # Single file TeX submission
                  self.source_format = 'tex'
             else:
@@ -2194,5 +2195,4 @@ class Upload:
             # Default source type is TEX
             self.source_format ='tex'
 
-        print(f"SOURCE FORMAT: {self.source_format}")
         return self.source_format
