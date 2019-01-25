@@ -193,7 +193,7 @@ def unpack_archive(upload: 'Upload') -> None:
 
                     # Maybe can't do this in production if submitter reloads tar.gz
                     if os.path.exists(rfile) and (os.path.getsize(rfile) == os.path.getsize(path)):
-                        print("File (same size) saved already! Remove tar file")
+                        # File (same size) saved already! Remove tar file
                         msg = f"Removed packed file {file}"
                         upload.log(msg)
                         os.remove(path)
