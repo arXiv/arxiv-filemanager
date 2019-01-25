@@ -1471,7 +1471,7 @@ class TestUploadAPIRoutes(TestCase):
         self.assertIn('upload_total_size', upload_data, "Returns total upload size.")
         self.assertEqual(upload_data['upload_total_size'], 275781,
                          "Expected total upload size matches")
-        self.assertEqual(upload_data['source_format'], "LuaTeX", "Check source format of submission.")
+        self.assertEqual(upload_data['source_format'], "tex", "Check source format of submission.")
 
 
         # Get summary of upload
