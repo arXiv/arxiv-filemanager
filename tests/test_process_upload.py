@@ -19,6 +19,8 @@ UPLOAD_BASE_DIRECTORY = '/tmp/filemanagment/submissions'
 
 TEST_FILES_DIRECTORY = os.path.join(os.getcwd(), 'tests/test_files_upload')
 UNPACK_TEST_FILES_DIRECTORY = os.path.join(os.getcwd(), 'tests/test_files_unpack')
+TEST_FILES_SUB_TYPE = os.path.join(os.getcwd(),'tests/test_files_sub_type')
+TEST_FILES_FILE_TYPE = os.path.join(os.getcwd(), 'tests/type_test_files')
 
 # General upload tests format:
 #
@@ -78,10 +80,48 @@ unpack_tests.append(['with__processed_directory.tar.gz', '9912.0002', True,
                      r"Detected 'processed' directory. Please check.",
                      "Test detection and warning about 'processed' directory"])
 
+# Source Format Tests
 
-# Debugging tests
+test_submissions = []
+
+# Single-file submission (valid) PDF, TEX, Postscript, HTML,
+# (invalid) *.docx, *.odf, *.eps, texaux
+
+# valid
+test_submissions.append(['upload5.pdf', 'pdf',
+                         "Normal single-file 'PDF' submission."])
+test_submissions.append(['minMac.tex', 'tex',
+                         "Normal single-file 'TeX' submission."])
+test_submissions.append(['one.ps', 'postscript',
+                         "Normal single-file 'Postscript' submission."])
+test_submissions.append(['sampleA.ps', 'postscript',
+                         "Normal single-file 'Postscript' submission."])
+test_submissions.append(['sampleA.html', 'html',
+                         "Normal single-file 'HTML' submission."])
+# invalid
+test_submissions.append(['sampleA.docx', 'invalid',
+                         "Invalid single-file 'DOCX' submission."])
+test_submissions.append(['Hellotest.odt', 'invalid',
+                         "Invalid single-file 'ODF' submission."])
+test_submissions.append(['dos_eps_1.eps', 'invalid',
+                         "Invalid single-file 'EPS' submission."])
+test_submissions.append(['ol.sty', 'invalid',
+                         "Invalid single-file 'texaux' submission."])
+
+# Multi-file submissions (valid) html, postscript, tex (default)
+test_submissions.append(['sampleB_html.tar.gz', 'html',
+                         "Typical multi-file 'HTML' submission."])
+test_submissions.append(['sampleA_ps.tar.gz', 'tex',
+                         "Typical multi-file 'TeX w/Postscript' submission."])
+test_submissions.append(['sampleB_ps.tar.gz', 'tex',
+                         "Typical multi-file 'TeX w/Postscript' submission."])
+test_submissions.append(['UploadWithANCDirectory.tar.gz', 'tex',
+                         "Typical multi-file 'TeX' submission."])
+test_submissions.append(['sampleF_html.tar.gz', 'html',
+                         "Typical multi-file 'HTML' submission."])
 
 
+# Internal Debugging test
 class TestInternalSupportRoutines(TestCase):
 
     def test_get_upload_directory(self):
@@ -267,6 +307,87 @@ class TestInternalSupportRoutines(TestCase):
         is_same = filecmp.cmp(destfilename, reference)
         self.assertTrue(is_same, 'Eliminated unwanted CR characters from MAC file.')
 
+    def test_fix_file_extension(self) -> None:
+        """
+        Normalize file extension for file type.
+
+        Some formats support multiple file nanme suffixes. We want to normalize
+        all files of a particular type to have the desired extension. An
+        example of this is .htm and .html extensions for files of type HTML.
+
+        For this test we will work with specific files in temporary directory.
+
+        Returns
+        -------
+            None
+        """
+        # Copy the files that will be modified to temporary location
+        tmp_dir = tempfile.mkdtemp()
+
+        # Create an upload to get a upload object to play with
+        upload = Upload(1234555)
+
+        # 1: Try arbitrary rename
+        test_filename = 'BeforeUnPCify.eps'
+        tfilename = os.path.join(TEST_FILES_DIRECTORY, test_filename)
+        destfilename = os.path.join(tmp_dir, test_filename)
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, tmp_dir)
+
+        new_extension = 'testext'
+        new_file_obj = upload.fix_file_ext(file_obj, new_extension)
+
+        filebase, file_extension = os.path.splitext(file_obj.name)
+        new_filename = filebase + f".{new_extension}"
+        #new_path = os.path.join(file_obj.base_dir, new_file)
+
+        # Now look for renamed file
+        filebase, file_extension = os.path.splitext(file_obj.name)
+
+        # Make sure new file exists
+        self.assertTrue(os.path.exists(new_file_obj.filepath),
+                        f"Renamed file {new_filename} exists.")
+
+        # Make sure file name is modified to use new extension.
+        self.assertEqual(new_filename, new_file_obj.name,
+                         "Renamed file has correct extension.")
+
+        # 2: Try .HTM to .html rename
+        test_filename = 'sampleA.html'
+        temp_filename = 'sampleA.HTM'
+        tfilename = os.path.join(TEST_FILES_SUB_TYPE, test_filename)
+        destfilename = os.path.join(tmp_dir, temp_filename)
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, tmp_dir)
+
+        new_extension = 'html'
+        new_file_obj = upload.fix_file_ext(file_obj, new_extension)
+
+        filebase, file_extension = os.path.splitext(file_obj.name)
+        new_filename = filebase + f".{new_extension}"
+
+        # Make sure new file exists
+        self.assertTrue(os.path.exists(new_file_obj.filepath),
+                        f"Renamed file {new_filename} exists.")
+
+        # Make sure file name is modified to use new extension.
+        self.assertEqual(new_filename, new_file_obj.name,
+                         "Renamed file has correct extension.")
+
+        # 3: Try to fix extension of non-existent file (Error)
+        new_extension = 'fail'
+        new_file_obj = upload.fix_file_ext(file_obj, new_extension)
+
+        # Error should exist
+        self.assertTrue(upload.has_errors(),
+                        f"Fix non-existent file generates error.")
+
+        # Check to make sure error is added to list of errors.
+        self.assertTrue(upload.search_errors(f"File '{file_obj.name}'"
+                                             " to fix extension not"),
+                                             "Error message added to list.")
+
+
 
 
 class TestUpload(TestCase):
@@ -306,6 +427,213 @@ class TestUpload(TestCase):
         # Check file in subdirectory exists
         file_to_check = os.path.join(source_directory, 'b', 'c', 'c_level_file.txt')
         self.assertTrue(os.path.exists(file_to_check), 'Test file within subdirectory exists: \'c_level_file.txt\'')
+
+    def test_process_count_file_types(self) -> None:
+        """Test routine that counts file type occurrences.
+
+        Also tests get_single_file() routine.
+        """
+        upload = Upload(20180245)
+        filename = os.path.join(TEST_FILES_DIRECTORY, 'UploadWithANCDirectory.tar.gz')
+
+        # For testing purposes, clean out existing workspace directory
+        workspace_dir = upload.get_upload_directory()
+        if os.path.exists(workspace_dir):
+            shutil.rmtree(workspace_dir)
+
+        self.assertTrue(os.path.exists(filename), 'Test upload with anc files.')
+        # Recreate FileStroage object that flask will be passing in
+        file = None
+        with open(filename, 'rb') as fp:
+            # Now create upload instance
+            upload = Upload(20180245)
+            file = FileStorage(fp)
+
+            # Test 1: Upload normal submission with lots of files.
+            ret = upload.process_upload(file)
+
+            file_formats = upload.count_file_types()
+
+            # Check numbers generated by count_file_types()
+            self.assertEqual(file_formats['all_files'], 21,
+                             "Total number of files matches.")
+            self.assertEqual(file_formats['files'], 6,
+                             "Total number of files matches.")
+            self.assertEqual(file_formats['ancillary'], 15,
+                             "Total number of files matches.")
+            self.assertEqual(file_formats['pdf'], 2,
+                             "Total number of files matches.")
+            self.assertEqual(file_formats['texaux'], 3,
+                             "Total number of files matches.")
+
+            # Clean out files. Try exception cases.
+            upload.client_remove_all_files()
+
+            # Test 2: Count nothingness
+            file_formats = upload.count_file_types()
+
+            # Check numbers
+            self.assertEqual(file_formats['all_files'], 0,
+                             "Total number of files matches is 0.")
+            self.assertEqual(file_formats['files'], 0,
+                             "Total number of files matches is 0.")
+
+            # Test get_single_file()
+            self.assertEqual(upload.get_single_file(), None,
+                             "This is not a valid single file submission.")
+
+            # Clean out files. Try exception cases.
+            upload.client_remove_all_files()
+
+        # Test 3: Single invalid sub file - generates warning to user
+        test_filename = 'sampleA.docx'
+        filename = os.path.join(TEST_FILES_SUB_TYPE, test_filename)
+        with open(filename, 'rb') as fp:
+            # Now create upload instance
+            upload = Upload(20180245)
+            file = FileStorage(fp)
+
+            ret = upload.process_upload(file)
+
+            # Single invalid source files uploaded
+            file_formats = upload.count_file_types()
+
+            # Check numbers - at this point you can't go further with docx
+            self.assertEqual(file_formats['all_files'], 1,
+                             "Total number of files matches is 1.")
+            self.assertEqual(file_formats['files'], 1,
+                             "Total number of files matches is 1.")
+            self.assertEqual(file_formats['docx'], 1,
+                             "Total number of files matches is 1.")
+
+            # Clean out files to get ready for next test.
+            upload.client_remove_all_files()
+
+        # Test 4: Single invalid file
+        test_filename = 'head.tmp'
+        filename = os.path.join(TEST_FILES_SUB_TYPE, test_filename)
+        with open(filename, 'rb') as fp:
+            # Now create upload instance
+            upload = Upload(20180245)
+            file = FileStorage(fp)
+
+            ret = upload.process_upload(file)
+
+            # Single invalid source files uploaded
+            file_formats = upload.count_file_types()
+
+            # Check numbers - at this point you can't upload docx
+            self.assertEqual(file_formats['all_files'], 1,
+                             "Total number of files matches is 1.")
+            self.assertEqual(file_formats['files'], 1,
+                             "Total number of files matches is 1.")
+            self.assertEqual(file_formats['always_ignore'], 1,
+                             "Total number of files matches is 1.")
+
+            # Test get_single_file()
+            self.assertEqual(upload.get_single_file(), None,
+                             "This is not a valid single file submission.")
+
+            # Clean out files to get ready for next test.
+            upload.client_remove_all_files()
+
+        # Test 5: No source files - ancillary files.
+        test_filename = 'onlyANCfiles.tar.gz'
+        filename = os.path.join(TEST_FILES_SUB_TYPE, test_filename)
+        with open(filename, 'rb') as fp:
+            # Now create upload instance
+            upload = Upload(20180245)
+            file = FileStorage(fp)
+
+            ret = upload.process_upload(file)
+
+            # No valid source files uploaded (ancillary)
+            file_formats = upload.count_file_types()
+
+            # Check numbers generated by count_file_types()
+            self.assertEqual(file_formats['all_files'], 15,
+                             "Total number of files matches.")
+            # There should be NO legitimate source files.
+            self.assertEqual(file_formats['files'], 0,
+                             "Total number of files matches.")
+            self.assertEqual(file_formats['ancillary'], 15,
+                             "Total number of files matches.")
+
+            # Clean out files to get ready for next test.
+            upload.client_remove_all_files()
+
+        # Test 6: Single-file submission (good)
+        test_filename = 'upload5.pdf'
+        filename = os.path.join(TEST_FILES_DIRECTORY, test_filename)
+        with open(filename, 'rb') as fp:
+            # Now create upload instance
+            upload = Upload(20180245)
+            file = FileStorage(fp)
+
+            ret = upload.process_upload(file)
+
+            # Single valid source file uploaded.
+            file_formats = upload.count_file_types()
+
+            # Check numbers generated by count_file_types()
+            self.assertEqual(file_formats['all_files'], 1,
+                             "Total number of files matches.")
+            self.assertEqual(file_formats['files'], 1,
+                             "Total number of files matches.")
+            self.assertEqual(file_formats['pdf'], 1,
+                             "Total number of files matches.")
+
+            # Test get_single_file() - This is a case where it works.
+            self.assertIsInstance(upload.get_single_file(), File,
+                             "This is a valid single file submission.")
+            single_file = upload.get_single_file()
+            self.assertEqual(test_filename, single_file.name,
+                             f"Found single file submission: {test_filename}.")
+
+            # Clean out files to get ready for next test.
+            upload.client_remove_all_files()
+
+    def test_process_determine_source_format(self) -> None:
+        """Test code that determines submission format."""
+        upload = Upload(2019145)
+
+        # Clean out files to get ready for next test.
+        upload.client_remove_all_files()
+
+        # For testing purposes, clean out existing workspace directory
+        workspace_dir = upload.get_upload_directory()
+        if os.path.exists(workspace_dir):
+            shutil.rmtree(workspace_dir)
+
+        for test in test_submissions:
+
+            test_filename, exp_sub_type, description = test
+
+            #print(f"\n**Test File: {test_filename} format expected: {exp_sub_type} \n\tDetails:{description}")
+
+            filepath = os.path.join(TEST_FILES_DIRECTORY, test_filename)
+            if not os.path.exists(filepath):
+                filepath = os.path.join(TEST_FILES_SUB_TYPE, test_filename)
+            if not os.path.exists(filepath):
+                filepath = os.path.join(TEST_FILES_FILE_TYPE, test_filename)
+
+            self.assertTrue(os.path.exists(filepath),
+                            f"Test submission file path exists: {filepath}")
+
+            with open(filepath, 'rb') as fp:
+                # Now create upload instance
+                upload = Upload(20180245)
+                file = FileStorage(fp)
+                upload.client_remove_all_files()
+                ret = upload.process_upload(file)
+                sub_type = upload.determine_source_format()
+
+                self.assertEqual(sub_type, exp_sub_type,
+                                f"Correctly identified submission of type '{sub_type}'.")
+
+                # Clean out files to get ready for next test.
+                upload.client_remove_all_files()
+
 
     def test_process_anc_upload(self) -> None:
         """Process upload with ancillary files in anc directory"""
