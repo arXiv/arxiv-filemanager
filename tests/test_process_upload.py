@@ -37,7 +37,8 @@ upload_tests = []
 
 # Basic tests
 
-upload_tests.append(['upload1.tar.gz', '9902.1001', True, 'espcrc2.sty is empty \(size is zero\)',
+upload_tests.append(['upload1.tar.gz', '9902.1001', True,
+                     "File 'espcrc2.sty' is empty \(size is zero\)",
                      'Test zero file detection'])
 upload_tests.append(['upload2.tar.gz', '9903.1002', False, '', 'Test well-formed submission.'])
 upload_tests.append(['upload3.tar.gz', '9903.1003', False, '', 'Test well-formed submission.'])
@@ -65,6 +66,10 @@ upload_tests.append(['UploadTestWindowCDrive.tar.gz', '12345639', True,
 upload_tests.append(['Upload9BadFileNames.tar.gz', '12345640', True,
                      'Attempting to rename 10-1-1\(63\)\.png to 10-1-1_63_\.png.',
                      'Test for bad/illegal file names.'])
+
+upload_tests.append(['UploadNoNewlineTerm.tar.gz', '9903.10029', True,
+                     "File 'NoNewlineTermination.tex' does not end with newline",
+                     'File does not end with newline character.'])
 
 upload_tests.append(['source_with_dir.tar.gz', '9903.1009', True, 'Removing top level directory',
                      'Removing top level directory'])
@@ -847,6 +852,7 @@ class TestUpload(TestCase):
                         # print("Search for warning: '" + warnings_match + "'")
                         # Complain if we didn't find speocfied warning
                         string = f'This test is expected to generate specific warning: "{warnings_match}"'
+
                         self.assertTrue(upload.search_warnings(warnings_match), string)
 
                         # if upload.search_warnings(warnings_match):
@@ -856,4 +862,5 @@ class TestUpload(TestCase):
                     else:
                         print("Upload completed without warnings (not expected)")
                 else:
-                    self.assertFalse(upload.has_warnings(), 'Not expecting warnings!')
+                    self.assertFalse(upload.has_warnings(), f'{test_file}: Not expecting warnings!')
+
