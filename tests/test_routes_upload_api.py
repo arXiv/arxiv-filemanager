@@ -1622,6 +1622,42 @@ class TestUploadAPIRoutes(TestCase):
         self.assertEqual(upload_data['upload_total_size'], 0,
                          "Expected smaller total upload size after deleting all files.")
 
+        # Let's try to upload a different source format type - HTML
+        testfiles_dir = os.path.join(cwd, 'tests/test_files_sub_type')
+        filepath = os.path.join(testfiles_dir, 'sampleB_html.tar.gz')
+
+        # Prepare gzipped tar submission for upload
+        filename = os.path.basename(filepath)
+
+        # Post a test submission to upload API
+
+        response = self.client.post('/filemanager/api/',
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        'file': (open(filepath, 'rb'), filename),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
+
+        self.maxDiff = None
+
+        with open('schema/resources/uploadResult.json') as f:
+            result_schema = json.load(f)
+
+        try:
+            jsonschema.validate(json.loads(response.data), result_schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+        self.assertEqual(upload_data['source_format'], "html", "Check source format of submission.")
+
+        # DONE TESTS, NOW CLEANUP
+
         # Delete the workspace
 
         # Create admin token for deleting upload workspace
