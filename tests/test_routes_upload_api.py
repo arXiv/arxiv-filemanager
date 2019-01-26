@@ -1470,7 +1470,7 @@ class TestUploadAPIRoutes(TestCase):
         # Check that upload_total_size is in summary response
         self.assertIn('upload_total_size', upload_data, "Returns total upload size.")
         self.assertEqual(upload_data['upload_total_size'], 275781,
-                         "Expected total upload size matches")
+                         f"Expected total upload size to match (ID:{upload_data['upload_id']}).")
         self.assertEqual(upload_data['source_format'], "tex", "Check source format of submission.")
 
 

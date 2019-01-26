@@ -1,14 +1,15 @@
 """Handles all upload-related requests."""
 
+from base64 import b64encode
+from hashlib import md5
 from typing import Tuple, Optional
 from datetime import datetime
-from pytz import UTC
 import json
 import logging
 import os.path
-from hashlib import md5
-from base64 import b64encode
 import io
+from pytz import UTC
+
 
 from werkzeug.exceptions import NotFound, BadRequest, InternalServerError, \
     NotImplemented, SecurityError, Forbidden
@@ -181,7 +182,8 @@ def delete_workspace(upload_id: int) -> Response:
 
             # update database
             if upload_db_data.state != Upload.RELEASED:
-                logger.info("%s: Workspace currently in '%s' state.", upload_id, upload_db_data.state)
+                logger.info("%s: Workspace currently in '%s' state.",
+                            upload_id, upload_db_data.state)
 
             upload_db_data.state = Upload.DELETED
 
@@ -565,6 +567,7 @@ def upload(upload_id: int, file: FileStorage, archive: str,
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
+    return None
 
 def upload_summary(upload_id: int) -> Response:
     """
@@ -1048,14 +1051,14 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
                                             'Content-Length': size,
                                             'Last-Modified': modified
                                             }
-        else:
-            raise NotFound(f"File '{public_file_path}' not found.")
+
+        raise NotFound(f"File '{public_file_path}' not found.")
 
     except IOError:
-        logger.error("%s: Delete file request failed ", upload_db_data.upload_id)
+        logger.error("%s: Content file exists request failed ", upload_db_data.upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
     except NotFound as nf:
-        logger.info("%s: DeleteFile: %s", upload_id, nf)
+        logger.info("%s: File not found: %s", upload_id, nf)
         raise nf
     except SecurityError as secerr:
         logger.info("%s: %s", upload_id, secerr.description)
@@ -1063,10 +1066,10 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
         # NotFound in order to provide as little feedback as posible to client.
         raise NotFound(UPLOAD_FILE_NOT_FOUND)
     except Forbidden as forb:
-        logger.info("%s: Delete file forbidden: %s.", upload_id, forb)
+        logger.info("%s: Operation forbidden: %s.", upload_id, forb)
         raise forb
     except Exception as ue:
-        logger.info("Unknown error in delete file. "
+        logger.info("Unknown error in content file exists operation. "
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
@@ -1225,7 +1228,6 @@ def get_upload_source_log(upload_id: int) -> Response:
     else:
         name = ""
 
-
     headers = {
         "Content-disposition": f"filename={name}",
         'ETag': checksum,
@@ -1245,8 +1247,8 @@ def __checksum(filepath: str) -> str:
             for chunk in iter(lambda: f.read(4096), b""):
                 hash_md5.update(chunk)
         return b64encode(hash_md5.digest()).decode('utf-8')
-    else:
-        return ""
+
+    return ""
 
 
 def __last_modified(filepath: str) -> str:
@@ -1264,23 +1266,23 @@ def __last_modified(filepath: str) -> str:
     return datetime.utcfromtimestamp(os.path.getmtime(filepath))
 
 def __content_pointer(service_log_path) -> io.BytesIO:
-        """Get a file-pointer for service log.
+    """Get a file-pointer for service log.
 
-        Parameters
-        ----------
-        service_log_path : str
-            Absolute path of file manager service log.
+    Parameters
+    ----------
+    service_log_path : str
+        Absolute path of file manager service log.
 
-        Returns
-        -------
-        Standard Response tuple containing service log content, HTTP status,
-        and HTTP headers.
+    Returns
+    -------
+    Standard Response tuple containing service log content, HTTP status,
+    and HTTP headers.
 
-        """
-        if os.path.exists(service_log_path):
-            return open(service_log_path, 'rb')
-        else:
-            return ""
+    """
+    if os.path.exists(service_log_path):
+        return open(service_log_path, 'rb')
+
+    return ""
 
 
 def check_upload_service_log_exists() -> Response:

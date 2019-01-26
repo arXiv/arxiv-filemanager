@@ -364,16 +364,17 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
                 or (line_no <= 10 and re.search(rb'^%!PS', line) and maybe_tex == 0)):
             return 'TYPE_PS_PC', '', ''
 
-        # LaTeX and MAC TeX
+        # LaTeX and TeX macros
         if line_no <= 12 and re.search(rb'^\r?%&([^\s\n]+)', line):
             match = re.search(rb'^\r?%&([^\s\n]+)', line)
             latex_type = ''
             if match is not None:
                 latex_type = re.search(rb'^\r?%&([^\s\n]+)', line).group(1)
-            if (latex_type == 'latex209' or latex_type == 'biglatex'
-                    or latex_type == 'latex' or latex_type == 'LaTeX'):
-                return 'TYPE_LATEX', str(latex_type), ''
-            else:
+
+                if (latex_type == 'latex209' or latex_type == 'biglatex'
+                        or latex_type == 'latex' or latex_type == 'LaTeX'):
+                    return 'TYPE_LATEX', str(latex_type), ''
+
                 return 'TYPE_TEX_MAC', str(latex_type), ''
 
         # HTML
@@ -469,8 +470,8 @@ def is_tex_type(type: str) -> bool:
     """Check of type is TeX file."""
     if type in TEX_types:
         return True
-    else:
-        return False
+
+    return False
 
 
 def get_type_name(type: str) -> str:
@@ -479,8 +480,8 @@ def get_type_name(type: str) -> str:
 
     if type in type_name.keys():
         return type_name[type]
-    else:
-        return 'unknown'
+
+    return 'unknown'
 
 
 def get_type_priority(type: str) -> int:
@@ -489,8 +490,8 @@ def get_type_priority(type: str) -> int:
     than all other types) if $type is not recognized."""
     if type in type_priorities:
         return type_priorities.index(type) + 1
-    else:
-        return 0
+
+    return 0
 
 
 # These methods filter internal file type information. Need to investigate whether this
@@ -499,7 +500,8 @@ def get_type_priority(type: str) -> int:
 def guess(filepath: str) -> str:
     """Return a cleaned up version of the internal file type minus
     TYPE prefix and lower cased."""
-    (type, tex_format, error) = guess_file_type(filepath)
+    # Not using tex_format or error from guess_file_type at this time
+    (type, _, _) = guess_file_type(filepath)
     # Type returned does not include TYPE_ prefix
 
     if type.startswith('TYPE_'):

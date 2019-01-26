@@ -5,11 +5,10 @@
 import os.path
 import re
 from datetime import datetime
-from pytz import UTC
 from hashlib import md5
 from base64 import b64encode
+from pytz import UTC
 from arxiv.base import logging
-
 from filemanager.arxiv.file_type import guess, _is_tex_type, name
 
 logger = logging.getLogger(__name__)
@@ -42,7 +41,8 @@ class File:
     @property
     def ext(self) -> str:
         """Return file extension."""
-        fbase, ext = os.path.splitext(self.__filepath)
+        # Base filename is not needed
+        _, ext = os.path.splitext(self.__filepath)
         return ext
 
     @property
@@ -73,16 +73,16 @@ class File:
         pdir = os.path.dirname(self.filepath)
         if pdir == self.__base_dir:
             return ''
-        elif self.dir:
+        if self.dir:
             return pdir.replace(self.base_dir + '/', "")
-        else:
-            # For directories self.dir is empty, must get rest of path from
-            # filepath
-            public_dir = pdir.replace(self.base_dir + '/', "")
-            name = re.sub(r'[\+]/\\\+', '', self.name)
-            regex = name + '$'
-            public_dir = re.sub(regex, '', public_dir)
-            return public_dir
+
+        # For directories self.dir is empty, must get rest of path from
+        # filepath
+        public_dir = pdir.replace(self.base_dir + '/', "")
+        regname = re.sub(r'[\+]/\\\+', '', self.name)
+        regex = regname + '$'
+        public_dir = re.sub(regex, '', public_dir)
+        return public_dir
 
     @property
     def filepath(self) -> str:
@@ -101,23 +101,24 @@ class File:
         return ppath.replace(self.base_dir + '/', "")
 
     def initialize_type(self):
+        """Initialize file type using file type best-guess routine"""
         if self.dir:
-            """Guess file type."""
+            # Guess file type.
             self.__type = guess(self.__filepath)
             return self.__type
-        elif self.dir == '' and self.filepath == os.path.join(self.base_dir, 'anc'):
+        if self.dir == '' and self.filepath == os.path.join(self.base_dir, 'anc'):
             return 'directory'
-        else:
-            return 'directory'
+
+        return 'directory'
 
     @property
     def type(self) -> str:
         """The file type."""
         if self.__type:
-            """Use existing type setting."""
+            # Use existing type setting.
             return self.__type
-        else:
-            self.initialize_type()
+
+        return self.initialize_type()
 
     @type.setter
     def type(self, type: str) -> None:
@@ -129,12 +130,12 @@ class File:
         """The human readable type name."""
         if self.removed:
             return "Invalid File"
-        elif self.dir:
+        if self.dir:
             return name(self.type)
-        elif self.dir == '' and self.filepath == os.path.join(self.base_dir, 'anc'):
+        if self.dir == '' and self.filepath == os.path.join(self.base_dir, 'anc'):
             return 'Ancillary files directory'
-        else:
-            return 'Directory'
+
+        return 'Directory'
 
     @property
     def sha256sum(self) -> str:
@@ -159,8 +160,8 @@ class File:
                 for chunk in iter(lambda: f.read(4096), b""):
                     hash_md5.update(chunk)
             return b64encode(hash_md5.digest()).decode('utf-8')
-        else:
-            return ""
+
+        return ""
 
 
     @property
