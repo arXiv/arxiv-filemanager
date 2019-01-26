@@ -1150,8 +1150,6 @@ class Upload:
                 # unmacify
                 # check if file contains raw postscript
                 elif obj.is_tex_type:
-                    # TODO: Implement unmacify
-                    print(f'File {obj.name} is TeX type. Needs further inspection. ***')
                     self.unmacify(obj)
                     self.extract_uu(file_name, file_type)
 
@@ -1239,9 +1237,10 @@ class Upload:
             # Seek to last two bytes of file
             f.seek(-1, 2)
             last_byte = f.read(1)
-            if last_byte != 0x0A:
+            if last_byte != b'\n':
                 self.add_warning(file_obj.public_filepath,
-                                     f"File {file_obj.public_filepath} does not end with \\n, TRUNCATED?.")
+                                 (f"File '{file_obj.public_filepath}' does "
+                                  "not end with newline (\\n), TRUNCATED?."))
 
 
     def unmacify(self, file_obj: File):
