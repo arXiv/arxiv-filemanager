@@ -343,7 +343,7 @@ def client_delete_all_files(upload_id: str) -> Response:
     return response_data, status_code, {}
 
 
-def upload(upload_id: int, file: FileStorage, archive: str,
+def upload(upload_id: Optional[int], file: FileStorage, archive: str,
            user: auth_domain.User, ancillary: bool = False) -> Response:
     """
     Upload individual files or compressed archive into specified workspace.
@@ -1265,7 +1265,7 @@ def __last_modified(filepath: str) -> str:
     """
     return datetime.utcfromtimestamp(os.path.getmtime(filepath))
 
-def __content_pointer(service_log_path) -> io.BytesIO:
+def __content_pointer(service_log_path : str) -> io.BytesIO:
     """Get a file-pointer for service log.
 
     Parameters
