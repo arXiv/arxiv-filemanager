@@ -134,24 +134,32 @@ class TestInternalSupportRoutines(TestCase):
         workspace_dir = upload.get_upload_directory()
         self.assertEqual(workspace_dir, os.path.join(UPLOAD_BASE_DIRECTORY, '12345678'),
                          'Generate path to workspace directory')
+        # cleanup workspace
+        upload.remove_workspace()
 
     def test_create_upload_directory(self):
         upload = Upload(12345679)
         workspace_dir = upload.create_upload_directory()
         dir_exists = os.path.exists(workspace_dir)
         self.assertEqual(dir_exists, True, 'Create workspace directory.')
+        # cleanup workspace
+        upload.remove_workspace()
 
     def test_get_source_directory(self):
         upload = Upload(12345680)
         source_dir = upload.get_source_directory()
         self.assertEqual(source_dir, os.path.join(UPLOAD_BASE_DIRECTORY, '12345680', 'src'),
                          "Check 'src' directory")
+        # cleanup workspace
+        upload.remove_workspace()
 
     def test_get_removed_directory(self):
         upload = Upload(12345680)
         removed_dir = upload.get_removed_directory()
         self.assertEqual(removed_dir, os.path.join(UPLOAD_BASE_DIRECTORY, '12345680', 'removed'),
                          "Check 'removed' directory")
+        # cleanup workspace
+        upload.remove_workspace()
 
     def test_create_upload_workspace(self):
         upload = Upload(12345681)
@@ -162,6 +170,7 @@ class TestInternalSupportRoutines(TestCase):
         self.assertEqual(dir_exists, True, 'Create workspace directory.')
         self.assertEqual(src_dir_exists, True, 'Create workspace source directory.')
         self.assertEqual(rem_dir_exists, True, 'Create workspace removed directory.')
+        upload.remove_workspace()
 
     def test_deposit_upload(self):
         """Test upload file deposit into src directory."""
@@ -192,6 +201,9 @@ class TestInternalSupportRoutines(TestCase):
             self.assertTrue(os.path.exists(path), "Deposited upload file.")
         else:
             self.assertTrue(os.path.exists(workspace_dir), "Workspace directory exists.")
+
+        # cleanup workspace
+        upload.remove_workspace()
 
     def test_check_file_termination(self):
         """
@@ -312,6 +324,9 @@ class TestInternalSupportRoutines(TestCase):
         is_same = filecmp.cmp(destfilename, reference)
         self.assertTrue(is_same, 'Eliminated unwanted CR characters from MAC file.')
 
+        # cleanup workspace
+        upload.remove_workspace()
+
     def test_fix_file_extension(self) -> None:
         """
         Normalize file extension for file type.
@@ -392,7 +407,8 @@ class TestInternalSupportRoutines(TestCase):
                                              " to fix extension not"),
                                              "Error message added to list.")
 
-
+        # cleanup workspace
+        upload.remove_workspace()
 
 
 class TestUpload(TestCase):
@@ -432,6 +448,9 @@ class TestUpload(TestCase):
         # Check file in subdirectory exists
         file_to_check = os.path.join(source_directory, 'b', 'c', 'c_level_file.txt')
         self.assertTrue(os.path.exists(file_to_check), 'Test file within subdirectory exists: \'c_level_file.txt\'')
+
+        # cleanup workspace
+        upload.remove_workspace()
 
     def test_process_count_file_types(self) -> None:
         """Test routine that counts file type occurrences.
@@ -598,6 +617,10 @@ class TestUpload(TestCase):
             # Clean out files to get ready for next test.
             upload.client_remove_all_files()
 
+        # Clean up the workspace we used for all of these tests
+        upload = Upload(20180245)
+        upload.remove_workspace()
+
     def test_process_determine_source_format(self) -> None:
         """Test code that determines submission format."""
         upload = Upload(2019145)
@@ -639,6 +662,9 @@ class TestUpload(TestCase):
                 # Clean out files to get ready for next test.
                 upload.client_remove_all_files()
 
+                # cleanup workspace
+                upload.remove_workspace()
+
 
     def test_process_anc_upload(self) -> None:
         """Process upload with ancillary files in anc directory"""
@@ -658,6 +684,9 @@ class TestUpload(TestCase):
             upload = Upload(20180226)
             file = FileStorage(fp)
             ret = upload.process_upload(file)
+
+            # cleanup workspace
+            upload.remove_workspace()
 
     # Modified handling of bib/bbl to reduce published papers with 'missing refs'
     def test_process_bib_bbl_handling(self) -> None:
@@ -733,6 +762,9 @@ class TestUpload(TestCase):
             self.assertFalse(upload.has_warnings(), 'Test well-formed submission. No warnings.')
             self.assertFalse(upload.has_errors(), 'Test well-formed submission. No errors.')
 
+            # cleanup workspace
+            upload.remove_workspace()
+
     def test_process_unpack(self) -> None:
         """
         Test upload service's archive unpack routine.
@@ -801,6 +833,9 @@ class TestUpload(TestCase):
                 else:
                     self.assertFalse(upload.has_warnings(), 'Not expecting warnings!')
 
+                # clean up workspace
+                upload.remove_workspace()
+
     def test_process_general_upload(self) -> None:
         """Test series of uniform test cases with specified outcomes"""
 
@@ -864,3 +899,5 @@ class TestUpload(TestCase):
                 else:
                     self.assertFalse(upload.has_warnings(), f'{test_file}: Not expecting warnings!')
 
+                # Clean up workspace
+                upload.remove_workspace()
