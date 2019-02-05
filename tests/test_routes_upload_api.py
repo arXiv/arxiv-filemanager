@@ -424,6 +424,16 @@ class TestUploadAPIRoutes(TestCase):
         # Highlight log download. Remove at some point.
         print(f"FYI: SAVED SERVICE LOG FILE TO DISK AT: {log_path}\n")
 
+        # Delete the workspace
+
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+                                      headers={'Authorization': admin_token}
+                                      )
+
+        # This cleans out the workspace. Comment out if you want to inspect files
+        # in workspace. Source log is saved to 'deleted_workspace_logs' directory.
+        self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
+
     def test_individual_file_content_download(self) -> None:
         """
         Test download of individual content files.
@@ -516,6 +526,20 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND,
                          "Trying to check non-existent should fail.")
+
+        # Delete the workspace
+        # Create admin token for deleting upload workspace
+        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                                auth.scopes.WRITE_UPLOAD,
+                                                auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
+
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+                                      headers={'Authorization': admin_token}
+                                      )
+
+        # This cleans out the workspace. Comment out if you want to inspect files
+        # in workspace. Source log is saved to 'deleted_workspace_logs' directory.
+        self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
 
 
     def test_delete_file(self) -> None:
@@ -675,6 +699,20 @@ class TestUploadAPIRoutes(TestCase):
         self.assertEqual(response.status_code, 404,
                          f"Delete file in subdirectory: '{public_file_path}'.")
 
+        # Delete the workspace
+        # Create admin token for deleting upload workspace
+        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                                auth.scopes.WRITE_UPLOAD,
+                                                auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
+
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+                                      headers={'Authorization': admin_token}
+                                      )
+
+        # This cleans out the workspace. Comment out if you want to inspect files
+        # in workspace. Source log is saved to 'deleted_workspace_logs' directory.
+        self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
+
     def test_delete_all_files(self) -> None:
         """
         Test delete file operation.
@@ -754,6 +792,21 @@ class TestUploadAPIRoutes(TestCase):
 
         expected_data = {'reason': 'file not found'}
         self.assertDictEqual(json.loads(response.data), expected_data)
+
+        # Delete the workspace
+        # Create admin token for deleting upload workspace
+        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                                auth.scopes.WRITE_UPLOAD,
+                                                auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
+
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+                                      headers={'Authorization': admin_token}
+                                      )
+
+        # This cleans out the workspace. Comment out if you want to inspect files
+        # in workspace. Source log is saved to 'deleted_workspace_logs' directory.
+        self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
+
 
     def test_delete_upload_workspace(self) -> None:
         """
@@ -842,6 +895,7 @@ class TestUploadAPIRoutes(TestCase):
         self.assertEqual(response.status_code, 404, "Delete workspace using bogus upload_id.")
 
         # TODO: Need to add more tests for auth/z for submitter and admin
+
 
     def test_lock_unlock(self) -> None:
         """Test workspace lock and unlock requests.
@@ -1123,7 +1177,8 @@ class TestUploadAPIRoutes(TestCase):
         upload_data: Dict[str, Any] = json.loads(response.data)
         self.assertIn('upload_status', upload_data, "Returns total upload status.")
         self.assertEqual(upload_data['upload_status'], "ERRORS",
-                         "Expected total upload size matches")
+                         ("Expected total upload size matches "
+                         f"(ID: {upload_data['upload_id']})"))
 
         # Get upload_id from previous file upload
         test_id = upload_data['upload_id']
@@ -1332,11 +1387,9 @@ class TestUploadAPIRoutes(TestCase):
                                            upload_data['errors']), "Expect this error to occur.")
 
         # Uploaded DOC file is causing fatal error
-
-
-        # Uploaded DOC file is causing fatal error
         filepath2 = os.path.join(testfiles_dir, 'README.md')
         filename2 = os.path.basename(filepath2)
+        filename2 = '00README.XXX'
         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
                                     data={
                                         # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
@@ -1345,9 +1398,6 @@ class TestUploadAPIRoutes(TestCase):
                                     headers={'Authorization': token},
                                     #        content_type='application/gzip')
                                     content_type='multipart/form-data')
-
-        #print("Upload#2 Response:\n" + str(response.data) + "\nEnd Data")
-        #print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
 
         self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
 
@@ -1358,8 +1408,10 @@ class TestUploadAPIRoutes(TestCase):
 
         upload_data: Dict[str, Any] = json.loads(response.data)
 
-        self.assertEqual(upload_data['upload_status'], "READY",
-                         "Removed file causing fatal error.")
+        amsg = ("Status returned to 'READY'." 
+                " Removed file causing fatal error."
+                f" (ID:{upload_data['upload_id']})")
+        self.assertEqual(upload_data['upload_status'], "READY", amsg)
 
         # Upload files that we will warn about - but not remove.
 
@@ -1374,7 +1426,7 @@ class TestUploadAPIRoutes(TestCase):
                                     #        content_type='application/gzip')
                                     content_type='multipart/form-data')
 
-        #print("Upload#2 Response:\n" + str(response.data) + "\nEnd Data")
+        #print("AFTER UPLOAD FILES TO WARN ON")
         #print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
 
         upload_data: Dict[str, Any] = json.loads(response.data)
@@ -1401,6 +1453,20 @@ class TestUploadAPIRoutes(TestCase):
                                            "Please inspect and remove extraneous backup files.",
                                            "warn", "submission.tex.bak",
                                            upload_data['errors']), "Expect this error to occur.")
+
+        # Delete the workspace
+        # Create admin token for deleting upload workspace
+        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                                auth.scopes.WRITE_UPLOAD,
+                                                auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
+
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+                                      headers={'Authorization': admin_token}
+                                      )
+
+        # This cleans out the workspace. Comment out if you want to inspect files
+        # in workspace. Source log is saved to 'deleted_workspace_logs' directory.
+        self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
 
 
     # Upload a submission package and perform normal operations on upload
@@ -1453,7 +1519,8 @@ class TestUploadAPIRoutes(TestCase):
                                     #        content_type='application/gzip')
                                     content_type='multipart/form-data')
 
-        self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
+        self.assertEqual(response.status_code, 201,
+                         "Accepted and processed uploaded Submission Contents")
 
         self.maxDiff = None
 
@@ -1471,7 +1538,9 @@ class TestUploadAPIRoutes(TestCase):
         self.assertIn('upload_total_size', upload_data, "Returns total upload size.")
         self.assertEqual(upload_data['upload_total_size'], 275781,
                          f"Expected total upload size to match (ID:{upload_data['upload_id']}).")
-        self.assertEqual(upload_data['source_format'], "tex", "Check source format of submission.")
+        self.assertEqual(upload_data['source_format'], "tex",
+                         ("Check source format of TeX submission."
+                          f" [ID={upload_data['upload_id']}]"))
 
 
         # Get summary of upload
@@ -1524,8 +1593,9 @@ class TestUploadAPIRoutes(TestCase):
         with tarfile.open(fileobj=BytesIO(response.data)) as tar:
             tar.extractall(path=workdir)
 
-        print(f'List downloaded content directory: {workdir}\:n')
+        print(f'List directory containing downloaded content: {workdir}\:n')
         print(os.listdir(workdir))
+        print(f'End List\n')
 
         # WARNING: THE TESTS BELOW DELETE INDIVIDUAL FILES AND THEN THE ENTIRE WORKSPACE
 
@@ -1567,7 +1637,7 @@ class TestUploadAPIRoutes(TestCase):
         self.assertFalse(found, "Uploaded file should exist in resulting file list.")
 
         if next((item for item in file_list if item["name"] == public_file_path), False):
-            print(f"FOUND DELETED FILE: '{public_file_path}'")
+            print(f"FOUND DELETED FILE (Wrong Answer): '{public_file_path}'")
         else:
             print(f"DELETED FILE NOT FOUND (Right Answer!): '{public_file_path}'")
 
@@ -1588,7 +1658,7 @@ class TestUploadAPIRoutes(TestCase):
         self.assertNotEqual(upload_data['upload_total_size'], 275781,
                             "Expected total upload size should not match "
                             "pre - delete total")
-        # upload total size is deffinitely smaller than original 275781 bytes
+        # upload total size is definitely smaller than original 275781 bytes
         # after we deleted a few files.
         self.assertEqual(upload_data['upload_total_size'], 237116,
                          "Expected smaller total upload size.")
@@ -1631,7 +1701,7 @@ class TestUploadAPIRoutes(TestCase):
 
         # Post a test submission to upload API
 
-        response = self.client.post('/filemanager/api/',
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
                                     data={
                                         # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
                                         'file': (open(filepath, 'rb'), filename),
@@ -1640,7 +1710,8 @@ class TestUploadAPIRoutes(TestCase):
                                     #        content_type='application/gzip')
                                     content_type='multipart/form-data')
 
-        self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
+        self.assertEqual(response.status_code, 201,
+                         "Accepted and processed uploaded Submission Contents")
 
         self.maxDiff = None
 
@@ -1654,7 +1725,9 @@ class TestUploadAPIRoutes(TestCase):
 
         upload_data: Dict[str, Any] = json.loads(response.data)
 
-        self.assertEqual(upload_data['source_format'], "html", "Check source format of submission.")
+        self.assertEqual(upload_data['source_format'], "html",
+                         ("Check source format of HTML submission."
+                          f" [ID={upload_data['upload_id']}]"))
 
         # DONE TESTS, NOW CLEANUP
 
