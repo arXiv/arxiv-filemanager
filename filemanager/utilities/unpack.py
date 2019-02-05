@@ -27,7 +27,9 @@ DEBUG = 0
 
 def unpack_archive(upload: 'Upload') -> None:
     """
-    Uppack specified archive and recursively traverse the source directory
+    Unpack uploaded files.
+
+    Unpack uploaded archives and recursively traverse the source directory
     and unpack any additional gzipped/tar archives contained within original
     archive.
 
@@ -44,7 +46,6 @@ def unpack_archive(upload: 'Upload') -> None:
     -----
     Originates from Upload.pm (Perl).
     """
-
     #archive_name = os.path.basename(archive_path)
     # TODO debug logging ("*******Process upload: " + archive_name + '*****************')
 
