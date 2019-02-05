@@ -150,7 +150,9 @@ class Upload:
     # Debug
     def set_debug(self, set: bool):
         """
-        Activate/deactivate debugging
+        Activate/deactivate debugging.
+
+        Set debug to True to enable debugging.
 
         Parameters
         ----------
@@ -162,6 +164,7 @@ class Upload:
         self.__debug = set
 
     def debug(self):
+        """Return value of debug setting. True = on."""
         return self.__debug
 
 
@@ -398,7 +401,13 @@ class Upload:
 
             # Since every source log has the same filename we will prefix
             # upload identifier to log.
-            padded_id = '{0:07d}'.format(self.__upload_id)
+            if isinstance(self.__upload_id, int):
+                # Format integer as legacy submission id
+                padded_id = '{0:07d}'.format(self.__upload_id)
+            else:
+                # Use string id as-is
+                padded_id = self.__upload_id
+
             new_filename = padded_id + "_source.log"
             deleted_log_path = os.path.join(deleted_workspace_logs, new_filename)
             self.log(f"Move '{log_path} to '{deleted_log_path}'.")
@@ -1158,7 +1167,7 @@ class Upload:
 
 
     def check_file_termination(self, file_obj: File):
-        """
+        r"""
         Check for unwanted characters at end of file.
 
         The original unmacify/unpcify routine attemtps to cleanup the last few
@@ -1178,7 +1187,6 @@ class Upload:
             File object containing details about file to unmacify.
 
         """
-
         # Check for special characters at end of file.
         # Remove EOT/EOF
 
@@ -1245,7 +1253,7 @@ class Upload:
 
     def unmacify(self, file_obj: File):
         """
-        unmacify cleans up files containing carriage returns and line feeds.
+        Cleans up files containing carriage returns and line feeds.
 
         Files generated on Macs and Windows machines frequently have carriage
         returns that we must clean up prior to compilation.
@@ -1258,7 +1266,6 @@ class Upload:
             File object containing details about file to unmacify.
 
         """
-
         # Determine type of file we are dealing with PC or MAC
         file_type = MAC
 
@@ -1272,7 +1279,7 @@ class Upload:
                 file_type = PC
 
         """Fix up carriage returns and newlines."""
-        self.log(f'Un{type}ify file {file_obj.filepath}')
+        self.log(f'Un{file_type}ify file {file_obj.filepath}')
 
         # Open file and look for carriage return.
         #
@@ -1377,6 +1384,7 @@ class Upload:
         source_directory = self.get_source_directory()
 
         list = []
+        self.log("File List:")
         for root_directory, directories, files in os.walk(source_directory):
             for directory in directories:
                 # Need to decide whether we need to do anything to directories
@@ -1426,7 +1434,7 @@ class Upload:
             # TODO: Do we want count in response? Don't really need it but would
             # TODO: need to process list of files.
             # count = len(uploadObj.get_files())
-
+            self.log("File Summary")
             for fileObj in self.get_files():
                 # Temp debug
                 #print("\tFile:" + fileObj.name + "\tFilePath: " + fileObj.public_filepath
@@ -1442,6 +1450,8 @@ class Upload:
                 }
 
                 if not fileObj.removed:
+                    log_msg = f'{fileObj.name} \t[{fileObj.type}] in {fileObj.dir}'
+                    self.log(log_msg)
                     file_list.append(file_details)
 
             return file_list
@@ -1878,7 +1888,8 @@ class Upload:
 
         Returns
         -------
-
+            Returns dictionary containing type in key and count for each type
+            as value.
         """
         # Initialize file type accumulators and counters
         format_list = {'ancillary':0, 'all_files':0, 'directory':0, 'docx':0,
@@ -1911,15 +1922,18 @@ class Upload:
 
     def get_single_file(self) -> Optional[File]:
         """
-        Return single source File object for submission composed
-        of single content file.
+        Return File object for single-file submission.
+
+        This routine is intended for submission that are composed
+        of a single content file.
 
         Single file can't be type 'ancillary'. Single ancillary file
         is invalid submission and generates an error.
 
         Returns
         -------
-            Single File object. Returns nothing if single file is not found.
+            Single File object. Returns None when submission has more than
+            one file.
         """
         if self.__files and len(self.__files) == 1:
             if self.__files[0].type != 'ancillary' and \
@@ -1991,6 +2005,8 @@ class Upload:
 
         Returns
         -------
+            Returns a File object when extension is already correct or new File
+            object if the file is renamed. Returns None when there is an Error.
 
         """
         # Return if file already has desired extension.
@@ -2040,7 +2056,7 @@ class Upload:
 
         Returns
         -------
-
+            Returns True is Postscript file is well formed. Otherwise returns False.
         """
         pass
 
