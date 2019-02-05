@@ -1,8 +1,9 @@
-"""Implements arXiv's file type guess logic.
+"""
+Implements arXiv's file type guess logic.
 
-   Attempts to detect obvious errors in uploaded files and assigns priority
-   in terms of our downstream TeX compilation process.
-   """
+Attempts to detect obvious errors in uploaded files and assigns priority
+in terms of our downstream TeX compilation process.
+"""
 
 import os
 import os.path
@@ -31,7 +32,7 @@ priority = 0
 
 
 def set_priority() -> int:
-    """This is going away real soon. But still needs doc string!"""
+    """Set priorities for file types."""
     global priority
     priority = + priority
     priority = priority + 1
@@ -161,10 +162,19 @@ def _type_of_latex2e(file, count: int) -> Tuple[str, str, str]:
 # Internal type routines. These routines are core of type guessing logic.
 
 def guess_file_type(filepath: str) -> Tuple[str, str, str]:
-    """Guess the file type of filename.
-    :type filepath: object
     """
+    Guess the file type of file specified by filepath.
 
+    Parameters
+    ----------
+    filepath
+        Path to file we are interested in guessing type for.
+
+    Returns
+    -------
+        Tuple containing [file type, TeX flavor, error].
+
+    """
     # check whether file exists (new)
     if not os.path.isfile(filepath):
         return 'TYPE_FAILED', '', ''
@@ -475,9 +485,11 @@ def is_tex_type(type: str) -> bool:
 
 
 def get_type_name(type: str) -> str:
-    """Return display string for specified type or 'unknown' if type is not
-    recognized."""
+    """
+    Return display string for specified type.
 
+    Will return 'unknown' if type is not recognized.
+    """
     if type in type_name.keys():
         return type_name[type]
 
@@ -485,9 +497,12 @@ def get_type_name(type: str) -> str:
 
 
 def get_type_priority(type: str) -> int:
-    """Returns an integer indicating the processing priority of this file
-    type. Higher numbers should be processed first. Will return 0 (lower
-    than all other types) if $type is not recognized."""
+    """
+    Returns an integer indicating the processing priority of file type.
+
+    Higher numbers should be processed first. Will return 0 (lower
+    than all other types) if $type is not recognized.
+    """
     if type in type_priorities:
         return type_priorities.index(type) + 1
 
@@ -498,8 +513,11 @@ def get_type_priority(type: str) -> int:
 # can be eliminated in the future.
 
 def guess(filepath: str) -> str:
-    """Return a cleaned up version of the internal file type minus
-    TYPE prefix and lower cased."""
+    """
+    Return a cleaned up version of the internal file type.
+
+    Removes TYPE_ prefix and lower cases resulting type.
+    """
     # Not using tex_format or error from guess_file_type at this time
     (type, _, _) = guess_file_type(filepath)
     # Type returned does not include TYPE_ prefix
@@ -516,12 +534,19 @@ def name(type: str) -> str:
         type = 'TYPE_' + type
 
     type = type.upper()
+
+    if type.find('TYPE_LATEX2E') >= 0:
+        type = type.replace('TYPE_LATEX2E', 'TYPE_LATEX2e')
+
     return get_type_name(type)
 
 
 def _is_tex_type(type: str) -> bool:
-    """Returns true if file is of TeX type. This method does some normalization
-    prior to calling internal routine."""
+    """
+    Returns true if file is of TeX type.
+
+    This method does some normalization prior to calling internal routine.
+    """
     if not type.startswith('TYPE_'):
         type = 'TYPE_' + type
     type = type.upper()
