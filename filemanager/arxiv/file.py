@@ -1,6 +1,12 @@
-"""Encapsulate file-related methods necessary to complete checks on
-   uploaded files. Pulls in analyzed type information and makes it easier
-   to keep track of decisions as we analyze files."""
+"""
+File support.
+
+Encapsulate file-related methods useful for performing checks on
+uploaded files. Relies on type guess routine and makes it easier
+to keep track of various decisions as we analyze files (has file
+been removed).
+
+"""
 
 import os.path
 import re
@@ -101,7 +107,7 @@ class File:
         return ppath.replace(self.base_dir + '/', "")
 
     def initialize_type(self):
-        """Initialize file type using file type best-guess routine"""
+        """Initialize file type using best-guess routine."""
         if self.dir:
             # Guess file type.
             self.__type = guess(self.__filepath)
@@ -153,7 +159,6 @@ class File:
         return b64-encoded MD5 hash of the specified file.
 
         """
-
         if os.path.exists(self.filepath):
             hash_md5 = md5()
             with open(self.filepath, "rb") as f:
@@ -166,18 +171,18 @@ class File:
 
     @property
     def description(self) -> str:
-        """Description of file. (Optional)"""
+        """Get description of file. (Optional)."""
         return self.__description
 
     @description.setter
     def description(self, description: str = '') -> None:
-        """Description of file. (Optional)"""
+        """Set description of file. (Optional)."""
         if description != '':
             self.__description = description
 
     @property
     def is_tex_type(self) -> bool:
-        """Is this file a TeX file"""
+        """Determine whether this file is a TeX file."""
         return _is_tex_type(self.type)
 
     @property
