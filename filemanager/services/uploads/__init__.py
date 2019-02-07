@@ -6,8 +6,11 @@ from pytz import UTC
 from werkzeug.local import LocalProxy
 from sqlalchemy.exc import OperationalError
 from arxiv.base.globals import get_application_global
+from arxiv.base import logging
 from filemanager.domain import Upload
 from .models import db, DBUpload
+
+logger = logging.getLogger(__name__)
 
 
 def init_app(app: Optional[LocalProxy]) -> None:
@@ -39,6 +42,8 @@ def retrieve(upload_id: int, skip_cache: bool = False) -> Optional[Upload]:
         When there is a problem querying the database.
 
     """
+    logger.debug('Retrieve upload data from database for %s (skip_cache: %s)',
+                 upload_id, skip_cache)
     # We use the application global object to create a simple cache for
     # loaded uploads. This allows us to avoid multiple queries on the same
     # state when different parts of the application need access to the same
@@ -53,6 +58,7 @@ def retrieve(upload_id: int, skip_cache: bool = False) -> Optional[Upload]:
         try:
             upload_data = db.session.query(DBUpload).get(upload_id)
         except OperationalError as e:
+            logger.debug('Could not query database: %s', e.detail)
             raise IOError('Could not query database: %s' % e.detail) from e
 
         if upload_data is None:

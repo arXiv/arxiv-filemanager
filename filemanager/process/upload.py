@@ -8,7 +8,7 @@ import shutil
 import tarfile
 import logging
 from hashlib import md5
-from base64 import b64encode
+from base64 import urlsafe_b64encode
 import io
 import mmap
 import filecmp
@@ -1668,7 +1668,7 @@ class Upload:
         with open(self.get_content_path(), "rb") as f:
             for chunk in iter(lambda: f.read(4096), b""):
                 hash_md5.update(chunk)
-        return b64encode(hash_md5.digest()).decode('utf-8')
+        return urlsafe_b64encode(hash_md5.digest()).decode('utf-8')
 
     # Content file routines
 
@@ -1855,7 +1855,7 @@ class Upload:
             with open(source_log_path, "rb") as f:
                 for chunk in iter(lambda: f.read(4096), b""):
                     hash_md5.update(chunk)
-            return b64encode(hash_md5.digest()).decode('utf-8')
+            return urlsafe_b64encode(hash_md5.digest()).decode('utf-8')
         else:
             return ""
 
