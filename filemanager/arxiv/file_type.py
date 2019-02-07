@@ -27,17 +27,6 @@ TEX_types = ['TYPE_LATEX',
 # impact of their use. Initial Python implementation attempts to stay true to
 # the original Perl version author's design until the point I know better.
 
-# Type priorities
-priority = 0
-
-
-def set_priority() -> int:
-    """Set priorities for file types."""
-    global priority
-    priority = + priority
-    priority = priority + 1
-    return priority
-
 type_priorities = [
     'TYPE_ABORT',
     'TYPE_FAILED',
@@ -89,7 +78,6 @@ type_priorities = [
     'TYPE_INCLUDE'
 ]
 
-#type_priorities = {}
 type_name = {}
 
 type_name['TYPE_ABORT'] = 'Immediate stop'
