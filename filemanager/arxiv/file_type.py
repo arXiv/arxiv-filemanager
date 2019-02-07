@@ -507,13 +507,13 @@ def guess(filepath: str) -> str:
     Removes TYPE_ prefix and lower cases resulting type.
     """
     # Not using tex_format or error from guess_file_type at this time
-    (type, _, _) = guess_file_type(filepath)
+    (file_type, _, _) = guess_file_type(filepath)
     # Type returned does not include TYPE_ prefix
 
-    if type.startswith('TYPE_'):
-        return type[len('TYPE_'):].lower()
+    if file_type.startswith('TYPE_'):
+        return file_type[len('TYPE_'):].lower()
 
-    return type.lower()
+    return file_type.lower()
 
 
 def name(type: str) -> str:
