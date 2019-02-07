@@ -484,15 +484,15 @@ def get_type_name(type: str) -> str:
     return 'unknown'
 
 
-def get_type_priority(type: str) -> int:
+def get_type_priority(file_type: str) -> int:
     """
     Returns an integer indicating the processing priority of file type.
 
     Higher numbers should be processed first. Will return 0 (lower
     than all other types) if $type is not recognized.
     """
-    if type in type_priorities:
-        return type_priorities.index(type) + 1
+    if file_type in type_priorities:
+        return type_priorities.index(file_type) + 1
 
     return 0
 
