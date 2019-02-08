@@ -135,7 +135,6 @@ class Upload:
         self.__errors = []
         self.__files = []
         self.__debug = False
-        self.__source_format = ''
 
         # total client upload workspace source directory size (in bytes)
         self.__total_upload_size = 0
