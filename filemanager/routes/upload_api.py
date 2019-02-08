@@ -8,6 +8,7 @@ from flask import Blueprint, render_template, redirect, request, url_for, \
 from werkzeug.exceptions import NotFound, Forbidden, Unauthorized, \
     InternalServerError, HTTPException, BadRequest
 from arxiv.base import routes as base_routes
+from arxiv.base import logging
 from arxiv import status
 from arxiv.users import domain as auth_domain
 from arxiv.users.auth import scopes
@@ -17,6 +18,7 @@ from arxiv.users.auth.decorators import scoped
 from filemanager.services import uploads
 from filemanager.controllers import upload
 
+logger = logging.getLogger(__name__)
 blueprint = Blueprint('upload_api', __name__, url_prefix='/filemanager/api')
 
 
@@ -238,6 +240,8 @@ def get_upload_content(upload_id: int) -> tuple:
     Returns a stream with mimetype ``application/tar+gzip``, and an ``ETag``
     header with the current source package checksum.
     """
+    logger.debug('Request for upload content: %s (%s)',
+                 upload_id, type(upload_id))
     # Note: status_code is not used
     data, _, headers = upload.get_upload_content(upload_id)
     response = send_file(data, mimetype="application/tar+gzip")

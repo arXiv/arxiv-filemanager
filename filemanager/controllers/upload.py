@@ -7,6 +7,8 @@ from datetime import datetime
 import json
 import logging
 import os.path
+from hashlib import md5
+from base64 import urlsafe_b64encode
 import io
 from pytz import UTC
 
@@ -274,7 +276,10 @@ def client_delete_file(upload_id: str, public_file_path: str) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    response_data = {'reason': UPLOAD_DELETED_FILE}  # Get rid of pylint error
+    response_data = {
+        'reason': UPLOAD_DELETED_FILE,
+        'checksum': upload_workspace.content_checksum()
+    }  # Get rid of pylint error
     status_code = status.HTTP_204_NO_CONTENT
     return response_data, status_code, {}
 
@@ -338,7 +343,10 @@ def client_delete_all_files(upload_id: str) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    response_data = {'reason': UPLOAD_DELETED_ALL_FILES}  # Get rid of pylint error
+    response_data = {
+        'reason': UPLOAD_DELETED_ALL_FILES,
+        'checksum': upload_workspace.content_checksum()
+    }  # Get rid of pylint error
     status_code = status.HTTP_204_NO_CONTENT
     return response_data, status_code, {}
 
@@ -541,7 +549,8 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
                 'upload_status': upload_db_data.lastupload_upload_status,
                 'workspace_state': upload_db_data.state,
                 'lock_state': upload_db_data.lock,
-                'source_format': upload_workspace.source_format
+                'source_format': upload_workspace.source_format,
+                'checksum': upload_workspace.content_checksum()
             }
             logger.info("%s: Generating upload summary.", upload_db_data.upload_id)
             return response_data, status_code, headers
@@ -632,7 +641,8 @@ def upload_summary(upload_id: int) -> Response:
                 'upload_status': upload_db_data.lastupload_upload_status,
                 'workspace_state': upload_db_data.state,
                 'lock_state': upload_db_data.lock,
-                'source_format': upload_workspace.source_format
+                'source_format': upload_workspace.source_format,
+                'checksum': upload_workspace.content_checksum()
             }
             logger.info("%s: Upload summary request.", upload_db_data.upload_id)
 
@@ -1246,9 +1256,9 @@ def __checksum(filepath: str) -> str:
         with open(filepath, "rb") as f:
             for chunk in iter(lambda: f.read(4096), b""):
                 hash_md5.update(chunk)
-        return b64encode(hash_md5.digest()).decode('utf-8')
-
-    return ""
+        return urlsafe_b64encode(hash_md5.digest()).decode('utf-8')
+    else:
+        return ""
 
 
 def __last_modified(filepath: str) -> str:
