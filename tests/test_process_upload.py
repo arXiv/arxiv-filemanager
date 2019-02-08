@@ -654,7 +654,7 @@ class TestUpload(TestCase):
                 file = FileStorage(fp)
                 upload.client_remove_all_files()
                 ret = upload.process_upload(file)
-                sub_type = upload.determine_source_format()
+                sub_type = upload.source_format
 
                 self.assertEqual(sub_type, exp_sub_type,
                                 f"Correctly identified submission of type '{sub_type}'.")
