@@ -1956,36 +1956,6 @@ class Upload:
         return None
 
 
-    @property
-    def source_format(self) -> str:
-        """
-        Source format of submission.
-
-        Returns
-        -------
-            Source format.
-        """
-        return self.__source_format
-
-
-    @source_format.setter
-    def source_format(self, source_format : str) -> None:
-        """
-        Set submission's source_format to specified value.
-
-        Parameters
-        ----------
-        source_format : str
-            Value used to set source_format.
-
-        Returns
-        -------
-            None
-        """
-        self.__source_format = source_format
-
-
-
     def fix_file_ext(self, file_obj : File, new_extension : str) -> File:
         """
         Rename a file on disk to have the specified extension.
@@ -2048,20 +2018,8 @@ class Upload:
 
         return None
 
-    def run_command_with_limits(self) -> bool:
-        """
-        Execute command and make sure it doesn't run forever.
-
-        Limit execution time allow for command to execute.
-
-        Returns
-        -------
-            Returns True is Postscript file is well formed. Otherwise returns False.
-        """
-        pass
-
-
-    def determine_source_format(self) -> str:
+    @property
+    def source_format(self) -> str:
         """
         Determine high level format of all files in upload workspace.
 
@@ -2079,6 +2037,7 @@ class Upload:
         """
         # Analyze files formats in user upload workspace
         formats = self.count_file_types()
+        source_format = 'invalid'
 
         if formats['files'] == formats['invalid']:
             # Were all files have been identified as type 'invalid'
@@ -2086,17 +2045,17 @@ class Upload:
                    " article, please use the 'withdraw' function from the list"
                    "of articles on your account page.")
             self.add_warning("", msg)
-            self.source_format = 'invalid'
+            source_format = 'invalid'
         elif formats['all_files'] == 0:
             # No files detected, were all files removed? did user clear out
             # files? Since users are allowed to remove all files we won't
             # generate a message here. If system deletes all uploaded
             # files there will be warnings associated with those actions.
-            self.source_format = 'invalid'
+            source_format = 'invalid'
         elif formats['all_files'] > 0 and formats['files'] == 0:
             # No source files detected, extra ancillary files may be present
             # User may have deleted main document source.
-            self.source_format = 'invalid'
+            source_format = 'invalid'
 
         # Submission is single file (PDF/PS/HTML/etc.)
         elif formats['files'] == 1:
@@ -2119,31 +2078,32 @@ class Upload:
                        "side conversion of .docx to PDF may lead to incorrect "
                        "font substitutions, among other problems, and your own "
                        "PDF is likely to be more accurate.")
-                self.source_format = 'invalid'
+                source_format = 'invalid'
                 self.add_error(public_file_path, msg)
             elif formats['odf'] > 0:
                 # ODF not supportedf
                 msg = ("Unfortunately arXiv does not support ODF. "
                        "Please submit PDF instead.")
-                self.source_format = 'invalid'
+                source_format = 'invalid'
                 self.add_error(public_file_path, msg)
             # Check for invalid formats
             elif re.search(r'\.eps$', name, re.IGNORECASE):
                 # Single file ending n .eps
                 # ? Have users actually tried to submit .eps file ?
                 msg = f"'{public_file_path}' appears to be a single encapsulated PostScript file"
-                self.source_format = 'invalid'
+                source_format = 'invalid'
                 self.add_error(public_file_path, msg)
             elif formats['files'] == formats['texaux']:
                 # texaux file by itself
                 msg = f"'{public_file_path}' appears to be a single auxiliary TeX file"
-                self.source_format = 'invalid'
+                source_format = 'invalid'
                 self.add_error(public_file_path, msg)
             elif file_type == 'postscript':
                 # The logic for Postscript format actually verifies that the format
                 # is valid Postscript by running Ghostscript
                 # Rename
                 new_file_obj = self.fix_file_ext(obj, 'ps')
+                # TODO: This rename should eventually move to check routine
                 if new_file_obj is not None:
                     obj = new_file_obj
                     # TODO: NEED TO PERFORM LIVE PS FORMAT CHECK
@@ -2151,7 +2111,7 @@ class Upload:
                     # TODO: file fails to validate? We currently generate
                     # TODO: warning AND set format to 'ps' (as if it's
                     # TODO: possible to continue.
-                    self.source_format = 'postscript'
+                    source_format = 'postscript'
                 else:
                     # TODO: What to do here? 'None' indicates error. This is
                     # TODO: internal error. Error has been registered. Not
@@ -2159,10 +2119,11 @@ class Upload:
                     pass
             elif file_type == 'pdf':
                 # Rename
+                # TODO: This rename should eventually move to check routine
                 new_file_obj = self.fix_file_ext(obj, 'pdf')
                 if new_file_obj is not None:
                     obj = new_file_obj
-                    self.source_format = 'pdf'
+                    source_format = 'pdf'
                     # TODO: Check whether we need filename
                 else:
                     # TODO: What to do here? 'None' indicates error. This is
@@ -2171,10 +2132,11 @@ class Upload:
                     pass
             elif file_type == 'html':
                 # Rename
+                # TODO: This rename should eventually move to check routine
                 new_file_obj = self.fix_file_ext(obj, 'html')
                 if new_file_obj is not None:
                     obj = new_file_obj
-                    self.source_format = 'html'
+                    source_format = 'html'
                 else:
                     # TODO: What to do here?  'None' indicates error. This is
                     # TODO: internal error. Error has been registered. Not
@@ -2182,14 +2144,14 @@ class Upload:
                     pass
             elif file_type == 'failed':
                 msg = f"Could not determine type of file '{public_file_path}'"
-                self.source_format = 'invalid'
+                source_format = 'invalid'
                 self.add_error(public_file_path, msg)
             # Check whether type is TeX
             elif obj.is_tex_type:
                  # Single file TeX submission
-                 self.source_format = 'tex'
+                 source_format = 'tex'
             else:
-                self.source_format = 'invalid'
+                source_format = 'invalid'
                 self.add_error(public_file_path, "Unable to determine submission type.")
 
         # Multiple file submissions
@@ -2199,15 +2161,15 @@ class Upload:
                                  formats['postscript'] + formats['pdf'] +
                                  formats['directory'] + formats['readme']):
             # HTML submissions may contain the above formats
-            self.source_format = 'html'
+            source_format = 'html'
         elif formats['postscript'] > 0 and \
             formats['files'] == (formats['postscript'] + formats['pdf'] +
                                  formats['ignore'] + formats['directory'] +
                                  formats['image']):
             # Postscript submission may be composed of several other formats
-            self.source_format = 'ps'
+            source_format = 'ps'
         else:
             # Default source type is TEX
-            self.source_format ='tex'
+            source_format ='tex'
 
-        return self.source_format
+        return source_format
