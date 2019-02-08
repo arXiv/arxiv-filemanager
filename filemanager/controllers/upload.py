@@ -1279,10 +1279,7 @@ def __content_pointer(service_log_path : str) -> io.BytesIO:
     and HTTP headers.
 
     """
-    if os.path.exists(service_log_path):
-        return open(service_log_path, 'rb')
-
-    return ""
+    return open(service_log_path, 'rb')
 
 
 def check_upload_service_log_exists() -> Response:
