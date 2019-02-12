@@ -1,15 +1,20 @@
-"""Encapsulate file-related methods necessary to complete checks on
-   uploaded files. Pulls in analyzed type information and makes it easier
-   to keep track of decisions as we analyze files."""
+"""
+File support.
+
+Encapsulate file-related methods useful for performing checks on
+uploaded files. Relies on type guess routine and makes it easier
+to keep track of various decisions as we analyze files (has file
+been removed).
+
+"""
 
 import os.path
 import re
 from datetime import datetime
-from pytz import UTC
 from hashlib import md5
+from pytz import UTC
 from base64 import urlsafe_b64encode
 from arxiv.base import logging
-
 from filemanager.arxiv.file_type import guess, _is_tex_type, name
 
 logger = logging.getLogger(__name__)
@@ -42,7 +47,8 @@ class File:
     @property
     def ext(self) -> str:
         """Return file extension."""
-        fbase, ext = os.path.splitext(self.__filepath)
+        # Base filename is not needed
+        _, ext = os.path.splitext(self.__filepath)
         return ext
 
     @property
@@ -73,16 +79,16 @@ class File:
         pdir = os.path.dirname(self.filepath)
         if pdir == self.__base_dir:
             return ''
-        elif self.dir:
+        if self.dir:
             return pdir.replace(self.base_dir + '/', "")
-        else:
-            # For directories self.dir is empty, must get rest of path from
-            # filepath
-            public_dir = pdir.replace(self.base_dir + '/', "")
-            name = re.sub(r'[\+]/\\\+', '', self.name)
-            regex = name + '$'
-            public_dir = re.sub(regex, '', public_dir)
-            return public_dir
+
+        # For directories self.dir is empty, must get rest of path from
+        # filepath
+        public_dir = pdir.replace(self.base_dir + '/', "")
+        regname = re.sub(r'[\+]/\\\+', '', self.name)
+        regex = regname + '$'
+        public_dir = re.sub(regex, '', public_dir)
+        return public_dir
 
     @property
     def filepath(self) -> str:
@@ -101,23 +107,24 @@ class File:
         return ppath.replace(self.base_dir + '/', "")
 
     def initialize_type(self):
+        """Initialize file type using best-guess routine."""
         if self.dir:
-            """Guess file type."""
+            # Guess file type.
             self.__type = guess(self.__filepath)
             return self.__type
-        elif self.dir == '' and self.filepath == os.path.join(self.base_dir, 'anc'):
+        if self.dir == '' and self.filepath == os.path.join(self.base_dir, 'anc'):
             return 'directory'
-        else:
-            return 'directory'
+
+        return 'directory'
 
     @property
     def type(self) -> str:
         """The file type."""
         if self.__type:
-            """Use existing type setting."""
+            # Use existing type setting.
             return self.__type
-        else:
-            self.initialize_type()
+
+        return self.initialize_type()
 
     @type.setter
     def type(self, type: str) -> None:
@@ -129,12 +136,12 @@ class File:
         """The human readable type name."""
         if self.removed:
             return "Invalid File"
-        elif self.dir:
+        if self.dir:
             return name(self.type)
-        elif self.dir == '' and self.filepath == os.path.join(self.base_dir, 'anc'):
+        if self.dir == '' and self.filepath == os.path.join(self.base_dir, 'anc'):
             return 'Ancillary files directory'
-        else:
-            return 'Directory'
+
+        return 'Directory'
 
     @property
     def sha256sum(self) -> str:
@@ -152,7 +159,6 @@ class File:
         return b64-encoded MD5 hash of the specified file.
 
         """
-
         if os.path.exists(self.filepath):
             hash_md5 = md5()
             with open(self.filepath, "rb") as f:
@@ -165,18 +171,18 @@ class File:
 
     @property
     def description(self) -> str:
-        """Description of file. (Optional)"""
+        """Get description of file. (Optional)."""
         return self.__description
 
     @description.setter
     def description(self, description: str = '') -> None:
-        """Description of file. (Optional)"""
+        """Set description of file. (Optional)."""
         if description != '':
             self.__description = description
 
     @property
     def is_tex_type(self) -> bool:
-        """Is this file a TeX file"""
+        """Determine whether this file is a TeX file."""
         return _is_tex_type(self.type)
 
     @property

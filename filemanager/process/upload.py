@@ -12,6 +12,7 @@ from base64 import urlsafe_b64encode
 import io
 import mmap
 import filecmp
+from typing import Optional
 
 from werkzeug.exceptions import BadRequest, NotFound, SecurityError
 from werkzeug.datastructures import FileStorage
@@ -148,7 +149,9 @@ class Upload:
     # Debug
     def set_debug(self, set: bool):
         """
-        Activate/deactivate debugging
+        Activate/deactivate debugging.
+
+        Set debug to True to enable debugging.
 
         Parameters
         ----------
@@ -160,6 +163,7 @@ class Upload:
         self.__debug = set
 
     def debug(self):
+        """Return value of debug setting. True = on."""
         return self.__debug
 
 
@@ -396,7 +400,13 @@ class Upload:
 
             # Since every source log has the same filename we will prefix
             # upload identifier to log.
-            padded_id = '{0:07d}'.format(self.__upload_id)
+            if isinstance(self.__upload_id, int):
+                # Format integer as legacy submission id
+                padded_id = '{0:07d}'.format(self.__upload_id)
+            else:
+                # Use string id as-is
+                padded_id = self.__upload_id
+
             new_filename = padded_id + "_source.log"
             deleted_log_path = os.path.join(deleted_workspace_logs, new_filename)
             self.log(f"Move '{log_path} to '{deleted_log_path}'.")
@@ -1148,9 +1158,7 @@ class Upload:
                 # unmacify
                 # check if file contains raw postscript
                 elif obj.is_tex_type:
-                    # TODO: Implement unmacify
-                    print(f'File {obj.name} is TeX type. Needs further inspection. ***')
-                    self.unmacify(file_name)
+                    self.unmacify(obj)
                     self.extract_uu(file_name, file_type)
 
                 obj = _add_file(file_path, _warnings, _errors)
@@ -1158,7 +1166,7 @@ class Upload:
 
 
     def check_file_termination(self, file_obj: File):
-        """
+        r"""
         Check for unwanted characters at end of file.
 
         The original unmacify/unpcify routine attemtps to cleanup the last few
@@ -1178,7 +1186,6 @@ class Upload:
             File object containing details about file to unmacify.
 
         """
-
         # Check for special characters at end of file.
         # Remove EOT/EOF
 
@@ -1237,14 +1244,15 @@ class Upload:
             # Seek to last two bytes of file
             f.seek(-1, 2)
             last_byte = f.read(1)
-            if last_byte != 0x0A:
+            if last_byte != b'\n':
                 self.add_warning(file_obj.public_filepath,
-                                     f"File {file_obj.public_filepath} does not end with \\n, TRUNCATED?.")
+                                 (f"File '{file_obj.public_filepath}' does "
+                                  "not end with newline (\\n), TRUNCATED?."))
 
 
     def unmacify(self, file_obj: File):
         """
-        unmacify cleans up files containing carriage returns and line feeds.
+        Cleans up files containing carriage returns and line feeds.
 
         Files generated on Macs and Windows machines frequently have carriage
         returns that we must clean up prior to compilation.
@@ -1257,7 +1265,6 @@ class Upload:
             File object containing details about file to unmacify.
 
         """
-
         # Determine type of file we are dealing with PC or MAC
         file_type = MAC
 
@@ -1271,7 +1278,7 @@ class Upload:
                 file_type = PC
 
         """Fix up carriage returns and newlines."""
-        self.log(f'Un{type}ify file {file_obj.filepath}')
+        self.log(f'Un{file_type}ify file {file_obj.filepath}')
 
         # Open file and look for carriage return.
         #
@@ -1376,6 +1383,7 @@ class Upload:
         source_directory = self.get_source_directory()
 
         list = []
+        self.log("File List:")
         for root_directory, directories, files in os.walk(source_directory):
             for directory in directories:
                 # Need to decide whether we need to do anything to directories
@@ -1425,7 +1433,7 @@ class Upload:
             # TODO: Do we want count in response? Don't really need it but would
             # TODO: need to process list of files.
             # count = len(uploadObj.get_files())
-
+            self.log("File Summary")
             for fileObj in self.get_files():
                 # Temp debug
                 #print("\tFile:" + fileObj.name + "\tFilePath: " + fileObj.public_filepath
@@ -1441,6 +1449,8 @@ class Upload:
                 }
 
                 if not fileObj.removed:
+                    log_msg = f'{fileObj.name} \t[{fileObj.type}] in {fileObj.dir}'
+                    self.log(log_msg)
                     file_list.append(file_details)
 
             return file_list
@@ -1862,8 +1872,303 @@ class Upload:
     def source_log_file_pointer(self) -> io.BytesIO:
         """Get a file-pointer for source log."""
         source_log_path = self.get_upload_source_log_path()
-        print(f"SOURCE LOG PATH: {source_log_path}")
+
         if os.path.exists(source_log_path):
             return open(source_log_path, 'rb')
         else:
             return ""
+
+    def count_file_types(self) -> dict:
+        """
+        Count the number of files for each file format.
+
+        This routine simply creates a dictionary with file format name as
+        key and number of files of this format type as value.
+
+        Returns
+        -------
+            Returns dictionary containing type in key and count for each type
+            as value.
+        """
+        # Initialize file type accumulators and counters
+        format_list = {'ancillary':0, 'all_files':0, 'directory':0, 'docx':0,
+                       'html':0, 'image':0, 'ignore':0, 'include':0, 'odf':0,
+                       'invalid':0, 'pdf':0, 'postscript':0, 'readme':0, 'texaux':0}
+
+        file_list = self.create_file_list()
+
+        for file in file_list:
+            # Keep track of total number of files (includes ancillary)
+            format_list['all_files'] = format_list['all_files'] + 1
+
+            if re.search('^anc/', file.public_filepath):
+                # For our current purposes we will ignore ancillary files when
+                # determining source format.
+                file.type = 'ancillary'
+
+            if file.type not in format_list:
+                format_list[file.type] = 1
+            else:
+                format_list[file.type] = format_list[file.type] + 1
+
+        # Calculate number of files in submission source (excludes ancillary files)
+        format_list['files'] = format_list['all_files'] - format_list['ancillary']
+
+        self.log(f"All Files: {format_list['all_files']} files: " 
+                 f"{format_list['files']} ancillary: {format_list['ancillary']}")
+
+        return format_list
+
+    def get_single_file(self) -> Optional[File]:
+        """
+        Return File object for single-file submission.
+
+        This routine is intended for submission that are composed
+        of a single content file.
+
+        Single file can't be type 'ancillary'. Single ancillary file
+        is invalid submission and generates an error.
+
+        Returns
+        -------
+            Single File object. Returns None when submission has more than
+            one file.
+        """
+        if self.__files and len(self.__files) == 1:
+            if self.__files[0].type != 'ancillary' and \
+                    self.__files[0].type != 'always_ignore':
+                return self.__files[0]
+            else:
+                # This is an error, can't have submission that is composed
+                # of ancillary single file
+                obj = self.__files[0]
+                msg = f"Found single ancillary file. Invalid submissiomn."
+                self.add_error(obj.public_filepath, msg)
+        elif self.__files and len(self.__files) > 1:
+            # This should never happen
+            msg = "Found more than 1 file in single file context"
+            self.add_error("", msg)
+        else:
+            msg = "No file found."
+            self.add_error("", msg)
+
+        return None
+
+
+    def fix_file_ext(self, file_obj : File, new_extension : str) -> File:
+        """
+        Rename a file on disk to have the specified extension.
+
+        The current file object is dropped and a new file object is created.
+
+        There are different extensions for files of the same
+        type. This routine normalizes all files of the same type to
+        have the same file extension.
+
+        Parameters
+        ----------
+        file : File
+            File object to 'fix' file extension.
+        new_extension
+            Desired extension for file name.
+
+        Returns
+        -------
+            Returns a File object when extension is already correct or new File
+            object if the file is renamed. Returns None when there is an Error.
+
+        """
+        # Return if file already has desired extension.
+        if re.search(r'\.' + re.escape(new_extension) + '$', file_obj.filepath):
+            return file_obj
+
+        # Otherwise rename file and update file object in list of files.
+        filebase, file_extension = os.path.splitext(file_obj.name)
+        new_file = filebase + f".{new_extension}"
+        new_path = os.path.join(file_obj.base_dir, new_file)
+
+        # Rename the file
+        try:
+            if shutil.move(file_obj.filepath, new_path):
+                msg = f"Renamed file '{file_obj.name}' to {new_file}."
+                self.add_warning(file_obj.public_filepath, msg)
+
+                # Remove file from file list (just in case called from somewhere
+                # other than process)
+                self.remove_file_from_list(file_obj)
+
+                # Create new file onject and add to list
+                file_path = os.path.join(file_obj.base_dir, new_file)
+                new_file_obj = File(file_path, file_obj.base_dir)
+                self.add_file(new_file_obj)
+                return new_file_obj
+        except FileNotFoundError as nf:
+            self.add_error(file_obj.name, f"File '{file_obj.name}' to fix extension not found:"
+                           f"Error:{nf}")
+        except Exception as ce:
+            self.add_error(file_obj.name, f"renaming file '{file_obj.name}' to have proper "
+                           f"'.{new_extension}' extension failed: "
+                           f"[{new_file}]: Error:{ce}")
+
+        # Update counts (assumine we are at point where counts are important)
+        # Since we removed and added a file of same type I don't believe we need to
+        # update counts like old code did.
+        # TODO: Check if there is use case where type changes.
+
+        return None
+
+    @property
+    def source_format(self) -> str:
+        """
+        Determine high level format of all files in upload workspace.
+
+        This routine uses a hueristic to make best attempt to determine source
+        format. Workspace may contain files of multiple formats. This routine
+        makes best guess at primary/dominant format.
+
+        May return source format of "Unknown" in case where there are no files
+        in workspace or we are not able to determine source format.
+
+        Returns
+        -------
+            String identifying source format. May be HTML, PDF, Postscript,
+            TeX, Unknown.
+        """
+        # Analyze files formats in user upload workspace
+        formats = self.count_file_types()
+        source_format = 'invalid'
+
+        if formats['files'] == formats['invalid']:
+            # Were all files have been identified as type 'invalid'
+            msg = ("All files are auto-ignore. If you intended to withdraw the"
+                   " article, please use the 'withdraw' function from the list"
+                   "of articles on your account page.")
+            self.add_warning("", msg)
+            source_format = 'invalid'
+        elif formats['all_files'] == 0:
+            # No files detected, were all files removed? did user clear out
+            # files? Since users are allowed to remove all files we won't
+            # generate a message here. If system deletes all uploaded
+            # files there will be warnings associated with those actions.
+            source_format = 'invalid'
+        elif formats['all_files'] > 0 and formats['files'] == 0:
+            # No source files detected, extra ancillary files may be present
+            # User may have deleted main document source.
+            source_format = 'invalid'
+
+        # Submission is single file (PDF/PS/HTML/etc.)
+        elif formats['files'] == 1:
+            # The submission is composed of only one file, or submitter has
+            # not finished uploading files (piecemeal)
+            # Retrieve File object since we'll need name, type, filepath,
+            # and public_filepath
+            obj = self.get_single_file()
+            name = obj.name
+            file_type = obj.type
+            file_path = obj.filepath
+            public_file_path = obj.public_filepath
+
+            # Handle all cases where submission source format is single file.
+
+            if formats['docx'] > 0:
+                # We no longer accept docx
+                msg = ("Submissions in docx are no longer supported. Please "
+                       "create a PDF file and submit that instead. Server "
+                       "side conversion of .docx to PDF may lead to incorrect "
+                       "font substitutions, among other problems, and your own "
+                       "PDF is likely to be more accurate.")
+                source_format = 'invalid'
+                self.add_error(public_file_path, msg)
+            elif formats['odf'] > 0:
+                # ODF not supportedf
+                msg = ("Unfortunately arXiv does not support ODF. "
+                       "Please submit PDF instead.")
+                source_format = 'invalid'
+                self.add_error(public_file_path, msg)
+            # Check for invalid formats
+            elif re.search(r'\.eps$', name, re.IGNORECASE):
+                # Single file ending n .eps
+                # ? Have users actually tried to submit .eps file ?
+                msg = f"'{public_file_path}' appears to be a single encapsulated PostScript file"
+                source_format = 'invalid'
+                self.add_error(public_file_path, msg)
+            elif formats['files'] == formats['texaux']:
+                # texaux file by itself
+                msg = f"'{public_file_path}' appears to be a single auxiliary TeX file"
+                source_format = 'invalid'
+                self.add_error(public_file_path, msg)
+            elif file_type == 'postscript':
+                # The logic for Postscript format actually verifies that the format
+                # is valid Postscript by running Ghostscript
+                # Rename
+                new_file_obj = self.fix_file_ext(obj, 'ps')
+                # TODO: This rename should eventually move to check routine
+                if new_file_obj is not None:
+                    obj = new_file_obj
+                    # TODO: NEED TO PERFORM LIVE PS FORMAT CHECK
+                    # TODO: Do we want to do something else when Postscript
+                    # TODO: file fails to validate? We currently generate
+                    # TODO: warning AND set format to 'ps' (as if it's
+                    # TODO: possible to continue.
+                    source_format = 'postscript'
+                else:
+                    # TODO: What to do here? 'None' indicates error. This is
+                    # TODO: internal error. Error has been registered. Not
+                    # TODO: much user can do.
+                    pass
+            elif file_type == 'pdf':
+                # Rename
+                # TODO: This rename should eventually move to check routine
+                new_file_obj = self.fix_file_ext(obj, 'pdf')
+                if new_file_obj is not None:
+                    obj = new_file_obj
+                    source_format = 'pdf'
+                    # TODO: Check whether we need filename
+                else:
+                    # TODO: What to do here? 'None' indicates error. This is
+                    # TODO: internal error. Error has been registered. Not
+                    # TODO: much user can do.
+                    pass
+            elif file_type == 'html':
+                # Rename
+                # TODO: This rename should eventually move to check routine
+                new_file_obj = self.fix_file_ext(obj, 'html')
+                if new_file_obj is not None:
+                    obj = new_file_obj
+                    source_format = 'html'
+                else:
+                    # TODO: What to do here?  'None' indicates error. This is
+                    # TODO: internal error. Error has been registered. Not
+                    # TODO: much user can do.
+                    pass
+            elif file_type == 'failed':
+                msg = f"Could not determine type of file '{public_file_path}'"
+                source_format = 'invalid'
+                self.add_error(public_file_path, msg)
+            # Check whether type is TeX
+            elif obj.is_tex_type:
+                 # Single file TeX submission
+                 source_format = 'tex'
+            else:
+                source_format = 'invalid'
+                self.add_error(public_file_path, "Unable to determine submission type.")
+
+        # Multiple file submissions
+        elif formats['html'] > 0 and \
+            formats['files'] == (formats['html'] + formats['image'] +
+                                 formats['include'] +
+                                 formats['postscript'] + formats['pdf'] +
+                                 formats['directory'] + formats['readme']):
+            # HTML submissions may contain the above formats
+            source_format = 'html'
+        elif formats['postscript'] > 0 and \
+            formats['files'] == (formats['postscript'] + formats['pdf'] +
+                                 formats['ignore'] + formats['directory'] +
+                                 formats['image']):
+            # Postscript submission may be composed of several other formats
+            source_format = 'ps'
+        else:
+            # Default source type is TEX
+            source_format ='tex'
+
+        return source_format

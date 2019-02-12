@@ -242,7 +242,8 @@ def get_upload_content(upload_id: int) -> tuple:
     """
     logger.debug('Request for upload content: %s (%s)',
                  upload_id, type(upload_id))
-    data, status_code, headers = upload.get_upload_content(upload_id)
+    # Note: status_code is not used
+    data, _, headers = upload.get_upload_content(upload_id)
     response = send_file(data, mimetype="application/tar+gzip")
     response.set_etag(headers.get('ETag'))
     return response
@@ -255,7 +256,8 @@ def check_file_exists(upload_id: int, public_file_path: str) -> tuple:
 
     Returns an ``ETag`` header with the current source file checksum.
     """
-    data, status_code, headers = upload.check_upload_file_content_exists(upload_id, public_file_path)
+    data, status_code, headers = \
+        upload.check_upload_file_content_exists(upload_id, public_file_path)
 
     return jsonify(data), status_code, headers
 
@@ -270,7 +272,8 @@ def get_file_content(upload_id: int, public_file_path: str) -> tuple:
     :param public_file_path:
     :return: File content.
     """
-    data, status_code, headers = upload.get_upload_file_content(upload_id, public_file_path)
+    # Note: status_code not used
+    data, _, headers = upload.get_upload_file_content(upload_id, public_file_path)
 
     response = send_file(data, mimetype="application/*")
     response.set_etag(headers.get('ETag'))
@@ -315,7 +318,8 @@ def get_upload_source_log(upload_id: int) -> tuple:
     The source.log for specified upload workspace.
 
     """
-    data, status_code, headers = upload.get_upload_source_log(upload_id)
+    # Note: status_code not used
+    data, _, headers = upload.get_upload_source_log(upload_id)
     response = send_file(data, mimetype="application/tar+gzip")
     response.set_etag(headers.get('ETag'))
     return response
@@ -350,7 +354,8 @@ def get_upload_service_log() -> tuple:
     The log file for upload file manager service.
 
     """
-    data, status_code, headers = upload.get_upload_service_log()
+    # Note: status_code not used
+    data, _, headers = upload.get_upload_service_log()
     response = send_file(data, mimetype="application/tar+gzip")
     response.set_etag(headers.get('ETag'))
     return response

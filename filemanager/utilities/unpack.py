@@ -27,7 +27,9 @@ DEBUG = 0
 
 def unpack_archive(upload: 'Upload') -> None:
     """
-    Uppack specified archive and recursively traverse the source directory
+    Unpack uploaded files.
+
+    Unpack uploaded archives and recursively traverse the source directory
     and unpack any additional gzipped/tar archives contained within original
     archive.
 
@@ -44,7 +46,6 @@ def unpack_archive(upload: 'Upload') -> None:
     -----
     Originates from Upload.pm (Perl).
     """
-
     #archive_name = os.path.basename(archive_path)
     # TODO debug logging ("*******Process upload: " + archive_name + '*****************')
 
@@ -193,7 +194,7 @@ def unpack_archive(upload: 'Upload') -> None:
 
                     # Maybe can't do this in production if submitter reloads tar.gz
                     if os.path.exists(rfile) and (os.path.getsize(rfile) == os.path.getsize(path)):
-                        print("File (same size) saved already! Remove tar file")
+                        # File (same size) saved already! Remove tar file
                         msg = f"Removed packed file {file}"
                         upload.log(msg)
                         os.remove(path)
