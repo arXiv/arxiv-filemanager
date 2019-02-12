@@ -54,9 +54,7 @@ def generate_token(app: Flask, scope: List[str]) -> str:
                 affiliation=affiliation,
                 rank=int(rank),
                 country=country,
-                default_category=domain.Category(
-                    *default_category.split('.', 1)
-                ),
+                default_category=domain.Category(default_category),
                 submission_groups=submission_groups.split(',')
             )
         ),
@@ -598,7 +596,7 @@ class TestUploadAPIRoutes(TestCase):
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
                                       headers={'Authorization': token})
         print(f"Delete File Response:'{public_file_path}'\n" + str(response.data) + '\n')
-        self.assertEqual(response.status_code, 204,
+        self.assertEqual(response.status_code, 200,
                          "Delete an individual file: '{public_file_path}'.")
 
         # expected_data = {'reason': 'deleted file'}
@@ -654,7 +652,7 @@ class TestUploadAPIRoutes(TestCase):
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
                                       headers={'Authorization': token})
         print(f"Delete file in subdirectory anc Response:'{public_file_path}'\n" + str(response.data) + '\n')
-        self.assertEqual(response.status_code, 204,
+        self.assertEqual(response.status_code, 200,
                          f"Delete file in subdirectory: '{public_file_path}'.")
 
         # Try to delete file in subdirectory - valid file deletion
@@ -663,7 +661,7 @@ class TestUploadAPIRoutes(TestCase):
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
                                       headers={'Authorization': token})
         print(f"Delete file in subdirectory anc Response:'{public_file_path}'\n" + str(response.data) + '\n')
-        self.assertEqual(response.status_code, 204,
+        self.assertEqual(response.status_code, 200,
                          f"Delete file in subdirectory: '{public_file_path}'.")
 
         # Try an delete file a second time...we'll know if first delete really worked.
@@ -762,7 +760,7 @@ class TestUploadAPIRoutes(TestCase):
                                     headers={'Authorization': token},
                                     content_type='multipart/form-data')
 
-        self.assertEqual(response.status_code, 204, "Delete all user-uploaded files.")
+        self.assertEqual(response.status_code, 200, "Delete all user-uploaded files.")
 
         # There are really not many exceptions we can generate as long as the upload workspace
         # exists. If upload workspace exists this command will remove all files and directories
@@ -992,7 +990,7 @@ class TestUploadAPIRoutes(TestCase):
                                     headers={'Authorization': token},
                                     content_type='multipart/form-data')
 
-        self.assertEqual(response.status_code, 204, "Delete all user-uploaded "
+        self.assertEqual(response.status_code, 200, "Delete all user-uploaded "
                                                     "files from locked workspace.")
 
         # Clean up after ourselves
@@ -1115,7 +1113,7 @@ class TestUploadAPIRoutes(TestCase):
                                     headers={'Authorization': token},
                                     content_type='multipart/form-data')
 
-        self.assertEqual(response.status_code, 204, "Delete all user-uploaded "
+        self.assertEqual(response.status_code, 200, "Delete all user-uploaded "
                                                     "files from released workspace.")
 
         # Clean up after ourselves
@@ -1408,7 +1406,7 @@ class TestUploadAPIRoutes(TestCase):
 
         upload_data: Dict[str, Any] = json.loads(response.data)
 
-        amsg = ("Status returned to 'READY'." 
+        amsg = ("Status returned to 'READY'."
                 " Removed file causing fatal error."
                 f" (ID:{upload_data['upload_id']})")
         self.assertEqual(upload_data['upload_status'], "READY", amsg)
@@ -1608,7 +1606,7 @@ class TestUploadAPIRoutes(TestCase):
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
                                       headers={'Authorization': token})
 
-        self.assertEqual(response.status_code, 204, "Delete an individual file.")
+        self.assertEqual(response.status_code, 200, "Delete an individual file.")
 
         # Delete another file
         public_file_path = "lipics-v2016.cls"
@@ -1617,7 +1615,7 @@ class TestUploadAPIRoutes(TestCase):
         # response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{encoded_file_path}",
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
                                       headers={'Authorization': token})
-        self.assertEqual(response.status_code, 204, "Delete an individual file.")
+        self.assertEqual(response.status_code, 200, "Delete an individual file.")
 
         # Get summary after deletions
         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}",
@@ -1668,7 +1666,7 @@ class TestUploadAPIRoutes(TestCase):
                                     headers={'Authorization': token},
                                     content_type='multipart/form-data')
 
-        self.assertEqual(response.status_code, 204, "Delete all user-uploaded files.")
+        self.assertEqual(response.status_code, 200, "Delete all user-uploaded files.")
 
         # Finally, after deleting all files, check the total upload size
 

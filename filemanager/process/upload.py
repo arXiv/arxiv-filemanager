@@ -1633,7 +1633,8 @@ class Upload:
 
     def get_content(self) -> io.BytesIO:
         """Get a file-pointer for the packed content tarball."""
-        if self.content_package_stale or not self.content_package_exists:
+        if not self.content_package_exists or \
+                (self.content_package_exists and self.content_package_stale):
             self.pack_content()
         return open(self.get_content_path(), 'rb')
 
