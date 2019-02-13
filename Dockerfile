@@ -13,7 +13,7 @@ RUN pipenv install
 
 ENV PATH "/opt/arxiv:${PATH}"
 
-ADD wsgi.py uwsgi.ini /opt/arxiv/
+ADD wsgi.py uwsgi.ini bootstrap.py /opt/arxiv/
 ADD filemanager/ /opt/arxiv/filemanager/
 
 # TODO: remove this when possible.

@@ -61,10 +61,10 @@ file_handler = logging.FileHandler(service_log_path, 'a')
 datefmt = '%d/%b/%Y:%H:%M:%S %z'  # Used to format asctime.
 formatter = logging.Formatter('%(asctime)s %(message)s', '%d/%b/%Y:%H:%M:%S %z')
 file_handler.setFormatter(formatter)
-logger.handlers = []
+# logger.handlers = []
 logger.addHandler(file_handler)
 logger.setLevel(logging.DEBUG)
-logger.propagate = False
+logger.propagate = True
 
 # End logging configuration
 
@@ -396,6 +396,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
     # File argument is required to exist and have a name associated with it.
     # It is standard practice that if user fails to select file the filename is null.
+    logger.debug(f'Handling upload request for {upload_id}')
     if file is None:
         # Crash and burn...not quite...do we need info about client?
         logger.error(f'Upload request is missing file/archive payload.')
@@ -420,10 +421,11 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
     # If this is a new upload then we need to create a workspace and add to database.
     if upload_id is None:
+        logger.debug('This is a new upload workspace.')
         try:
             logger.info("Create new workspace: Upload request: "
                         "file='%s' archive='%s'", file.filename, archive)
-            user_id = user.user_id
+            user_id = str(user.user_id)
 
             if archive is None:
                 arch = ''
