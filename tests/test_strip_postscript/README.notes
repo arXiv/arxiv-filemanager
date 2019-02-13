@@ -1,0 +1,28 @@
+Stripping - Legacy log examples
+
+Preview examples:
+
+
+2574/2574079/source.log:[02/12 11:14:39]   Unnecessary Preview removed from /data/new/2574/2574079/src/L95Lx_mbh_color.eps from line 13 to line 7131,
+
+2575/2575359/source.log:[02/13 08:26:03]   Unnecessary Preview removed from /data/new/2575/2575359/src/arXiv/molecules.eps from line 10 to line 118,
+
+
+Thumbnails:
+
+2554/2554135/source.log:[01/26 13:03:45]   Unnecessary Thumbnail removed from /data/new/2554/2554135/src/Figures/logo.eps from line 40 to line 177,
+
+2569/2569401/source.log:[02/08 03:06:41]   Unnecessary Thumbnail removed from /data/new/2569/2569401/src/by-nc-nd.eps from line 38 to line 189,
+
+Photoshop
+
+#1
+2575/2575244/source.log:[02/13 06:25:14]   Unnecessary Photoshop removed from /data/new/2575/2575244/src/Figure1.eps from line 15 to line 269,
+
+2#
+
+2568/2568753/source.log:[02/07 12:08:48]   Unnecessary Photoshop removed from /data/new/2568/2568753/src/GoldenTorusArxiv/TorusGraph.eps from line 16 to line 205,
+
+#3
+2563/2563366/source.log:[02/03 08:14:44]   Unnecessary Photoshop removed from /data/new/2563/2563366/src/TCNSPaper/rastgoftar.eps from line 7 to line 12,
+
