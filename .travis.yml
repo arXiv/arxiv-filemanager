@@ -1,6 +1,5 @@
 language: python
 sudo: required
-cache: pip
 env:
   MIN_PYLINT_SCORE: 8
 os:
