@@ -307,7 +307,7 @@ class TestInternalSupportRoutines(TestCase):
 
         # Check that file generated is what we expected
         reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterUnPCify.eps')
-        is_same = filecmp.cmp(destfilename, reference)
+        is_same = filecmp.cmp(destfilename, reference, shallow=False)
         self.assertTrue(is_same, 'Eliminated unwanted CR characters from DOS file.')
 
         # UnMACify
@@ -321,7 +321,7 @@ class TestInternalSupportRoutines(TestCase):
 
         # Check that file generated is what we expected
         reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterUnMACify.eps')
-        is_same = filecmp.cmp(destfilename, reference)
+        is_same = filecmp.cmp(destfilename, reference, shallow=False)
         self.assertTrue(is_same, 'Eliminated unwanted CR characters from MAC file.')
 
         # cleanup workspace
