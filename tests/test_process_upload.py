@@ -1,6 +1,7 @@
 """Tests for :mod:`zero.process.upload`."""
 
 from unittest import TestCase
+import re
 from datetime import datetime
 # from filemanager.domain import Upload
 from filemanager.process import upload
@@ -290,6 +291,12 @@ class TestInternalSupportRoutines(TestCase):
         Test the filtering of unwanted CR characters from specified file.
         :return:
         """
+        def has_cr(path):
+            with open(path, 'rb') as f:
+                for line in f:
+                    if re.search(b'\r\n?', line) is not None:
+                        return True
+            return False
 
         # Copy the files that will be modified to temporary location
         tmp_dir = tempfile.mkdtemp()
@@ -306,9 +313,8 @@ class TestInternalSupportRoutines(TestCase):
         upload.unmacify(file_obj)
 
         # Check that file generated is what we expected
-        reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterUnPCify.eps')
-        is_same = filecmp.cmp(destfilename, reference, shallow=False)
-        self.assertTrue(is_same, 'Eliminated unwanted CR characters from DOS file.')
+        self.assertTrue(has_cr(tfilename))
+        self.assertFalse(has_cr(destfilename))
 
         # UnMACify
 
@@ -320,9 +326,8 @@ class TestInternalSupportRoutines(TestCase):
         upload.unmacify(file_obj)
 
         # Check that file generated is what we expected
-        reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterUnMACify.eps')
-        is_same = filecmp.cmp(destfilename, reference, shallow=False)
-        self.assertTrue(is_same, 'Eliminated unwanted CR characters from MAC file.')
+        self.assertTrue(has_cr(tfilename))
+        self.assertFalse(has_cr(destfilename))
 
         # cleanup workspace
         upload.remove_workspace()
