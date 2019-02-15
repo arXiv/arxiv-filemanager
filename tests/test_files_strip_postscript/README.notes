@@ -1,0 +1,56 @@
+Stripping - Legacy log examples
+
+Preview examples:
+
+2574/2574079/source.log:[02/12 11:14:39]   Unnecessary Preview removed from /data/new/2574/2574079/src/L95Lx_mbh_color.eps from line 13 to line 7131,
+
+2575/2575359/source.log:[02/13 08:26:03]   Unnecessary Preview removed from /data/new/2575/2575359/src/arXiv/molecules.eps from line 10 to line 118,
+
+
+Thumbnails:
+
+2554/2554135/source.log:[01/26 13:03:45]   Unnecessary Thumbnail removed from /data/new/2554/2554135/src/Figures/logo.eps from line 40 to line 177,
+
+2569/2569401/source.log:[02/08 03:06:41]   Unnecessary Thumbnail removed from /data/new/2569/2569401/src/by-nc-nd.eps from line 38 to line 189,
+
+Photoshop
+
+#1
+[02/07 12:42:20]  EEG_N.eps  	[postscript]  in /data/new/2568/2568656/src/
+[02/07 12:42:20]   Unnecessary Preview removed from /data/new/2568/2568656/src/EEG_N.eps from line 10 to line 202,
+
+2#
+
+2568/2568753/source.log:[02/07 12:08:48]   Unnecessary Photoshop removed from /data/new/2568/2568753/src/GoldenTorusArxiv/TorusGraph.eps from line 16 to line 205,
+
+#3
+2563/2563366/source.log:[02/03 08:14:44]   Unnecessary Photoshop removed from /data/new/2563/2563366/src/TCNSPaper/rastgoftar.eps from line 7 to line 12,
+
+Multiple formats - Multiple Inclusions [Photoshop + TIFF]
+----------------
+
+This file is originally identified as [dos_eps]. Cleaned up
+with repair_dos_eps() [fixed], identified as [postscript], then cleaned upwith unmacify() and atrip_preview(). 
+
+Too Complicated for simple strip_preview tests! Reserve example
+for dos_repair_eps() -> unmacify() -> strip_preview() cleanup.
+
+
+[02/12 03:36:43]  john_smith.eps  	[dos_eps]  in /data/new/2573/2573211/src
+/OL/
+[02/12 03:36:44]  john_smith.eps leading TIFF preview stripped
+...
+[02/12 03:37:15]  john_smith.eps  	[postscript]  in /data/new/2573/2573211/
+src/OL/
+[02/12 03:39:24]  /data/new/2573/2573211/src/john_smith.eps unpcified
+[02/12 03:39:24]   Unnecessary Photoshop removed from /data/new/2573/2573211/src
+/john_smith.eps from line 15 to line 139,
+  reduced from 948809 bytes to 940552 bytes (see http://arxiv.org/help/sizes)
+
+Before cleanup:
+DOSepsPostscriptPhotoshopTIFF1.eps
+
+After Cleanup:
+DOSepsPostscriptPhotoshopTIFF1_repaired_stripped.eps
+
+
