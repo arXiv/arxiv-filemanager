@@ -28,7 +28,8 @@ def is_owner(session: auth_domain.Session, upload_id: str, **kwargs) -> bool:
     if upload_obj is None:
         return True
 
-    return session.user.user_id == uploads.retrieve(upload_id).owner_user_id
+    return str(session.user.user_id) \
+        == str(uploads.retrieve(upload_id).owner_user_id)
 
 
 @blueprint.route('/status', methods=['GET'])

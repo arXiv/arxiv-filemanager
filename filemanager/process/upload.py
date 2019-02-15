@@ -1295,7 +1295,7 @@ class Upload:
             new_file_obj = File(new_filepath, os.path.dirname(new_filepath))
 
             # Check if file was changed
-            is_same = filecmp.cmp(filepath, new_filepath)
+            is_same = filecmp.cmp(filepath, new_filepath, shallow=False)
 
             if is_same:
                 os.remove(new_filepath)
@@ -1617,6 +1617,8 @@ class Upload:
 
     def pack_content(self) -> str:
         """Pack the entire source directory into a tarball."""
+        if os.path.exists(self.get_content_path()):
+            os.unlink(self.get_content_path())
         with tarfile.open(self.get_content_path(), "w:gz") as tar:
             tar.add(self.get_source_directory(), arcname=os.path.sep)
         return self.get_content_path()
@@ -1631,7 +1633,8 @@ class Upload:
 
     def get_content(self) -> io.BytesIO:
         """Get a file-pointer for the packed content tarball."""
-        if not os.path.exists(self.get_content_path()):
+        if not self.content_package_exists or \
+                (self.content_package_exists and self.content_package_stale):
             self.pack_content()
         return open(self.get_content_path(), 'rb')
 
@@ -1668,17 +1671,20 @@ class Upload:
         """
         Return b64-encoded MD5 hash of the packed content tarball.
 
-        Triggers building content package when pre-existing package is not found or stale
-        relative to source files.
+        Triggers building content package when pre-existing package is not
+        found or stale relative to source files.
         """
         if not self.content_package_exists or self.content_package_stale:
             self.pack_content()
+        return self._get_checksum(self.get_content_path())
 
+    def _get_checksum(self, path: str) -> str:
         hash_md5 = md5()
-        with open(self.get_content_path(), "rb") as f:
+        with open(path, "rb") as f:
             for chunk in iter(lambda: f.read(4096), b""):
                 hash_md5.update(chunk)
         return urlsafe_b64encode(hash_md5.digest()).decode('utf-8')
+
 
     # Content file routines
 
@@ -1914,7 +1920,7 @@ class Upload:
         # Calculate number of files in submission source (excludes ancillary files)
         format_list['files'] = format_list['all_files'] - format_list['ancillary']
 
-        self.log(f"All Files: {format_list['all_files']} files: " 
+        self.log(f"All Files: {format_list['all_files']} files: "
                  f"{format_list['files']} ancillary: {format_list['ancillary']}")
 
         return format_list

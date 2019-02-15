@@ -57,9 +57,7 @@ def generate_token(user_id: str, email: str, username: str,
                 affiliation=affiliation,
                 rank=int(rank),
                 country=country,
-                default_category=domain.Category(
-                    *default_category.split('.', 1)
-                ),
+                default_category=domain.Category(default_category),
                 submission_groups=submission_groups.split(',')
             )
         ),

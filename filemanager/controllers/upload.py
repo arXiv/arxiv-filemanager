@@ -28,7 +28,7 @@ from filemanager.shared import url_for
 
 from filemanager.domain import Upload
 from filemanager.services import uploads
-
+from filemanager.process.upload import Upload as UploadWorkspace
 from filemanager.arxiv.file import File
 
 # Temporary logging at service level - just to get something in place to build on
@@ -61,10 +61,10 @@ file_handler = logging.FileHandler(service_log_path, 'a')
 datefmt = '%d/%b/%Y:%H:%M:%S %z'  # Used to format asctime.
 formatter = logging.Formatter('%(asctime)s %(message)s', '%d/%b/%Y:%H:%M:%S %z')
 file_handler.setFormatter(formatter)
-logger.handlers = []
+# logger.handlers = []
 logger.addHandler(file_handler)
 logger.setLevel(logging.DEBUG)
-logger.propagate = False
+logger.propagate = True
 
 # End logging configuration
 
@@ -177,7 +177,7 @@ def delete_workspace(upload_id: int) -> Response:
                             "current state is '%s'", upload_id, upload_db_data.state)
                 raise NotFound(UPLOAD_WORKSPACE_NOT_FOUND)
 
-            upload_workspace = filemanager.process.upload.Upload(upload_id)
+            upload_workspace = UploadWorkspace(upload_id)
 
             # Call routine that will do the actual work
             upload_workspace.remove_workspace()
@@ -251,14 +251,14 @@ def client_delete_file(upload_id: str, public_file_path: str) -> Response:
         else:
 
             # Create Upload object
-            upload_workspace = filemanager.process.upload.Upload(upload_id)
+            upload_workspace = UploadWorkspace(upload_id)
 
             # Call routine that will do the actual work
             upload_workspace.client_remove_file(public_file_path)
 
-
     except IOError:
-        logger.error("%s: Delete file request failed ", upload_db_data.upload_id)
+        logger.error("%s: Delete file request failed ",
+                     upload_db_data.upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
     except NotFound as nf:
         logger.info("%s: DeleteFile: %s", upload_id, nf)
@@ -276,12 +276,12 @@ def client_delete_file(upload_id: str, public_file_path: str) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    response_data = {
+    response_data = _status_data(upload_db_data, upload_workspace)
+    response_data.update({
         'reason': UPLOAD_DELETED_FILE,
         'checksum': upload_workspace.content_checksum()
-    }  # Get rid of pylint error
-    status_code = status.HTTP_204_NO_CONTENT
-    return response_data, status_code, {}
+    })  # Get rid of pylint errorT
+    return response_data, status.HTTP_200_OK, {}
 
 
 def client_delete_all_files(upload_id: str) -> Response:
@@ -324,7 +324,7 @@ def client_delete_all_files(upload_id: str) -> Response:
         else:
 
             # Create Upload object
-            upload_workspace = filemanager.process.upload.Upload(upload_id)
+            upload_workspace = UploadWorkspace(upload_id)
 
             upload_workspace.client_remove_all_files()
 
@@ -343,12 +343,12 @@ def client_delete_all_files(upload_id: str) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    response_data = {
+    response_data = _status_data(upload_db_data, upload_workspace)
+    response_data.update({
         'reason': UPLOAD_DELETED_ALL_FILES,
         'checksum': upload_workspace.content_checksum()
-    }  # Get rid of pylint error
-    status_code = status.HTTP_204_NO_CONTENT
-    return response_data, status_code, {}
+    })  # Get rid of pylint error
+    return response_data, status.HTTP_200_OK, {}
 
 
 def upload(upload_id: Optional[int], file: FileStorage, archive: str,
@@ -396,6 +396,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
     # File argument is required to exist and have a name associated with it.
     # It is standard practice that if user fails to select file the filename is null.
+    logger.debug(f'Handling upload request for {upload_id}')
     if file is None:
         # Crash and burn...not quite...do we need info about client?
         logger.error(f'Upload request is missing file/archive payload.')
@@ -420,10 +421,11 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
     # If this is a new upload then we need to create a workspace and add to database.
     if upload_id is None:
+        logger.debug('This is a new upload workspace.')
         try:
             logger.info("Create new workspace: Upload request: "
                         "file='%s' archive='%s'", file.filename, archive)
-            user_id = user.user_id
+            user_id = str(user.user_id)
 
             if archive is None:
                 arch = ''
@@ -479,7 +481,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
             start_datetime = datetime.now(UTC)
 
             # Create Upload object
-            upload_workspace = filemanager.process.upload.Upload(upload_id)
+            upload_workspace = UploadWorkspace(upload_id)
 
             # Process upload_db_data
             upload_workspace.process_upload(file, ancillary=ancillary)
@@ -537,22 +539,9 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
             status_code = status.HTTP_201_CREATED
 
-            response_data = {
-                'upload_id': upload_db_data.upload_id,
-                'upload_total_size': upload_workspace.total_upload_size,
-                'created_datetime': upload_db_data.created_datetime,
-                'modified_datetime': upload_db_data.modified_datetime,
-                'start_datetime': upload_db_data.lastupload_start_datetime,
-                'completion_datetime': upload_db_data.lastupload_completion_datetime,
-                'files': json.loads(upload_db_data.lastupload_file_summary),
-                'errors': json.loads(upload_db_data.lastupload_logs),
-                'upload_status': upload_db_data.lastupload_upload_status,
-                'workspace_state': upload_db_data.state,
-                'lock_state': upload_db_data.lock,
-                'source_format': upload_workspace.source_format,
-                'checksum': upload_workspace.content_checksum()
-            }
-            logger.info("%s: Generating upload summary.", upload_db_data.upload_id)
+            response_data = _status_data(upload_db_data, upload_workspace)
+            logger.info("%s: Generating upload summary.",
+                        upload_db_data.upload_id)
             return response_data, status_code, headers
 
     except IOError as e:
@@ -613,7 +602,7 @@ def upload_summary(upload_id: int) -> Response:
             logger.info("%s: Upload summary request.", upload_db_data.upload_id)
 
             # Create Upload object
-            upload_workspace = filemanager.process.upload.Upload(upload_id)
+            upload_workspace = UploadWorkspace(upload_id)
             file_list = upload_workspace.create_file_list()
 
             details_list = []
@@ -629,22 +618,10 @@ def upload_summary(upload_id: int) -> Response:
                     details_list.append(file_details)
 
             status_code = status.HTTP_200_OK
-            response_data = {
-                'upload_id': upload_db_data.upload_id,
-                'upload_total_size': upload_workspace.total_upload_size,
-                'created_datetime': upload_db_data.created_datetime,
-                'modified_datetime': upload_db_data.modified_datetime,
-                'start_datetime': upload_db_data.lastupload_start_datetime,
-                'completion_datetime': upload_db_data.lastupload_completion_datetime,
-                'files': details_list,
-                'errors': [],
-                'upload_status': upload_db_data.lastupload_upload_status,
-                'workspace_state': upload_db_data.state,
-                'lock_state': upload_db_data.lock,
-                'source_format': upload_workspace.source_format,
-                'checksum': upload_workspace.content_checksum()
-            }
-            logger.info("%s: Upload summary request.", upload_db_data.upload_id)
+            response_data = _status_data(upload_db_data, upload_workspace)
+            response_data.update({'files': details_list, 'errors': []})
+            logger.info("%s: Upload summary request.",
+                        upload_db_data.upload_id)
 
     except IOError:
         # response_data = ERROR_RETRIEVING_UPLOAD
@@ -968,7 +945,7 @@ def check_upload_content_exists(upload_id: int) -> Response:
         raise NotFound(UPLOAD_NOT_FOUND)
 
     logger.info("%s: Upload content summary request.", upload_id)
-    upload_workspace = filemanager.process.upload.Upload(upload_id)
+    upload_workspace = UploadWorkspace(upload_id)
 
     # This will potentially build content package if it does not exist
     checksum = upload_workspace.content_checksum()
@@ -1010,7 +987,7 @@ def get_upload_content(upload_id: int) -> Response:
 
     if upload_db_data is None:
         raise NotFound(UPLOAD_NOT_FOUND)
-    upload_workspace = filemanager.process.upload.Upload(upload_id)
+    upload_workspace = UploadWorkspace(upload_id)
     checksum = upload_workspace.content_checksum()
     filepointer = upload_workspace.get_content()
     headers = {
@@ -1050,7 +1027,7 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
 
     try:
 
-        upload_workspace = filemanager.process.upload.Upload(upload_id)
+        upload_workspace = UploadWorkspace(upload_id)
 
         # file exists
         if upload_workspace.content_file_exists(public_file_path):
@@ -1119,7 +1096,7 @@ def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
 
     try:
 
-        upload_workspace = filemanager.process.upload.Upload(upload_id)
+        upload_workspace = UploadWorkspace(upload_id)
 
         # Returns path if file exists
         if upload_workspace.content_file_exists(public_file_path):
@@ -1189,7 +1166,7 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
         raise NotFound(UPLOAD_NOT_FOUND)
 
     logger.info("%s: Test for source log.", upload_id)
-    upload_workspace = filemanager.process.upload.Upload(upload_id)
+    upload_workspace = UploadWorkspace(upload_id)
 
     checksum = upload_workspace.source_log_checksum
     size = upload_workspace.source_log_size
@@ -1226,7 +1203,7 @@ def get_upload_source_log(upload_id: int) -> Response:
     if upload_db_data is None:
         raise NotFound(UPLOAD_NOT_FOUND)
 
-    upload_workspace = filemanager.process.upload.Upload(upload_id)
+    upload_workspace = UploadWorkspace(upload_id)
 
     checksum = upload_workspace.source_log_checksum
     size = upload_workspace.source_log_size
@@ -1274,6 +1251,7 @@ def __last_modified(filepath: str) -> str:
     Last modified date string for specified file.
     """
     return datetime.utcfromtimestamp(os.path.getmtime(filepath))
+
 
 def __content_pointer(service_log_path : str) -> io.BytesIO:
     """Get a file-pointer for service log.
@@ -1345,3 +1323,22 @@ def get_upload_service_log() -> Response:
         'Last-Modified': modified
     }
     return filepointer, status.HTTP_200_OK, headers
+
+
+def _status_data(upload_db_data: Upload,
+                 upload_workspace: UploadWorkspace) -> dict:
+    return {
+        'upload_id': upload_db_data.upload_id,
+        'upload_total_size': upload_workspace.total_upload_size,
+        'created_datetime': upload_db_data.created_datetime,
+        'modified_datetime': upload_db_data.modified_datetime,
+        'start_datetime': upload_db_data.lastupload_start_datetime,
+        'completion_datetime': upload_db_data.lastupload_completion_datetime,
+        'files': json.loads(upload_db_data.lastupload_file_summary),
+        'errors': json.loads(upload_db_data.lastupload_logs),
+        'upload_status': upload_db_data.lastupload_upload_status,
+        'workspace_state': upload_db_data.state,
+        'lock_state': upload_db_data.lock,
+        'source_format': upload_workspace.source_format,
+        'checksum': upload_workspace.content_checksum()
+    }

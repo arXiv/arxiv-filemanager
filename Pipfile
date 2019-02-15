@@ -17,8 +17,10 @@ jsonschema = "*"
 celery = "*"
 redis = "*"
 arxiv-auth = "==0.2.6"
+mysqlclient = "==1.4.2"
 
 [dev-packages]
+coveralls = "*"
 
 [requires]
 python_version = "3.6"

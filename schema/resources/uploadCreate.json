@@ -5,6 +5,10 @@
   "required": ["upload_id", "create_datetime"],
   "type": "object",
   "properties": {
+    "checksum": {
+      "description": "Base64-encoded MD5 hash of the source package.",
+      "type": "string"
+    },
     "upload_id": {
       "description": "Short-lived task identifier for the upload.",
       "type": "integer"
