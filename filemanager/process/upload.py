@@ -12,7 +12,7 @@ from base64 import urlsafe_b64encode
 import io
 import mmap
 import filecmp
-from typing import Optional
+from typing import Optional, Union
 
 from werkzeug.exceptions import BadRequest, NotFound, SecurityError
 from werkzeug.datastructures import FileStorage
@@ -1110,27 +1110,44 @@ class Upload:
 
                 # Clean up any html
                 elif file_type == 'html':
-                    pass
+                    self.unmacify(obj)
 
                 # Postscript - must check and clean up postscript
                 #   unmacify, check_ps, ???
                 elif file_type == 'postscript' \
                         or (file_type == 'failed' \
                             and re.search(r'\.e?psi?$', file_name, re.IGNORECASE)):
-                    pass
+                    # unmacify
+                    if file_type == 'postscript':
+                        self.unmacify(obj)
+
+                    # Check postscript for unwanted inclusions and inspect
+                    # unidentified files that appear to be Postscript
+                    self.check_postscript(obj, "")
+
+                    # TODO: Sets type to postscript regardless of what
+                    # TODO: happens in check_postscript.
+                    # TODO: Should we at least warn? Or should we try to
+                    # TODO: check to see if type failed turned to postscript
+                    # TODO: after fixing up file in check_postscript?
+                    #
+                    # TODO: Find example and test
 
                 # TeX: Check form of source for latex and latex2e
                 elif file_type == 'latex' or file_type == 'latex2e':
-                    pass
+                    # Check to see if preprint documentstyle is used
+                    self.formcheck(obj)
 
                 # TeX: Check for image types that are not accepted
                 elif file_type == 'image' \
                         and re.search(r'\.(pcx|bmp|wmf|opj|pct|tiff?)$',
                                       file_name, re.IGNORECASE):
-                    pass
+                    self.graphics_error(obj)
 
                 # Uuencode file: decode uuencoded file
                 elif file_type == 'uuencoded':
+                    # I don't believe we are going to implement this unless
+                    # I discover evidence this is used in recent submissions.
                     pass
 
                 # File types we don't accept
@@ -1142,16 +1159,19 @@ class Upload:
 
                 # unmacify files of type PC and MAC
                 elif file_type == 'pc' or file_type == 'mac':
-                    pass
+                    self.unmacify(obj)
 
                 # Repair files of type PS_PC
                 elif file_type == 'ps_pc':
                     # TODO: Implement repair_ps
+                    # Seeing very few of this type in recent submissions
+                    # leer.eps header repaired to: %!PS-Adobe-2.0 EPSF-2.0
                     pass
 
                 # Repair dos eps
                 elif file_type == 'dos_eps':
                     # TODO: Implement repair_dos_eps
+                    # Still seeing dos_eps type in recent submissions
                     pass
 
                 # TeX: If file is identified as core TeX type then we need to
@@ -1159,6 +1179,7 @@ class Upload:
                 # check if file contains raw postscript
                 elif obj.is_tex_type:
                     self.unmacify(obj)
+                    # TODO: Check if TeX source file contains raw Postscript
                     self.extract_uu(file_name, file_type)
 
                 obj = _add_file(file_path, _warnings, _errors)
@@ -1301,10 +1322,242 @@ class Upload:
                 os.remove(new_filepath)
             else:
                 shutil.copy(new_filepath, filepath)
+                os.remove(new_filepath)
 
             # Check for unwanted termination character
             self.check_file_termination(file_obj)
 
+
+    def strip_tiff(self, file_obj: File) -> None:
+        """
+        Strip TIFF preview from Postscript file.
+
+        Parameters
+        ----------
+        file_obj : File
+            File with TIFF to be stripped.
+
+        Returns
+        -------
+            Need to decide if we need to return anything.
+
+        """
+        self.add_warning(file_obj, "strip_tiff() NOT IMPLEMENTED")
+
+
+    def strip_preview(self, file_obj: File, what_to_strip: str):
+        """
+        Remove embedded preview from Postscript file.
+
+        Parameters
+        ----------
+        file_obj : File
+            File to strip embedded preview from.
+        what_to_strip : str
+            The type of inclusion that we are seeking to remove [Thumbnail,
+            Preview, Photoshop]
+
+        Returns
+        -------
+            File preview is removed from file.
+
+        """
+        if self.debug():
+            self.log(f"Strip embedded '{what_to_strip}' from file '{file_obj.name}'.")
+
+        # Set start and end delimiters of preview.
+        if what_to_strip == 'Photoshop':
+            start_re = b'^%BeginPhotoshop'
+            end_re = b'^%EndPhotoshop'
+        elif what_to_strip == 'Preview':
+            start_re = b'^%%BeginPreview'
+            end_re = b'^%%EndPreview'
+        elif what_to_strip == 'Thumbnail':
+            start_re = b'Thumbnail'
+            end_re = b'^%%EndData'
+
+        # Open a file to store stripped contents
+        dir = file_obj.base_dir
+        original_filepath = file_obj.filepath
+        stripped_filename = file_obj.name + '.stripped'
+        stripped_filepath = os.path.join(dir, stripped_filename)
+
+        if self.debug():
+            self.log(f"File:{file_obj.name} in dir {dir} save to "
+                     "{stripped_filename} at {stripped_filepath}")
+
+        with open(original_filepath, 'rb', 0) as infile, \
+                open(stripped_filepath, 'wb', 0) as outfile:
+
+            # Default is to retain all lines
+            retain = True
+            line_no = 1
+            strip_warning = ''
+
+            # Read each line
+            for line in infile:
+
+                # Check line for start pattern
+                if retain == True and re.search(start_re, line):
+                    strip_warning = f"Unnecessary {what_to_strip} removed "\
+                                    + f"from '{file_obj.name}' from line {line_no}"
+                    retain = False
+
+                if retain:
+                    outfile.write(line)
+
+                # Check for end pattern
+                if retain == False and re.search(end_re, line):
+                    strip_warning = strip_warning + f" to line {line_no},"
+                    retain = True
+                    # Handle bug in certain files
+                    # AI bug %%EndData^M%%EndComments
+                    if re.search(b'.*\r%/%', line):
+                        outfile.write(line)
+
+                line_no = line_no + 1
+
+            infile.close()
+            outfile.close()
+
+            # Generate some warnings
+            if retain and strip_warning:
+                orig_size = os.path.getsize(original_filepath)
+                strip_size = os.path.getsize(stripped_filepath)
+                shutil.copy(stripped_filepath, original_filepath)
+                os.remove(stripped_filepath)
+
+                msg = f" reduced from {orig_size} bytes to {strip_size} bytes "\
+                      + "(see http://arxiv.org/help/sizes)"
+                strip_warning = strip_warning + msg
+            else:
+                if strip_warning:
+                    msg = f"{file_obj.name} had unpaired $strip"
+                    strip_warning = strip_warning + msg
+                # Removed failed attempt to strip Postscript
+                os.remove(stripped_filepath)
+
+            self.add_warning(file_obj.public_filepath, strip_warning)
+
+    def check_postscript(self, file_obj: File, tiff_flag: Union[str, None]) -> str:
+        """
+        Check Postscript file for unwanted inclusions.
+
+        Calls 'strip_preview' to preview, thumbnails, and photoshop.
+
+        Calls 'strip_tif' to remove non-compliant embedded TIFF bitmaps.
+
+        This set of routines (strip_preview, strip_tiff) may modify file by
+        removing offending preview/thumbnail/photoshop/tiff bitmap.
+
+        This routine also deals with detecting imbedded fonts in Postscript
+        files.
+
+        Parameters
+        ----------
+        file_type: str
+            type of file as identified bu file_guess method.
+        file_obj: File
+            File we are checking and potentially cleaning up.
+        tiff_flag: str
+            ?? This might end up as a boolean flag.
+
+        Returns
+        -------
+            Nothing when routine runs to completion.
+
+        """
+        file_type = file_obj.type
+
+        # This code had the incorrect type specified and never actually ran
+        # Cleans up Postscript files file extraneous characters that cause
+        # failure to identify file as Postscript.
+        if file_type == 'failed':
+            # This code has been not executing for many years.
+            # TODO: Re add this code and add tests (low priority)
+            msg = f"File '{file_obj.public_filepath}' may be broken "\
+                  + "Postscript file."
+            self.add_warning(file_obj.public_filepath, msg)
+            self.log("WARNING: Method repair_ps() is NOT IMPLEMENTED.")
+
+        # Determine whether Postscript file contains preview, photoshop. fonts,
+        # or resource.
+
+        # Scan Postscript file
+
+        # Get the absolute file path
+        filepath = file_obj.filepath
+
+        pattern = re.compile(rb'Thumbnail:|BeginPreview|BeginPhotoshop|'
+                             + rb'BeginFont|BeginResource: font',
+                             re.DOTALL | re.IGNORECASE | re.MULTILINE)
+
+        if self.debug():
+            self.log(f"\nCheck Postscript: '{file_obj.name}'")
+
+        # Check whether file contains '\r\n' sequence
+        with open(filepath, 'rb', 0) as file, \
+                mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ) as s:
+
+            # Search file for embedded preview markers
+            results = pattern.findall(s)
+
+            if results:
+                for match in results:
+                    if match == b'BeginPhotoshop':
+                        self.strip_preview(file_obj, 'Photoshop')
+                    elif match == b'BeginPreview':
+                        self.strip_preview(file_obj, 'Preview')
+                    elif match == b'Thumbnail:':
+                        self.strip_preview(file_obj, 'Thumbnail')
+
+            # clean up open file descriptors
+            file.close()
+            s.close()
+
+        # TODO: Scan Postscript file for embedded fonts - need seperate ticket
+        # We warn when user includes standard system fonts in their
+        # Postscript files.
+
+        # TODO: Check for TIFF (need another ticket to tackle this task)
+
+        tiff_found = 0 # Some search of file for TIFF markers
+
+        if tiff_found:
+            self.strip_tiff(file_obj)
+
+
+    def formcheck(self, file_obj: File) -> None:
+        """
+        Check whether submission is using preprint document style.
+
+        Parameters
+        ----------
+        file_obj
+
+        Returns
+        -------
+        """
+        msg = "NOT IMPLEMENTED: formcheck routine needs to be implemented."
+        self.add_warning(file_obj.public_filepath, msg)
+
+    def graphic_error(self, file_obj: File) -> None:
+        """
+        Issue error for graphics that are not supported by arXiv.
+
+        Issue this error once due to possibility submission may contain
+        dozens of invalid graphics files that we do not accept.
+
+        Parameters
+        ----------
+        file_obj : File
+            File we do not accept.
+
+        Returns
+        -------
+        """
+        msg = "NOT IMPLEMENTED: graphic error routine needs to be implemented."
+        self.add_warning(file_obj.public_filepath, msg)
 
     def extract_uu(self, file_name: str, file_type: str):
         """Extract uuencode content from file."""
