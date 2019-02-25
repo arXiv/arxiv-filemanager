@@ -1539,7 +1539,8 @@ class Upload:
         -------
         """
         msg = "NOT IMPLEMENTED: formcheck routine needs to be implemented."
-        self.add_warning(file_obj.public_filepath, msg)
+        #self.add_warning(file_obj.public_filepath, msg)
+        self.log(file_obj.public_filepath + msg)
 
     def graphic_error(self, file_obj: File) -> None:
         """
