@@ -200,8 +200,12 @@ paths:
         Delete all files in the workspace. Does not delete the workspace
         itself.
       responses:
-        '204':
+        '200':
           description: All files in the workspace were deleted successfully.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/Result.json'
         '401':
           description: Unauthorized. Missing valid authentication information.
         '403':
@@ -228,8 +232,12 @@ paths:
       operationId: deleteFile
       summary: Deletes a single file.
       responses:
-        '204':
+        '200':
           description: The file was deleted successfully.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/Result.json'
         '401':
           description: Unauthorized. Missing valid authentication information.
         '403':
