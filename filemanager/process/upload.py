@@ -1330,7 +1330,7 @@ class Upload:
 
     def strip_tiff(self, file_obj: File) -> None:
         """
-        Strip TIFF preview from Postscript file.
+        Strip non-compliant embedded TIFF bitmaps from Postscript file.
 
         Parameters
         ----------
@@ -1342,7 +1342,65 @@ class Upload:
             Need to decide if we need to return anything.
 
         """
-        self.add_warning(file_obj, "strip_tiff() NOT IMPLEMENTED")
+        self.log(f"checking '{file_obj.public_filepath}' for TIFF")
+
+        filepath = file_obj.filepath
+
+        # Check for embedded TIFF and truncate file if we find one.
+
+        # Adobe_level2_AI5 / terminate get exec
+        # %%EOF
+        # II *???
+
+        # Marker for end of Postscript file
+        eof_marker = br'^%%EOF$'
+        # Marker for TIFF image - little or big endian
+        lb_marker = b'^(II\*\000|MM\000\*)'
+
+        with open(filepath, 'rb+', 0) as infile:
+
+            lastnw = ""
+            end = 0
+
+            # Read each line
+            for line in infile:
+
+                # Find Postscript EOF
+                if re.search(eof_marker, line):
+                    pos = infile.tell()
+
+                    next_bytes = infile.readline(4)
+
+                    # Locate start of TIFF
+                    if re.search(lb_marker, next_bytes):
+                        end = pos
+
+                    # all set, we are done
+                    break
+
+                # Find TIFF marker
+                if re.search(lb_marker, line):
+
+                    offset = len(line)
+                    end = infile.tell() - offset
+                    infile.seek(end,1)
+
+                    msg = f"No %%EOF, but truncate at {end} bytes, " \
+                          f"lastnonwhitespace was {lastnw}  untruncated " \
+                          f"version moved to $scratch_file"
+                    self.log(msg)
+
+                if re.search(b'\S', line):
+                    lastnw = line
+
+
+            # Truncate file after EOF marker
+            if end:
+                infile.truncate(end)
+                infile.close()
+
+                msg = f"Non-compliant attached TIFF removed from '{file_obj.name}'"
+                self.add_warning(file_obj.name, msg)
 
 
     def strip_preview(self, file_obj: File, what_to_strip: str):
