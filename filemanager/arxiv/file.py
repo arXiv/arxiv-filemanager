@@ -12,8 +12,8 @@ import os.path
 import re
 from datetime import datetime
 from hashlib import md5
-from pytz import UTC
 from base64 import urlsafe_b64encode
+from pytz import UTC
 from arxiv.base import logging
 from filemanager.arxiv.file_type import guess, _is_tex_type, name
 
@@ -165,8 +165,8 @@ class File:
                 for chunk in iter(lambda: f.read(4096), b""):
                     hash_md5.update(chunk)
             return urlsafe_b64encode(hash_md5.digest()).decode('utf-8')
-        else:
-            return ""
+
+        return ""
 
 
     @property

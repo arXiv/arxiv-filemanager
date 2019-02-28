@@ -1589,12 +1589,12 @@ class Upload:
         """
         Check whether submission is using preprint document style.
 
+        Adds warning if preprint style used in certain context.
+
         Parameters
         ----------
         file_obj
 
-        Returns
-        -------
         """
         msg = "NOT IMPLEMENTED: formcheck routine needs to be implemented."
         #self.add_warning(file_obj.public_filepath, msg)
@@ -1612,8 +1612,6 @@ class Upload:
         file_obj : File
             File we do not accept.
 
-        Returns
-        -------
         """
         msg = "NOT IMPLEMENTED: graphic error routine needs to be implemented."
         self.add_warning(file_obj.public_filepath, msg)

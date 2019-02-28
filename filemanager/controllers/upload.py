@@ -1,7 +1,5 @@
 """Handles all upload-related requests."""
 
-from base64 import b64encode
-from hashlib import md5
 from typing import Tuple, Optional
 from datetime import datetime
 import json
@@ -1232,9 +1230,7 @@ def __checksum(filepath: str) -> str:
             for chunk in iter(lambda: f.read(4096), b""):
                 hash_md5.update(chunk)
         return urlsafe_b64encode(hash_md5.digest()).decode('utf-8')
-    else:
-        return ""
-
+    return ""
 
 def __last_modified(filepath: str) -> str:
     """Return last modified time of file.

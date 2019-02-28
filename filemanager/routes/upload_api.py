@@ -1,7 +1,8 @@
 """Provides routes for the external API."""
 
-import json
 
+from typing import Optional, Union, Any
+import json
 from flask.json import jsonify
 from flask import Blueprint, render_template, redirect, request, url_for, \
     Response, make_response, send_file
@@ -18,11 +19,12 @@ from arxiv.users.auth.decorators import scoped
 from filemanager.services import uploads
 from filemanager.controllers import upload
 
+
 logger = logging.getLogger(__name__)
 blueprint = Blueprint('upload_api', __name__, url_prefix='/filemanager/api')
 
 
-def is_owner(session: auth_domain.Session, upload_id: str, **kwargs) -> bool:
+def is_owner(session: auth_domain.Session, upload_id: str, **kwargs: Any) -> bool:
     """User must be the upload owner, or an admin."""
     upload_obj = uploads.retrieve(upload_id)
     if upload_obj is None:

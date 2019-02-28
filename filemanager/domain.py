@@ -69,8 +69,8 @@ class Data(object):
                 setattr(self, key, value)
 
 class Upload(Data):
-    """All information about an upload.
-    """
+    """All information about an upload."""
+
     # Various state settings
 
     # Upload workspace is actively being used.
@@ -101,7 +101,6 @@ class Upload(Data):
     # steps [compilation, submit, publish] should reject working with such
     # an upload package.
     ERRORS = 'ERRORS'
-
 
 
     upload_id = Property('upload_id', int)
