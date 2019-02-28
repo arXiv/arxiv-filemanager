@@ -532,6 +532,76 @@ class TestInternalSupportRoutines(TestCase):
         upload.remove_workspace()
 
 
+    def test_strip_tiff(self):
+        """
+        Test removing trailing tiff from Postscript file.
+        :return:
+        """
+
+        # Copy the files that will be modified to temporary location
+        tmp_dir = tempfile.mkdtemp()
+
+        upload = Upload(1245894)
+
+        # strip preview from Postscript
+        test_filename = 'PostscriptTIFF.eps'
+        tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
+        workspace_src_dir = upload.get_source_directory()
+        destfilename = os.path.join(workspace_src_dir, test_filename)
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, workspace_src_dir)
+
+        # unmacify
+        upload.unmacify(file_obj)  # This file would have been unmacified
+
+        # Strip the trailing TIFF
+        upload.strip_tiff(file_obj)
+
+        # compare to reference file
+        # compare to reference file
+        reference = os.path.join(TEST_FILES_STRIP_PS, 'PostscriptTIFF_stripped.eps')
+        # Compared stripped file to a reference stripped version of file.
+        is_same = filecmp.cmp(destfilename, reference, shallow=False)
+        self.assertTrue(is_same,
+                        f"Stripped TIFF from file '{test_filename}'.")
+
+        # Check to make sure error is added to list of errors.
+        warn_msg = "Non-compliant attached TIFF removed from 'PostscriptTIFF.eps'"
+        self.assertTrue(upload.search_warnings(warn_msg),
+                        f"Verify TIFF removed warning added to list.")
+
+        # strip preview from Postscript
+        test_filename = 'PostscriptNOeofTIFF.eps'
+        tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
+        workspace_src_dir = upload.get_source_directory()
+        destfilename = os.path.join(workspace_src_dir, test_filename)
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, workspace_src_dir)
+
+        # unmacify
+        upload.unmacify(file_obj)  # This file would have been unmacified
+
+        # Strip the trailing TIFF
+        upload.strip_tiff(file_obj)
+
+        # compare to reference file
+        # compare to reference file
+        reference = os.path.join(TEST_FILES_STRIP_PS, 'PostscriptNOeofTIFF_stripped.eps')
+        # Compared stripped file to a reference stripped version of file.
+        is_same = filecmp.cmp(destfilename, reference, shallow=False)
+        self.assertTrue(is_same,
+                        f"Stripped TIFF from file '{test_filename}'.")
+
+        # Check to make sure error is added to list of errors.
+        warn_msg = "Non-compliant attached TIFF removed from 'PostscriptNOeofTIFF.eps'"
+        self.assertTrue(upload.search_warnings(warn_msg),
+                        f"Verify TIFF removed warning added to list.")
+
+        # cleanup workspace
+        #upload.remove_workspace()
+
+
+
 class TestUpload(TestCase):
     """:func:`.process_upload` adds ones to :prop:`.Thing.name`."""
 
