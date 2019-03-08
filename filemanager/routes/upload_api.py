@@ -229,7 +229,13 @@ def check_upload_content_exists(upload_id: int) -> tuple:
     Returns an ``ETag`` header with the current source package checksum.
     """
     data, status_code, headers = upload.check_upload_content_exists(upload_id)
-    return jsonify(data), status_code, headers
+    response = jsonify(data)
+    if 'Content-Length' in response.headers:
+        response.headers.remove('Content-Length')
+    for key, value in headers.items():
+        response.headers.add(key, value)
+    response.status_code = status_code
+    return response
 
 
 @blueprint.route('/<int:upload_id>/content', methods=['GET'])
