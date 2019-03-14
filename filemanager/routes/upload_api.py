@@ -2,6 +2,7 @@
 
 import json
 
+from typing import Dict, Any
 from flask.json import jsonify
 from flask import Blueprint, render_template, redirect, request, url_for, \
     Response, make_response, send_file
@@ -230,10 +231,7 @@ def check_upload_content_exists(upload_id: int) -> tuple:
     """
     data, status_code, headers = upload.check_upload_content_exists(upload_id)
     response = jsonify(data)
-    if 'Content-Length' in response.headers:
-        response.headers.remove('Content-Length')
-    for key, value in headers.items():
-        response.headers.add(key, value)
+    response = _update_headers(response, headers)
     response.status_code = status_code
     return response
 
@@ -307,6 +305,7 @@ def check_upload_source_log_exists(upload_id: int) -> tuple:
     data, status_code, headers = upload.check_upload_source_log_exists(upload_id)
     return jsonify(data), status_code, headers
 
+
 @blueprint.route('/<int:upload_id>/log', methods=['GET'])
 @scoped(scopes.READ_UPLOAD_LOGS)
 def get_upload_source_log(upload_id: int) -> tuple:
@@ -331,6 +330,7 @@ def get_upload_source_log(upload_id: int) -> tuple:
     response.set_etag(headers.get('ETag'))
     return response
 
+
 @blueprint.route('/log', methods=['HEAD'])
 @scoped(scopes.READ_UPLOAD_SERVICE_LOGS)
 def check_upload_service_log_exists() -> tuple:
@@ -344,6 +344,7 @@ def check_upload_service_log_exists() -> tuple:
     """
     data, status_code, headers = upload.check_upload_service_log_exists()
     return jsonify(data), status_code, headers
+
 
 @blueprint.route('/log', methods=['GET'])
 @scoped(scopes.READ_UPLOAD_SERVICE_LOGS)
@@ -390,4 +391,12 @@ def handle_exception(error: HTTPException) -> Response:
     # Each Werkzeug HTTP exception has a class attribute called ``code``; we
     # can use that to set the status code on the response.
     response = make_response(content, error.code)
+    return response
+
+
+def _update_headers(response: Response, headers: Dict[str, Any]) -> Response:
+    if 'Content-Length' in response.headers:
+        response.headers.remove('Content-Length')
+    for key, value in headers.items():
+        response.headers.add(key, value)
     return response
