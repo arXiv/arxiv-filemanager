@@ -542,6 +542,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
             response_data = _status_data(upload_db_data, upload_workspace)
             logger.info("%s: Generating upload summary.",
                         upload_db_data.upload_id)
+            logger.debug('Response data: %s', response_data)
             return response_data, status_code, headers
 
     except IOError as e:
@@ -567,6 +568,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
     return None
 
+
 def upload_summary(upload_id: int) -> Response:
     """
     Provide summary of important upload workspace details.
@@ -584,11 +586,11 @@ def upload_summary(upload_id: int) -> Response:
         logs - Errors and Warnings
         files - list of file details
 
-
     int
         An HTTP status code.
     dict
         Some extra headers to add to the response.
+
     """
     try:
         # Make sure we have an upload_db_data to work with
@@ -958,8 +960,7 @@ def check_upload_content_exists(upload_id: int) -> Response:
         size = upload_workspace.content_package_size
         return {}, status.HTTP_200_OK, {'ETag': checksum,
                                         'Content-Length': size,
-                                        'Last-Modified': modified
-                                        }
+                                        'Last-Modified': modified}
 
     return {}, status.HTTP_200_OK, {'ETag': checksum}
 
