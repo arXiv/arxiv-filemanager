@@ -1316,7 +1316,7 @@ class Upload:
             new_file_obj = File(new_filepath, os.path.dirname(new_filepath))
 
             # Check if file was changed
-            is_same = filecmp.cmp(filepath, new_filepath)
+            is_same = filecmp.cmp(filepath, new_filepath, shallow=False)
 
             if is_same:
                 os.remove(new_filepath)
