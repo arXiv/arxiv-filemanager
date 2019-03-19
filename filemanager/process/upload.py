@@ -32,6 +32,11 @@ UPLOAD_WORKSPACE_NOT_FOUND = 'workspcae not found'
 PC  = 'pc'
 MAC = 'mac'
 
+# Types of embedded content
+PHOTOSHOP = 'Photoshop'
+PREVIEW = 'Preview'
+THUMBNAIL = 'Thumbnail'
+
 def _get_base_directory() -> str:
     config = get_application_config()
     return config.get('UPLOAD_BASE_DIRECTORY',
@@ -1345,9 +1350,11 @@ class Upload:
         self.add_warning(file_obj, "strip_tiff() NOT IMPLEMENTED")
 
 
-    def strip_preview(self, file_obj: File, what_to_strip: str):
+    def strip_preview(self, file_obj: File, what_to_strip: str) -> None:
         """
         Remove embedded preview from Postscript file.
+
+        File preview is removed from file.
 
         Parameters
         ----------
@@ -1357,34 +1364,30 @@ class Upload:
             The type of inclusion that we are seeking to remove [Thumbnail,
             Preview, Photoshop]
 
-        Returns
-        -------
-            File preview is removed from file.
-
         """
         if self.debug():
             self.log(f"Strip embedded '{what_to_strip}' from file '{file_obj.name}'.")
 
         # Set start and end delimiters of preview.
-        if what_to_strip == 'Photoshop':
+        if what_to_strip == PHOTOSHOP:
             start_re = b'^%BeginPhotoshop'
             end_re = b'^%EndPhotoshop'
-        elif what_to_strip == 'Preview':
+        elif what_to_strip == PREVIEW:
             start_re = b'^%%BeginPreview'
             end_re = b'^%%EndPreview'
-        elif what_to_strip == 'Thumbnail':
+        elif what_to_strip == THUMBNAIL:
             start_re = b'Thumbnail'
             end_re = b'^%%EndData'
 
         # Open a file to store stripped contents
-        dir = file_obj.base_dir
+        base_dir = file_obj.base_dir
         original_filepath = file_obj.filepath
         stripped_filename = file_obj.name + '.stripped'
-        stripped_filepath = os.path.join(dir, stripped_filename)
+        stripped_filepath = os.path.join(base_dir, stripped_filename)
 
         if self.debug():
-            self.log(f"File:{file_obj.name} in dir {dir} save to "
-                     "{stripped_filename} at {stripped_filepath}")
+            self.log(f"File:{file_obj.name} in dir {base_dir} save to "
+                     f"{stripped_filename} at {stripped_filepath}")
 
         with open(original_filepath, 'rb', 0) as infile, \
                 open(stripped_filepath, 'wb', 0) as outfile:
@@ -1505,11 +1508,11 @@ class Upload:
             if results:
                 for match in results:
                     if match == b'BeginPhotoshop':
-                        self.strip_preview(file_obj, 'Photoshop')
+                        self.strip_preview(file_obj, PHOTOSHOP)
                     elif match == b'BeginPreview':
-                        self.strip_preview(file_obj, 'Preview')
+                        self.strip_preview(file_obj, PREVIEW)
                     elif match == b'Thumbnail:':
-                        self.strip_preview(file_obj, 'Thumbnail')
+                        self.strip_preview(file_obj, THUMBNAIL)
 
             # clean up open file descriptors
             file.close()
