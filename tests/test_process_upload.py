@@ -22,6 +22,7 @@ TEST_FILES_DIRECTORY = os.path.join(os.getcwd(), 'tests/test_files_upload')
 UNPACK_TEST_FILES_DIRECTORY = os.path.join(os.getcwd(), 'tests/test_files_unpack')
 TEST_FILES_SUB_TYPE = os.path.join(os.getcwd(),'tests/test_files_sub_type')
 TEST_FILES_FILE_TYPE = os.path.join(os.getcwd(), 'tests/type_test_files')
+TEST_FILES_STRIP_PS = os.path.join(os.getcwd(), 'tests/test_files_strip_postscript')
 
 # General upload tests format:
 #
@@ -98,9 +99,9 @@ test_submissions.append(['upload5.pdf', 'pdf',
                          "Normal single-file 'PDF' submission."])
 test_submissions.append(['minMac.tex', 'tex',
                          "Normal single-file 'TeX' submission."])
-test_submissions.append(['one.ps', 'postscript',
+test_submissions.append(['one.ps', 'ps',
                          "Normal single-file 'Postscript' submission."])
-test_submissions.append(['sampleA.ps', 'postscript',
+test_submissions.append(['sampleA.ps', 'ps',
                          "Normal single-file 'Postscript' submission."])
 test_submissions.append(['sampleA.html', 'html',
                          "Normal single-file 'HTML' submission."])
@@ -125,6 +126,84 @@ test_submissions.append(['UploadWithANCDirectory.tar.gz', 'tex',
                          "Typical multi-file 'TeX' submission."])
 test_submissions.append(['sampleF_html.tar.gz', 'html',
                          "Typical multi-file 'HTML' submission."])
+
+strip_tests = []
+
+# file, reference file, warnings_match, type of preview
+strip_tests.append(['PostscriptPhotoshop1.eps',
+                    'PostscriptPhotoshop1_stripped.eps',
+                    "Unnecessary Preview removed from 'PostscriptPhotoshop1.eps'" \
+                    + " from line 10 to line 202, reduced from 185586 bytes " \
+                    + "to 172746 bytes \(see http://arxiv.org/help/sizes\)",
+                    "Photoshop1"
+                    ])
+strip_tests.append(['PostscriptPhotoshop2.eps',
+                    'PostscriptPhotoshop2_stripped.eps',
+                    "Unnecessary Photoshop removed from 'PostscriptPhotoshop2.eps'" \
+                    + " from line 16 to line 205, reduced from 106009 bytes " \
+                    + "to 93377 bytes \(see http://arxiv.org/help/sizes\)",
+                    "Photoshop2"
+                    ])
+strip_tests.append(['PostscriptPhotoshop3.eps',
+                    'PostscriptPhotoshop3_stripped.eps',
+                    "Unnecessary Photoshop removed from 'PostscriptPhotoshop3.eps'" \
+                    + " from line 7 to line 12, reduced from 1273694 bytes " \
+                    + "to 1273439 bytes \(see http://arxiv.org/help/sizes\)",
+                    "Photoshop3"
+                    ])
+strip_tests.append(['PostscriptPreview1.eps',
+                    'PostscriptPreview1_stripped.eps',
+                    ("Unnecessary Preview removed from 'PostscriptPreview1.eps' "
+                     "from line 13 to line 7131, reduced "
+                     "from 632668 bytes to 81123 bytes "
+                     "\(see http://arxiv.org/help/sizes\)"),
+                    "Preview1"
+                    ])
+strip_tests.append(['PostscriptPreview2.eps',
+                    'PostscriptPreview2_stripped.eps',
+                    ("Unnecessary Preview removed from 'PostscriptPreview2.eps' "
+                     "from line 10 to line 118, reduced "
+                     "from 425356 bytes to 418144 "
+                     "bytes \(see http://arxiv.org/help/sizes\)"),
+                    "Preview2"
+                    ])
+strip_tests.append(['PostscriptThumbnail1.eps',
+                    'PostscriptThumbnail1_stripped.eps',
+                    ("Unnecessary Thumbnail removed from "
+                     "'PostscriptThumbnail1.eps' from line 38 to line 189, "
+                     "reduced from 68932 bytes to 59657 bytes "
+                     "\(see http://arxiv.org/help/sizes\)"),
+                    'Thumbnail1'
+                    ])
+strip_tests.append(['PostscriptThumbnail2.eps',
+                    'PostscriptThumbnail2_stripped.eps',
+                    ("Unnecessary Thumbnail removed from "
+                     "'PostscriptThumbnail2.eps' from line 40 to line 177, "
+                     "reduced from 79180 bytes to 70771 bytes "
+                     "\(see http://arxiv.org/help/sizes\)"),
+                    'Thumbnail2'
+                    ])
+
+# These tests come from legacy system and were part of test bundle with
+# other test files (like embedded font inclusion) data/files_for_testing.tar.gz
+
+strip_tests.append(['P11_cmplx_plane.eps',
+                    'P11_cmplx_plane_stripped.eps',
+                    ("Unnecessary Preview removed from 'P11_cmplx_plane.eps' "
+                     "from line 9 to line 157, reduced from 59684 bytes to "
+                     "48174 bytes \(see http://arxiv.org/help/sizes\)"),
+                    'Legacy Photoshop'
+                    ])
+
+# Right now these filter operations
+strip_tests.append(['cone.eps',
+                    'cone_stripped.eps',
+                    ("Unnecessary Photoshop removed from 'cone.eps' from line "
+                     "14 to line 207, reduced from 1701570 bytes to 1688730 "
+                     "bytes \(see http://arxiv.org/help/sizes\)"),
+                    'Legacy Preview'
+                    ])
+
 
 
 # Internal Debugging test
@@ -419,6 +498,48 @@ class TestInternalSupportRoutines(TestCase):
         self.assertTrue(upload.search_errors(f"File '{file_obj.name}'"
                                              " to fix extension not"),
                                              "Error message added to list.")
+
+        # cleanup workspace
+        upload.remove_workspace()
+
+
+    def test_check_postscript(self):
+        """
+        Test the filtering of unwanted previews in Postscript file.
+        :return:
+        """
+
+        # Copy the files that will be modified to temporary location
+        tmp_dir = tempfile.mkdtemp()
+
+        upload = Upload(1234999)
+
+        for strip_test in strip_tests:
+            file_to_strip, reference_file, warning_match, preview_type = \
+                strip_test
+
+            # strip preview from Postscript
+            test_filename = file_to_strip
+            tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
+            workspace_src_dir = upload.get_source_directory()
+            destfilename = os.path.join(workspace_src_dir, test_filename)
+            shutil.copy(tfilename, destfilename)
+            file_obj = File(destfilename, workspace_src_dir)
+
+            upload.unmacify(file_obj)  # This file would have been unmacified
+            upload.check_postscript(file_obj, None)
+
+            # compare to reference file
+            reference = os.path.join(TEST_FILES_STRIP_PS, reference_file)
+            # Compared stripped file to a reference stripped version of file.
+            is_same = filecmp.cmp(destfilename, reference, shallow=False)
+            self.assertTrue(is_same,
+                            f"Stripped {preview_type} from file '{test_filename}'.")
+
+            # Check to make sure error is added to list of errors.
+            warn_msg = warning_match
+            self.assertTrue(upload.search_warnings(warn_msg),
+                            f"Verify {preview_type} removed warning added to list.")
 
         # cleanup workspace
         upload.remove_workspace()

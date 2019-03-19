@@ -1253,8 +1253,7 @@ def __last_modified(filepath: str) -> str:
     """
     return datetime.utcfromtimestamp(os.path.getmtime(filepath))
 
-
-def __content_pointer(service_log_path : str) -> io.BytesIO:
+def __content_pointer(service_log_path: str) -> io.BytesIO:
     """Get a file-pointer for service log.
 
     Parameters
