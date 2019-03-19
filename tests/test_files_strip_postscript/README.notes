@@ -91,7 +91,6 @@ source.log: (note variety of cleanup routines getting called on these files)
 [02/18 22:33:05]   Non-compliant attached TIFF removed from /data/new/2581/2581541/src/IEEE VR Atul Final 2019/vgtc_conference_latex/pictures/sample.eps
 [02/18 22:33:33]  sample.eps  	[postscript]  in /data/new/2581/2581541/src/IEEE VR Atul Final 2019/images/
 
-
 Examples for repair_dos_eps(): [Future]
 ------------------------------
 

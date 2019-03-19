@@ -99,9 +99,9 @@ test_submissions.append(['upload5.pdf', 'pdf',
                          "Normal single-file 'PDF' submission."])
 test_submissions.append(['minMac.tex', 'tex',
                          "Normal single-file 'TeX' submission."])
-test_submissions.append(['one.ps', 'postscript',
+test_submissions.append(['one.ps', 'ps',
                          "Normal single-file 'Postscript' submission."])
-test_submissions.append(['sampleA.ps', 'postscript',
+test_submissions.append(['sampleA.ps', 'ps',
                          "Normal single-file 'Postscript' submission."])
 test_submissions.append(['sampleA.html', 'html',
                          "Normal single-file 'HTML' submission."])
@@ -612,7 +612,6 @@ class TestInternalSupportRoutines(TestCase):
 
         # cleanup workspace
         #upload.remove_workspace()
-
 
 
 class TestUpload(TestCase):
