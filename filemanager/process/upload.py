@@ -2373,7 +2373,7 @@ class Upload:
                     # TODO: file fails to validate? We currently generate
                     # TODO: warning AND set format to 'ps' (as if it's
                     # TODO: possible to continue.
-                    source_format = 'postscript'
+                    source_format = 'ps'
                 else:
                     # TODO: What to do here? 'None' indicates error. This is
                     # TODO: internal error. Error has been registered. Not
