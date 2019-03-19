@@ -13,7 +13,7 @@ RUN pipenv install
 
 ENV PATH "/opt/arxiv:${PATH}"
 
-ADD wsgi.py uwsgi.ini /opt/arxiv/
+ADD wsgi.py uwsgi.ini bootstrap.py /opt/arxiv/
 ADD filemanager/ /opt/arxiv/filemanager/
 
 # TODO: remove this when possible.
@@ -29,9 +29,10 @@ CMD ["uwsgi", "--http-socket", ":8000", \
      "-M", \
      "-t 3000", \
      "--manage-script-name", \
-     "--processes", "8", \
+     "--processes", "1", \
      "--threads", "1", \
-     "--async", "100", \
-     "--ugreen", \
+     "--async", "0", \
+     "--queue", "0", \
+     "--wsgi-disable-file-wrapper", \
      "--mount", "/=wsgi.py", \
      "--logformat", "%(addr) %(addr) - %(user_id)|%(session_id) [%(rtime)] [%(uagent)] \"%(method) %(uri) %(proto)\" %(status) %(size) %(micros) %(ttfb)"]
