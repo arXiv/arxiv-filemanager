@@ -1390,6 +1390,9 @@ class Upload:
                           f"version moved to $scratch_file"
                     self.log(msg)
 
+                # In the exception case, where Postscript %%EOF marker is not
+                # detected before we detect TIFF bitmap, we will log last line
+                # containing stuff before TIFF bitmap. TIFF is stripped.
                 if re.search(b'\S', line):
                     lastnw = line
 
@@ -1397,7 +1400,6 @@ class Upload:
             # Truncate file after EOF marker
             if end:
                 infile.truncate(end)
-                infile.close()
 
                 msg = f"Non-compliant attached TIFF removed from '{file_obj.name}'"
                 self.add_warning(file_obj.name, msg)
