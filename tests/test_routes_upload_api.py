@@ -1533,13 +1533,22 @@ class TestUploadAPIRoutes(TestCase):
         upload_data: Dict[str, Any] = json.loads(response.data)
 
         # Check that upload_total_size is in summary response
-        self.assertIn('upload_total_size', upload_data, "Returns total upload size.")
-        self.assertEqual(upload_data['upload_total_size'], 275781,
-                         f"Expected total upload size to match (ID:{upload_data['upload_id']}).")
-        self.assertEqual(upload_data['source_format'], "tex",
-                         ("Check source format of TeX submission."
-                          f" [ID={upload_data['upload_id']}]"))
+        self.assertIn("upload_total_size", upload_data,
+                      "Returns total upload size.")
+        self.assertEqual(upload_data["upload_total_size"], 275_781,
+                         "Expected total upload size to match"
+                         f" (ID:{upload_data['upload_id']}).")
 
+        # Check that upload_compressed_size is in summary response
+        self.assertIn("upload_compressed_size", upload_data,
+                      "Returns compressed upload size.")
+        self.assertLess(upload_data["upload_compressed_size"], 116_000,
+                         "Expected total upload size to match"
+                         f" (ID:{upload_data['upload_id']}).")
+
+        self.assertEqual(upload_data["source_format"], "tex",
+                         "Check source format of TeX submission."
+                         f" [ID={upload_data['upload_id']}]")
 
         # Get summary of upload
 
@@ -1658,8 +1667,10 @@ class TestUploadAPIRoutes(TestCase):
                             "pre - delete total")
         # upload total size is definitely smaller than original 275781 bytes
         # after we deleted a few files.
-        self.assertEqual(upload_data['upload_total_size'], 237116,
+        self.assertEqual(upload_data["upload_total_size"], 237_116,
                          "Expected smaller total upload size.")
+        self.assertLess(upload_data["upload_compressed_size"], 116_000,
+                        "Expected smaller compressed upload size.")
 
         # Delete all files in my workspace (normal)
         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
@@ -1683,12 +1694,20 @@ class TestUploadAPIRoutes(TestCase):
         upload_data: Dict[str, Any] = json.loads(response.data)
 
         # Check that upload_total_size is in summary response
-        self.assertIn('upload_total_size', upload_data, "Returns total upload size.")
+        self.assertIn("upload_total_size", upload_data,
+                      "Returns total upload size.")
+        # Check that upload_compressed_size is in summary response
+        self.assertIn("upload_compressed_size", upload_data,
+                      "Returns compressed upload size.")
 
         # upload total size is definitely smaller than original 275781 bytes
         # after we deleted everything we uploaded!!
-        self.assertEqual(upload_data['upload_total_size'], 0,
-                         "Expected smaller total upload size after deleting all files.")
+        self.assertEqual(upload_data["upload_total_size"], 0,
+                         "Expected smaller total upload size after deleting"
+                         " all files.")
+        self.assertEqual(upload_data["upload_compressed_size"], 0,
+                         "Expected smaller compressed size after deleting"
+                         " all files.")
 
         # Let's try to upload a different source format type - HTML
         testfiles_dir = os.path.join(cwd, 'tests/test_files_sub_type')
