@@ -1,19 +1,21 @@
 """Tests for :mod:`zero.process.upload`."""
 
 from unittest import TestCase
+import re
 from datetime import datetime
 # from filemanager.domain import Upload
-from filemanager.process import upload
+
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
-from filemanager.arxiv.file import File as File
+from ...arxiv.file import File
 
 import os.path
 import shutil
 import tempfile
 import filecmp
 
-from filemanager.process.upload import Upload
+from ...process import upload
+from ..upload import Upload
 
 UPLOAD_BASE_DIRECTORY = '/tmp/filemanagment/submissions'
 
@@ -98,9 +100,9 @@ test_submissions.append(['upload5.pdf', 'pdf',
                          "Normal single-file 'PDF' submission."])
 test_submissions.append(['minMac.tex', 'tex',
                          "Normal single-file 'TeX' submission."])
-test_submissions.append(['one.ps', 'postscript',
+test_submissions.append(['one.ps', 'ps',
                          "Normal single-file 'Postscript' submission."])
-test_submissions.append(['sampleA.ps', 'postscript',
+test_submissions.append(['sampleA.ps', 'ps',
                          "Normal single-file 'Postscript' submission."])
 test_submissions.append(['sampleA.html', 'html',
                          "Normal single-file 'HTML' submission."])
@@ -369,6 +371,12 @@ class TestInternalSupportRoutines(TestCase):
         Test the filtering of unwanted CR characters from specified file.
         :return:
         """
+        def has_cr(path):
+            with open(path, 'rb') as f:
+                for line in f:
+                    if re.search(b'\r\n?', line) is not None:
+                        return True
+            return False
 
         # Copy the files that will be modified to temporary location
         tmp_dir = tempfile.mkdtemp()
@@ -385,9 +393,12 @@ class TestInternalSupportRoutines(TestCase):
         upload.unmacify(file_obj)
 
         # Check that file generated is what we expected
+        self.assertTrue(has_cr(tfilename))
+        self.assertFalse(has_cr(destfilename))
         reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterUnPCify.eps')
-        is_same = filecmp.cmp(destfilename, reference)
-        self.assertTrue(is_same, 'Eliminated unwanted CR characters from DOS file.')
+        is_same = filecmp.cmp(destfilename, reference, shallow=False)
+        self.assertTrue(is_same,
+                        'Eliminated unwanted CR characters from DOS file.')
 
         # UnMACify
 
@@ -399,9 +410,12 @@ class TestInternalSupportRoutines(TestCase):
         upload.unmacify(file_obj)
 
         # Check that file generated is what we expected
+        self.assertTrue(has_cr(tfilename))
+        self.assertFalse(has_cr(destfilename))
         reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterUnMACify.eps')
-        is_same = filecmp.cmp(destfilename, reference)
-        self.assertTrue(is_same, 'Eliminated unwanted CR characters from MAC file.')
+        is_same = filecmp.cmp(destfilename, reference, shallow=False)
+        self.assertTrue(is_same,
+                        'Eliminated unwanted CR characters from MAC file.')
 
         # cleanup workspace
         upload.remove_workspace()
@@ -599,7 +613,6 @@ class TestInternalSupportRoutines(TestCase):
 
         # cleanup workspace
         #upload.remove_workspace()
-
 
 
 class TestUpload(TestCase):

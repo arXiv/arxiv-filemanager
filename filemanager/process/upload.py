@@ -32,12 +32,22 @@ UPLOAD_WORKSPACE_NOT_FOUND = 'workspcae not found'
 PC  = 'pc'
 MAC = 'mac'
 
+# Types of embedded content
+PHOTOSHOP = 'Photoshop'
+PREVIEW = 'Preview'
+THUMBNAIL = 'Thumbnail'
+
 def _get_base_directory() -> str:
     config = get_application_config()
     return config.get('UPLOAD_BASE_DIRECTORY',
                       '/tmp/filemanagment/submissions')
 
 
+# TODO: we will want to look at where this class is behaving statefully, and
+# consider whether + how we can make it less stateful. For example, the method
+# has_files() will return different values depending on whether the Upload
+# instance has processed files, regardless of whether there are files on disk
+# or not.
 class Upload:
     """
     Programatic interface to fileystem-based upload workspace.
@@ -174,6 +184,18 @@ class Upload:
         if self.__files:
             return True
 
+        return False
+
+    def has_files_on_disk(self) -> bool:
+        """
+        Indicates whether there are any files in the workspace on disk.
+
+        This will return True regardless of whether we have processed the files
+        in any way.
+        """
+        for root, _, files in os.walk(self.get_source_directory()):
+            for file in files:
+                return True
         return False
 
     # TODO: Need to add test for these last minute additions
@@ -509,6 +531,7 @@ class Upload:
 
         """
         self.log('********** Delete File ************\n')
+        self.remove_content_package()
 
         # Check whether client is trying to damage system with invalid path
 
@@ -602,6 +625,8 @@ class Upload:
         # For now we will remove file by moving it to 'removed' directory
         src_directory = self.get_source_directory()
         self.log(f"Delete all files under directory '{src_directory}'")
+
+        self.remove_content_package()
 
         for dir_entry in os.listdir(src_directory):
             file_path = os.path.join(src_directory, dir_entry)
@@ -784,6 +809,10 @@ class Upload:
                          "any graphical web browser) -- for more information.")
         return graphic_error
 
+    # TODO: once we are happy with the overall behavior of this class, this
+    # might be a good place to start refactoring/decomposing. It may make sense
+    # to pull the "checks" out into their own standalone classes or functions
+    # that can collaborate with the Upload workspace class.
     def check_files(self) -> None:
         """
         Unpack, evaluate, and sanitize uploaded files.
@@ -1316,7 +1345,7 @@ class Upload:
             new_file_obj = File(new_filepath, os.path.dirname(new_filepath))
 
             # Check if file was changed
-            is_same = filecmp.cmp(filepath, new_filepath)
+            is_same = filecmp.cmp(filepath, new_filepath, shallow=False)
 
             if is_same:
                 os.remove(new_filepath)
@@ -1390,6 +1419,9 @@ class Upload:
                           f"version moved to $scratch_file"
                     self.log(msg)
 
+                # In the exception case, where Postscript %%EOF marker is not
+                # detected before we detect TIFF bitmap, we will log last line
+                # containing stuff before TIFF bitmap. TIFF is stripped.
                 if re.search(b'\S', line):
                     lastnw = line
 
@@ -1397,7 +1429,6 @@ class Upload:
             # Truncate file after EOF marker
             if end:
                 infile.truncate(end)
-                infile.close()
 
                 msg = f"Non-compliant attached TIFF removed from '{file_obj.name}'"
                 self.add_warning(file_obj.name, msg)
@@ -1414,35 +1445,31 @@ class Upload:
         what_to_strip : str
             The type of inclusion that we are seeking to remove [Thumbnail,
             Preview, Photoshop]
-
-        Returns
-        -------
-            File preview is removed from file.
-
         """
         if self.debug():
             self.log(f"Strip embedded '{what_to_strip}' from file '{file_obj.name}'.")
 
         # Set start and end delimiters of preview.
-        if what_to_strip == 'Photoshop':
+
+        if what_to_strip == PHOTOSHOP:
             start_re = b'^%BeginPhotoshop'
             end_re = b'^%EndPhotoshop'
-        elif what_to_strip == 'Preview':
+        elif what_to_strip == PREVIEW:
             start_re = b'^%%BeginPreview'
             end_re = b'^%%EndPreview'
-        elif what_to_strip == 'Thumbnail':
+        elif what_to_strip == THUMBNAIL:
             start_re = b'Thumbnail'
             end_re = b'^%%EndData'
 
         # Open a file to store stripped contents
-        dir = file_obj.base_dir
+        base_dir = file_obj.base_dir
         original_filepath = file_obj.filepath
         stripped_filename = file_obj.name + '.stripped'
-        stripped_filepath = os.path.join(dir, stripped_filename)
+        stripped_filepath = os.path.join(base_dir, stripped_filename)
 
         if self.debug():
-            self.log(f"File:{file_obj.name} in dir {dir} save to "
-                     "{stripped_filename} at {stripped_filepath}")
+            self.log(f"File:{file_obj.name} in dir {base_dir} save to "
+                     f"{stripped_filename} at {stripped_filepath}")
 
         with open(original_filepath, 'rb', 0) as infile, \
                 open(stripped_filepath, 'wb', 0) as outfile:
@@ -1563,11 +1590,11 @@ class Upload:
             if results:
                 for match in results:
                     if match == b'BeginPhotoshop':
-                        self.strip_preview(file_obj, 'Photoshop')
+                        self.strip_preview(file_obj, PHOTOSHOP)
                     elif match == b'BeginPreview':
-                        self.strip_preview(file_obj, 'Preview')
+                        self.strip_preview(file_obj, PREVIEW)
                     elif match == b'Thumbnail:':
-                        self.strip_preview(file_obj, 'Thumbnail')
+                        self.strip_preview(file_obj, THUMBNAIL)
 
             # clean up open file descriptors
             file.close()
@@ -1692,7 +1719,7 @@ class Upload:
 
         source_directory = self.get_source_directory()
 
-        list = []
+        self.__files = []
         self.log("File List:")
         for root_directory, directories, files in os.walk(source_directory):
             for directory in directories:
@@ -1705,15 +1732,13 @@ class Upload:
             for file in files:
                 path = os.path.join(root_directory, file)
                 obj = File(path, source_directory)
-                list.append(obj)  # silence lint error
+                self.__files.append(obj)  # silence lint error
 
                 # Create log entry containing file, type, dir
                 log_msg = f'{obj.name} \t[{obj.type}] in {obj.dir}'
                 self.log(log_msg)
 
-        self.__files = list
-
-        return list
+        return self.__files
 
     def create_file_upload_summary(self) -> list:
         """
@@ -1925,24 +1950,31 @@ class Upload:
         return os.path.join(self.get_upload_directory(),
                             f'{self.upload_id}.tar.gz')
 
-    def pack_content(self) -> str:
-        """Pack the entire source directory into a tarball."""
+    def remove_content_package(self) -> None:
+        """Delete the content package tarball."""
         if os.path.exists(self.get_content_path()):
             os.unlink(self.get_content_path())
+
+    def pack_content(self) -> str:
+        """Pack the entire source directory into a tarball."""
+        if not self.has_files_on_disk():
+            raise FileNotFoundError('No content to pack')
+        self.remove_content_package()
         with tarfile.open(self.get_content_path(), "w:gz") as tar:
             tar.add(self.get_source_directory(), arcname=os.path.sep)
         return self.get_content_path()
 
     @property
-    def last_modified(self):
-        """The time of the most recent change to a file in the workspace."""
-        most_recent = max(os.path.getmtime(root)
-                          for root, _, _
+    def last_modified(self) -> datetime:
+        """Time of the most recent change to a file in the workspace."""
+        most_recent = max(os.path.getmtime(root) for root, _, _
                           in os.walk(self.get_source_directory()))
         return datetime.fromtimestamp(most_recent, tz=UTC)
 
-    def get_content(self) -> io.BytesIO:
+    def get_content(self) -> io.BufferedReader:
         """Get a file-pointer for the packed content tarball."""
+        if not self.has_files_on_disk():
+            raise FileNotFoundError('No content to get')
         if not self.content_package_exists or \
                 (self.content_package_exists and self.content_package_stale):
             self.pack_content()
@@ -1963,7 +1995,22 @@ class Upload:
 
     @property
     def content_package_size(self) -> int:
-        """Return size of content package."""
+        """
+        Get the size of the compressed source package.
+
+        Will build the package if it does not already exist.
+
+        Returns
+        -------
+        int
+            Total size in bytes of the compressed source package.
+
+        """
+        try:
+            if not self.content_package_exists or self.content_package_stale:
+                self.pack_content()
+        except FileNotFoundError:
+            return 0
         return os.path.getsize(self.get_content_path())
 
     @property
@@ -1973,17 +2020,23 @@ class Upload:
 
         Returns
         -------
-        True is content package is stale and needs to be regenerated.
+        bool
+            True if content package is stale and needs to be regenerated.
+
         """
+        if not os.path.exists(self.get_content_path()):
+            return True
         return self.last_modified > self.content_package_modified
 
-    def content_checksum(self) -> str:
+    def content_checksum(self) -> Optional[str]:
         """
         Return b64-encoded MD5 hash of the packed content tarball.
 
         Triggers building content package when pre-existing package is not
         found or stale relative to source files.
         """
+        if not self.has_files_on_disk():
+            return None
         if not self.content_package_exists or self.content_package_stale:
             self.pack_content()
         return self._get_checksum(self.get_content_path())
@@ -2057,7 +2110,6 @@ class Upload:
             return file_obj.size
         else:
             return 0
-
 
     def content_file_checksum(self, public_file_path: str) -> str:
         """
@@ -2426,7 +2478,7 @@ class Upload:
                     # TODO: file fails to validate? We currently generate
                     # TODO: warning AND set format to 'ps' (as if it's
                     # TODO: possible to continue.
-                    source_format = 'postscript'
+                    source_format = 'ps'
                 else:
                     # TODO: What to do here? 'None' indicates error. This is
                     # TODO: internal error. Error has been registered. Not

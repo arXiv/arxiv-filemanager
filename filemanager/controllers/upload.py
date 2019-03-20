@@ -59,10 +59,10 @@ file_handler = logging.FileHandler(service_log_path, 'a')
 datefmt = '%d/%b/%Y:%H:%M:%S %z'  # Used to format asctime.
 formatter = logging.Formatter('%(asctime)s %(message)s', '%d/%b/%Y:%H:%M:%S %z')
 file_handler.setFormatter(formatter)
-logger.handlers = []
+# logger.handlers = []
 logger.addHandler(file_handler)
 logger.setLevel(logging.DEBUG)
-logger.propagate = False
+logger.propagate = True
 
 # End logging configuration
 
@@ -394,6 +394,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
     # File argument is required to exist and have a name associated with it.
     # It is standard practice that if user fails to select file the filename is null.
+    logger.debug(f'Handling upload request for {upload_id}')
     if file is None:
         # Crash and burn...not quite...do we need info about client?
         logger.error(f'Upload request is missing file/archive payload.')
@@ -418,10 +419,11 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
     # If this is a new upload then we need to create a workspace and add to database.
     if upload_id is None:
+        logger.debug('This is a new upload workspace.')
         try:
             logger.info("Create new workspace: Upload request: "
                         "file='%s' archive='%s'", file.filename, archive)
-            user_id = user.user_id
+            user_id = str(user.user_id)
 
             if archive is None:
                 arch = ''
@@ -538,6 +540,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
             response_data = _status_data(upload_db_data, upload_workspace)
             logger.info("%s: Generating upload summary.",
                         upload_db_data.upload_id)
+            logger.debug('Response data: %s', response_data)
             return response_data, status_code, headers
 
     except IOError as e:
@@ -563,6 +566,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
     return None
 
+
 def upload_summary(upload_id: int) -> Response:
     """
     Provide summary of important upload workspace details.
@@ -580,11 +584,11 @@ def upload_summary(upload_id: int) -> Response:
         logs - Errors and Warnings
         files - list of file details
 
-
     int
         An HTTP status code.
     dict
         Some extra headers to add to the response.
+
     """
     try:
         # Make sure we have an upload_db_data to work with
@@ -954,8 +958,7 @@ def check_upload_content_exists(upload_id: int) -> Response:
         size = upload_workspace.content_package_size
         return {}, status.HTTP_200_OK, {'ETag': checksum,
                                         'Content-Length': size,
-                                        'Last-Modified': modified
-                                        }
+                                        'Last-Modified': modified}
 
     return {}, status.HTTP_200_OK, {'ETag': checksum}
 
@@ -985,7 +988,10 @@ def get_upload_content(upload_id: int) -> Response:
         raise NotFound(UPLOAD_NOT_FOUND)
     upload_workspace = UploadWorkspace(upload_id)
     checksum = upload_workspace.content_checksum()
-    filepointer = upload_workspace.get_content()
+    try:
+        filepointer = upload_workspace.get_content()
+    except FileNotFoundError as e:
+        raise NotFound("No content in workspace") from e
     headers = {
         "Content-disposition": f"filename={filepointer.name}",
         'ETag': checksum
@@ -1323,6 +1329,7 @@ def _status_data(upload_db_data: Upload,
     return {
         'upload_id': upload_db_data.upload_id,
         'upload_total_size': upload_workspace.total_upload_size,
+        'upload_compressed_size': upload_workspace.content_package_size,
         'created_datetime': upload_db_data.created_datetime,
         'modified_datetime': upload_db_data.modified_datetime,
         'start_datetime': upload_db_data.lastupload_start_datetime,
