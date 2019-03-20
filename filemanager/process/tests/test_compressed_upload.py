@@ -2,7 +2,6 @@
 
 from unittest import TestCase
 import io
-import time
 import os
 from datetime import datetime, timedelta
 from pytz import UTC
@@ -61,23 +60,62 @@ class TestCompressedUpload(TestCase):
 
     def test_content_package_size(self):
         """Get the size of the package."""
-        self.assertLess(self.workspace.content_package_size, 2_000,
-                        "The package is basically empty, but it has a"
-                        " directory inside that takes some space.")
+        self.assertEqual(self.workspace.content_package_size, 0,
+                         "There is no content")
 
-        # Staleness has seconds precision, so it won't register as stale unless
-        # we give it (literally) a second.
-        time.sleep(1)
         with open(self.fpath, 'rb') as f:
             self.workspace.process_upload(FileStorage(f))
 
-        self.assertGreater(self.workspace.content_package_size, 2_000,
+        self.assertGreater(self.workspace.content_package_size, 0,
                            "The package has some content in it now")
         self.assertTrue(self.workspace.content_package_exists,
                         "It certainly exists now, because we just packed it")
         self.assertFalse(self.workspace.content_package_stale,
                          "The package is not stale, because we just packed it")
 
+    def test_content_package_size_after_removing_workspace(self):
+        """The entire workspace is removed."""
+        with open(self.fpath, 'rb') as f:
+            self.workspace.process_upload(FileStorage(f))
+
         self.workspace.remove_workspace()
-        self.assertEqual(self.workspace.content_package_size, 0,
-                         "It's all gone")
+        self.assertEqual(self.workspace.content_package_size, 0, "All gone!")
+
+        self.workspace = Upload(12345678)
+        self.assertEqual(self.workspace.content_package_size, 0, "Still gone!")
+
+    def test_content_package_size_after_removing_all_files(self):
+        """All of the files are removed from the workspace."""
+        with open(self.fpath, 'rb') as f:
+            self.workspace.process_upload(FileStorage(f))
+        self.assertGreater(self.workspace.content_package_size, 0,
+                           "The package has some content in it now")
+
+        self.workspace.client_remove_all_files()
+        self.assertEqual(self.workspace.content_package_size, 0, "All gone!")
+
+        self.workspace = Upload(12345678)
+        self.assertEqual(self.workspace.content_package_size, 0, "Still gone!")
+
+    def test_content_package_size_after_removing_a_file(self):
+        """One of the files is removed from the workspace."""
+        with open(self.fpath, 'rb') as f:
+            self.workspace.process_upload(FileStorage(f))
+        original_size = int(self.workspace.content_package_size)
+        self.assertGreater(original_size, 0,
+                           "The package has some content in it now")
+
+        self.workspace.client_remove_file('bicycle.gif')
+        self.assertLess(self.workspace.content_package_size, original_size,
+                        "The package is smaller than it was before")
+
+    def test_get_content(self):
+        """Get a pointer to the package."""
+        with self.assertRaises(FileNotFoundError):
+            self.workspace.get_content()
+
+        with open(self.fpath, 'rb') as f:
+            self.workspace.process_upload(FileStorage(f))
+
+        pointer = self.workspace.get_content()
+        self.assertIsInstance(pointer, io.BufferedReader)

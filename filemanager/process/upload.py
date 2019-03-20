@@ -43,6 +43,11 @@ def _get_base_directory() -> str:
                       '/tmp/filemanagment/submissions')
 
 
+# TODO: we will want to look at where this class is behaving statefully, and
+# consider whether + how we can make it less stateful. For example, the method
+# has_files() will return different values depending on whether the Upload
+# instance has processed files, regardless of whether there are files on disk
+# or not.
 class Upload:
     """
     Programatic interface to fileystem-based upload workspace.
@@ -179,6 +184,18 @@ class Upload:
         if self.__files:
             return True
 
+        return False
+
+    def has_files_on_disk(self) -> bool:
+        """
+        Indicates whether there are any files in the workspace on disk.
+
+        This will return True regardless of whether we have processed the files
+        in any way.
+        """
+        for root, _, files in os.walk(self.get_source_directory()):
+            for file in files:
+                return True
         return False
 
     # TODO: Need to add test for these last minute additions
@@ -514,6 +531,7 @@ class Upload:
 
         """
         self.log('********** Delete File ************\n')
+        self.remove_content_package()
 
         # Check whether client is trying to damage system with invalid path
 
@@ -607,6 +625,8 @@ class Upload:
         # For now we will remove file by moving it to 'removed' directory
         src_directory = self.get_source_directory()
         self.log(f"Delete all files under directory '{src_directory}'")
+
+        self.remove_content_package()
 
         for dir_entry in os.listdir(src_directory):
             file_path = os.path.join(src_directory, dir_entry)
@@ -789,6 +809,10 @@ class Upload:
                          "any graphical web browser) -- for more information.")
         return graphic_error
 
+    # TODO: once we are happy with the overall behavior of this class, this
+    # might be a good place to start refactoring/decomposing. It may make sense
+    # to pull the "checks" out into their own standalone classes or functions
+    # that can collaborate with the Upload workspace class.
     def check_files(self) -> None:
         """
         Unpack, evaluate, and sanitize uploaded files.
@@ -1639,7 +1663,7 @@ class Upload:
 
         source_directory = self.get_source_directory()
 
-        list = []
+        self.__files = []
         self.log("File List:")
         for root_directory, directories, files in os.walk(source_directory):
             for directory in directories:
@@ -1652,15 +1676,13 @@ class Upload:
             for file in files:
                 path = os.path.join(root_directory, file)
                 obj = File(path, source_directory)
-                list.append(obj)  # silence lint error
+                self.__files.append(obj)  # silence lint error
 
                 # Create log entry containing file, type, dir
                 log_msg = f'{obj.name} \t[{obj.type}] in {obj.dir}'
                 self.log(log_msg)
 
-        self.__files = list
-
-        return list
+        return self.__files
 
     def create_file_upload_summary(self) -> list:
         """
@@ -1872,24 +1894,31 @@ class Upload:
         return os.path.join(self.get_upload_directory(),
                             f'{self.upload_id}.tar.gz')
 
-    def pack_content(self) -> str:
-        """Pack the entire source directory into a tarball."""
+    def remove_content_package(self) -> None:
+        """Delete the content package tarball."""
         if os.path.exists(self.get_content_path()):
             os.unlink(self.get_content_path())
+
+    def pack_content(self) -> str:
+        """Pack the entire source directory into a tarball."""
+        if not self.has_files_on_disk():
+            raise FileNotFoundError('No content to pack')
+        self.remove_content_package()
         with tarfile.open(self.get_content_path(), "w:gz") as tar:
             tar.add(self.get_source_directory(), arcname=os.path.sep)
         return self.get_content_path()
 
     @property
-    def last_modified(self):
-        """The time of the most recent change to a file in the workspace."""
-        most_recent = max(os.path.getmtime(root)
-                          for root, _, _
+    def last_modified(self) -> datetime:
+        """Time of the most recent change to a file in the workspace."""
+        most_recent = max(os.path.getmtime(root) for root, _, _
                           in os.walk(self.get_source_directory()))
         return datetime.fromtimestamp(most_recent, tz=UTC)
 
-    def get_content(self) -> io.BytesIO:
+    def get_content(self) -> io.BufferedReader:
         """Get a file-pointer for the packed content tarball."""
+        if not self.has_files_on_disk():
+            raise FileNotFoundError('No content to get')
         if not self.content_package_exists or \
                 (self.content_package_exists and self.content_package_stale):
             self.pack_content()
@@ -1943,13 +1972,15 @@ class Upload:
             return True
         return self.last_modified > self.content_package_modified
 
-    def content_checksum(self) -> str:
+    def content_checksum(self) -> Optional[str]:
         """
         Return b64-encoded MD5 hash of the packed content tarball.
 
         Triggers building content package when pre-existing package is not
         found or stale relative to source files.
         """
+        if not self.has_files_on_disk():
+            return None
         if not self.content_package_exists or self.content_package_stale:
             self.pack_content()
         return self._get_checksum(self.get_content_path())
@@ -2023,7 +2054,6 @@ class Upload:
             return file_obj.size
         else:
             return 0
-
 
     def content_file_checksum(self, public_file_path: str) -> str:
         """

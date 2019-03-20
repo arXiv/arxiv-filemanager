@@ -14,7 +14,11 @@
   "properties": {
     "checksum": {
       "description": "Base64-encoded MD5 hash of the source package.",
-      "type": "string"
+      "oneOf": [
+        {"type": "string"},
+        {"type": "null"}
+      ]
+
     },
     "upload_id": {
       "description": "Unique long-lived identifier for the upload processing result.",

@@ -990,7 +990,10 @@ def get_upload_content(upload_id: int) -> Response:
         raise NotFound(UPLOAD_NOT_FOUND)
     upload_workspace = UploadWorkspace(upload_id)
     checksum = upload_workspace.content_checksum()
-    filepointer = upload_workspace.get_content()
+    try:
+        filepointer = upload_workspace.get_content()
+    except FileNotFoundError as e:
+        raise NotFound("No content in workspace") from e
     headers = {
         "Content-disposition": f"filename={filepointer.name}",
         'ETag': checksum
