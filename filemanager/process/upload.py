@@ -1910,7 +1910,22 @@ class Upload:
 
     @property
     def content_package_size(self) -> int:
-        """Return size of content package."""
+        """
+        Get the size of the compressed source package.
+
+        Will build the package if it does not already exist.
+
+        Returns
+        -------
+        int
+            Total size in bytes of the compressed source package.
+
+        """
+        try:
+            if not self.content_package_exists or self.content_package_stale:
+                self.pack_content()
+        except FileNotFoundError:
+            return 0
         return os.path.getsize(self.get_content_path())
 
     @property
@@ -1920,8 +1935,12 @@ class Upload:
 
         Returns
         -------
-        True is content package is stale and needs to be regenerated.
+        bool
+            True if content package is stale and needs to be regenerated.
+
         """
+        if not os.path.exists(self.get_content_path()):
+            return True
         return self.last_modified > self.content_package_modified
 
     def content_checksum(self) -> str:

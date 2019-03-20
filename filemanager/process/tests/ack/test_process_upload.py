@@ -4,17 +4,18 @@ from unittest import TestCase
 import re
 from datetime import datetime
 # from filemanager.domain import Upload
-from filemanager.process import upload
+
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
-from filemanager.arxiv.file import File as File
+from ...arxiv.file import File
 
 import os.path
 import shutil
 import tempfile
 import filecmp
 
-from filemanager.process.upload import Upload
+from ...process import upload
+from ..upload import Upload
 
 UPLOAD_BASE_DIRECTORY = '/tmp/filemanagment/submissions'
 

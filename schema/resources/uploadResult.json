@@ -24,6 +24,10 @@
       "description": "Total size of uploaded content.",
       "type": "integer"
     },
+    "upload_compressed_size": {
+      "description": "Total compressed size of uploaded content.",
+      "type": "integer"
+    },
     "workspace_state": {
       "description": "State of the upload workspace.",
       "type": "string",
