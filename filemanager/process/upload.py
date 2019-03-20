@@ -1359,7 +1359,7 @@ class Upload:
 
     def strip_tiff(self, file_obj: File) -> None:
         """
-        Strip TIFF preview from Postscript file.
+        Strip non-compliant embedded TIFF bitmaps from Postscript file.
 
         Parameters
         ----------
@@ -1371,14 +1371,72 @@ class Upload:
             Need to decide if we need to return anything.
 
         """
-        self.add_warning(file_obj, "strip_tiff() NOT IMPLEMENTED")
+        self.log(f"checking '{file_obj.public_filepath}' for TIFF")
+
+        filepath = file_obj.filepath
+
+        # Check for embedded TIFF and truncate file if we find one.
+
+        # Adobe_level2_AI5 / terminate get exec
+        # %%EOF
+        # II *???
+
+        # Marker for end of Postscript file
+        eof_marker = br'^%%EOF$'
+        # Marker for TIFF image - little or big endian
+        lb_marker = b'^(II\*\000|MM\000\*)'
+
+        with open(filepath, 'rb+', 0) as infile:
+
+            lastnw = ""
+            end = 0
+
+            # Read each line
+            for line in infile:
+
+                # Find Postscript EOF
+                if re.search(eof_marker, line):
+                    pos = infile.tell()
+
+                    next_bytes = infile.readline(4)
+
+                    # Locate start of TIFF
+                    if re.search(lb_marker, next_bytes):
+                        end = pos
+
+                    # all set, we are done
+                    break
+
+                # Find TIFF marker
+                if re.search(lb_marker, line):
+
+                    offset = len(line)
+                    end = infile.tell() - offset
+                    infile.seek(end,1)
+
+                    msg = f"No %%EOF, but truncate at {end} bytes, " \
+                          f"lastnonwhitespace was {lastnw}  untruncated " \
+                          f"version moved to $scratch_file"
+                    self.log(msg)
+
+                # In the exception case, where Postscript %%EOF marker is not
+                # detected before we detect TIFF bitmap, we will log last line
+                # containing stuff before TIFF bitmap. TIFF is stripped.
+                if re.search(b'\S', line):
+                    lastnw = line
 
 
-    def strip_preview(self, file_obj: File, what_to_strip: str) -> None:
+            # Truncate file after EOF marker
+            if end:
+                infile.truncate(end)
+
+                msg = f"Non-compliant attached TIFF removed from '{file_obj.name}'"
+                self.add_warning(file_obj.name, msg)
+
+
+    def strip_preview(self, file_obj: File, what_to_strip: str):
         """
         Remove embedded preview from Postscript file.
-
-        File preview is removed from file.
 
         Parameters
         ----------
@@ -1387,12 +1445,12 @@ class Upload:
         what_to_strip : str
             The type of inclusion that we are seeking to remove [Thumbnail,
             Preview, Photoshop]
-
         """
         if self.debug():
             self.log(f"Strip embedded '{what_to_strip}' from file '{file_obj.name}'.")
 
         # Set start and end delimiters of preview.
+
         if what_to_strip == PHOTOSHOP:
             start_re = b'^%BeginPhotoshop'
             end_re = b'^%EndPhotoshop'
@@ -1558,12 +1616,12 @@ class Upload:
         """
         Check whether submission is using preprint document style.
 
+        Adds warning if preprint style used in certain context.
+
         Parameters
         ----------
         file_obj
 
-        Returns
-        -------
         """
         msg = "NOT IMPLEMENTED: formcheck routine needs to be implemented."
         #self.add_warning(file_obj.public_filepath, msg)
@@ -1581,8 +1639,6 @@ class Upload:
         file_obj : File
             File we do not accept.
 
-        Returns
-        -------
         """
         msg = "NOT IMPLEMENTED: graphic error routine needs to be implemented."
         self.add_warning(file_obj.public_filepath, msg)

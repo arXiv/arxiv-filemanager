@@ -72,7 +72,24 @@ reduced from 1701570 bytes to 1688730 bytes (see http://arxiv.org/help/sizes)
 
 ----------------
 
+Trailing TIFF removal:
+----------------------
 
+PostscriptTIFF.eps (reference file: PostscriptTIFF_stripped.eps)
+
+PostscriptNOeofTIFF.eps (reference file: PostscriptNOeofTIFF_stripped.eps)
+    This is a modified version of previous file with EOF marker removed in order to trigger
+    alternate removal code.
+
+source.log: (note variety of cleanup routines getting called on these files)
+
+[02/18 22:33:01]  sample.eps leading TIFF preview stripped
+[02/18 22:33:04]  /data/new/2581/2581541/src/IEEE VR Atul Final 2019/vgtc_conference_latex/pictures/sample.eps unpcified
+[02/18 22:33:04]  /data/new/2581/2581541/src/IEEE VR Atul Final 2019/vgtc_conference_latex/pictures/sample.eps did not end with \n, TRUNCATED?
+[02/18 22:33:04]  /data/new/2581/2581541/src/IEEE VR Atul Final 2019/vgtc_conference_latex/pictures/sample.eps includes fonts: Binary file /data/new/2581/2581541/src/IEEE VR Atul Final 2019/vgtc_conference_latex/pictures/sample.eps matches
+[02/18 22:33:05]  checking /data/new/2581/2581541/src/IEEE VR Atul Final 2019/vgtc_conference_latex/pictures/sample.eps for TIFF
+[02/18 22:33:05]   Non-compliant attached TIFF removed from /data/new/2581/2581541/src/IEEE VR Atul Final 2019/vgtc_conference_latex/pictures/sample.eps
+[02/18 22:33:33]  sample.eps  	[postscript]  in /data/new/2581/2581541/src/IEEE VR Atul Final 2019/images/
 
 Examples for repair_dos_eps(): [Future]
 ------------------------------
