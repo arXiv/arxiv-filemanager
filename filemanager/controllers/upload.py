@@ -988,7 +988,10 @@ def get_upload_content(upload_id: int) -> Response:
         raise NotFound(UPLOAD_NOT_FOUND)
     upload_workspace = UploadWorkspace(upload_id)
     checksum = upload_workspace.content_checksum()
-    filepointer = upload_workspace.get_content()
+    try:
+        filepointer = upload_workspace.get_content()
+    except FileNotFoundError as e:
+        raise NotFound("No content in workspace") from e
     headers = {
         "Content-disposition": f"filename={filepointer.name}",
         'ETag': checksum
@@ -1326,6 +1329,7 @@ def _status_data(upload_db_data: Upload,
     return {
         'upload_id': upload_db_data.upload_id,
         'upload_total_size': upload_workspace.total_upload_size,
+        'upload_compressed_size': upload_workspace.content_package_size,
         'created_datetime': upload_db_data.created_datetime,
         'modified_datetime': upload_db_data.modified_datetime,
         'start_datetime': upload_db_data.lastupload_start_datetime,
