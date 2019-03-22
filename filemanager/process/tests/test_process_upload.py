@@ -614,6 +614,89 @@ class TestInternalSupportRoutines(TestCase):
         # cleanup workspace
         #upload.remove_workspace()
 
+    def test_postscript_repair(self):
+        """
+        Test Postscript repair routine.
+
+        """
+        upload = Upload(1245566)
+
+        # Fix Postscript
+        test_filename = 'ps1_broken.eps'
+        tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
+        workspace_src_dir = upload.get_source_directory()
+        destfilename = os.path.join(workspace_src_dir, test_filename)
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, workspace_src_dir)
+
+        # Repair Postscript file
+        upload.repair_postscript(file_obj)
+
+        # compare to repaired reference file
+        reference = os.path.join(TEST_FILES_STRIP_PS, 'ps1_repaired.eps')
+        # Compared fixed file to a reference stripped version of file.
+        is_same = filecmp.cmp(destfilename, reference, shallow=False)
+        self.assertTrue(is_same,
+                        f"Repair header in Postscript file '{test_filename}'.")
+
+        # Check to make sure error is added to list of errors.
+        warn_msg = ("Repaired Postscript file 'ps1_broken.eps': "
+                    "Removed extraneous characters before PS header.")
+        self.assertTrue(upload.search_warnings(warn_msg),
+                        f"Verify repair warning added to list.")
+
+        # Fix Postscript
+        test_filename = 'ps2_broken.eps'
+        tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
+        workspace_src_dir = upload.get_source_directory()
+        destfilename = os.path.join(workspace_src_dir, test_filename)
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, workspace_src_dir)
+
+        # Repair Postscript file
+        upload.repair_postscript(file_obj)
+
+        # compare to repaired reference file
+        reference = os.path.join(TEST_FILES_STRIP_PS, 'ps2_repaired.eps')
+        # Compared fixed file to a reference stripped version of file.
+        is_same = filecmp.cmp(destfilename, reference, shallow=False)
+        self.assertTrue(is_same,
+                        f"Repair header in Postscript file '{test_filename}'.")
+
+        # Check to make sure error is added to list of errors.
+        warn_msg = ("Repaired Postscript file 'ps2_broken.eps': Removed "
+                    "extraneous characters before PS header. Removed "
+                    "extraneous lines in front of PS header.")
+        self.assertTrue(upload.search_warnings(warn_msg),
+                        f"Verify repair warning added to list.")
+
+        # Fix Postscript
+        test_filename = 'ps3_broken.eps'
+        tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
+        workspace_src_dir = upload.get_source_directory()
+        destfilename = os.path.join(workspace_src_dir, test_filename)
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, workspace_src_dir)
+
+        # Repair Postscript file
+        upload.repair_postscript(file_obj)
+
+        # compare to repaired reference file
+        reference = os.path.join(TEST_FILES_STRIP_PS, 'ps3_repaired.eps')
+        # Compared fixed file to a reference stripped version of file.
+        is_same = filecmp.cmp(destfilename, reference, shallow=False)
+        self.assertTrue(is_same,
+                        f"Repair header in Postscript file '{test_filename}'.")
+
+        # Check to make sure error is added to list of errors.
+        warn_msg = ("Repaired Postscript file 'ps3_broken.eps': Removed "
+                    "carriage return from PS header. Removed extraneous "
+                    "characters before PS header.")
+        self.assertTrue(upload.search_warnings(warn_msg),
+                        f"Verify repair warning added to list.")
+
+        # cleanup workspace
+        upload.remove_workspace()
 
 class TestUpload(TestCase):
     """:func:`.process_upload` adds ones to :prop:`.Thing.name`."""
