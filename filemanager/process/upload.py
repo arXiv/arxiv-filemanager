@@ -1524,6 +1524,137 @@ class Upload:
 
             self.add_warning(file_obj.public_filepath, strip_warning)
 
+    def repair_dos_eps(self, file_obj: File) -> str:
+        """
+        Look for leading TIFF bitmaps and remove them.
+
+        ADD MORE HERE
+
+        Parameters
+        ----------
+        file_obj : File
+            File we are repairing.
+
+        Returns
+        -------
+            String message indicates that something was done and message details what was done.
+
+        """
+        pass
+
+
+    def repair_postscript(self, file_obj: File) -> str:
+        """
+        Repair simple corruptions at the beginning of Postscript file.
+
+        When repairs are made existing file is replacing with repaired file.
+
+        Parameters
+        ----------
+        file_obj : File
+            Postscipt file we are cleaning up.
+
+        Returns
+        -------
+            Returns repaired first line of Postscipt file.
+
+        """
+        # Check first 10 lines of Postscript file for corrupted statements
+        broken_filepath = file_obj.filepath
+        fixed_filepath = os.path.join(file_obj.dir, file_obj.name + '.fixed')
+        orig_type = file_obj.type
+
+        with open(broken_filepath, 'rb', 0) as infile, \
+                open(fixed_filepath, 'wb', 0) as outfile:
+
+            line = ''
+            line_no = 0
+            fixed = False
+            stripped = b""
+            message = ""
+
+            # Read each line
+            for line in infile:
+                line_no = line_no + 1
+
+                # Attempt to identify problems and repair
+                if re.search(b'^\%*\004\%\!', line):
+                    # Case 1: special character 004
+                    fixed = True
+                    line = re.sub(br'^%*\004%!', br'%!', line)
+                    message = message + "Removed carriage return from PS header. "
+
+                if re.search(b'^\%\%\!', line):
+                    # Case 2: extra '%' in header
+                    fixed = True
+                    line = re.sub(br'^%%!', br'%!', line)
+                    message = message + "Removed extra '%' from PS header. "
+
+                if re.search(b'.*(%!PS-Adobe-)', line):
+                    # Case 3: characters in front of PS tag
+                    fixed = True
+                    # Clean up the line
+                    line = re.sub(br'.*(%!PS-Adobe-)', br'\1', line)
+                    message = message + "Removed extraneous characters before PS header. "
+
+                if re.search(b'^%!', line) or line_no > 10:
+                    # we can stop searching
+                    # If we haven't made any fixes then quit
+                    break
+
+                # Keep track of what we are stripping off the front
+                stripped = stripped + line
+
+            # Done with initial cleanup
+
+            if re.search(b'^%!', line):
+                # Save stripped content
+                if (stripped):
+                    cleaned_filepath = os.path.join(file_obj.dir, file_obj.name
+                                                  + '.cleaned')
+                    with open(cleaned_filepath, 'wb', 0) as cleanfile:
+                        cleanfile.write(stripped)
+                        cleanfile.close()
+                    message = message + "Removed extraneous lines in front of PS header. "
+
+                # We are at start of Postscript file
+                outfile.write(line)
+                first_line = line
+            else:
+                # Reset to beginnng of broken file
+                infile.seek(0,0)
+                # Otherwise insert start indicator
+                outfile.write(b"%!\n")
+
+            # Write out the rest of file
+            for line in infile:
+                outfile.write(line)
+
+            if fixed:
+                # Move repaired file into place
+                shutil.copy(fixed_filepath, broken_filepath)
+                os.remove(fixed_filepath)
+
+                # Check that type of file has changed to 'postscript' (new)
+                # This also sets type of File object correctly for subsequent
+                # processing
+                file_obj.initialize_type()
+                check_type = file_obj.type
+
+                if orig_type != check_type and check_type == 'postscript':
+                    lm = f"Repaired Postscript file '{file_obj.name}': {message}'"
+                else:
+                    lm = f"Attempted repairs on Postscript file '{file_obj.name}': {message}'"
+
+                # Make note of the repair in log
+                self.add_warning(file_obj.public_filepath, lm)
+            else:
+                # cleanup
+                os.remove(fixed_filepath)
+
+            # Return first line
+            return first_line[0:75]
+
     def check_postscript(self, file_obj: File, tiff_flag: Union[str, None]) -> str:
         """
         Check Postscript file for unwanted inclusions.
@@ -1558,12 +1689,13 @@ class Upload:
         # Cleans up Postscript files file extraneous characters that cause
         # failure to identify file as Postscript.
         if file_type == 'failed':
-            # This code has been not executing for many years.
-            # TODO: Re add this code and add tests (low priority)
-            msg = f"File '{file_obj.public_filepath}' may be broken "\
-                  + "Postscript file."
+            # This code has been not executing for many years. May have
+            # resulted in more admin interventions to manually fix.
+            header = self.repair_postscript(file_obj)
+
+            msg = f"File '{file_obj.public_filepath}' did not have proper "\
+                  + f"Postscript header, repaired to '{header}'."
             self.add_warning(file_obj.public_filepath, msg)
-            self.log("WARNING: Method repair_ps() is NOT IMPLEMENTED.")
 
         # Determine whether Postscript file contains preview, photoshop. fonts,
         # or resource.
