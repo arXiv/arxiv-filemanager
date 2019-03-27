@@ -1025,7 +1025,7 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
     if upload_db_data is None:
         raise NotFound(UPLOAD_NOT_FOUND)
 
-    logger.info("%s: Upload content file exissts request.", upload_id)
+    logger.info("%s: Upload content file exists request.", upload_id)
 
     try:
 
