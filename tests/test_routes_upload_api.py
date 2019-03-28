@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from pytz import UTC
 import json
 import tempfile
+import filecmp
 from io import BytesIO
 import tarfile
 import os
@@ -22,6 +23,8 @@ from filemanager.services import uploads
 
 from arxiv.users import domain, auth
 from arxiv import status
+
+TEST_FILES_STRIP_PS = os.path.join(os.getcwd(), 'tests/test_files_strip_postscript')
 
 
 # Generate authentication token
@@ -373,6 +376,7 @@ class TestUploadAPIRoutes(TestCase):
         log_path = os.path.join(workdir, upload_log_filename)
         fileH = open(log_path, 'wb')
         fileH.write(response.data)
+        fileH.close()
 
         # Highlight log download. Remove at some point.
         print(f"FYI: SAVED UPLOAD SOURCE LOG FILE TO DISK: {log_path}\n")
@@ -418,6 +422,7 @@ class TestUploadAPIRoutes(TestCase):
         log_path = os.path.join(workdir, "service_log")
         fileH = open(log_path, 'wb')
         fileH.write(response.data)
+        fileH.close()
 
         # Highlight log download. Remove at some point.
         print(f"FYI: SAVED SERVICE LOG FILE TO DISK AT: {log_path}\n")
@@ -489,6 +494,7 @@ class TestUploadAPIRoutes(TestCase):
         log_path = os.path.join(workdir, "main_a.tex")
         fileH = open(log_path, 'wb')
         fileH.write(response.data)
+        fileH.close()
 
         print(f'List downloaded content directory: {workdir}\n')
         print(os.listdir(workdir))
@@ -1255,11 +1261,10 @@ class TestUploadAPIRoutes(TestCase):
         return False
 
 
-    def test_missing_warnings_and_errors(self) -> None:
+    def test_warnings_and_errors(self) -> None:
         """
-        This test is intended to be manually edited for debugging purposes.
 
-        This test currently exercises missing .bbl logic.
+        This test currently exercises warnings and errors logic.
 
         :return:
         """
@@ -1451,6 +1456,188 @@ class TestUploadAPIRoutes(TestCase):
                                            "Please inspect and remove extraneous backup files.",
                                            "warn", "submission.tex.bak",
                                            upload_data['errors']), "Expect this error to occur.")
+
+        # Delete the workspace
+        # Create admin token for deleting upload workspace
+        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                                auth.scopes.WRITE_UPLOAD,
+                                                auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
+
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+                                      headers={'Authorization': admin_token}
+                                      )
+
+        # This cleans out the workspace. Comment out if you want to inspect files
+        # in workspace. Source log is saved to 'deleted_workspace_logs' directory.
+        self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
+
+
+    def test_eps_repair(self) -> None:
+        """
+        This test is intended to be manually edited for debugging purposes.
+
+        This test currently exercises missing .bbl logic.
+
+        :return:
+        """
+        cwd = os.getcwd()
+        testfiles_dir = os.path.join(cwd, 'tests/test_files_strip_postscript')
+
+
+
+        # Create a token for writing to upload workspace
+        token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                          auth.scopes.WRITE_UPLOAD,
+                                          auth.scopes.DELETE_UPLOAD_FILE])
+
+        # Trying to replicate bib/bbl upload behavior
+        # Lets upload a file before uploading the zero length file
+        test_filename = 'dos_eps_1.eps'
+        filepath1 = os.path.join(testfiles_dir, test_filename)
+        filename1 = os.path.basename(filepath1)
+        response = self.client.post('/filemanager/api/',
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        'file': (open(filepath1, 'rb'), filename1),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        #print("Upload Response:\n" + str(response.data) + "\nEnd Data")
+        #print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
+
+        self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
+        self.maxDiff = None
+
+        with open('schema/resources/uploadResult.json') as f:
+            result_schema = json.load(f)
+
+        try:
+            jsonschema.validate(json.loads(response.data), result_schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+
+        # IMPORTANT RESULT upload_status of ERRORS should stop submission from
+        # proceeding until missing .bbl is provided OR .bib is removed.
+        upload_data: Dict[str, Any] = json.loads(response.data)
+        self.assertIn('upload_status', upload_data, "Returns total upload status.")
+        self.assertEqual(upload_data['upload_status'], "READY_WITH_WARNINGS",
+                         "Expect warnings from stripping TIFF from EPS file.")
+
+        # Make sure we are seeing errors
+        self.assertTrue(self.search_errors("leading TIFF preview stripped",
+                                           "warn", test_filename,
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        # Now let's grab file content and verify that it matches expected
+        # reference_path file.
+
+        # Check if content file exists
+        response = self.client.head(
+            f"/filemanager/api/{upload_data['upload_id']}/{test_filename}/content",
+            headers={'Authorization': token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+        # Download content file
+        response = self.client.get(
+            f"/filemanager/api/{upload_data['upload_id']}/{test_filename}/content",
+            headers={'Authorization': token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+        workdir = tempfile.mkdtemp()
+
+        # Write out file (to save temporary directory where we saved source_log)
+        content_file_path = os.path.join(workdir, test_filename)
+        fileH = open(content_file_path, 'wb')
+        fileH.write(response.data)
+        fileH.close()
+
+        # Compare downloaded file (content_file_path) against reference_path file
+        reference_filename = 'dos_eps_1_stripped.eps'
+        reference_path = os.path.join(TEST_FILES_STRIP_PS, reference_filename)
+        # Compared fixed file to a reference_path stripped version of file.
+        is_same = filecmp.cmp(content_file_path, reference_path, shallow=False)
+        self.assertTrue(is_same,
+                        f"Repair Encapsulated Postscript file '{test_filename}'.")
+
+        # Try encapsulate Postscript with trailing TIFF
+
+        # Trying to replicate bib/bbl upload behavior
+        # Lets upload a file before uploading the zero length file
+        test_filename = 'dos_eps_2.eps'
+        filepath1 = os.path.join(testfiles_dir, test_filename)
+        filename1 = os.path.basename(filepath1)
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        'file': (open(filepath1, 'rb'), filename1),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        # print("Upload Response:\n" + str(response.data) + "\nEnd Data")
+        # print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
+
+        self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
+        self.maxDiff = None
+
+        with open('schema/resources/uploadResult.json') as f:
+            result_schema = json.load(f)
+
+        try:
+            jsonschema.validate(json.loads(response.data), result_schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+
+        # IMPORTANT RESULT upload_status of ERRORS should stop submission from
+        # proceeding until missing .bbl is provided OR .bib is removed.
+        upload_data: Dict[str, Any] = json.loads(response.data)
+        self.assertIn('upload_status', upload_data, "Returns total upload status.")
+        self.assertEqual(upload_data['upload_status'], "READY_WITH_WARNINGS",
+                         "Expect warnings from stripping TIFF from EPS file.")
+
+        # Make sure we are seeing errors
+        self.assertTrue(self.search_errors("trailing TIFF preview stripped",
+                                           "warn", test_filename,
+                                           upload_data['errors']), "Expect this error to occur.")
+
+        # Check if content file exists
+        response = self.client.head(
+            f"/filemanager/api/{upload_data['upload_id']}/{test_filename}/content",
+            headers={'Authorization': token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+        # Download content file
+        response = self.client.get(
+            f"/filemanager/api/{upload_data['upload_id']}/{test_filename}/content",
+            headers={'Authorization': token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+        workdir = tempfile.mkdtemp()
+
+        # Write out file (to save temporary directory where we saved source_log)
+        content_file_path = os.path.join(workdir, test_filename)
+        fileH = open(content_file_path, 'wb')
+        fileH.write(response.data)
+        fileH.close()
+
+        # Compare downloaded file (content_file_path) against reference_path file
+        reference_filename = 'dos_eps_2_stripped.eps'
+        reference_path = os.path.join(TEST_FILES_STRIP_PS, reference_filename)
+        # Compared fixed file to a reference_path stripped version of file.
+        is_same = filecmp.cmp(content_file_path, reference_path, shallow=False)
+        self.assertTrue(is_same,
+                        f"Repair Encapsulated Postscript file '{test_filename}'.")
 
         # Delete the workspace
         # Create admin token for deleting upload workspace
