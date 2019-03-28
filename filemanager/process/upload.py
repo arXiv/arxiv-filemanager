@@ -21,6 +21,7 @@ from werkzeug.utils import secure_filename
 from arxiv.base.globals import get_application_config
 from filemanager.arxiv.file import File as File
 from filemanager.utilities.unpack import unpack_archive
+import struct
 
 UPLOAD_FILE_EMPTY = 'file payload is zero length'
 UPLOAD_DELETE_FILE_FAILED = 'unable to delete file'
@@ -1199,9 +1200,19 @@ class Upload:
 
                 # Repair dos eps
                 elif file_type == 'dos_eps':
-                    # TODO: Implement repair_dos_eps
-                    # Still seeing dos_eps type in recent submissions
-                    pass
+                    # Let's be specific about what we are doing.
+                    fixed = self.repair_dos_eps(obj)
+                    if fixed:
+                        # stripped TIFF
+                        if re.search('leading', fixed):
+                            msg = f"leading TIFF preview stripped"
+                        if re.search('trailing',fixed):
+                            msg = f"trailing TIFF preview stripped"
+                        self.add_warning(obj.public_filepath, msg)
+                    else:
+                        msg ="Failed to strip TIFF preview"
+                        self.add_warning(obj.public_filepath, msg)
+                        self.repair_postscript(obj)
 
                 # TeX: If file is identified as core TeX type then we need to
                 # unmacify
@@ -1526,7 +1537,7 @@ class Upload:
 
     def repair_dos_eps(self, file_obj: File) -> str:
         """
-        Look for leading TIFF bitmaps and remove them.
+        Look for leading/trailing TIFF bitmaps and remove them.
 
         ADD MORE HERE
 
@@ -1539,8 +1550,137 @@ class Upload:
         -------
             String message indicates that something was done and message details what was done.
 
+        Notes
+        -----
+            DOS EPS Binary File Header
+
+            0-3   Must be hex C5D0D3C6 (byte 0=C5).
+            4-7   Byte position in file for start of PostScript language code section.
+            8-11  Byte length of PostScript language section
+            12-15 Byte position in file for start of Metafile screen representation.
+            16-19 Byte length of Metafile section (PSize).
+            20-23 Byte position of TIFF representation.
+            24-27 Byte length of TIFF section.
+
         """
-        pass
+        ps_filepath = file_obj.filepath
+
+        if not os.path.exists(ps_filepath):
+            self.log(f"{file_obj.public_filepath}: File not found")
+            return
+
+        with open(ps_filepath, 'r+b', 0) as infile:
+
+            # Read past ESP file marker (C5D0D3C6)
+            infile.seek(4, 0)
+
+            # Read header bytes we are interested in
+            header = infile.read(24)
+            pb = struct.pack('24s', header)
+
+            # Extract offsets/lengths for Postscript and TIFF
+            (psoffset, pslength, metaoffset, metadatalength, tiffoffset,
+             tifflength) = struct.unpack('6i', pb)
+
+            #(f"psoffset:{psoffset} len:{pslength} tiffoffset:{tiffoffset}"
+            # f"len:{tifflength}")
+
+            if not (psoffset > 0 and pslength > 0 and tiffoffset > 0
+                    and tifflength > 0):
+                # Encapsulated Postscript does not contain embedded TIFF
+                return
+
+            # Extract Postscript
+
+            if psoffset > tiffoffset:
+                # Postscript follows TIFF so we will seek
+                # to Postscript and extract (eliminate header and TIFF)
+
+                # Seek to postscript
+                infile.seek(psoffset, 0)
+
+                # Look for start of Postscript
+                first_line = infile.readline()
+
+                if not re.search(b'^%!PS-', first_line):
+                    # Issue a warning.
+                    self.log(f"{file_obj.public_filepath}: Couldn't find "
+                             f"beginning of Postscript section")
+                    return
+
+                fixed_ps_filepath = os.path.join(file_obj.dir,
+                                                 file_obj.name + ".fixed")
+                #print(f"Write fixed file:{fixed_ps_filepath}")
+                with open(fixed_ps_filepath, 'wb', 0) as outfile:
+                    # write out first line
+                    outfile.write(first_line)
+
+                    # Read each line
+                    for line in infile:
+                        outfile.write(line)
+
+                    # Move repaired file into place
+                    shutil.copy(fixed_ps_filepath, ps_filepath)
+                    os.remove(fixed_ps_filepath)
+
+                    # Indicate we stripped header and leading TIFF
+                    return f"stripped {psoffset} leading bytes"
+
+            elif psoffset < tiffoffset:
+                # truncate the trailing TIFF image
+                # strip off eps header leaving Postscript
+
+                # save a copy of original file before we hack it to death
+                backup_filename = file_obj.name + ".original"
+                backup_filepath = os.path.join(file_obj.dir, backup_filename)
+                shutil.copy(ps_filepath, backup_filepath)
+
+                # Let's get rid of TIFF first
+                infile.seek(tiffoffset, 0)
+                offset = infile.tell()
+                # truncate TIFF
+                infile.truncate(offset)
+
+                # Seek to postscript
+                infile.seek(psoffset, 0)
+
+                # Look for start of Postscript
+                first_line = infile.readline()
+
+                if not re.search(b'^%!PS-', first_line):
+                    # Issue a warning.
+                    self.log(f"{file_obj.public_filepath}: Couldn't find "
+                             f"beginning of Postscript section")
+                    # remove backup file
+                    os.remove(backup_filepath)
+                    return
+
+                fixed_ps_filepath = os.path.join(file_obj.dir,
+                                                 file_obj.name + ".fixed")
+
+                with open(fixed_ps_filepath, 'wb', 0) as outfile:
+                    # write out first line
+                    outfile.write(first_line)
+
+                    # Read each line
+                    for line in infile:
+                        outfile.write(line)
+
+                    # Move repaired file into place
+                    shutil.copy(fixed_ps_filepath, ps_filepath)
+                    os.remove(fixed_ps_filepath)
+
+                    # Add warning about backup file we created
+                    backup_obj = File(backup_filepath, file_obj.dir)
+                    msg = (f"Modified file {file_obj.public_filepath}."
+                           f"Saving original to {backup_obj.public_filepath}."
+                           f"You may delete this file."
+                           )
+                    self.add_warning(backup_obj.public_filepath, msg)
+
+                    # Indicate we stripped header and trailing TIFF
+                    return (f"stripped trailing tiff at {tiffoffset} bytes "
+                            f"and {psoffset} leading bytes")
 
 
     def repair_postscript(self, file_obj: File) -> str:
@@ -1563,6 +1703,7 @@ class Upload:
         broken_filepath = file_obj.filepath
         fixed_filepath = os.path.join(file_obj.dir, file_obj.name + '.fixed')
         orig_type = file_obj.type
+        first_line = "%!\n"
 
         with open(broken_filepath, 'rb', 0) as infile, \
                 open(fixed_filepath, 'wb', 0) as outfile:
