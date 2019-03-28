@@ -698,6 +698,51 @@ class TestInternalSupportRoutines(TestCase):
         # cleanup workspace
         upload.remove_workspace()
 
+
+    def test_repair_dos_eps(self):
+        """
+        Test eps Postscript repair routine.
+
+        """
+        upload = Upload(1299999)
+
+        # Fix Postscript
+        test_filename = 'dos_eps_1.eps'
+        tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
+        workspace_src_dir = upload.get_source_directory()
+        destfilename = os.path.join(workspace_src_dir, test_filename)
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, workspace_src_dir)
+
+        # Repair Postscript file
+        upload.repair_dos_eps(file_obj)
+
+        # compare to repaired reference file
+        reference = os.path.join(TEST_FILES_STRIP_PS, 'dos_eps_1_stripped.eps')
+        # Compared fixed file to a reference stripped version of file.
+        is_same = filecmp.cmp(destfilename, reference, shallow=False)
+        self.assertTrue(is_same,
+                        f"Repair Encapsulated Postscript file '{test_filename}'.")
+
+        # Fix Postscript
+        test_filename = 'dos_eps_2.eps'
+        tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
+        workspace_src_dir = upload.get_source_directory()
+        destfilename = os.path.join(workspace_src_dir, test_filename)
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, workspace_src_dir)
+
+        # Repair Postscript file
+        upload.repair_dos_eps(file_obj)
+
+        # compare to repaired reference file
+        reference = os.path.join(TEST_FILES_STRIP_PS, 'dos_eps_2_stripped.eps')
+        # Compared fixed file to a reference stripped version of file.
+        is_same = filecmp.cmp(destfilename, reference, shallow=False)
+        self.assertTrue(is_same,
+                        f"Repair Encapsulated Postscript file '{test_filename}'.")
+
+
 class TestUpload(TestCase):
     """:func:`.process_upload` adds ones to :prop:`.Thing.name`."""
 
