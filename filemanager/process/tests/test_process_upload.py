@@ -15,9 +15,9 @@ from werkzeug.utils import secure_filename
 from ...arxiv.file import File
 
 
-
-from ...process import upload
 from ..upload import Upload
+
+VERBOSE = 0
 
 UPLOAD_BASE_DIRECTORY = '/tmp/filemanagment/submissions'
 
@@ -215,8 +215,12 @@ strip_tests.append(['cone.eps',
 
 # Internal Debugging test
 class TestInternalSupportRoutines(TestCase):
+    """
+    Test internal process routines.
+    """
 
     def test_get_upload_directory(self):
+        """Test getting root upload workspace directory."""
         upload = Upload(12345678)
         workspace_dir = upload.get_upload_directory()
         self.assertEqual(workspace_dir, os.path.join(UPLOAD_BASE_DIRECTORY, '12345678'),
@@ -225,6 +229,7 @@ class TestInternalSupportRoutines(TestCase):
         upload.remove_workspace()
 
     def test_create_upload_directory(self):
+        """Test creating upload workspace direcrtory."""
         upload = Upload(12345679)
         workspace_dir = upload.create_upload_directory()
         dir_exists = os.path.exists(workspace_dir)
@@ -233,6 +238,7 @@ class TestInternalSupportRoutines(TestCase):
         upload.remove_workspace()
 
     def test_get_source_directory(self):
+        """Test getting source directory."""
         upload = Upload(12345680)
         source_dir = upload.get_source_directory()
         self.assertEqual(source_dir, os.path.join(UPLOAD_BASE_DIRECTORY, '12345680', 'src'),
@@ -241,6 +247,7 @@ class TestInternalSupportRoutines(TestCase):
         upload.remove_workspace()
 
     def test_get_removed_directory(self):
+        """Test getting removed directory where we stick deleted items."""
         upload = Upload(12345680)
         removed_dir = upload.get_removed_directory()
         self.assertEqual(removed_dir, os.path.join(UPLOAD_BASE_DIRECTORY, '12345680', 'removed'),
@@ -249,6 +256,7 @@ class TestInternalSupportRoutines(TestCase):
         upload.remove_workspace()
 
     def test_create_upload_workspace(self):
+        """Test creating upload workspace with subdirectories."""
         upload = Upload(12345681)
         workspace_dir = upload.create_upload_workspace()
         dir_exists = os.path.exists(workspace_dir)
@@ -456,12 +464,8 @@ class TestInternalSupportRoutines(TestCase):
         new_extension = 'testext'
         new_file_obj = upload.fix_file_ext(file_obj, new_extension)
 
-        filebase, file_extension = os.path.splitext(file_obj.name)
+        filebase, _ = os.path.splitext(file_obj.name)
         new_filename = filebase + f".{new_extension}"
-        #new_path = os.path.join(file_obj.base_dir, new_file)
-
-        # Now look for renamed file
-        filebase, file_extension = os.path.splitext(file_obj.name)
 
         # Make sure new file exists
         self.assertTrue(os.path.exists(new_file_obj.filepath),
@@ -482,7 +486,7 @@ class TestInternalSupportRoutines(TestCase):
         new_extension = 'html'
         new_file_obj = upload.fix_file_ext(file_obj, new_extension)
 
-        filebase, file_extension = os.path.splitext(file_obj.name)
+        filebase, _ = os.path.splitext(file_obj.name)
         new_filename = filebase + f".{new_extension}"
 
         # Make sure new file exists
@@ -515,9 +519,6 @@ class TestInternalSupportRoutines(TestCase):
         Test the filtering of unwanted previews in Postscript file.
         :return:
         """
-
-        # Copy the files that will be modified to temporary location
-        tmp_dir = tempfile.mkdtemp()
 
         upload = Upload(1234999)
 
@@ -557,9 +558,6 @@ class TestInternalSupportRoutines(TestCase):
         Test removing trailing tiff from Postscript file.
         :return:
         """
-
-        # Copy the files that will be modified to temporary location
-        tmp_dir = tempfile.mkdtemp()
 
         upload = Upload(1245894)
 
@@ -941,7 +939,7 @@ class TestUpload(TestCase):
             upload = Upload(20180245)
             file = FileStorage(fp)
 
-            ret = upload.process_upload(file)
+            upload.process_upload(file)
 
             # Single valid source file uploaded.
             file_formats = upload.count_file_types()
@@ -984,8 +982,9 @@ class TestUpload(TestCase):
 
             test_filename, exp_sub_type, description = test
 
-            #print(f"\n**Test File: {test_filename} format expected:
-            # {exp_sub_type} \n\tDetails:{description}")
+            if VERBOSE:
+                print(f"\n**Test File: {test_filename} format expected: "
+                      f"{exp_sub_type} \n\tDetails:{description}")
 
             filepath = os.path.join(TEST_FILES_DIRECTORY, test_filename)
             if not os.path.exists(filepath):
@@ -1001,7 +1000,7 @@ class TestUpload(TestCase):
                 upload = Upload(20180245)
                 file = FileStorage(fp)
                 upload.client_remove_all_files()
-                ret = upload.process_upload(file)
+                upload.process_upload(file)
                 sub_type = upload.source_format
 
                 self.assertEqual(sub_type, exp_sub_type,
@@ -1035,7 +1034,7 @@ class TestUpload(TestCase):
             # Now create upload instance
             upload = Upload(20180226)
             file = FileStorage(fp)
-            ret = upload.process_upload(file)
+            upload.process_upload(file)
 
             # cleanup workspace
             upload.remove_workspace()
@@ -1069,7 +1068,7 @@ class TestUpload(TestCase):
             file = FileStorage(fp)
             # Now create upload instance
             upload = Upload(upload_id)
-            ret = upload.process_upload(file)
+            upload.process_upload(file)
 
             self.assertTrue(upload.has_warnings(),
                             "This test is expected to generate missing "
@@ -1096,7 +1095,7 @@ class TestUpload(TestCase):
 
             with open(filename, 'rb') as fp:
                 file = FileStorage(fp)
-                ret = upload.process_upload(file)
+                upload.process_upload(file)
 
                 error_match = 'Your submission contained'
                 string = f'This test is NOT expected to generate missing .bbl ' \
@@ -1122,7 +1121,7 @@ class TestUpload(TestCase):
             file = FileStorage(fp)
             # Now create upload instance
             upload = Upload(upload_id)
-            ret = upload.process_upload(file)
+            upload.process_upload(file)
 
             self.assertFalse(upload.has_warnings(),
                              'Test well-formed submission. No warnings.')
@@ -1145,7 +1144,7 @@ class TestUpload(TestCase):
 
         for unpack_test in unpack_tests:
 
-            test_file, upload_id, warnings, warnings_match, *extras = unpack_test + [None] * 2
+            test_file, upload_id, warnings, warnings_match, *_ = unpack_test + [None] * 2
 
             self.assertIsNotNone(upload_id, "Test must have upload identifier.")
 
@@ -1207,6 +1206,44 @@ class TestUpload(TestCase):
                 # clean up workspace
                 upload.remove_workspace()
 
+
+    def xxx_test_one_off_upload(self) -> None:
+        """Test one-off submssions."""
+        upload_id = 29990049
+        upload = Upload(upload_id)
+
+        filename = os.path.join(TEST_FILES_DIRECTORY, 'only_figures_tikz_needs_pdflatx.tar.gz')
+        self.assertTrue(os.path.exists(filename),
+                        'Test submission that breaks file manager service.')
+
+        # For testing purposes, clean out existing workspace directory
+        workspace_dir = upload.create_upload_workspace()
+        if os.path.exists(workspace_dir):
+            shutil.rmtree(workspace_dir)
+
+        # Test common behavior of submitting .bib file without .bbl file and
+        # then follow by adding .bbl file to make submission whole.
+
+        # Step 1: Load submission that includes .bib file but is missing
+        # required .bbl; file
+
+        # Recreate FileStroage object that flask will be passing in
+        file = None
+        with open(filename, 'rb') as fp:
+            file = FileStorage(fp)
+            # Now create upload instance
+            upload = Upload(upload_id)
+            upload.process_upload(file)
+
+
+            file_list = upload.create_file_upload_summary()
+            import json
+            length = len(json.dumps(file_list))
+            print(f"Length of file summary: {length}")
+            print(f"Response:\n{json.dumps(file_list)}\nDONE")
+
+
+
     def test_process_general_upload(self) -> None:
         """Test series of uniform test cases with specified outcomes"""
 
@@ -1214,7 +1251,7 @@ class TestUpload(TestCase):
 
         for upload_test in upload_tests:
 
-            test_file, upload_id, warnings, warnings_match, *extras = \
+            test_file, upload_id, warnings, warnings_match, *_ = \
                 upload_test + [None] * 2
 
             self.assertIsNotNone(upload_id, "Test must have upload identifier.")
