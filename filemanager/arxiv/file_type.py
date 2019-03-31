@@ -410,7 +410,6 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
                               + rb'\\special|\\baselineskip|\\begin)',
                               line).group(2)
             if set == 0:
-                print("Set HINT TYPE_TEX 0 (line:[" + str(line_no) + "]\n" + str(match))
                 set = 1
             if re.search(rb'\\input\s+amstex', line):
                 return 'TYPE_TEX_priority', '', ''
@@ -438,7 +437,6 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
             if maybe_tex_priority:
                 return 'TYPE_TEX_priority', '', ''
             if maybe_tex:
-                print("Set TYPE_TEX 1\n")
                 return 'TYPE_TEX', '', ''
             if re.search(b'\r$', line):
                 return 'TYPE_PC', '', ''
@@ -457,7 +455,6 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
     if maybe_tex_priority2:
         return 'TYPE_TEX_priority2', '', ''
     if maybe_tex:
-        print("Set TYPE_TEX 2\n")
         return 'TYPE_TEX', '', ''
 
     # Failed type identification
