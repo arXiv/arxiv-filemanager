@@ -1653,6 +1653,63 @@ class TestUploadAPIRoutes(TestCase):
         # in workspace. Source log is saved to 'deleted_workspace_logs' directory.
         self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
 
+    def xxx_test_one_off_situations(self) -> None:
+        """
+        Test to make sure response contains warnings/errors.
+        Returns
+        -------
+
+        """
+        cwd = os.getcwd()
+        testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
+
+        # Create a token for writing to upload workspace
+        token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                          auth.scopes.WRITE_UPLOAD,
+                                          auth.scopes.DELETE_UPLOAD_FILE])
+
+        # Trying to replicate bib/bbl upload behavior
+        # Lets upload a file before uploading the zero length file
+
+        #filepath1 = os.path.join(testfiles_dir, 'UploadRemoveFiles.tar')
+        filepath1 = os.path.join(testfiles_dir, 'only_figures_tikz_needs_pdflatx.tar.gz')
+        filename1 = os.path.basename(filepath1)
+        response = self.client.post('/filemanager/api/',
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        'file': (open(filepath1, 'rb'), filename1),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        print("Upload Response:\n")
+        print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
+
+        with open('schema/resources/uploadResult.json') as f:
+            result_schema = json.load(f)
+
+        try:
+            jsonschema.validate(json.loads(response.data), result_schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+        # Delete the workspace
+        # Create admin token for deleting upload workspace
+        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                                auth.scopes.WRITE_UPLOAD,
+                                                auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
+
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+                                      headers={'Authorization': admin_token}
+                                      )
+
+        # This cleans out the workspace. Comment out if you want to inspect files
+        # in workspace. Source log is saved to 'deleted_workspace_logs' directory.
+        self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
+
 
     # Upload a submission package and perform normal operations on upload
     def test_upload_files_normal(self) -> None:
