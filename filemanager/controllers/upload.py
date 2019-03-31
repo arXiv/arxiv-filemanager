@@ -160,35 +160,35 @@ def delete_workspace(upload_id: int) -> Response:
             # Note: DB entry will exist for workspace that has already been
             #       deleted
             raise NotFound(UPLOAD_NOT_FOUND)
-        else:
 
-            # Actually remove entire workspace directory structure. Log
-            # everything to global log since source log is being removed!
 
-            # Initiate workspace deletion
+        # Actually remove entire workspace directory structure. Log
+        # everything to global log since source log is being removed!
 
-            # Update database (but keep around) for historical reference. Does not
-            # consume very much space. What about source log?
-            # Create Upload object
-            if upload_db_data.state == Upload.DELETED:
-                logger.info("%s: Workspace has already been deleted:"
-                            "current state is '%s'", upload_id, upload_db_data.state)
-                raise NotFound(UPLOAD_WORKSPACE_NOT_FOUND)
+        # Initiate workspace deletion
 
-            upload_workspace = UploadWorkspace(upload_id)
+        # Update database (but keep around) for historical reference. Does not
+        # consume very much space. What about source log?
+        # Create Upload object
+        if upload_db_data.state == Upload.DELETED:
+            logger.info("%s: Workspace has already been deleted:"
+                        "current state is '%s'", upload_id, upload_db_data.state)
+            raise NotFound(UPLOAD_WORKSPACE_NOT_FOUND)
 
-            # Call routine that will do the actual work
-            upload_workspace.remove_workspace()
+        upload_workspace = UploadWorkspace(upload_id)
 
-            # update database
-            if upload_db_data.state != Upload.RELEASED:
-                logger.info("%s: Workspace currently in '%s' state.",
-                            upload_id, upload_db_data.state)
+        # Call routine that will do the actual work
+        upload_workspace.remove_workspace()
 
-            upload_db_data.state = Upload.DELETED
+        # update database
+        if upload_db_data.state != Upload.RELEASED:
+            logger.info("%s: Workspace currently in '%s' state.",
+                        upload_id, upload_db_data.state)
 
-            # Store in DB
-            uploads.update(upload_db_data)
+        upload_db_data.state = Upload.DELETED
+
+        # Store in DB
+        uploads.update(upload_db_data)
 
     except IOError:
         logger.error("%s: Delete workspace request failed ", upload_id)
@@ -241,18 +241,18 @@ def client_delete_file(upload_id: str, public_file_path: str) -> Response:
         if upload_db_data is None:
             # Invalid workspace identifier
             raise NotFound(UPLOAD_NOT_FOUND)
-        elif upload_db_data.state != Upload.ACTIVE:
+        if upload_db_data.state != Upload.ACTIVE:
             # Do we log anything for these requests
             raise Forbidden(UPLOAD_NOT_ACTIVE)
-        elif upload_db_data.lock == Upload.LOCKED:
+        if upload_db_data.lock == Upload.LOCKED:
             raise Forbidden(UPLOAD_WORKSPACE_LOCKED)
-        else:
 
-            # Create Upload object
-            upload_workspace = UploadWorkspace(upload_id)
 
-            # Call routine that will do the actual work
-            upload_workspace.client_remove_file(public_file_path)
+        # Create Upload object
+        upload_workspace = UploadWorkspace(upload_id)
+
+        # Call routine that will do the actual work
+        upload_workspace.client_remove_file(public_file_path)
 
     except IOError:
         logger.error("%s: Delete file request failed ",
@@ -314,17 +314,16 @@ def client_delete_all_files(upload_id: str) -> Response:
         if upload_db_data is None:
             # Invalid workspace identifier
             raise NotFound(UPLOAD_NOT_FOUND)
-        elif upload_db_data.state != Upload.ACTIVE:
+        if upload_db_data.state != Upload.ACTIVE:
             # Do we log anything for these requests
             raise Forbidden(UPLOAD_NOT_ACTIVE)
-        elif upload_db_data.lock == Upload.LOCKED:
+        if upload_db_data.lock == Upload.LOCKED:
             raise Forbidden(UPLOAD_WORKSPACE_LOCKED)
-        else:
 
-            # Create Upload object
-            upload_workspace = UploadWorkspace(upload_id)
+        # Create Upload object
+        upload_workspace = UploadWorkspace(upload_id)
 
-            upload_workspace.client_remove_all_files()
+        upload_workspace.client_remove_all_files()
 
 
     except IOError:
@@ -394,15 +393,15 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
     # File argument is required to exist and have a name associated with it.
     # It is standard practice that if user fails to select file the filename is null.
-    logger.debug(f'Handling upload request for {upload_id}')
+    logger.debug('Handling upload request for %s', upload_id)
     if file is None:
         # Crash and burn...not quite...do we need info about client?
-        logger.error(f'Upload request is missing file/archive payload.')
+        logger.error('Upload request is missing file/archive payload.')
         raise BadRequest(UPLOAD_MISSING_FILE)
 
     if file.filename == '':
         # Client needs to select file, or provide name to upload payload
-        logger.error(f'Upload file is missing filename. File to upload may not be selected.')
+        logger.error('Upload file is missing filename. File to upload may not be selected.')
         raise BadRequest(UPLOAD_MISSING_FILENAME)
 
     # What about archive argument.
@@ -459,89 +458,89 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
         if upload_db_data is None:
             # Invalid workspace identifier
             raise NotFound(UPLOAD_NOT_FOUND)
-        elif upload_db_data.state != Upload.ACTIVE:
+        if upload_db_data.state != Upload.ACTIVE:
             # Do we log anything for these requests
             logger.debug('Forbidden, workspace not active')
             raise Forbidden(UPLOAD_NOT_ACTIVE)
-        elif upload_db_data.lock == Upload.LOCKED:
+        if upload_db_data.lock == Upload.LOCKED:
             logger.debug('Forbidden, workspace locked')
             raise Forbidden(UPLOAD_WORKSPACE_LOCKED)
-        else:
-            # Now handle upload package - process file or gzipped tar archive
 
-            # NOTE: This will need to be migrated to task.py using Celery at
-            #       some point in future. Depends in time it takes to process
-            #       uploads.retrieve
-            logger.info("%s: Upload files to existing "
-                        "workspace: file='%s'", upload_db_data.upload_id, file.filename)
+        # Now handle upload package - process file or gzipped tar archive
 
-            # Keep track of how long processing upload_db_data takes
-            start_datetime = datetime.now(UTC)
+        # NOTE: This will need to be migrated to task.py using Celery at
+        #       some point in future. Depends in time it takes to process
+        #       uploads.retrieve
+        logger.info("%s: Upload files to existing "
+                    "workspace: file='%s'", upload_db_data.upload_id, file.filename)
 
-            # Create Upload object
-            upload_workspace = UploadWorkspace(upload_id)
+        # Keep track of how long processing upload_db_data takes
+        start_datetime = datetime.now(UTC)
 
-            # Process upload_db_data
-            upload_workspace.process_upload(file, ancillary=ancillary)
+        # Create Upload object
+        upload_workspace = UploadWorkspace(upload_id)
 
-            completion_datetime = datetime.now(UTC)
+        # Process upload_db_data
+        upload_workspace.process_upload(file, ancillary=ancillary)
 
-            # Keep track of files processed (this included deleted files)
-            file_list = upload_workspace.create_file_upload_summary()
+        completion_datetime = datetime.now(UTC)
 
-            # Determine readiness state of upload content
-            upload_status = Upload.READY
+        # Keep track of files processed (this included deleted files)
+        file_list = upload_workspace.create_file_upload_summary()
 
-            if upload_workspace.has_errors():
-                upload_status = Upload.ERRORS
-            elif upload_workspace.has_warnings():
-                upload_status = Upload.READY_WITH_WARNINGS
+        # Determine readiness state of upload content
+        upload_status = Upload.READY
 
-            # Create combine list of errors and warnings
-            # TODO: Should I do this in Upload package?? Likely...
-            all_errors_and_warnings = []
+        if upload_workspace.has_errors():
+            upload_status = Upload.ERRORS
+        elif upload_workspace.has_warnings():
+            upload_status = Upload.READY_WITH_WARNINGS
 
-            for warn in upload_workspace.get_warnings():
-                public_filepath, warning_message = warn
-                all_errors_and_warnings.append(['warn', public_filepath, warning_message])
+        # Create combine list of errors and warnings
+        # TODO: Should I do this in Upload package?? Likely...
+        all_errors_and_warnings = []
 
-            for error in upload_workspace.get_errors():
-                public_filepath, warning_message = error
-                # TODO: errors renamed fatal. Need to review 'errors' as to whether they are 'fatal'
-                all_errors_and_warnings.append(['fatal', public_filepath, warning_message])
+        for warn in upload_workspace.get_warnings():
+            public_filepath, warning_message = warn
+            all_errors_and_warnings.append(['warn', public_filepath, warning_message])
 
-            # Prepare upload_db_data details (DB). I'm assuming that in memory Redis
-            # is not sufficient for results that may be needed in the distant future.
-            # errors_and_warnings = upload_workspace.get_errors() + upload_workspace.get_warnings()
-            errors_and_warnings = all_errors_and_warnings
-            upload_db_data.lastupload_logs = json.dumps(errors_and_warnings)
-            upload_db_data.lastupload_start_datetime = start_datetime
-            upload_db_data.lastupload_completion_datetime = completion_datetime
-            upload_db_data.lastupload_file_summary = json.dumps(file_list)
-            upload_db_data.lastupload_upload_status = upload_status
-            upload_db_data.state = Upload.ACTIVE
+        for error in upload_workspace.get_errors():
+            public_filepath, warning_message = error
+            # TODO: errors renamed fatal. Need to review 'errors' as to whether they are 'fatal'
+            all_errors_and_warnings.append(['fatal', public_filepath, warning_message])
 
-            # Store in DB
-            uploads.update(upload_db_data)
+        # Prepare upload_db_data details (DB). I'm assuming that in memory Redis
+        # is not sufficient for results that may be needed in the distant future.
+        # errors_and_warnings = upload_workspace.get_errors() + upload_workspace.get_warnings()
+        errors_and_warnings = all_errors_and_warnings
+        upload_db_data.lastupload_logs = json.dumps(errors_and_warnings)
+        upload_db_data.lastupload_start_datetime = start_datetime
+        upload_db_data.lastupload_completion_datetime = completion_datetime
+        upload_db_data.lastupload_file_summary = json.dumps(file_list)
+        upload_db_data.lastupload_upload_status = upload_status
+        upload_db_data.state = Upload.ACTIVE
 
-            logger.info("%s: Processed upload. "
-                        "Saved to DB. Preparing upload summary.", upload_db_data.upload_id)
+        # Store in DB
+        uploads.update(upload_db_data)
 
-            # Do we want affirmative log messages after processing each request
-            # or maybe just report errors like:
-            #    logger.info(f"{upload_db_data.upload_id}: Finished processing ...")
+        logger.info("%s: Processed upload. "
+                    "Saved to DB. Preparing upload summary.", upload_db_data.upload_id)
 
-            # Upload action itself has very simple response
-            headers = {'Location': url_for('upload_api.upload_files',
-                                           upload_id=upload_db_data.upload_id)}
+        # Do we want affirmative log messages after processing each request
+        # or maybe just report errors like:
+        #    logger.info(f"{upload_db_data.upload_id}: Finished processing ...")
 
-            status_code = status.HTTP_201_CREATED
+        # Upload action itself has very simple response
+        headers = {'Location': url_for('upload_api.upload_files',
+                                       upload_id=upload_db_data.upload_id)}
 
-            response_data = _status_data(upload_db_data, upload_workspace)
-            logger.info("%s: Generating upload summary.",
-                        upload_db_data.upload_id)
-            logger.debug('Response data: %s', response_data)
-            return response_data, status_code, headers
+        status_code = status.HTTP_201_CREATED
+
+        response_data = _status_data(upload_db_data, upload_workspace)
+        logger.info("%s: Generating upload summary.",
+                    upload_db_data.upload_id)
+        logger.debug('Response data: %s', response_data)
+        return response_data, status_code, headers
 
     except IOError as e:
         logger.error("%s: File upload_db_data request failed "
@@ -598,30 +597,30 @@ def upload_summary(upload_id: int) -> Response:
             status_code = status.HTTP_404_NOT_FOUND
             response_data = UPLOAD_NOT_FOUND
             raise NotFound(UPLOAD_NOT_FOUND)
-        else:
-            logger.info("%s: Upload summary request.", upload_db_data.upload_id)
 
-            # Create Upload object
-            upload_workspace = UploadWorkspace(upload_id)
-            file_list = upload_workspace.create_file_list()
+        logger.info("%s: Upload summary request.", upload_db_data.upload_id)
 
-            details_list = []
-            for fileObj in file_list:
-                file_details = {
-                    'name': fileObj.name,
-                    'public_filepath': fileObj.public_filepath,
-                    'size': fileObj.size,
-                    'type': fileObj.type_string,
-                    'modified_datetime': fileObj.modified_datetime
-                }
-                if not fileObj.removed:
-                    details_list.append(file_details)
+        # Create Upload object
+        upload_workspace = UploadWorkspace(upload_id)
+        file_list = upload_workspace.create_file_list()
 
-            status_code = status.HTTP_200_OK
-            response_data = _status_data(upload_db_data, upload_workspace)
-            response_data.update({'files': details_list, 'errors': []})
-            logger.info("%s: Upload summary request.",
-                        upload_db_data.upload_id)
+        details_list = []
+        for fileObj in file_list:
+            file_details = {
+                'name': fileObj.name,
+                'public_filepath': fileObj.public_filepath,
+                'size': fileObj.size,
+                'type': fileObj.type_string,
+                'modified_datetime': fileObj.modified_datetime
+            }
+            if not fileObj.removed:
+                details_list.append(file_details)
+
+        status_code = status.HTTP_200_OK
+        response_data = _status_data(upload_db_data, upload_workspace)
+        response_data.update({'files': details_list, 'errors': []})
+        logger.info("%s: Upload summary request.",
+                    upload_db_data.upload_id)
 
     except IOError:
         # response_data = ERROR_RETRIEVING_UPLOAD
@@ -677,20 +676,19 @@ def upload_lock(upload_id: int) -> Response:
         if upload_db_data is None:
             # Invalid workspace identifier
             raise NotFound(UPLOAD_NOT_FOUND)
+
+        # Lock upload workspace
+        # update database
+        if upload_db_data.lock == Upload.LOCKED:
+            logger.info("%s: Lock: Workspace is already locked.", upload_id)
         else:
+            upload_db_data.lock = Upload.LOCKED
 
-            # Lock upload workspace
-            # update database
-            if upload_db_data.lock == Upload.LOCKED:
-                logger.info("%s: Lock: Workspace is already locked.", upload_id)
-            else:
-                upload_db_data.lock = Upload.LOCKED
+            # Store in DB
+            uploads.update(upload_db_data)
 
-                # Store in DB
-                uploads.update(upload_db_data)
-
-            response_data = {'reason': UPLOAD_LOCKED_WORKSPACE}  # Get rid of pylint error
-            status_code = status.HTTP_200_OK
+        response_data = {'reason': UPLOAD_LOCKED_WORKSPACE}  # Get rid of pylint error
+        status_code = status.HTTP_200_OK
 
     except IOError:
         logger.error("%s: Lock workspace request failed ", upload_db_data.upload_id)
@@ -731,20 +729,19 @@ def upload_unlock(upload_id: int) -> Response:
         if upload_db_data is None:
             # Invalid workspace identifier
             raise NotFound(UPLOAD_NOT_FOUND)
+
+        # Lock upload workspace
+        # update database
+        if upload_db_data.lock == Upload.UNLOCKED:
+            logger.info("%s: Unlock: Workspace is already unlocked.", upload_id)
         else:
+            upload_db_data.lock = Upload.UNLOCKED
 
-            # Lock upload workspace
-            # update database
-            if upload_db_data.lock == Upload.UNLOCKED:
-                logger.info("%s: Unlock: Workspace is already unlocked.", upload_id)
-            else:
-                upload_db_data.lock = Upload.UNLOCKED
+            # Store in DB
+            uploads.update(upload_db_data)
 
-                # Store in DB
-                uploads.update(upload_db_data)
-
-            response_data = {'reason': UPLOAD_UNLOCKED_WORKSPACE}  # Get rid of pylint error
-            status_code = status.HTTP_200_OK
+        response_data = {'reason': UPLOAD_UNLOCKED_WORKSPACE}  # Get rid of pylint error
+        status_code = status.HTTP_200_OK
 
     except IOError:
         logger.error("%s: Unlock workspace request failed ", upload_db_data.upload_id)
@@ -798,36 +795,35 @@ def upload_release(upload_id: int) -> Response:
         if upload_db_data is None:
             # Invalid workspace identifier
             raise NotFound(UPLOAD_NOT_FOUND)
-        else:
 
-            # Release upload workspace
-            # update database
+        # Release upload workspace
+        # update database
 
-            if upload_db_data.state == Upload.RELEASED:
-                logger.info("%s: Release: Workspace has already been released.", upload_id)
-                response_data = {'reason': UPLOAD_RELEASED_WORKSPACE}  # Should this be an error?
-                status_code = status.HTTP_200_OK
-            elif upload_db_data.state == Upload.DELETED:
-                logger.info("%s: Release failed: Workspace has been deleted.", upload_id)
-                # response_data = {'reason': UPLOAD_WORKSPACE_ALREADY_DELETED}
-                # status_code = status.HTTP_200_OK
-                raise NotFound(UPLOAD_WORKSPACE_ALREADY_DELETED)
-            elif upload_db_data.state == Upload.ACTIVE:
-                logger.info("%s: Release upload workspace.", upload_id)
+        if upload_db_data.state == Upload.RELEASED:
+            logger.info("%s: Release: Workspace has already been released.", upload_id)
+            response_data = {'reason': UPLOAD_RELEASED_WORKSPACE}  # Should this be an error?
+            status_code = status.HTTP_200_OK
+        elif upload_db_data.state == Upload.DELETED:
+            logger.info("%s: Release failed: Workspace has been deleted.", upload_id)
+            # response_data = {'reason': UPLOAD_WORKSPACE_ALREADY_DELETED}
+            # status_code = status.HTTP_200_OK
+            raise NotFound(UPLOAD_WORKSPACE_ALREADY_DELETED)
+        elif upload_db_data.state == Upload.ACTIVE:
+            logger.info("%s: Release upload workspace.", upload_id)
 
-                upload_db_data.state = Upload.RELEASED
+            upload_db_data.state = Upload.RELEASED
 
-                # Store in DB
-                uploads.update(upload_db_data)
+            # Store in DB
+            uploads.update(upload_db_data)
 
-                response_data = {'reason': UPLOAD_RELEASED_WORKSPACE}  # Get rid of pylint error
-                status_code = status.HTTP_200_OK
+            response_data = {'reason': UPLOAD_RELEASED_WORKSPACE}  # Get rid of pylint error
+            status_code = status.HTTP_200_OK
 
     except IOError:
         logger.error("%s: Release workspace request failed.", upload_db_data.upload_id)
         raise InternalServerError(CANT_RELEASE_WORKSPACE)
     except NotFound as nf:
-        logger.info(f"%s: Release workspace: %s", upload_id, nf)
+        logger.info("%s: Release workspace: %s", upload_id, nf)
         raise
     except Exception as ue:
         logger.info("Unknown error in release workspace. "
@@ -880,29 +876,29 @@ def upload_unrelease(upload_id: int) -> Response:
         if upload_db_data is None:
             # Invalid workspace identifier
             raise NotFound(UPLOAD_NOT_FOUND)
-        else:
 
-            # Unrelease upload workspace
-            # update database
-            if upload_db_data.state == Upload.DELETED:
-                # logger.info(f"{upload_id}: Unrelease Failed: Workspace has been deleted.")
-                # response_data = {'reason': UPLOAD_WORKSPACE_ALREADY_DELETED}
-                # tatus_code = status.HTTP_200_OK
-                raise NotFound(UPLOAD_WORKSPACE_ALREADY_DELETED)
-            elif upload_db_data.state == Upload.ACTIVE:
-                logger.info("%s: Unrelease: Workspace is already active.", upload_id)
-                response_data = {'reason': UPLOAD_UNRELEASED_WORKSPACE}  # Should this be an error?
-                status_code = status.HTTP_200_OK
-            elif upload_db_data.state == Upload.RELEASED:
-                logger.info("%s: Unrelease upload workspace.", upload_id)
+        # Unrelease upload workspace
+        # update database
+        if upload_db_data.state == Upload.DELETED:
+            # logger.info(f"{upload_id}: Unrelease Failed: Workspace has been deleted.")
+            # response_data = {'reason': UPLOAD_WORKSPACE_ALREADY_DELETED}
+            # tatus_code = status.HTTP_200_OK
+            raise NotFound(UPLOAD_WORKSPACE_ALREADY_DELETED)
 
-                upload_db_data.state = Upload.ACTIVE
+        if upload_db_data.state == Upload.ACTIVE:
+            logger.info("%s: Unrelease: Workspace is already active.", upload_id)
+            response_data = {'reason': UPLOAD_UNRELEASED_WORKSPACE}  # Should this be an error?
+            status_code = status.HTTP_200_OK
+        elif upload_db_data.state == Upload.RELEASED:
+            logger.info("%s: Unrelease upload workspace.", upload_id)
 
-                # Store in DB
-                uploads.update(upload_db_data)
+            upload_db_data.state = Upload.ACTIVE
 
-                response_data = {'reason': UPLOAD_UNRELEASED_WORKSPACE}
-                status_code = status.HTTP_200_OK
+            # Store in DB
+            uploads.update(upload_db_data)
+
+            response_data = {'reason': UPLOAD_UNRELEASED_WORKSPACE}
+            status_code = status.HTTP_200_OK
 
     except IOError:
         logger.error("%s: Unrelease workspace request failed.", upload_db_data.upload_id)
@@ -1252,7 +1248,7 @@ def __last_modified(filepath: str) -> str:
     """
     return datetime.utcfromtimestamp(os.path.getmtime(filepath))
 
-def __content_pointer(service_log_path: str) -> io.BytesIO:
+def __content_pointer(log_path: str) -> io.BytesIO:
     """Get a file-pointer for service log.
 
     Parameters
@@ -1266,7 +1262,7 @@ def __content_pointer(service_log_path: str) -> io.BytesIO:
     and HTTP headers.
 
     """
-    return open(service_log_path, 'rb')
+    return open(log_path, 'rb')
 
 
 def check_upload_service_log_exists() -> Response:
