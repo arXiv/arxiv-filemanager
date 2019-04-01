@@ -210,7 +210,7 @@ def delete_workspace(upload_id: int) -> Response:
     return response_data, status_code, {}
 
 
-def client_delete_file(upload_id: str, public_file_path: str) -> Response:
+def client_delete_file(upload_id: int, public_file_path: str) -> Response:
     """Delete a single file.
 
     This request is being received from API so we need to be extra careful.
@@ -255,8 +255,7 @@ def client_delete_file(upload_id: str, public_file_path: str) -> Response:
         upload_workspace.client_remove_file(public_file_path)
 
     except IOError:
-        logger.error("%s: Delete file request failed ",
-                     upload_db_data.upload_id)
+        logger.error("%s: Delete file request failed ", upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
     except NotFound as nf:
         logger.info("%s: DeleteFile: %s", upload_id, nf)
@@ -282,7 +281,7 @@ def client_delete_file(upload_id: str, public_file_path: str) -> Response:
     return response_data, status.HTTP_200_OK, {}
 
 
-def client_delete_all_files(upload_id: str) -> Response:
+def client_delete_all_files(upload_id: int) -> Response:
     """
     Delete all files uploaded by client from specified workspace.
 
@@ -327,7 +326,7 @@ def client_delete_all_files(upload_id: str) -> Response:
 
 
     except IOError:
-        logger.error("%s: Delete all files request failed ", upload_db_data.upload_id)
+        logger.error("%s: Delete all files request failed ", upload_id)
         raise InternalServerError(CANT_DELETE_ALL_FILES)
     except NotFound as nf:
         logger.info("%s: DeleteAllFiles: '%s'", upload_id, nf)
@@ -544,7 +543,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
     except IOError as e:
         logger.error("%s: File upload_db_data request failed "
-                     "for file='%s'", upload_db_data.upload_id, file.filename)
+                     "for file='%s'", upload_id, file.filename)
         raise InternalServerError(f'{UPLOAD_IO_ERROR}: {e}') from e
     except (TypeError, ValueError) as dbe:
         logger.info("Error updating database: '%s'", dbe)
@@ -691,7 +690,7 @@ def upload_lock(upload_id: int) -> Response:
         status_code = status.HTTP_200_OK
 
     except IOError:
-        logger.error("%s: Lock workspace request failed ", upload_db_data.upload_id)
+        logger.error("%s: Lock workspace request failed ", upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
     except NotFound as nf:
         logger.info("%s: Lock: %s", upload_id, nf)
@@ -744,7 +743,7 @@ def upload_unlock(upload_id: int) -> Response:
         status_code = status.HTTP_200_OK
 
     except IOError:
-        logger.error("%s: Unlock workspace request failed ", upload_db_data.upload_id)
+        logger.error("%s: Unlock workspace request failed ", upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
     except NotFound as nf:
         logger.info("%s: Unlock workspace: %s", upload_id, nf)
@@ -820,7 +819,7 @@ def upload_release(upload_id: int) -> Response:
             status_code = status.HTTP_200_OK
 
     except IOError:
-        logger.error("%s: Release workspace request failed.", upload_db_data.upload_id)
+        logger.error("%s: Release workspace request failed.", upload_id)
         raise InternalServerError(CANT_RELEASE_WORKSPACE)
     except NotFound as nf:
         logger.info("%s: Release workspace: %s", upload_id, nf)
@@ -901,7 +900,7 @@ def upload_unrelease(upload_id: int) -> Response:
             status_code = status.HTTP_200_OK
 
     except IOError:
-        logger.error("%s: Unrelease workspace request failed.", upload_db_data.upload_id)
+        logger.error("%s: Unrelease workspace request failed.", upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
     except NotFound as nf:
         logger.info("%s: Unrelease workspace: '%s'", upload_id, nf)
@@ -933,8 +932,8 @@ def check_upload_content_exists(upload_id: int) -> Response:
     try:
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
     except IOError:
-        logger.error("%s: ContentExistsCheck: There was a problem connecting to database.",
-                     upload_db_data.upload_id)
+        logger.error("%s: ContentExistsCheck: There was a problem connecting "
+                     "to database.", upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
 
     if upload_db_data is None:
@@ -976,8 +975,8 @@ def get_upload_content(upload_id: int) -> Response:
     try:
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
     except IOError:
-        logger.error("%s: ContentDownload: There was a problem connecting to database.",
-                     upload_db_data.upload_id)
+        logger.error("%s: ContentDownload: There was a problem connecting "
+                     "to database.", upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
 
     if upload_db_data is None:
@@ -1014,8 +1013,8 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
     try:
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
     except IOError:
-        logger.error("%s: ContentFileExistsCheck: There was a problem connecting to database.",
-                     upload_db_data.upload_id)
+        logger.error("%s: ContentFileExistsCheck: There was a problem "
+                     "connecting to database.", upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
 
     if upload_db_data is None:

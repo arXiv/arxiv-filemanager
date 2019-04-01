@@ -219,7 +219,7 @@ class TestInternalSupportRoutines(TestCase):
     Test internal process routines.
     """
 
-    def test_get_upload_directory(self):
+    def test_get_upload_directory(self) -> None:
         """Test getting root upload workspace directory."""
         upload = Upload(12345678)
         workspace_dir = upload.get_upload_directory()
@@ -228,7 +228,7 @@ class TestInternalSupportRoutines(TestCase):
         # cleanup workspace
         upload.remove_workspace()
 
-    def test_create_upload_directory(self):
+    def test_create_upload_directory(self) -> None:
         """Test creating upload workspace direcrtory."""
         upload = Upload(12345679)
         workspace_dir = upload.create_upload_directory()
@@ -237,7 +237,7 @@ class TestInternalSupportRoutines(TestCase):
         # cleanup workspace
         upload.remove_workspace()
 
-    def test_get_source_directory(self):
+    def test_get_source_directory(self) -> None:
         """Test getting source directory."""
         upload = Upload(12345680)
         source_dir = upload.get_source_directory()
@@ -246,7 +246,7 @@ class TestInternalSupportRoutines(TestCase):
         # cleanup workspace
         upload.remove_workspace()
 
-    def test_get_removed_directory(self):
+    def test_get_removed_directory(self) -> None:
         """Test getting removed directory where we stick deleted items."""
         upload = Upload(12345680)
         removed_dir = upload.get_removed_directory()
@@ -255,7 +255,7 @@ class TestInternalSupportRoutines(TestCase):
         # cleanup workspace
         upload.remove_workspace()
 
-    def test_create_upload_workspace(self):
+    def test_create_upload_workspace(self) -> None:
         """Test creating upload workspace with subdirectories."""
         upload = Upload(12345681)
         workspace_dir = upload.create_upload_workspace()
@@ -267,7 +267,7 @@ class TestInternalSupportRoutines(TestCase):
         self.assertEqual(rem_dir_exists, True, 'Create workspace removed directory.')
         upload.remove_workspace()
 
-    def test_deposit_upload(self):
+    def test_deposit_upload(self) -> None:
         """Test upload file deposit into src directory."""
         tfilename = os.path.join(TEST_FILES_DIRECTORY, '1801.03879-1.tar.gz')
         self.assertTrue(os.path.exists(tfilename), 'Test archive is available')
@@ -300,7 +300,7 @@ class TestInternalSupportRoutines(TestCase):
         # cleanup workspace
         upload.remove_workspace()
 
-    def test_check_file_termination(self):
+    def test_check_file_termination(self) -> None:
         """
         Test the filtering of unwanted characters from the end of file.
         :return:
@@ -380,12 +380,12 @@ class TestInternalSupportRoutines(TestCase):
         is_same = filecmp.cmp(destfilename, reference)
         self.assertTrue(is_same, 'Eliminated unwanted EOT terminators.')
 
-    def test_check_file_unmacify(self):
+    def test_check_file_unmacify(self) -> None:
         """
         Test the filtering of unwanted CR characters from specified file.
         :return:
         """
-        def has_cr(path):
+        def has_cr(path: str) -> bool:
             with open(path, 'rb') as f:
                 for line in f:
                     if re.search(b'\r\n?', line) is not None:
@@ -514,7 +514,7 @@ class TestInternalSupportRoutines(TestCase):
         upload.remove_workspace()
 
 
-    def test_check_postscript(self):
+    def test_check_postscript(self) -> None:
         """
         Test the filtering of unwanted previews in Postscript file.
         :return:
@@ -553,7 +553,7 @@ class TestInternalSupportRoutines(TestCase):
         upload.remove_workspace()
 
 
-    def test_strip_tiff(self):
+    def test_strip_tiff(self) -> None:
         """
         Test removing trailing tiff from Postscript file.
         :return:
@@ -618,7 +618,7 @@ class TestInternalSupportRoutines(TestCase):
         # cleanup workspace
         #upload.remove_workspace()
 
-    def test_postscript_repair(self):
+    def test_postscript_repair(self) -> None:
         """
         Test Postscript repair routine.
 
@@ -703,7 +703,7 @@ class TestInternalSupportRoutines(TestCase):
         upload.remove_workspace()
 
 
-    def test_repair_dos_eps(self):
+    def test_repair_dos_eps(self) -> None:
         """
         Test eps Postscript repair routine.
 

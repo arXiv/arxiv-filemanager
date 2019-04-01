@@ -8,7 +8,7 @@ in terms of our downstream TeX compilation process.
 import os
 import os.path
 import re
-from typing import Tuple
+from typing import Tuple, Any
 
 # TeX types
 TEX_types = ['TYPE_LATEX',
@@ -131,7 +131,7 @@ type_name['TYPE_INCLUDE'] = ' keep'
 
 
 # Select bewteen PDFLATEX and LATEX2e types.
-def _type_of_latex2e(file, count: int) -> Tuple[str, str, str]:
+def _type_of_latex2e(file: Any, count: int) -> Tuple[str, str, str]:
     """Determine whether file is PDFLATEX or LATEX2e."""
     limit = count + 5
 

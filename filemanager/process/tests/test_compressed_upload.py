@@ -14,16 +14,16 @@ TEST_FILES_DIRECTORY = os.path.join(os.getcwd(), 'tests/test_files_upload')
 
 
 class TestCompressedUpload(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Create a new upload workspace."""
         self.workspace = Upload(12345678)
         self.fpath = os.path.join(TEST_FILES_DIRECTORY, 'upload7.tar.gz')
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Remove the temporary workspace."""
         self.workspace.remove_workspace()
 
-    def test_content_package_stale(self):
+    def test_content_package_stale(self) -> None:
         """The content package is stale when it does not exist."""
         with open(self.fpath, 'rb') as f:
             self.workspace.process_upload(FileStorage(f))
@@ -34,7 +34,7 @@ class TestCompressedUpload(TestCase):
         self.assertFalse(self.workspace.content_package_stale,
                          "The package is not stale, because we just packed it")
 
-    def test_content_package_exists(self):
+    def test_content_package_exists(self) -> None:
         """The content package does not exist...until it does."""
         with open(self.fpath, 'rb') as f:
             self.workspace.process_upload(FileStorage(f))
@@ -45,7 +45,7 @@ class TestCompressedUpload(TestCase):
         self.assertTrue(self.workspace.content_package_exists,
                         "It certainly exists now, because we just packed it")
 
-    def test_content_package_modified(self):
+    def test_content_package_modified(self) -> None:
         """Get the datetime when the content was last modified."""
         with open(self.fpath, 'rb') as f:
             self.workspace.process_upload(FileStorage(f))
@@ -58,7 +58,7 @@ class TestCompressedUpload(TestCase):
         self.assertLess(delta, timedelta(seconds=1),
                         "The package was just modified")
 
-    def test_content_package_size(self):
+    def test_content_package_size(self) -> None:
         """Get the size of the package."""
         self.assertEqual(self.workspace.content_package_size, 0,
                          "There is no content")
@@ -73,7 +73,7 @@ class TestCompressedUpload(TestCase):
         self.assertFalse(self.workspace.content_package_stale,
                          "The package is not stale, because we just packed it")
 
-    def test_content_package_size_after_removing_workspace(self):
+    def test_content_package_size_after_removing_workspace(self) -> None:
         """The entire workspace is removed."""
         with open(self.fpath, 'rb') as f:
             self.workspace.process_upload(FileStorage(f))
@@ -84,7 +84,7 @@ class TestCompressedUpload(TestCase):
         self.workspace = Upload(12345678)
         self.assertEqual(self.workspace.content_package_size, 0, "Still gone!")
 
-    def test_content_package_size_after_removing_all_files(self):
+    def test_content_package_size_after_removing_all_files(self) -> None:
         """All of the files are removed from the workspace."""
         with open(self.fpath, 'rb') as f:
             self.workspace.process_upload(FileStorage(f))
@@ -97,7 +97,7 @@ class TestCompressedUpload(TestCase):
         self.workspace = Upload(12345678)
         self.assertEqual(self.workspace.content_package_size, 0, "Still gone!")
 
-    def test_content_package_size_after_removing_a_file(self):
+    def test_content_package_size_after_removing_a_file(self) -> None:
         """One of the files is removed from the workspace."""
         with open(self.fpath, 'rb') as f:
             self.workspace.process_upload(FileStorage(f))
@@ -109,7 +109,7 @@ class TestCompressedUpload(TestCase):
         self.assertLess(self.workspace.content_package_size, original_size,
                         "The package is smaller than it was before")
 
-    def test_get_content(self):
+    def test_get_content(self) -> None:
         """Get a pointer to the package."""
         with self.assertRaises(FileNotFoundError):
             self.workspace.get_content()

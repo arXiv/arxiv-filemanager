@@ -163,7 +163,7 @@ class Upload:
         self.calculate_client_upload_size()
 
     # Debug
-    def set_debug(self, set: bool):
+    def set_debug(self, set: bool) -> None:
         """
         Activate/deactivate debugging.
 
@@ -178,7 +178,7 @@ class Upload:
         """
         self.__debug = set
 
-    def debug(self):
+    def debug(self) -> bool:
         """Return value of debug setting. True = on."""
         return self.__debug
 
@@ -242,9 +242,6 @@ class Upload:
         -------
         None
         """
-        # print('Warning: ' + msg) # temporary, until logging implemented
-        # Log warning
-        ##msg = 'Warning: ' + msg
         #  TODO: This breaks tests. Don't reformat message for now. Wait until
         #  next sprint.
         self.__log.warning(msg)
@@ -254,7 +251,7 @@ class Upload:
         # self.__warnings.append(msg)
         self.__warnings.append(entry)
 
-    def has_warnings(self):
+    def has_warnings(self) -> int:
         """Indicates whether upload has warnings."""
         return len(self.__warnings)
 
@@ -294,7 +291,7 @@ class Upload:
         entry = [public_filepath, msg]
         self.__errors.append(entry)
 
-    def has_errors(self):
+    def has_errors(self) -> int:
         """Indicates whether upload has errors."""
         return len(self.__errors)
 
@@ -323,7 +320,7 @@ class Upload:
 
         return False
 
-    def clear_warnings_and_errors(self):
+    def clear_warnings_and_errors(self) -> None:
         """
         Clear out warnings, errors, and files.
 
@@ -347,7 +344,7 @@ class Upload:
         """
         return self.__upload_id
 
-    def remove_file(self, file: File, msg: str) -> bool:
+    def remove_file(self, file: File, msg: str) -> None:
         """
         Remove file from source directory.
 
@@ -611,15 +608,11 @@ class Upload:
         self.log(f"File to delete not found: '{public_file_path}' '{filename}'")
         raise NotFound(UPLOAD_FILE_NOT_FOUND)
 
-    def client_remove_all_files(self) -> bool:
+    def client_remove_all_files(self) -> None:
         """Delete all files uploaded by client from specified workspace.
 
         For client delete requests we assume they have copies of original files and
         therefore do NOT backup files.
-
-        Returns
-        -------
-        True if all files were removed successfully. False otherwise.
 
         """
         self.log('********** Delete ALL Files ************\n')
@@ -661,7 +654,7 @@ class Upload:
         upload_directory = os.path.join(root_path, str(self.upload_id))
         return upload_directory
 
-    def create_upload_directory(self):
+    def create_upload_directory(self) -> str:
         """Create the base directory for upload workarea."""
         root_path = _get_base_directory()
 
@@ -702,7 +695,7 @@ class Upload:
             os.mkdir(path)
         return path
 
-    def create_upload_workspace(self):
+    def create_upload_workspace(self) -> str:
         """Create directories for upload work area."""
         # Create main directory
         base_dir = self.create_upload_directory()
@@ -726,11 +719,11 @@ class Upload:
 
         return base_dir
 
-    def get_upload_source_log_path(self):
+    def get_upload_source_log_path(self) -> str:
         """Generate path for upload source log."""
         return os.path.join(self.get_upload_directory(), 'source.log')
 
-    def create_upload_log(self):
+    def create_upload_log(self) -> None:
         """Create a source log to record activity for this upload."""
         # Grab standard logger and customized it
         logger = logging.getLogger(__name__)
@@ -747,7 +740,7 @@ class Upload:
 
         self.__log = logger
 
-    def log(self, message: str):
+    def log(self, message: str) -> None:
         """Write message to upload log."""
         self.__log.info(message)
 
@@ -1234,7 +1227,7 @@ class Upload:
                 # End of file type checks
 
 
-    def check_file_termination(self, file_obj: File):
+    def check_file_termination(self, file_obj: File) -> None:
         r"""
         Check for unwanted characters at end of file.
 
@@ -1319,7 +1312,7 @@ class Upload:
                                   "not end with newline (\\n), TRUNCATED?."))
 
 
-    def unmacify(self, file_obj: File):
+    def unmacify(self, file_obj: File) -> None:
         """
         Cleans up files containing carriage returns and line feeds.
 
@@ -1453,7 +1446,7 @@ class Upload:
                 self.add_warning(file_obj.name, msg)
 
 
-    def strip_preview(self, file_obj: File, what_to_strip: str):
+    def strip_preview(self, file_obj: File, what_to_strip: str) -> None:
         """
         Remove embedded preview from Postscript file.
 
@@ -1925,7 +1918,7 @@ class Upload:
         msg = "NOT IMPLEMENTED: graphic error routine needs to be implemented."
         self.add_warning(file_obj.public_filepath, msg)
 
-    def extract_uu(self, file_name: str, file_type: str):
+    def extract_uu(self, file_name: str, file_type: str) -> None:
         """Extract uuencode content from file."""
         self.log(f'Looking for uu attachment in {file_name} of type {file_type}')
         self.log(f"I'm sorry Dave I'm afraid I can't do that. uu extract not implemented YET.")
@@ -1957,7 +1950,7 @@ class Upload:
         """
         self.__total_upload_size = total_size
 
-    def calculate_client_upload_size(self):
+    def calculate_client_upload_size(self) -> None:
         """
         Calculate total size of client's upload workspace source files.
 
@@ -2137,7 +2130,7 @@ class Upload:
             # Rebuild file list
             self.create_file_list()
 
-    def finalize_upload(self):
+    def finalize_upload(self) -> None:
         """
         Checks to be performed after files are uploaded and sanitized.
 
@@ -2604,7 +2597,7 @@ class Upload:
         return None
 
 
-    def fix_file_ext(self, file_obj: File, new_extension: str) -> File:
+    def fix_file_ext(self, file_obj: File, new_extension: str) -> Optional[File]:
         """
         Rename a file on disk to have the specified extension.
 
