@@ -1197,7 +1197,7 @@ class Upload:
                     # TODO: Implement repair_ps
                     # Seeing very few of this type in recent submissions
                     # leer.eps header repaired to: %!PS-Adobe-2.0 EPSF-2.0
-                    pass
+                    self.repair_postscript(obj)
 
                 # Repair dos eps
                 elif file_type == 'dos_eps':
