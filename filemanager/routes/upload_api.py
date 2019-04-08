@@ -10,21 +10,23 @@ from werkzeug.exceptions import NotFound, Forbidden, Unauthorized, \
     InternalServerError, HTTPException, BadRequest
 from arxiv.base import routes as base_routes
 from arxiv.base import logging
-from arxiv import status
+from http import HTTPStatus
+
 from arxiv.users import domain as auth_domain
 from arxiv.users.auth import scopes
 
 from arxiv.users.auth.decorators import scoped
 
-from filemanager.services import uploads
-from filemanager.controllers import upload
+from ..services import uploads
+from ..controllers import upload, status
 
 
 logger = logging.getLogger(__name__)
 blueprint = Blueprint('upload_api', __name__, url_prefix='/filemanager/api')
 
 
-def is_owner(session: auth_domain.Session, upload_id: str, **kwargs: Any) -> bool:
+def is_owner(session: auth_domain.Session, upload_id: str,
+             **kwargs: Any) -> bool:
     """User must be the upload owner, or an admin."""
     upload_obj = uploads.retrieve(upload_id)
     if upload_obj is None:
@@ -36,8 +38,15 @@ def is_owner(session: auth_domain.Session, upload_id: str, **kwargs: Any) -> boo
 
 @blueprint.route('/status', methods=['GET'])
 def service_status() -> tuple:
-    """Health check endpoint."""
-    return jsonify({'status': 'OK', 'total_uploads': 1}), status.HTTP_200_OK
+    """
+    Readiness endpoint.
+
+    This route quickly exercises the downstream services/systems upon which
+    the filemanager service depends. If all is well, returns 200 OK. Otherwise,
+    returns 503 Service Unavailable.
+    """
+    response_data, code, headers = status.service_status()
+    return jsonify(response_data), code, headers
 
 
 @blueprint.route('/', methods=['POST'])

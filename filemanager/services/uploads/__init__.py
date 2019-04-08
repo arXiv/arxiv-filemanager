@@ -1,6 +1,7 @@
 """Provides access to the uploads data store."""
 
 from typing import Any, Dict, Optional
+import time
 from datetime import datetime
 from pytz import UTC
 from werkzeug.local import LocalProxy
@@ -16,6 +17,16 @@ logger = logging.getLogger(__name__)
 def init_app(app: Optional[LocalProxy]) -> None:
     """Set configuration defaults and attach session to the application."""
     db.init_app(app)
+
+
+def is_available() -> bool:
+    """Make a quick check to see whether databse is available."""
+    try:
+        db.session.execute('SELECT 1')
+        return True
+    except Exception as e:
+        logger.error(f'Database not available: %s', e)
+        return False
 
 
 def retrieve(upload_id: int, skip_cache: bool = False) -> Optional[Upload]:
