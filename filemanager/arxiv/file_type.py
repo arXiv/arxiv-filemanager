@@ -8,7 +8,7 @@ in terms of our downstream TeX compilation process.
 import os
 import os.path
 import re
-from typing import Tuple
+from typing import Tuple, Any
 
 # TeX types
 TEX_types = ['TYPE_LATEX',
@@ -131,7 +131,7 @@ type_name['TYPE_INCLUDE'] = ' keep'
 
 
 # Select bewteen PDFLATEX and LATEX2e types.
-def _type_of_latex2e(file, count: int) -> Tuple[str, str, str]:
+def _type_of_latex2e(file: Any, count: int) -> Tuple[str, str, str]:
     """Determine whether file is PDFLATEX or LATEX2e."""
     limit = count + 5
 
@@ -410,7 +410,6 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
                               + rb'\\special|\\baselineskip|\\begin)',
                               line).group(2)
             if set == 0:
-                print("Set HINT TYPE_TEX 0 (line:[" + str(line_no) + "]\n" + str(match))
                 set = 1
             if re.search(rb'\\input\s+amstex', line):
                 return 'TYPE_TEX_priority', '', ''
@@ -438,7 +437,6 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
             if maybe_tex_priority:
                 return 'TYPE_TEX_priority', '', ''
             if maybe_tex:
-                print("Set TYPE_TEX 1\n")
                 return 'TYPE_TEX', '', ''
             if re.search(b'\r$', line):
                 return 'TYPE_PC', '', ''
@@ -457,7 +455,6 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
     if maybe_tex_priority2:
         return 'TYPE_TEX_priority2', '', ''
     if maybe_tex:
-        print("Set TYPE_TEX 2\n")
         return 'TYPE_TEX', '', ''
 
     # Failed type identification

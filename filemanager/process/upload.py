@@ -3,7 +3,7 @@
 import os
 import re
 from datetime import datetime
-from pytz import UTC
+
 import shutil
 import tarfile
 import logging
@@ -13,6 +13,10 @@ import io
 import mmap
 import filecmp
 from typing import Optional, Union
+import struct
+
+from pytz import UTC
+
 
 from werkzeug.exceptions import BadRequest, NotFound, SecurityError
 from werkzeug.datastructures import FileStorage
@@ -22,6 +26,7 @@ from arxiv.base.globals import get_application_config
 from filemanager.arxiv.file import File as File
 from filemanager.utilities.unpack import unpack_archive
 
+
 UPLOAD_FILE_EMPTY = 'file payload is zero length'
 UPLOAD_DELETE_FILE_FAILED = 'unable to delete file'
 UPLOAD_DELETE_ALL_FILE_FAILED = 'unable to delete all file'
@@ -29,7 +34,7 @@ UPLOAD_FILE_NOT_FOUND = 'file not found'
 UPLOAD_WORKSPACE_NOT_FOUND = 'workspcae not found'
 
 # File types unmacify is interested in
-PC  = 'pc'
+PC = 'pc'
 MAC = 'mac'
 
 # Types of embedded content
@@ -116,16 +121,17 @@ class Upload:
     diagrams_warning = (
         "REMOVING standard style files for Paul Taylor's "
         "diagrams package. This package is supported in arXiv's TeX "
-        "tree and the style files are thus unnecessary. "
-        "Furthermore, they include 'time-bomb' code which will render submissions that "
-        "include them unprocessable at some time in the future."
+        "tree and the style files are thus unnecessary. Furthermore, they "
+        "include 'time-bomb' code which will render submissions that include "
+        "them unprocessable at some time in the future."
     )
 
     """Missing fonts warning message."""
     missfont_warning = (
-        "Removed file 'missfont.log'. Detected 'missfont.log' file in uploaded files. This may indicate a problem "
-        "with the fonts your submission uses. Please correct any issues with fonts and "
-        "be sure to examine the fonts in the final preview PDF that our system generates."
+        "Removed file 'missfont.log'. Detected 'missfont.log' file in uploaded"
+        " files. This may indicate a problem with the fonts your submission"
+        " uses. Please correct any issues with fonts and be sure to examine "
+        "the fonts in the final preview PDF that our system generates."
     )
 
 
@@ -157,7 +163,7 @@ class Upload:
         self.calculate_client_upload_size()
 
     # Debug
-    def set_debug(self, set: bool):
+    def set_debug(self, set: bool) -> None:
         """
         Activate/deactivate debugging.
 
@@ -172,7 +178,7 @@ class Upload:
         """
         self.__debug = set
 
-    def debug(self):
+    def debug(self) -> bool:
         """Return value of debug setting. True = on."""
         return self.__debug
 
@@ -193,8 +199,8 @@ class Upload:
         This will return True regardless of whether we have processed the files
         in any way.
         """
-        for root, _, files in os.walk(self.get_source_directory()):
-            for file in files:
+        for _, _, files in os.walk(self.get_source_directory()):
+            for _ in files:
                 return True
         return False
 
@@ -236,10 +242,8 @@ class Upload:
         -------
         None
         """
-        # print('Warning: ' + msg) # temporary, until logging implemented
-        # Log warning
-        ##msg = 'Warning: ' + msg
-        #  TODO: This breaks tests. Don't reformat message for now. Wait until next sprint.
+        #  TODO: This breaks tests. Don't reformat message for now. Wait until
+        #  next sprint.
         self.__log.warning(msg)
 
         # Add to internal list to make it easier to manipulate
@@ -247,7 +251,7 @@ class Upload:
         # self.__warnings.append(msg)
         self.__warnings.append(entry)
 
-    def has_warnings(self):
+    def has_warnings(self) -> int:
         """Indicates whether upload has warnings."""
         return len(self.__warnings)
 
@@ -269,12 +273,8 @@ class Upload:
             True if warning we are searching for exists. False otherwise.
         """
         for entry in self.__warnings:
-            # Turn this into debugging
             #filename, warning = entry
-            #print(f"Look for '{search}' in \n\t '{warning}'")
-
-
-            filename, warning = entry
+            _, warning = entry
             if re.match(search, warning):
                 return True
 
@@ -291,7 +291,7 @@ class Upload:
         entry = [public_filepath, msg]
         self.__errors.append(entry)
 
-    def has_errors(self):
+    def has_errors(self) -> int:
         """Indicates whether upload has errors."""
         return len(self.__errors)
 
@@ -313,18 +313,14 @@ class Upload:
             True if error we are searching for exists. False otherwise.
         """
         for entry in self.__errors:
-            # Turn this into debugging
             #filename, error = entry
-            #print(f"Look for '{search}' in \n\t '{error}'")
-            #print("ret: " + str(re.search(search, warning)))
-
-            filename, error = entry
+            _, error = entry
             if re.match(search, error):
                 return True
 
         return False
 
-    def clear_warnings_and_errors(self):
+    def clear_warnings_and_errors(self) -> None:
         """
         Clear out warnings, errors, and files.
 
@@ -348,7 +344,7 @@ class Upload:
         """
         return self.__upload_id
 
-    def remove_file(self, file: File, msg: str) -> bool:
+    def remove_file(self, file: File, msg: str) -> None:
         """
         Remove file from source directory.
 
@@ -383,7 +379,8 @@ class Upload:
             # Remove file from file list (just in case called from somewhere other than process)
             self.remove_file_from_list(file)
         else:
-            self.add_warning("*** FAILED to remove file " + filepath + " ***")
+            self.add_warning(file.public_filepath,
+                             f"*** FAILED to remove file '{filepath}' ***")
 
         # Add reason for removal to File object
         file.remove(msg)
@@ -464,7 +461,8 @@ class Upload:
         # This error must be propagated to wider notification level beyond source log.
         if re.search(r'^/|^\.\./|\.\./', public_file_path):
             # should never start with '/' or '../' or contain '..' anywhere in path.
-            message = f"SECURITY WARNING: file to delete contains illegal constructs: '{public_file_path}'"
+            message = f"SECURITY WARNING: file to delete contains illegal " \
+                      f"constructs: '{public_file_path}'"
             self.log(message)
             raise SecurityError(message)
 
@@ -475,7 +473,8 @@ class Upload:
         # The length of file path should not change (need to check secure_filename)
         # so if length changes generate warning.
         if len(public_file_path) != len(filename):
-            message = f"SECURITY WARNING: sanitized file is different length: '{filename}' <=> '{public_file_path}'"
+            message = f"SECURITY WARNING: sanitized file is different " \
+                      f"length: '{filename}' <=> '{public_file_path}'"
             self.log(message)
             raise SecurityError(message)
 
@@ -488,7 +487,8 @@ class Upload:
 
         # Check if original path might be subdirectory.
         # We've made it past serious threat checks above.
-        if not os.path.exists(file_path) and re.search(r'_', filename) and re.search(r'/', public_file_path):
+        if not os.path.exists(file_path) and re.search(r'_', filename) \
+                and re.search(r'/', public_file_path):
             if len(filename) == len(public_file_path):
                 # May be issue of directory delimiter converted to '_'
                 # Check if raw path exists
@@ -506,8 +506,8 @@ class Upload:
             # Build arguments for File object
             file_obj = File(file_path, source_directory)
             return file_obj
-        else:
-            return None
+
+        return None
 
     def client_remove_file(self, public_file_path: str) -> bool:
         """Delete a single file.
@@ -545,7 +545,8 @@ class Upload:
         # This error must be propagated to wider notification level beyond source log.
         if re.search(r'^/|^\.\./|\.\./', public_file_path):
             # should never start with '/' or '../' or contain '..' anywhere in path.
-            message = f"SECURITY WARNING: file to delete contains illegal constructs: '{public_file_path}'"
+            message = f"SECURITY WARNING: file to delete contains illegal " \
+                      f"constructs: '{public_file_path}'"
             self.log(message)
             raise SecurityError(message)
 
@@ -556,7 +557,8 @@ class Upload:
         # The length of file path should not change (need to check secure_filename)
         # so if length changes generate warning.
         if len(public_file_path) != len(filename):
-            message = f"SECURITY WARNING: sanitized file is different length: '{filename}' <=> '{public_file_path}'"
+            message = f"SECURITY WARNING: sanitized file is different " \
+                      f"length: '{filename}' <=> '{public_file_path}'"
             self.log(message)
             raise SecurityError(message)
 
@@ -569,7 +571,8 @@ class Upload:
 
         # Check if original path might be subdirectory.
         # We've made it past serious threat checks above.
-        if not os.path.exists(file_path) and re.search(r'_', filename) and re.search(r'/', public_file_path):
+        if not os.path.exists(file_path) and re.search(r'_', filename) \
+                and re.search(r'/', public_file_path):
             if len(filename) == len(public_file_path):
                 # May be issue of directory delimiter converted to '_'
                 # Check if raw path exists
@@ -595,27 +598,21 @@ class Upload:
 
             if shutil.move(file_path, removed_path):
                 self.log(f"Moved file from {file_path} to {removed_path}")
+                # Recalculate total upload workspace source directory size
+                self.calculate_client_upload_size()
                 return True
-            else:
-                self.log(f"*** FAILED to remove file '{file_path}'/{clean_public_path} ***")
-                return False
 
-            # Recalculate total upload workspace source directory size
-            self.calculate_client_upload_size()
+            self.log(f"*** FAILED to remove file '{file_path}'/{clean_public_path} ***")
+            return False
 
-        else:
-            self.log(f"File to delete not found: '{public_file_path}' '{filename}'")
-            raise NotFound(UPLOAD_FILE_NOT_FOUND)
+        self.log(f"File to delete not found: '{public_file_path}' '{filename}'")
+        raise NotFound(UPLOAD_FILE_NOT_FOUND)
 
-    def client_remove_all_files(self) -> bool:
+    def client_remove_all_files(self) -> None:
         """Delete all files uploaded by client from specified workspace.
 
         For client delete requests we assume they have copies of original files and
         therefore do NOT backup files.
-
-        Returns
-        -------
-        True if all files were removed successfully. False otherwise.
 
         """
         self.log('********** Delete ALL Files ************\n')
@@ -657,7 +654,7 @@ class Upload:
         upload_directory = os.path.join(root_path, str(self.upload_id))
         return upload_directory
 
-    def create_upload_directory(self):
+    def create_upload_directory(self) -> str:
         """Create the base directory for upload workarea."""
         root_path = _get_base_directory()
 
@@ -698,7 +695,7 @@ class Upload:
             os.mkdir(path)
         return path
 
-    def create_upload_workspace(self):
+    def create_upload_workspace(self) -> str:
         """Create directories for upload work area."""
         # Create main directory
         base_dir = self.create_upload_directory()
@@ -722,11 +719,11 @@ class Upload:
 
         return base_dir
 
-    def get_upload_source_log_path(self):
+    def get_upload_source_log_path(self) -> str:
         """Generate path for upload source log."""
         return os.path.join(self.get_upload_directory(), 'source.log')
 
-    def create_upload_log(self):
+    def create_upload_log(self) -> None:
         """Create a source log to record activity for this upload."""
         # Grab standard logger and customized it
         logger = logging.getLogger(__name__)
@@ -743,7 +740,7 @@ class Upload:
 
         self.__log = logger
 
-    def log(self, message: str):
+    def log(self, message: str) -> None:
         """Write message to upload log."""
         self.__log.info(message)
 
@@ -791,23 +788,26 @@ class Upload:
 
     # These messages take parameters
 
-    def bbl_missing_error(self, basename : str):
+    def bbl_missing_error(self, basename: str) -> str:
         """Missing .bbl file detailed warning message."""
-        bbl_missing_error = (f"Your submission contained {basename}.bib file, but no"
-                             f" {basename}.bbl file (include {basename}.bbl, or "
-                             f"submit without {basename}.bib; and remember to verify references)."
-                             )
-        return bbl_missing_error
+        bbl_missing_error_msg = \
+            (f"Your submission contained {basename}.bib file, "
+             f"but no {basename}.bbl file (include {basename}.bbl, or "
+             f"submit without {basename}.bib; and remember to "
+             f"verify references)."
+             )
+        return bbl_missing_error_msg
 
-    def graphic_error(self, format: str) -> str:
+    def get_graphic_error_msg(self, format: str) -> str:
         """Unsupported graphic format error message."""
-        graphic_error = (f"{format} is not a supported graphics format: most "
-                         "readers do not have the programs needed to view and print "
-                         ".$format figures. Please save your [% format %] "
-                         "figures instead as PostScript, PNG, JPEG, or GIF "
-                         "(PNG/JPEG/GIF files can be viewed and printed with "
-                         "any graphical web browser) -- for more information.")
-        return graphic_error
+        graphic_error_msg = \
+            (f"{format} is not a supported graphics format: most "
+             "readers do not have the programs needed to view and print "
+             ".$format figures. Please save your [% format %] "
+             "figures instead as PostScript, PNG, JPEG, or GIF "
+             "(PNG/JPEG/GIF files can be viewed and printed with "
+             "any graphical web browser) -- for more information.")
+        return graphic_error_msg
 
     # TODO: once we are happy with the overall behavior of this class, this
     # might be a good place to start refactoring/decomposing. It may make sense
@@ -918,7 +918,7 @@ class Upload:
 
                 # We need to check this before tilde character gets translated to undderscore.
                 # Otherwise this warning never gets generated properly for .tex~
-                if re.search('(.+)\.(tex_|tex.bak|tex\~)$', file_name, re.IGNORECASE):
+                if re.search(r'(.+)\.(tex_|tex.bak|tex\~)$', file_name, re.IGNORECASE):
                     msg = f"File '{file_name}' may be a backup file. Please "\
                           "inspect and remove extraneous backup files."
                     _warnings.append(msg)
@@ -1008,7 +1008,7 @@ class Upload:
                     obj = _add_file(file_path, _warnings, _errors)
 
                     # Create path to bbl file - assume uses same basename as .bib
-                    filebase, file_extension = os.path.splitext(file_name)
+                    filebase, _ = os.path.splitext(file_name)
                     bbl_file = filebase + ".bbl"
                     bbl_path = os.path.join(source_directory, bbl_file)
 
@@ -1050,10 +1050,12 @@ class Upload:
                     # TeX: Check for aa.dem
                     # This is demo file that authors seem to include with
                     # their submissions.
-                    self.add_warning(obj.public_filepath, f"Removing file '{file_name}' on the assumption that it is " \
-                        'the example file for the Astronomy and Astrophysics ' \
-                        'macro package aa.cls.'
-                    )
+                    self.add_warning \
+                        (obj.public_filepath,
+                         f"Removing file '{file_name}' on the assumption that it is "
+                         'the example file for the Astronomy and Astrophysics '
+                         'macro package aa.cls.'
+                         )
                     self.remove_file(obj, "")
                 elif file_name == 'missfont.log':
                     msg = Upload.missfont_warning
@@ -1064,13 +1066,13 @@ class Upload:
                     msg = f"Removed file '{file_name}'. SyncTeX files are not used by our" \
                           " system and may be large."
                     self.remove_file(obj, msg)
-                elif re.search('(.+)\.(log|aux|out|blg|dvi|ps|pdf)$', file_name,
+                elif re.search(r'(.+)\.(log|aux|out|blg|dvi|ps|pdf)$', file_name,
                                re.IGNORECASE):
                     # TeX: Check for TeX processed output files (log, aux,
                     # blg, dvi, ps, pdf, etc.)
                     # Detect naming conflict, warn, remove offending files.
                     # Check if certain source files exist
-                    filebase, file_extension = os.path.splitext(file_name)
+                    filebase, _ = os.path.splitext(file_name)
                     tex_file = os.path.join(root_directory, filebase + '.tex')
                     upper_case_tex_file = os.path.join(root_directory, filebase + '.TEX')
 
@@ -1195,13 +1197,23 @@ class Upload:
                     # TODO: Implement repair_ps
                     # Seeing very few of this type in recent submissions
                     # leer.eps header repaired to: %!PS-Adobe-2.0 EPSF-2.0
-                    pass
+                    self.repair_postscript(obj)
 
                 # Repair dos eps
                 elif file_type == 'dos_eps':
-                    # TODO: Implement repair_dos_eps
-                    # Still seeing dos_eps type in recent submissions
-                    pass
+                    # Let's be specific about what we are doing.
+                    fixed = self.repair_dos_eps(obj)
+                    if fixed:
+                        # stripped TIFF
+                        if re.search('leading', fixed):
+                            msg = f"leading TIFF preview stripped"
+                        if re.search('trailing', fixed):
+                            msg = f"trailing TIFF preview stripped"
+                        self.add_warning(obj.public_filepath, msg)
+                    else:
+                        msg = "Failed to strip TIFF preview"
+                        self.add_warning(obj.public_filepath, msg)
+                        self.repair_postscript(obj)
 
                 # TeX: If file is identified as core TeX type then we need to
                 # unmacify
@@ -1215,7 +1227,7 @@ class Upload:
                 # End of file type checks
 
 
-    def check_file_termination(self, file_obj: File):
+    def check_file_termination(self, file_obj: File) -> None:
         r"""
         Check for unwanted characters at end of file.
 
@@ -1300,7 +1312,7 @@ class Upload:
                                   "not end with newline (\\n), TRUNCATED?."))
 
 
-    def unmacify(self, file_obj: File):
+    def unmacify(self, file_obj: File) -> None:
         """
         Cleans up files containing carriage returns and line feeds.
 
@@ -1327,7 +1339,7 @@ class Upload:
             if s.find(b"\r\n") != -1:
                 file_type = PC
 
-        """Fix up carriage returns and newlines."""
+        # Fix up carriage returns and newlines.
         self.log(f'Un{file_type}ify file {file_obj.filepath}')
 
         # Open file and look for carriage return.
@@ -1384,7 +1396,7 @@ class Upload:
         # Marker for end of Postscript file
         eof_marker = br'^%%EOF$'
         # Marker for TIFF image - little or big endian
-        lb_marker = b'^(II\*\000|MM\000\*)'
+        lb_marker = rb'^(II\*\000|MM\000\*)'
 
         with open(filepath, 'rb+', 0) as infile:
 
@@ -1412,7 +1424,7 @@ class Upload:
 
                     offset = len(line)
                     end = infile.tell() - offset
-                    infile.seek(end,1)
+                    infile.seek(end, 1)
 
                     msg = f"No %%EOF, but truncate at {end} bytes, " \
                           f"lastnonwhitespace was {lastnw}  untruncated " \
@@ -1422,7 +1434,7 @@ class Upload:
                 # In the exception case, where Postscript %%EOF marker is not
                 # detected before we detect TIFF bitmap, we will log last line
                 # containing stuff before TIFF bitmap. TIFF is stripped.
-                if re.search(b'\S', line):
+                if re.search(rb'\S', line):
                     lastnw = line
 
 
@@ -1434,7 +1446,7 @@ class Upload:
                 self.add_warning(file_obj.name, msg)
 
 
-    def strip_preview(self, file_obj: File, what_to_strip: str):
+    def strip_preview(self, file_obj: File, what_to_strip: str) -> None:
         """
         Remove embedded preview from Postscript file.
 
@@ -1483,7 +1495,7 @@ class Upload:
             for line in infile:
 
                 # Check line for start pattern
-                if retain == True and re.search(start_re, line):
+                if retain and re.search(start_re, line):
                     strip_warning = f"Unnecessary {what_to_strip} removed "\
                                     + f"from '{file_obj.name}' from line {line_no}"
                     retain = False
@@ -1492,7 +1504,7 @@ class Upload:
                     outfile.write(line)
 
                 # Check for end pattern
-                if retain == False and re.search(end_re, line):
+                if not retain and re.search(end_re, line):
                     strip_warning = strip_warning + f" to line {line_no},"
                     retain = True
                     # Handle bug in certain files
@@ -1523,6 +1535,267 @@ class Upload:
                 os.remove(stripped_filepath)
 
             self.add_warning(file_obj.public_filepath, strip_warning)
+
+    def repair_dos_eps(self, file_obj: File) -> str:
+        """
+        Look for leading/trailing TIFF bitmaps and remove them.
+
+        ADD MORE HERE
+
+        Parameters
+        ----------
+        file_obj : File
+            File we are repairing.
+
+        Returns
+        -------
+            String message indicates that something was done and message details what was done.
+
+        Notes
+        -----
+            DOS EPS Binary File Header
+
+            0-3   Must be hex C5D0D3C6 (byte 0=C5).
+            4-7   Byte position in file for start of PostScript language code section.
+            8-11  Byte length of PostScript language section
+            12-15 Byte position in file for start of Metafile screen representation.
+            16-19 Byte length of Metafile section (PSize).
+            20-23 Byte position of TIFF representation.
+            24-27 Byte length of TIFF section.
+
+        """
+        ps_filepath = file_obj.filepath
+
+        if not os.path.exists(ps_filepath):
+            self.log(f"{file_obj.public_filepath}: File not found")
+            return ""
+
+        with open(ps_filepath, 'r+b', 0) as infile:
+
+            # Read past ESP file marker (C5D0D3C6)
+            infile.seek(4, 0)
+
+            # Read header bytes we are interested in
+            header = infile.read(24)
+            pb = struct.pack('24s', header)
+
+            # Extract offsets/lengths for Postscript and TIFF
+            (psoffset, pslength, _, _, tiffoffset,
+             tifflength) = struct.unpack('6i', pb)
+
+            #(f"psoffset:{psoffset} len:{pslength} tiffoffset:{tiffoffset}"
+            # f"len:{tifflength}")
+
+            if not (psoffset > 0 and pslength > 0 and tiffoffset > 0
+                    and tifflength > 0):
+                # Encapsulated Postscript does not contain embedded TIFF
+                return ""
+
+            # Extract Postscript
+
+            if psoffset > tiffoffset:
+                # Postscript follows TIFF so we will seek
+                # to Postscript and extract (eliminate header and TIFF)
+
+                # Seek to postscript
+                infile.seek(psoffset, 0)
+
+                # Look for start of Postscript
+                first_line = infile.readline()
+
+                if not re.search(b'^%!PS-', first_line):
+                    # Issue a warning.
+                    self.log(f"{file_obj.public_filepath}: Couldn't find "
+                             f"beginning of Postscript section")
+                    return ""
+
+                fixed_ps_filepath = os.path.join(file_obj.dir,
+                                                 file_obj.name + ".fixed")
+                #print(f"Write fixed file:{fixed_ps_filepath}")
+                with open(fixed_ps_filepath, 'wb', 0) as outfile:
+                    # write out first line
+                    outfile.write(first_line)
+
+                    # Read each line
+                    for line in infile:
+                        outfile.write(line)
+
+                    # Move repaired file into place
+                    shutil.copy(fixed_ps_filepath, ps_filepath)
+                    os.remove(fixed_ps_filepath)
+
+                    # Indicate we stripped header and leading TIFF
+                    return f"stripped {psoffset} leading bytes"
+
+            elif psoffset < tiffoffset:
+                # truncate the trailing TIFF image
+                # strip off eps header leaving Postscript
+
+                # save a copy of original file before we hack it to death
+                backup_filename = file_obj.name + ".original"
+                backup_filepath = os.path.join(file_obj.dir, backup_filename)
+                shutil.copy(ps_filepath, backup_filepath)
+
+                # Let's get rid of TIFF first
+                infile.seek(tiffoffset, 0)
+                offset = infile.tell()
+                # truncate TIFF
+                infile.truncate(offset)
+
+                # Seek to postscript
+                infile.seek(psoffset, 0)
+
+                # Look for start of Postscript
+                first_line = infile.readline()
+
+                if not re.search(b'^%!PS-', first_line):
+                    # Issue a warning.
+                    self.log(f"{file_obj.public_filepath}: Couldn't find "
+                             f"beginning of Postscript section")
+                    # remove backup file
+                    os.remove(backup_filepath)
+                    return ""
+
+                fixed_ps_filepath = os.path.join(file_obj.dir,
+                                                 file_obj.name + ".fixed")
+
+                with open(fixed_ps_filepath, 'wb', 0) as outfile:
+                    # write out first line
+                    outfile.write(first_line)
+
+                    # Read each line
+                    for line in infile:
+                        outfile.write(line)
+
+                    # Move repaired file into place
+                    shutil.copy(fixed_ps_filepath, ps_filepath)
+                    os.remove(fixed_ps_filepath)
+
+                    # Add warning about backup file we created
+                    backup_obj = File(backup_filepath, file_obj.dir)
+                    msg = (f"Modified file {file_obj.public_filepath}."
+                           f"Saving original to {backup_obj.public_filepath}."
+                           f"You may delete this file."
+                           )
+                    self.add_warning(backup_obj.public_filepath, msg)
+
+                    # Indicate we stripped header and trailing TIFF
+                    return (f"stripped trailing tiff at {tiffoffset} bytes "
+                            f"and {psoffset} leading bytes")
+
+
+    def repair_postscript(self, file_obj: File) -> str:
+        """
+        Repair simple corruptions at the beginning of Postscript file.
+
+        When repairs are made existing file is replacing with repaired file.
+
+        Parameters
+        ----------
+        file_obj : File
+            Postscipt file we are cleaning up.
+
+        Returns
+        -------
+            Returns repaired first line of Postscipt file.
+
+        """
+        # Check first 10 lines of Postscript file for corrupted statements
+        broken_filepath = file_obj.filepath
+        fixed_filepath = os.path.join(file_obj.dir, file_obj.name + '.fixed')
+        orig_type = file_obj.type
+        first_line = "%!\n"
+
+        with open(broken_filepath, 'rb', 0) as infile, \
+                open(fixed_filepath, 'wb', 0) as outfile:
+
+            line = ''
+            line_no = 0
+            fixed = False
+            stripped = b""
+            message = ""
+
+            # Read each line
+            for line in infile:
+                line_no = line_no + 1
+
+                # Attempt to identify problems and repair
+                if re.search(rb'^\%*\004\%\!', line):
+                    # Case 1: special character 004
+                    fixed = True
+                    line = re.sub(br'^%*\004%!', br'%!', line)
+                    message = message + "Removed carriage return from PS header. "
+
+                if re.search(rb'^\%\%\!', line):
+                    # Case 2: extra '%' in header
+                    fixed = True
+                    line = re.sub(br'^%%!', br'%!', line)
+                    message = message + "Removed extra '%' from PS header. "
+
+                if re.search(rb'.*(%!PS-Adobe-)', line):
+                    # Case 3: characters in front of PS tag
+                    fixed = True
+                    # Clean up the line
+                    line = re.sub(br'.*(%!PS-Adobe-)', br'\1', line)
+                    message = message + "Removed extraneous characters before PS header. "
+
+                if re.search(b'^%!', line) or line_no > 10:
+                    # we can stop searching
+                    # If we haven't made any fixes then quit
+                    break
+
+                # Keep track of what we are stripping off the front
+                stripped = stripped + line
+
+            # Done with initial cleanup
+
+            if re.search(b'^%!', line):
+                # Save stripped content
+                if stripped:
+                    cleaned_filepath = os.path.join(file_obj.dir, file_obj.name
+                                                    + '.cleaned')
+                    with open(cleaned_filepath, 'wb', 0) as cleanfile:
+                        cleanfile.write(stripped)
+                        cleanfile.close()
+                    message = message + "Removed extraneous lines in front of PS header. "
+
+                # We are at start of Postscript file
+                outfile.write(line)
+                first_line = line
+            else:
+                # Reset to beginnng of broken file
+                infile.seek(0, 0)
+                # Otherwise insert start indicator
+                outfile.write(b"%!\n")
+
+            # Write out the rest of file
+            for line in infile:
+                outfile.write(line)
+
+            if fixed:
+                # Move repaired file into place
+                shutil.copy(fixed_filepath, broken_filepath)
+                os.remove(fixed_filepath)
+
+                # Check that type of file has changed to 'postscript' (new)
+                # This also sets type of File object correctly for subsequent
+                # processing
+                file_obj.initialize_type()
+                check_type = file_obj.type
+
+                if orig_type != check_type and check_type == 'postscript':
+                    lm = f"Repaired Postscript file '{file_obj.name}': {message}'"
+                else:
+                    lm = f"Attempted repairs on Postscript file '{file_obj.name}': {message}'"
+
+                # Make note of the repair in log
+                self.add_warning(file_obj.public_filepath, lm)
+            else:
+                # cleanup
+                os.remove(fixed_filepath)
+
+            # Return first line
+            return first_line[0:75]
 
     def check_postscript(self, file_obj: File, tiff_flag: Union[str, None]) -> str:
         """
@@ -1558,12 +1831,13 @@ class Upload:
         # Cleans up Postscript files file extraneous characters that cause
         # failure to identify file as Postscript.
         if file_type == 'failed':
-            # This code has been not executing for many years.
-            # TODO: Re add this code and add tests (low priority)
-            msg = f"File '{file_obj.public_filepath}' may be broken "\
-                  + "Postscript file."
+            # This code has been not executing for many years. May have
+            # resulted in more admin interventions to manually fix.
+            header = self.repair_postscript(file_obj)
+
+            msg = f"File '{file_obj.public_filepath}' did not have proper "\
+                  + f"Postscript header, repaired to '{header}'."
             self.add_warning(file_obj.public_filepath, msg)
-            self.log("WARNING: Method repair_ps() is NOT IMPLEMENTED.")
 
         # Determine whether Postscript file contains preview, photoshop. fonts,
         # or resource.
@@ -1640,10 +1914,11 @@ class Upload:
             File we do not accept.
 
         """
+        msg = self.get_graphic_error_msg("TIFF") # pylint
         msg = "NOT IMPLEMENTED: graphic error routine needs to be implemented."
         self.add_warning(file_obj.public_filepath, msg)
 
-    def extract_uu(self, file_name: str, file_type: str):
+    def extract_uu(self, file_name: str, file_type: str) -> None:
         """Extract uuencode content from file."""
         self.log(f'Looking for uu attachment in {file_name} of type {file_type}')
         self.log(f"I'm sorry Dave I'm afraid I can't do that. uu extract not implemented YET.")
@@ -1675,7 +1950,7 @@ class Upload:
         """
         self.__total_upload_size = total_size
 
-    def calculate_client_upload_size(self):
+    def calculate_client_upload_size(self) -> None:
         """
         Calculate total size of client's upload workspace source files.
 
@@ -1689,8 +1964,7 @@ class Upload:
 
         total_upload_size = 0
 
-        list = []
-        for root_directory, directories, files in os.walk(source_directory):
+        for root_directory, _, files in os.walk(source_directory):
             for file in files:
                 path = os.path.join(root_directory, file)
                 obj = File(path, source_directory)
@@ -1848,7 +2122,7 @@ class Upload:
                 tar.extractall(path=source_directory)
                 tar.close()
             else:
-                self.add_error('Failed to remove top level directory.')
+                self.add_error('', 'Failed to remove top level directory.')
 
             # Set permissions
             self.set_file_permissions()
@@ -1856,7 +2130,7 @@ class Upload:
             # Rebuild file list
             self.create_file_list()
 
-    def finalize_upload(self):
+    def finalize_upload(self) -> None:
         """
         Checks to be performed after files are uploaded and sanitized.
 
@@ -2068,8 +2342,8 @@ class Upload:
 
         if file_obj is not None:
             return file_obj.filepath
-        else:
-            return ""
+
+        return ""
 
     def content_file_exists(self, public_file_path: str) -> bool:
         """
@@ -2089,8 +2363,8 @@ class Upload:
 
         if file_obj is not None:
             return os.path.exists(file_obj.filepath)
-        else:
-            return False
+
+        return False
 
     def content_file_size(self, public_file_path: str) -> int:
         """
@@ -2108,8 +2382,8 @@ class Upload:
 
         if file_obj is not None:
             return file_obj.size
-        else:
-            return 0
+
+        return 0
 
     def content_file_checksum(self, public_file_path: str) -> str:
         """
@@ -2130,8 +2404,8 @@ class Upload:
 
         if file_obj is not None:
             return file_obj.checksum
-        else:
-            return ""
+
+        return ""
 
     def content_file_pointer(self, public_file_path: str) -> io.BytesIO:
         """
@@ -2151,8 +2425,8 @@ class Upload:
 
         if file_obj is not None and os.path.exists(file_obj.filepath):
             return open(file_obj.filepath, 'rb')
-        else:
-            return ""
+
+        return ""
 
     def content_file_last_modified(self, public_file_path: str) -> datetime:
         """
@@ -2234,8 +2508,8 @@ class Upload:
                 for chunk in iter(lambda: f.read(4096), b""):
                     hash_md5.update(chunk)
             return urlsafe_b64encode(hash_md5.digest()).decode('utf-8')
-        else:
-            return ""
+
+        return ""
 
     def source_log_file_pointer(self) -> io.BytesIO:
         """Get a file-pointer for source log."""
@@ -2243,8 +2517,8 @@ class Upload:
 
         if os.path.exists(source_log_path):
             return open(source_log_path, 'rb')
-        else:
-            return ""
+
+        return ""
 
     def count_file_types(self) -> dict:
         """
@@ -2306,12 +2580,12 @@ class Upload:
             if self.__files[0].type != 'ancillary' and \
                     self.__files[0].type != 'always_ignore':
                 return self.__files[0]
-            else:
-                # This is an error, can't have submission that is composed
-                # of ancillary single file
-                obj = self.__files[0]
-                msg = f"Found single ancillary file. Invalid submissiomn."
-                self.add_error(obj.public_filepath, msg)
+
+            # This is an error, can't have submission that is composed
+            # of ancillary single file
+            obj = self.__files[0]
+            msg = f"Found single ancillary file. Invalid submissiomn."
+            self.add_error(obj.public_filepath, msg)
         elif self.__files and len(self.__files) > 1:
             # This should never happen
             msg = "Found more than 1 file in single file context"
@@ -2323,7 +2597,7 @@ class Upload:
         return None
 
 
-    def fix_file_ext(self, file_obj : File, new_extension : str) -> File:
+    def fix_file_ext(self, file_obj: File, new_extension: str) -> Optional[File]:
         """
         Rename a file on disk to have the specified extension.
 
@@ -2351,7 +2625,7 @@ class Upload:
             return file_obj
 
         # Otherwise rename file and update file object in list of files.
-        filebase, file_extension = os.path.splitext(file_obj.name)
+        filebase, _ = os.path.splitext(file_obj.name)
         new_file = filebase + f".{new_extension}"
         new_path = os.path.join(file_obj.base_dir, new_file)
 
@@ -2433,7 +2707,6 @@ class Upload:
             obj = self.get_single_file()
             name = obj.name
             file_type = obj.type
-            file_path = obj.filepath
             public_file_path = obj.public_filepath
 
             # Handle all cases where submission source format is single file.
@@ -2515,8 +2788,8 @@ class Upload:
                 self.add_error(public_file_path, msg)
             # Check whether type is TeX
             elif obj.is_tex_type:
-                 # Single file TeX submission
-                 source_format = 'tex'
+                # Single file TeX submission
+                source_format = 'tex'
             else:
                 source_format = 'invalid'
                 self.add_error(public_file_path, "Unable to determine submission type.")
@@ -2537,6 +2810,6 @@ class Upload:
             source_format = 'ps'
         else:
             # Default source type is TEX
-            source_format ='tex'
+            source_format = 'tex'
 
         return source_format

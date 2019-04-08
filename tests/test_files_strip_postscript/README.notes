@@ -123,4 +123,17 @@ DOSepsPostscriptPhotoshopTIFF1.eps
 After Cleanup:
 DOSepsPostscriptPhotoshopTIFF1_repaired_stripped.eps
 
+Repair Postscript Test files:
+-----------------------------
+
+ps1_broken.eps - corrupted with stuff before Postscript header, this originally
+  had a tar header stuck in front but I broke this to stop upload from 
+  removing tar because it is not identified as ps_pc or failed.
+ps1_repaired.eps - Removed extraneous characters before PS header. 
+
+ps2_broken.eps - junk in front of Postscript header
+ps2_repaired.eps - Removed extraneous characters before PS header. Removed extraneous lines in front of PS header.
+
+ps3_broken.eps - corrupted Postscript header
+ps3_repaired.eps - Removed carriage return from PS header. Removed extraneous characters before PS header.
 
