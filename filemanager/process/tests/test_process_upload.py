@@ -982,10 +982,6 @@ class TestUpload(TestCase):
 
             test_filename, exp_sub_type, description = test
 
-            if VERBOSE:
-                print(f"\n**Test File: {test_filename} format expected: "
-                      f"{exp_sub_type} \n\tDetails:{description}")
-
             filepath = os.path.join(TEST_FILES_DIRECTORY, test_filename)
             if not os.path.exists(filepath):
                 filepath = os.path.join(TEST_FILES_SUB_TYPE, test_filename)
