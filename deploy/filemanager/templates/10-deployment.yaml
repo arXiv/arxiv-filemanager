@@ -52,7 +52,11 @@ spec:
         - name: UPLOAD_BASE_DIRECTORY
           value: /data
         - name: FILE_MANAGMENT_SQLALCHEMY_DATABASE_URI
-          value: "{{ .Values.database.uri }}"
+          # value: "{{ .Values.database.uri }}"
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.database.secret.name }}"
+              key: "{{ .Values.database.secret.key }}"
         volumeMounts:
         - mountPath: /data
           name: "{{ default "filemanager" .Values.deployment.name }}-data"
