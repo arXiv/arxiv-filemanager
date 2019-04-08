@@ -1,7 +1,7 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: "{{ default "filemanager" .Values.deploymentName }}-data"
+  name: "{{ default "filemanager" .Values.deployment.name }}-data"
   annotations:
     volume.beta.kubernetes.io/storage-class: efs-development
 spec:

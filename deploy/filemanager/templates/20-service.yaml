@@ -2,10 +2,10 @@ kind: Service
 metadata:
   annotations:
     prometheus.io/scrape: 'true'
-  name: "{{ default "filemanager" .Values.serviceName }}"
+  name: "{{ default "filemanager" .Values.service.name }}"
   labels:
     subsystem: "{{ .Values.labels.subsystem }}"
-    container: "{{ default "filemanager" .Values.deploymentName }}"
+    container: "{{ default "filemanager" .Values.deployment.name }}"
     service-group: backend
     log-style: uwsgi
     env: "{{ .Values.namespace }}"
@@ -17,4 +17,4 @@ spec:
     targetPort: 8000
   selector:
     subsystem: "{{ .Values.labels.subsystem }}"
-    container: "{{ default "filemanager" .Values.deploymentName }}"
+    container: "{{ default "filemanager" .Values.deployment.name }}"

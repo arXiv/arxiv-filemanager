@@ -1,10 +1,10 @@
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
-  name: "{{ default "filemanager" .Values.deploymentName }}"
+  name: "{{ default "filemanager" .Values.deployment.name }}"
   labels:
     subsystem: "{{ .Values.labels.subsystem }}"
-    container: "{{ default "filemanager" .Values.deploymentName }}"
+    container: "{{ default "filemanager" .Values.deployment.name }}"
     service-group: backend
     log-style: uwsgi
     env: "{{ .Values.namespace }}"
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         subsystem: "{{ .Values.labels.subsystem }}"
-        container: "{{ default "filemanager" .Values.deploymentName }}"
+        container: "{{ default "filemanager" .Values.deployment.name }}"
         service-group: backend
         log-style: uwsgi
         env: "{{ .Values.namespace }}"
@@ -33,10 +33,10 @@ spec:
               - key: container
                 operator: In
                 values:
-                - "{{ default "filemanager" .Values.deploymentName }}"
+                - "{{ default "filemanager" .Values.deployment.name }}"
             topologyKey: kubernetes.io/hostname
       containers:
-      - name: "{{ default "filemanager" .Values.deploymentName }}"
+      - name: "{{ default "filemanager" .Values.deployment.name }}"
         image: arxiv/filemanager:{{ .Values.imageTag }}
         imagePullPolicy: Always
         ports:
@@ -51,11 +51,11 @@ spec:
               key: "{{ .Values.secrets.jwt.key }}"
         - name: UPLOAD_BASE_DIRECTORY
           value: /data
-        - name: SQLALCHEMY_DATABASE_URI
+        - name: FILE_MANAGMENT_SQLALCHEMY_DATABASE_URI
           value: "{{ .Values.database.uri }}"
         volumeMounts:
         - mountPath: /data
-          name: "{{ default "filemanager" .Values.deploymentName }}-data"
+          name: "{{ default "filemanager" .Values.deployment.name }}-data"
         resources:
           limits:
             cpu: 300m
@@ -75,6 +75,6 @@ spec:
             path: /filemanager/api/status
             port: 8000
       volumes:
-      - name: "{{ default "filemanager" .Values.deploymentName }}-data"
+      - name: "{{ default "filemanager" .Values.deployment.name }}-data"
         persistentVolumeClaim:
-          claimName: "{{ default "filemanager" .Values.deploymentName }}-data"
+          claimName: "{{ default "filemanager" .Values.deployment.name }}-data"
