@@ -51,6 +51,8 @@ spec:
               key: "{{ .Values.secrets.jwt.key }}"
         - name: UPLOAD_BASE_DIRECTORY
           value: /data
+        - name: SQLALCHEMY_DATABASE_URI
+          value: "{{ .Values.database.uri }}"
         volumeMounts:
         - mountPath: /data
           name: "{{ default "filemanager" .Values.deploymentName }}-data"
@@ -61,6 +63,17 @@ spec:
           requests:
             cpu: 100m
             memory: 128Mi
+        livenessProbe:
+          initialDelaySeconds: 2
+          periodSeconds: 5
+          httpGet:
+            path: /filemanager/api/status
+            port: 8000
+        readinessProbe:
+          periodSeconds: 5
+          httpGet:
+            path: /filemanager/api/status
+            port: 8000
       volumes:
       - name: "{{ default "filemanager" .Values.deploymentName }}-data"
         persistentVolumeClaim:

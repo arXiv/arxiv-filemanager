@@ -1,7 +1,7 @@
 namespace: development
 deploymentName: filemanager
 serviceName: filemanager
-imageTag: 0.1
+imageTag: 0.0.4
 labels:
   subsystem: submission
 secrets:
@@ -9,3 +9,6 @@ secrets:
     name: jwt-secret-name
     key: jwt-secret-key
 replicas: 1
+
+database:
+  uri: "changeme"
