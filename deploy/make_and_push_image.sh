@@ -17,5 +17,5 @@ fi
 
 git fetch --unshallow || echo "Repository is already complete"
 docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_PASSWORD"
-make local
+docker build ./ -t arxiv/${IMAGE_NAME}:${SOURCE_REF}
 docker push ${IMAGE_NAME}:${SOURCE_REF}
