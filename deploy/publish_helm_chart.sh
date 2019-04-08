@@ -15,5 +15,5 @@ else
     export SOURCE_REF=${TRAVIS_TAG}
 fi
 
-helm package ./deploy/filemanager/
-helm s3 push filemanager-*.tgz arxiv  || echo "This chart version already published"
+helm package --version ${SOURCE_REF} --appVersion ${SOURCE_REF} ./deploy/filemanager/
+helm s3 push filemanager-${SOURCE_REF}.tgz arxiv  || echo "This chart version already published"

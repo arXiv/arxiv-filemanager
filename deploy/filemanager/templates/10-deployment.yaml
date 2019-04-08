@@ -37,7 +37,7 @@ spec:
             topologyKey: kubernetes.io/hostname
       containers:
       - name: "{{ default "filemanager" .Values.deployment.name }}"
-        image: arxiv/filemanager:{{ .Values.imageTag }}
+        image: arxiv/filemanager:{{ .Values.image.tag }}
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
@@ -51,7 +51,7 @@ spec:
               key: "{{ .Values.secrets.jwt.key }}"
         - name: UPLOAD_BASE_DIRECTORY
           value: /data
-        - name: FILE_MANAGMENT_SQLALCHEMY_DATABASE_URI
+        - name: FILE_MANAGEMENT_SQLALCHEMY_DATABASE_URI
           # value: "{{ .Values.database.uri }}"
           valueFrom:
             secretKeyRef:
