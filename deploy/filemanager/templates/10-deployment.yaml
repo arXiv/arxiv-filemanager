@@ -1,0 +1,67 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: "{{ default "filemanager" .Values.deploymentName }}"
+  labels:
+    subsystem: "{{ .Values.labels.subsystem }}"
+    container: "{{ default "filemanager" .Values.deploymentName }}"
+    service-group: backend
+    log-style: uwsgi
+    env: "{{ .Values.namespace }}"
+  namespace: "{{ .Values.namespace }}"
+spec:
+  replicas: {{ default 1 .Values.replicas }}
+  template:
+    metadata:
+      labels:
+        subsystem: "{{ .Values.labels.subsystem }}"
+        container: "{{ default "filemanager" .Values.deploymentName }}"
+        service-group: backend
+        log-style: uwsgi
+        env: "{{ .Values.namespace }}"
+      namespace: "{{ .Values.namespace }}"
+      # annotations:
+      #   prometheus.io/scrape: 'true'
+    spec:
+      # This should keep the pods from clustering together on the same node.
+      affinity:
+        podAntiAffinity:
+          # Multiple consul pods should not be placed on the same node.
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: container
+                operator: In
+                values:
+                - "{{ default "filemanager" .Values.deploymentName }}"
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: "{{ default "filemanager" .Values.deploymentName }}"
+        image: arxiv/filemanager:{{ .Values.imageTag }}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        env:
+        - name: LOGLEVEL
+          value: "{{ default "40" .Values.loglevel }}"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.secrets.jwt.name }}"
+              key: "{{ .Values.secrets.jwt.key }}"
+        - name: UPLOAD_BASE_DIRECTORY
+          value: /data
+        volumeMounts:
+        - mountPath: /data
+          name: "{{ default "filemanager" .Values.deploymentName }}-data"
+        resources:
+          limits:
+            cpu: 300m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+      volumes:
+      - name: "{{ default "filemanager" .Values.deploymentName }}-data"
+        persistentVolumeClaim:
+          claimName: "{{ default "filemanager" .Values.deploymentName }}-data"

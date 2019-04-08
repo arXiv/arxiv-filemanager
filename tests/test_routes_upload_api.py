@@ -81,31 +81,31 @@ class TestUploadAPIRoutes(TestCase):
         self.app.app_context().push()
         uploads.db.create_all()
 
-    # Provide general statistics on the upload service. Primarily intended to
-    # indicate normal operation or exception conditions. This information will be
-    # expanded greatly in coming weeks
-    # @mock.patch('zero.controllers.upload.status')
-    # def test_service_status(self, mock_get_baz: Any) -> None:
-    def test_service_status(self) -> None:
-        """Endpoint /filemanager/upload/status<int> returns JSON about file management service."""
-
-        with open('schema/resources/serviceStatus.json') as f:
-            schema = json.load(f)
-
-        print("\nMake service-level 'status' request\n")
-
-        # response = self.client.get('/zero/upload/create')
-        response = self.client.get('/filemanager/api/status')
-
-        expected_data = {'status': 'OK', 'total_uploads': 1}
-        print(response)
-        self.assertEqual(response.status_code, 200)
-        self.assertDictEqual(json.loads(response.data), expected_data)
-
-        try:
-            jsonschema.validate(json.loads(response.data), schema)
-        except jsonschema.exceptions.SchemaError as e:
-            self.fail(e)
+    # # Provide general statistics on the upload service. Primarily intended to
+    # # indicate normal operation or exception conditions. This information will be
+    # # expanded greatly in coming weeks
+    # # @mock.patch('zero.controllers.upload.status')
+    # # def test_service_status(self, mock_get_baz: Any) -> None:
+    # def test_service_status(self) -> None:
+    #     """Endpoint /filemanager/upload/status<int> returns JSON about file management service."""
+    #
+    #     with open('schema/resources/serviceStatus.json') as f:
+    #         schema = json.load(f)
+    #
+    #     print("\nMake service-level 'status' request\n")
+    #
+    #     # response = self.client.get('/zero/upload/create')
+    #     response = self.client.get('/filemanager/api/status')
+    #
+    #     expected_data = {'status': 'OK', 'total_uploads': 1}
+    #     print(response)
+    #     self.assertEqual(response.status_code, 200)
+    #     self.assertDictEqual(json.loads(response.data), expected_data)
+    #
+    #     try:
+    #         jsonschema.validate(json.loads(response.data), schema)
+    #     except jsonschema.exceptions.SchemaError as e:
+    #         self.fail(e)
 
     # Create upload folder/container
     def test_create_upload_failures(self) -> None:

@@ -20,7 +20,7 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from arxiv.base.globals import get_application_config
-from arxiv.base import logging
+from arxiv.base import logging as base_logging
 
 from filemanager.arxiv.file import File as File
 from filemanager.utilities.unpack import unpack_archive
@@ -41,7 +41,7 @@ PREVIEW = 'Preview'
 THUMBNAIL = 'Thumbnail'
 
 
-logger = logging.getLogger(__name__)
+logger = base_logging.getLogger(__name__)
 logger.propagate = False
 
 

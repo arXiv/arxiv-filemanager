@@ -1,0 +1,11 @@
+namespace: development
+deploymentName: filemanager
+serviceName: filemanager
+imageTag: 0.1
+labels:
+  subsystem: submission
+secrets:
+  jwt:
+    name: jwt-secret-name
+    key: jwt-secret-key
+replicas: 1
