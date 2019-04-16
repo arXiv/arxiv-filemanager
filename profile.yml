@@ -13,12 +13,10 @@ application:
       min: 100m
       max: 300m
   dependencies:
-  - database:
-    name: uploads
+  - name: uploads
     type: maria
     description: Metadata about upload workspaces, including ownership.
-  - volume:
-    type: efs
+  - type: efs
     description: |
       Submission source content/uploads for un-announced e-prints. Must be
       shared among application instances, to allow horizontal scaling of the
@@ -28,4 +26,4 @@ application:
     type: generic
   - name: uploads
     var: FILE_MANAGEMENT_SQLALCHEMY_DATABASE_URI
-    type: maria 
+    type: maria
