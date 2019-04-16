@@ -106,7 +106,7 @@ class File:
         ppath = self.filepath
         return ppath.replace(self.base_dir + '/', "")
 
-    def initialize_type(self):
+    def initialize_type(self) -> str:
         """Initialize file type using best-guess routine."""
         if self.dir:
             # Guess file type.

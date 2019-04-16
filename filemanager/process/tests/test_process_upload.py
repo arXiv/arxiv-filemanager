@@ -5,23 +5,25 @@ import re
 from datetime import datetime
 # from filemanager.domain import Upload
 
-from werkzeug.datastructures import FileStorage
-from werkzeug.utils import secure_filename
-from ...arxiv.file import File
-
 import os.path
 import shutil
 import tempfile
 import filecmp
 
-from ...process import upload
+from werkzeug.datastructures import FileStorage
+from werkzeug.utils import secure_filename
+from ...arxiv.file import File
+
+
 from ..upload import Upload
+
+VERBOSE = 0
 
 UPLOAD_BASE_DIRECTORY = '/tmp/filemanagment/submissions'
 
 TEST_FILES_DIRECTORY = os.path.join(os.getcwd(), 'tests/test_files_upload')
 UNPACK_TEST_FILES_DIRECTORY = os.path.join(os.getcwd(), 'tests/test_files_unpack')
-TEST_FILES_SUB_TYPE = os.path.join(os.getcwd(),'tests/test_files_sub_type')
+TEST_FILES_SUB_TYPE = os.path.join(os.getcwd(), 'tests/test_files_sub_type')
 TEST_FILES_FILE_TYPE = os.path.join(os.getcwd(), 'tests/type_test_files')
 TEST_FILES_STRIP_PS = os.path.join(os.getcwd(), 'tests/test_files_strip_postscript')
 
@@ -41,7 +43,7 @@ upload_tests = []
 # Basic tests
 
 upload_tests.append(['upload1.tar.gz', '9902.1001', True,
-                     "File 'espcrc2.sty' is empty \(size is zero\)",
+                     r"File 'espcrc2.sty' is empty \(size is zero\)",
                      'Test zero file detection'])
 upload_tests.append(['upload2.tar.gz', '9903.1002', False, '', 'Test well-formed submission.'])
 upload_tests.append(['upload3.tar.gz', '9903.1003', False, '', 'Test well-formed submission.'])
@@ -52,14 +54,17 @@ upload_tests.append(['upload6.tgz', '9903.1006', False, '', 'Test well-formed su
 
 # Nested archives
 upload_tests.append(['upload-nested-zip-and-tar.zip', '9903.1013', True,
-                     'There were problems unpacking "jz2.zip" -- continuing. Please try again and confirm your files.',
+                     'There were problems unpacking "jz2.zip" -- continuing. '
+                     'Please try again and confirm your files.',
                      'Test upload with corrupt zip file'])
 
 # This really needs to be a special test since we need to inspect outcomes.
-# upload_tests.append(['UnpackWithSubdirectories.tar.gz', '9903.1014', False, '', 'Test upload with multiple levels'])
+# upload_tests.append(['UnpackWithSubdirectories.tar.gz', '9903.1014', False,
+# '', 'Test upload with multiple levels'])
 
 #  contains top-level directory
-upload_tests.append(['upload7.tar.gz', '9903.1007', True, 'Removing top level directory',
+upload_tests.append(['upload7.tar.gz', '9903.1007', True,
+                     'Removing top level directory',
                      'Test removing top level directory.'])
 
 upload_tests.append(['UploadTestWindowCDrive.tar.gz', '12345639', True,
@@ -67,14 +72,15 @@ upload_tests.append(['UploadTestWindowCDrive.tar.gz', '12345639', True,
                      'Test renaming of Windows filename'])
 
 upload_tests.append(['Upload9BadFileNames.tar.gz', '12345640', True,
-                     'Attempting to rename 10-1-1\(63\)\.png to 10-1-1_63_\.png.',
+                     r'Attempting to rename 10-1-1\(63\)\.png to 10-1-1_63_\.png.',
                      'Test for bad/illegal file names.'])
 
 upload_tests.append(['UploadNoNewlineTerm.tar.gz', '9903.10029', True,
                      "File 'NoNewlineTermination.tex' does not end with newline",
                      'File does not end with newline character.'])
 
-upload_tests.append(['source_with_dir.tar.gz', '9903.1009', True, 'Removing top level directory',
+upload_tests.append(['source_with_dir.tar.gz', '9903.1009', True,
+                     'Removing top level directory',
                      'Removing top level directory'])
 
 # These tests may eventually migrate to thier own file
@@ -135,21 +141,21 @@ strip_tests.append(['PostscriptPhotoshop1.eps',
                     'PostscriptPhotoshop1_stripped.eps',
                     "Unnecessary Preview removed from 'PostscriptPhotoshop1.eps'" \
                     + " from line 10 to line 202, reduced from 185586 bytes " \
-                    + "to 172746 bytes \(see http://arxiv.org/help/sizes\)",
+                    + r"to 172746 bytes \(see http://arxiv.org/help/sizes\)",
                     "Photoshop1"
                     ])
 strip_tests.append(['PostscriptPhotoshop2.eps',
                     'PostscriptPhotoshop2_stripped.eps',
                     "Unnecessary Photoshop removed from 'PostscriptPhotoshop2.eps'" \
                     + " from line 16 to line 205, reduced from 106009 bytes " \
-                    + "to 93377 bytes \(see http://arxiv.org/help/sizes\)",
+                    + r"to 93377 bytes \(see http://arxiv.org/help/sizes\)",
                     "Photoshop2"
                     ])
 strip_tests.append(['PostscriptPhotoshop3.eps',
                     'PostscriptPhotoshop3_stripped.eps',
                     "Unnecessary Photoshop removed from 'PostscriptPhotoshop3.eps'" \
                     + " from line 7 to line 12, reduced from 1273694 bytes " \
-                    + "to 1273439 bytes \(see http://arxiv.org/help/sizes\)",
+                    + r"to 1273439 bytes \(see http://arxiv.org/help/sizes\)",
                     "Photoshop3"
                     ])
 strip_tests.append(['PostscriptPreview1.eps',
@@ -157,7 +163,7 @@ strip_tests.append(['PostscriptPreview1.eps',
                     ("Unnecessary Preview removed from 'PostscriptPreview1.eps' "
                      "from line 13 to line 7131, reduced "
                      "from 632668 bytes to 81123 bytes "
-                     "\(see http://arxiv.org/help/sizes\)"),
+                     r"\(see http://arxiv.org/help/sizes\)"),
                     "Preview1"
                     ])
 strip_tests.append(['PostscriptPreview2.eps',
@@ -165,7 +171,7 @@ strip_tests.append(['PostscriptPreview2.eps',
                     ("Unnecessary Preview removed from 'PostscriptPreview2.eps' "
                      "from line 10 to line 118, reduced "
                      "from 425356 bytes to 418144 "
-                     "bytes \(see http://arxiv.org/help/sizes\)"),
+                     r"bytes \(see http://arxiv.org/help/sizes\)"),
                     "Preview2"
                     ])
 strip_tests.append(['PostscriptThumbnail1.eps',
@@ -173,7 +179,7 @@ strip_tests.append(['PostscriptThumbnail1.eps',
                     ("Unnecessary Thumbnail removed from "
                      "'PostscriptThumbnail1.eps' from line 38 to line 189, "
                      "reduced from 68932 bytes to 59657 bytes "
-                     "\(see http://arxiv.org/help/sizes\)"),
+                     r"\(see http://arxiv.org/help/sizes\)"),
                     'Thumbnail1'
                     ])
 strip_tests.append(['PostscriptThumbnail2.eps',
@@ -181,7 +187,7 @@ strip_tests.append(['PostscriptThumbnail2.eps',
                     ("Unnecessary Thumbnail removed from "
                      "'PostscriptThumbnail2.eps' from line 40 to line 177, "
                      "reduced from 79180 bytes to 70771 bytes "
-                     "\(see http://arxiv.org/help/sizes\)"),
+                     r"\(see http://arxiv.org/help/sizes\)"),
                     'Thumbnail2'
                     ])
 
@@ -192,7 +198,7 @@ strip_tests.append(['P11_cmplx_plane.eps',
                     'P11_cmplx_plane_stripped.eps',
                     ("Unnecessary Preview removed from 'P11_cmplx_plane.eps' "
                      "from line 9 to line 157, reduced from 59684 bytes to "
-                     "48174 bytes \(see http://arxiv.org/help/sizes\)"),
+                     r"48174 bytes \(see http://arxiv.org/help/sizes\)"),
                     'Legacy Photoshop'
                     ])
 
@@ -201,7 +207,7 @@ strip_tests.append(['cone.eps',
                     'cone_stripped.eps',
                     ("Unnecessary Photoshop removed from 'cone.eps' from line "
                      "14 to line 207, reduced from 1701570 bytes to 1688730 "
-                     "bytes \(see http://arxiv.org/help/sizes\)"),
+                     r"bytes \(see http://arxiv.org/help/sizes\)"),
                     'Legacy Preview'
                     ])
 
@@ -209,8 +215,12 @@ strip_tests.append(['cone.eps',
 
 # Internal Debugging test
 class TestInternalSupportRoutines(TestCase):
+    """
+    Test internal process routines.
+    """
 
-    def test_get_upload_directory(self):
+    def test_get_upload_directory(self) -> None:
+        """Test getting root upload workspace directory."""
         upload = Upload(12345678)
         workspace_dir = upload.get_upload_directory()
         self.assertEqual(workspace_dir, os.path.join(UPLOAD_BASE_DIRECTORY, '12345678'),
@@ -218,7 +228,8 @@ class TestInternalSupportRoutines(TestCase):
         # cleanup workspace
         upload.remove_workspace()
 
-    def test_create_upload_directory(self):
+    def test_create_upload_directory(self) -> None:
+        """Test creating upload workspace direcrtory."""
         upload = Upload(12345679)
         workspace_dir = upload.create_upload_directory()
         dir_exists = os.path.exists(workspace_dir)
@@ -226,7 +237,8 @@ class TestInternalSupportRoutines(TestCase):
         # cleanup workspace
         upload.remove_workspace()
 
-    def test_get_source_directory(self):
+    def test_get_source_directory(self) -> None:
+        """Test getting source directory."""
         upload = Upload(12345680)
         source_dir = upload.get_source_directory()
         self.assertEqual(source_dir, os.path.join(UPLOAD_BASE_DIRECTORY, '12345680', 'src'),
@@ -234,7 +246,8 @@ class TestInternalSupportRoutines(TestCase):
         # cleanup workspace
         upload.remove_workspace()
 
-    def test_get_removed_directory(self):
+    def test_get_removed_directory(self) -> None:
+        """Test getting removed directory where we stick deleted items."""
         upload = Upload(12345680)
         removed_dir = upload.get_removed_directory()
         self.assertEqual(removed_dir, os.path.join(UPLOAD_BASE_DIRECTORY, '12345680', 'removed'),
@@ -242,7 +255,8 @@ class TestInternalSupportRoutines(TestCase):
         # cleanup workspace
         upload.remove_workspace()
 
-    def test_create_upload_workspace(self):
+    def test_create_upload_workspace(self) -> None:
+        """Test creating upload workspace with subdirectories."""
         upload = Upload(12345681)
         workspace_dir = upload.create_upload_workspace()
         dir_exists = os.path.exists(workspace_dir)
@@ -253,7 +267,7 @@ class TestInternalSupportRoutines(TestCase):
         self.assertEqual(rem_dir_exists, True, 'Create workspace removed directory.')
         upload.remove_workspace()
 
-    def test_deposit_upload(self):
+    def test_deposit_upload(self) -> None:
         """Test upload file deposit into src directory."""
         tfilename = os.path.join(TEST_FILES_DIRECTORY, '1801.03879-1.tar.gz')
         self.assertTrue(os.path.exists(tfilename), 'Test archive is available')
@@ -286,7 +300,7 @@ class TestInternalSupportRoutines(TestCase):
         # cleanup workspace
         upload.remove_workspace()
 
-    def test_check_file_termination(self):
+    def test_check_file_termination(self) -> None:
         """
         Test the filtering of unwanted characters from the end of file.
         :return:
@@ -366,12 +380,12 @@ class TestInternalSupportRoutines(TestCase):
         is_same = filecmp.cmp(destfilename, reference)
         self.assertTrue(is_same, 'Eliminated unwanted EOT terminators.')
 
-    def test_check_file_unmacify(self):
+    def test_check_file_unmacify(self) -> None:
         """
         Test the filtering of unwanted CR characters from specified file.
         :return:
         """
-        def has_cr(path):
+        def has_cr(path: str) -> bool:
             with open(path, 'rb') as f:
                 for line in f:
                     if re.search(b'\r\n?', line) is not None:
@@ -450,12 +464,8 @@ class TestInternalSupportRoutines(TestCase):
         new_extension = 'testext'
         new_file_obj = upload.fix_file_ext(file_obj, new_extension)
 
-        filebase, file_extension = os.path.splitext(file_obj.name)
+        filebase, _ = os.path.splitext(file_obj.name)
         new_filename = filebase + f".{new_extension}"
-        #new_path = os.path.join(file_obj.base_dir, new_file)
-
-        # Now look for renamed file
-        filebase, file_extension = os.path.splitext(file_obj.name)
 
         # Make sure new file exists
         self.assertTrue(os.path.exists(new_file_obj.filepath),
@@ -476,7 +486,7 @@ class TestInternalSupportRoutines(TestCase):
         new_extension = 'html'
         new_file_obj = upload.fix_file_ext(file_obj, new_extension)
 
-        filebase, file_extension = os.path.splitext(file_obj.name)
+        filebase, _ = os.path.splitext(file_obj.name)
         new_filename = filebase + f".{new_extension}"
 
         # Make sure new file exists
@@ -498,20 +508,17 @@ class TestInternalSupportRoutines(TestCase):
         # Check to make sure error is added to list of errors.
         self.assertTrue(upload.search_errors(f"File '{file_obj.name}'"
                                              " to fix extension not"),
-                                             "Error message added to list.")
+                        "Error message added to list.")
 
         # cleanup workspace
         upload.remove_workspace()
 
 
-    def test_check_postscript(self):
+    def test_check_postscript(self) -> None:
         """
         Test the filtering of unwanted previews in Postscript file.
         :return:
         """
-
-        # Copy the files that will be modified to temporary location
-        tmp_dir = tempfile.mkdtemp()
 
         upload = Upload(1234999)
 
@@ -546,14 +553,11 @@ class TestInternalSupportRoutines(TestCase):
         upload.remove_workspace()
 
 
-    def test_strip_tiff(self):
+    def test_strip_tiff(self) -> None:
         """
         Test removing trailing tiff from Postscript file.
         :return:
         """
-
-        # Copy the files that will be modified to temporary location
-        tmp_dir = tempfile.mkdtemp()
 
         upload = Upload(1245894)
 
@@ -614,19 +618,149 @@ class TestInternalSupportRoutines(TestCase):
         # cleanup workspace
         #upload.remove_workspace()
 
+    def test_postscript_repair(self) -> None:
+        """
+        Test Postscript repair routine.
+
+        """
+        upload = Upload(1245566)
+
+        # Fix Postscript
+        test_filename = 'ps1_broken.eps'
+        tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
+        workspace_src_dir = upload.get_source_directory()
+        destfilename = os.path.join(workspace_src_dir, test_filename)
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, workspace_src_dir)
+
+        # Repair Postscript file
+        upload.repair_postscript(file_obj)
+
+        # compare to repaired reference file
+        reference = os.path.join(TEST_FILES_STRIP_PS, 'ps1_repaired.eps')
+        # Compared fixed file to a reference stripped version of file.
+        is_same = filecmp.cmp(destfilename, reference, shallow=False)
+        self.assertTrue(is_same,
+                        f"Repair header in Postscript file '{test_filename}'.")
+
+        # Check to make sure error is added to list of errors.
+        warn_msg = ("Repaired Postscript file 'ps1_broken.eps': "
+                    "Removed extraneous characters before PS header.")
+        self.assertTrue(upload.search_warnings(warn_msg),
+                        f"Verify repair warning added to list.")
+
+        # Fix Postscript
+        test_filename = 'ps2_broken.eps'
+        tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
+        workspace_src_dir = upload.get_source_directory()
+        destfilename = os.path.join(workspace_src_dir, test_filename)
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, workspace_src_dir)
+
+        # Repair Postscript file
+        upload.repair_postscript(file_obj)
+
+        # compare to repaired reference file
+        reference = os.path.join(TEST_FILES_STRIP_PS, 'ps2_repaired.eps')
+        # Compared fixed file to a reference stripped version of file.
+        is_same = filecmp.cmp(destfilename, reference, shallow=False)
+        self.assertTrue(is_same,
+                        f"Repair header in Postscript file '{test_filename}'.")
+
+        # Check to make sure error is added to list of errors.
+        warn_msg = ("Repaired Postscript file 'ps2_broken.eps': Removed "
+                    "extraneous characters before PS header. Removed "
+                    "extraneous lines in front of PS header.")
+        self.assertTrue(upload.search_warnings(warn_msg),
+                        f"Verify repair warning added to list.")
+
+        # Fix Postscript
+        test_filename = 'ps3_broken.eps'
+        tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
+        workspace_src_dir = upload.get_source_directory()
+        destfilename = os.path.join(workspace_src_dir, test_filename)
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, workspace_src_dir)
+
+        # Repair Postscript file
+        upload.repair_postscript(file_obj)
+
+        # compare to repaired reference file
+        reference = os.path.join(TEST_FILES_STRIP_PS, 'ps3_repaired.eps')
+        # Compared fixed file to a reference stripped version of file.
+        is_same = filecmp.cmp(destfilename, reference, shallow=False)
+        self.assertTrue(is_same,
+                        f"Repair header in Postscript file '{test_filename}'.")
+
+        # Check to make sure error is added to list of errors.
+        warn_msg = ("Repaired Postscript file 'ps3_broken.eps': Removed "
+                    "carriage return from PS header. Removed extraneous "
+                    "characters before PS header.")
+        self.assertTrue(upload.search_warnings(warn_msg),
+                        f"Verify repair warning added to list.")
+
+        # cleanup workspace
+        upload.remove_workspace()
+
+
+    def test_repair_dos_eps(self) -> None:
+        """
+        Test eps Postscript repair routine.
+
+        """
+        upload = Upload(1299999)
+
+        # Fix Postscript
+        test_filename = 'dos_eps_1.eps'
+        tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
+        workspace_src_dir = upload.get_source_directory()
+        destfilename = os.path.join(workspace_src_dir, test_filename)
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, workspace_src_dir)
+
+        # Repair Postscript file
+        upload.repair_dos_eps(file_obj)
+
+        # compare to repaired reference file
+        reference = os.path.join(TEST_FILES_STRIP_PS, 'dos_eps_1_stripped.eps')
+        # Compared fixed file to a reference stripped version of file.
+        is_same = filecmp.cmp(destfilename, reference, shallow=False)
+        self.assertTrue(is_same,
+                        f"Repair Encapsulated Postscript file '{test_filename}'.")
+
+        # Fix Postscript
+        test_filename = 'dos_eps_2.eps'
+        tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
+        workspace_src_dir = upload.get_source_directory()
+        destfilename = os.path.join(workspace_src_dir, test_filename)
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, workspace_src_dir)
+
+        # Repair Postscript file
+        upload.repair_dos_eps(file_obj)
+
+        # compare to repaired reference file
+        reference = os.path.join(TEST_FILES_STRIP_PS, 'dos_eps_2_stripped.eps')
+        # Compared fixed file to a reference stripped version of file.
+        is_same = filecmp.cmp(destfilename, reference, shallow=False)
+        self.assertTrue(is_same,
+                        f"Repair Encapsulated Postscript file '{test_filename}'.")
+
 
 class TestUpload(TestCase):
     """:func:`.process_upload` adds ones to :prop:`.Thing.name`."""
 
-    # Does this belong with a set of unpack tests (did not exist in legacy system but evidence
-    # that someone was collecting files to use as part of unpack tests - may need to refactor in future.
+    # Does this belong with a set of unpack tests (did not exist in legacy
+    # system but evidence that someone was collecting files to use as part
+    # of unpack tests - may need to refactor in future.
 
     def test_process_upload_with_subdirectories(self) -> None:
 
         """Try to process archive with multiple gzipped archives imbedded in it"""
         upload = Upload('9903.1014')
 
-        filename = os.path.join(TEST_FILES_DIRECTORY, 'UnpackWithSubdirectories.tar.gz')
+        filename = os.path.join(TEST_FILES_DIRECTORY,
+                                'UnpackWithSubdirectories.tar.gz')
 
         # For testing purposes, clean out existing workspace directory
         workspace_dir = upload.create_upload_workspace()
@@ -639,7 +773,7 @@ class TestUpload(TestCase):
         with open(filename, 'rb') as fp:
             upload = Upload('9903.1014')
             file = FileStorage(fp)
-            ret = upload.process_upload(file)
+            upload.process_upload(file)
 
         source_directory = upload.get_source_directory()
 
@@ -647,11 +781,15 @@ class TestUpload(TestCase):
 
         # Check subdirectory exists
         directory_to_check = os.path.join(source_directory, 'b', 'c')
-        self.assertTrue(os.path.exists(directory_to_check), 'Test subdirectory exists: b/c')
+        self.assertTrue(os.path.exists(directory_to_check),
+                        'Test subdirectory exists: b/c')
 
         # Check file in subdirectory exists
-        file_to_check = os.path.join(source_directory, 'b', 'c', 'c_level_file.txt')
-        self.assertTrue(os.path.exists(file_to_check), 'Test file within subdirectory exists: \'c_level_file.txt\'')
+        file_to_check = os.path.join(source_directory, 'b', 'c',
+                                     'c_level_file.txt')
+        self.assertTrue(os.path.exists(file_to_check),
+                        'Test file within '
+                        'subdirectory exists: \'c_level_file.txt\'')
 
         # cleanup workspace
         upload.remove_workspace()
@@ -662,14 +800,17 @@ class TestUpload(TestCase):
         Also tests get_single_file() routine.
         """
         upload = Upload(20180245)
-        filename = os.path.join(TEST_FILES_DIRECTORY, 'UploadWithANCDirectory.tar.gz')
+        filename = os.path.join(TEST_FILES_DIRECTORY,
+                                'UploadWithANCDirectory.tar.gz')
 
         # For testing purposes, clean out existing workspace directory
         workspace_dir = upload.get_upload_directory()
         if os.path.exists(workspace_dir):
             shutil.rmtree(workspace_dir)
 
-        self.assertTrue(os.path.exists(filename), 'Test upload with anc files.')
+        self.assertTrue(os.path.exists(filename),
+                        'Test upload with anc files.')
+
         # Recreate FileStroage object that flask will be passing in
         file = None
         with open(filename, 'rb') as fp:
@@ -678,7 +819,7 @@ class TestUpload(TestCase):
             file = FileStorage(fp)
 
             # Test 1: Upload normal submission with lots of files.
-            ret = upload.process_upload(file)
+            upload.process_upload(file)
 
             file_formats = upload.count_file_types()
 
@@ -721,7 +862,7 @@ class TestUpload(TestCase):
             upload = Upload(20180245)
             file = FileStorage(fp)
 
-            ret = upload.process_upload(file)
+            upload.process_upload(file)
 
             # Single invalid source files uploaded
             file_formats = upload.count_file_types()
@@ -745,7 +886,7 @@ class TestUpload(TestCase):
             upload = Upload(20180245)
             file = FileStorage(fp)
 
-            ret = upload.process_upload(file)
+            upload.process_upload(file)
 
             # Single invalid source files uploaded
             file_formats = upload.count_file_types()
@@ -773,7 +914,7 @@ class TestUpload(TestCase):
             upload = Upload(20180245)
             file = FileStorage(fp)
 
-            ret = upload.process_upload(file)
+            upload.process_upload(file)
 
             # No valid source files uploaded (ancillary)
             file_formats = upload.count_file_types()
@@ -798,7 +939,7 @@ class TestUpload(TestCase):
             upload = Upload(20180245)
             file = FileStorage(fp)
 
-            ret = upload.process_upload(file)
+            upload.process_upload(file)
 
             # Single valid source file uploaded.
             file_formats = upload.count_file_types()
@@ -813,7 +954,7 @@ class TestUpload(TestCase):
 
             # Test get_single_file() - This is a case where it works.
             self.assertIsInstance(upload.get_single_file(), File,
-                             "This is a valid single file submission.")
+                                  "This is a valid single file submission.")
             single_file = upload.get_single_file()
             self.assertEqual(test_filename, single_file.name,
                              f"Found single file submission: {test_filename}.")
@@ -841,8 +982,6 @@ class TestUpload(TestCase):
 
             test_filename, exp_sub_type, description = test
 
-            #print(f"\n**Test File: {test_filename} format expected: {exp_sub_type} \n\tDetails:{description}")
-
             filepath = os.path.join(TEST_FILES_DIRECTORY, test_filename)
             if not os.path.exists(filepath):
                 filepath = os.path.join(TEST_FILES_SUB_TYPE, test_filename)
@@ -857,11 +996,12 @@ class TestUpload(TestCase):
                 upload = Upload(20180245)
                 file = FileStorage(fp)
                 upload.client_remove_all_files()
-                ret = upload.process_upload(file)
+                upload.process_upload(file)
                 sub_type = upload.source_format
 
                 self.assertEqual(sub_type, exp_sub_type,
-                                f"Correctly identified submission of type '{sub_type}'.")
+                                 f"Correctly identified submission of type "
+                                 f"'{sub_type}'.")
 
                 # Clean out files to get ready for next test.
                 upload.client_remove_all_files()
@@ -873,21 +1013,24 @@ class TestUpload(TestCase):
     def test_process_anc_upload(self) -> None:
         """Process upload with ancillary files in anc directory"""
         upload = Upload(20180226)
-        filename = os.path.join(TEST_FILES_DIRECTORY, 'UploadWithANCDirectory.tar.gz')
+        filename = os.path.join(TEST_FILES_DIRECTORY,
+                                'UploadWithANCDirectory.tar.gz')
 
         # For testing purposes, clean out existing workspace directory
         workspace_dir = upload.get_upload_directory()
         if os.path.exists(workspace_dir):
             shutil.rmtree(workspace_dir)
 
-        self.assertTrue(os.path.exists(filename), 'Test upload with anc files.')
+        self.assertTrue(os.path.exists(filename),
+                        'Test upload with anc files.')
+
         # Recreate FileStroage object that flask will be passing in
         file = None
         with open(filename, 'rb') as fp:
             # Now create upload instance
             upload = Upload(20180226)
             file = FileStorage(fp)
-            ret = upload.process_upload(file)
+            upload.process_upload(file)
 
             # cleanup workspace
             upload.remove_workspace()
@@ -900,7 +1043,8 @@ class TestUpload(TestCase):
         upload = Upload(upload_id)
 
         filename = os.path.join(TEST_FILES_DIRECTORY, 'bad_bib_but_no_bbl.tar')
-        self.assertTrue(os.path.exists(filename), 'Test submission with missing .bbl file.')
+        self.assertTrue(os.path.exists(filename),
+                        'Test submission with missing .bbl file.')
 
         # For testing purposes, clean out existing workspace directory
         workspace_dir = upload.create_upload_workspace()
@@ -908,10 +1052,11 @@ class TestUpload(TestCase):
             shutil.rmtree(workspace_dir)
 
 
-        # Test common behavior of submitting .bib file without .bbl file and then follow by
-        # adding .bbl file to make submission whole.
+        # Test common behavior of submitting .bib file without .bbl file and
+        # then follow by adding .bbl file to make submission whole.
 
-        # Step 1: Load submission that includes .bib file but is missing required .bbl; file
+        # Step 1: Load submission that includes .bib file but is missing
+        # required .bbl; file
 
         # Recreate FileStroage object that flask will be passing in
         file = None
@@ -919,52 +1064,65 @@ class TestUpload(TestCase):
             file = FileStorage(fp)
             # Now create upload instance
             upload = Upload(upload_id)
-            ret = upload.process_upload(file)
+            upload.process_upload(file)
 
-            self.assertTrue(upload.has_warnings(), "This test is expected to generate missing .bbl warning!")
-            self.assertTrue(upload.has_errors(), "This test is expected to generate missing .bbl error!")
+            self.assertTrue(upload.has_warnings(),
+                            "This test is expected to generate missing "
+                            ".bbl warning!")
+            self.assertTrue(upload.has_errors(),
+                            "This test is expected to generate missing "
+                            ".bbl error!")
 
             error_match = 'Your submission contained'
-            string = f'This test is expected to generate missing .bbl error: "{error_match}"'
+            string = f'This test is expected to generate missing .bbl error: ' \
+                     f'"{error_match}"'
             self.assertTrue(upload.search_errors(error_match), string)
 
             warn_match = r'We do not run bibtex'
-            string = f'This test is expected to produce general warning: "{warn_match}"'
+            string = f'This test is expected to produce general warning: ' \
+                     f'"{warn_match}"'
             self.assertTrue(upload.search_warnings(warn_match), string)
 
             # Step 2: Now load missing .bbl (and . bib should get removed)
 
             filename = os.path.join(TEST_FILES_DIRECTORY, 'final.bbl')
-            self.assertTrue(os.path.exists(filename), 'Upload missing .bbl file.')
+            self.assertTrue(os.path.exists(filename),
+                            'Upload missing .bbl file.')
 
             with open(filename, 'rb') as fp:
                 file = FileStorage(fp)
-                ret = upload.process_upload(file)
+                upload.process_upload(file)
 
                 error_match = 'Your submission contained'
-                string = f'This test is NOT expected to generate missing .bbl error: "{error_match}"'
+                string = f'This test is NOT expected to generate missing .bbl ' \
+                         f'error: "{error_match}"'
                 self.assertFalse(upload.search_errors(error_match), string)
 
                 warn_match = 'We do not run bibtex'
-                string = f'This test is expected to generate removing .bib warning: "{warn_match}"'
+                string = f'This test is expected to generate removing .bib ' \
+                         f'warning: "{warn_match}"'
                 self.assertTrue(upload.search_warnings(warn_match), string)
 
                 warn_match = "Removed the file 'final.bib'."
-                string = f'This test is expected to generate removing .bib warning: "{warn_match}"'
+                string = f'This test is expected to generate removing .bib ' \
+                         f'warning: "{warn_match}"'
                 self.assertTrue(upload.search_warnings(warn_match), string)
 
         # Try submission with .bbl file (Good)
         filename = os.path.join(TEST_FILES_DIRECTORY, 'upload3.tar.gz')
-        self.assertTrue(os.path.exists(filename), 'Test well-formed submission with .bbl file.')
+        self.assertTrue(os.path.exists(filename),
+                        'Test well-formed submission with .bbl file.')
 
         with open(filename, 'rb') as fp:
             file = FileStorage(fp)
             # Now create upload instance
             upload = Upload(upload_id)
-            ret = upload.process_upload(file)
+            upload.process_upload(file)
 
-            self.assertFalse(upload.has_warnings(), 'Test well-formed submission. No warnings.')
-            self.assertFalse(upload.has_errors(), 'Test well-formed submission. No errors.')
+            self.assertFalse(upload.has_warnings(),
+                             'Test well-formed submission. No warnings.')
+            self.assertFalse(upload.has_errors(),
+                             'Test well-formed submission. No errors.')
 
             # cleanup workspace
             upload.remove_workspace()
@@ -982,7 +1140,7 @@ class TestUpload(TestCase):
 
         for unpack_test in unpack_tests:
 
-            test_file, upload_id, warnings, warnings_match, *extras = unpack_test + [None] * 2
+            test_file, upload_id, warnings, warnings_match, *_ = unpack_test + [None] * 2
 
             self.assertIsNotNone(upload_id, "Test must have upload identifier.")
 
@@ -1018,15 +1176,18 @@ class TestUpload(TestCase):
                 # For the case where we are expecting warnings make sure upload has the right ones
                 if warnings:
 
-                    self.assertTrue(upload.has_warnings(), "This test is expected to generate warnings!")
+                    self.assertTrue(upload.has_warnings(),
+                                    "This test is expected to generate warnings!")
 
                     # Look for specific warning we are attempting to generate
                     if upload.has_warnings():
                         # print ("Upload process had warnings as expected")
                         # print("Search for warning: '" + warnings_match + "'")
                         # Complain if we didn't find expected warning
-                        string = f'This test is expected to generate specific warning: "{warnings_match}"'
-                        self.assertTrue(upload.search_warnings(warnings_match), string)
+                        string = f'This test is expected to generate specific ' \
+                                 f'warning: "{warnings_match}"'
+                        self.assertTrue(upload.search_warnings(warnings_match),
+                                        string)
 
                         # if upload.search_warnings(warnings_match):
                         # print("Found expected warning")
@@ -1035,10 +1196,49 @@ class TestUpload(TestCase):
                     else:
                         print("Upload completed without warnings (not expected)")
                 else:
-                    self.assertFalse(upload.has_warnings(), 'Not expecting warnings!')
+                    self.assertFalse(upload.has_warnings(),
+                                     'Not expecting warnings!')
 
                 # clean up workspace
                 upload.remove_workspace()
+
+
+    def xxx_test_one_off_upload(self) -> None:
+        """Test one-off submssions."""
+        upload_id = 29990049
+        upload = Upload(upload_id)
+
+        filename = os.path.join(TEST_FILES_DIRECTORY, 'only_figures_tikz_needs_pdflatx.tar.gz')
+        self.assertTrue(os.path.exists(filename),
+                        'Test submission that breaks file manager service.')
+
+        # For testing purposes, clean out existing workspace directory
+        workspace_dir = upload.create_upload_workspace()
+        if os.path.exists(workspace_dir):
+            shutil.rmtree(workspace_dir)
+
+        # Test common behavior of submitting .bib file without .bbl file and
+        # then follow by adding .bbl file to make submission whole.
+
+        # Step 1: Load submission that includes .bib file but is missing
+        # required .bbl; file
+
+        # Recreate FileStroage object that flask will be passing in
+        file = None
+        with open(filename, 'rb') as fp:
+            file = FileStorage(fp)
+            # Now create upload instance
+            upload = Upload(upload_id)
+            upload.process_upload(file)
+
+
+            file_list = upload.create_file_upload_summary()
+            import json
+            length = len(json.dumps(file_list))
+            print(f"Length of file summary: {length}")
+            print(f"Response:\n{json.dumps(file_list)}\nDONE")
+
+
 
     def test_process_general_upload(self) -> None:
         """Test series of uniform test cases with specified outcomes"""
@@ -1047,7 +1247,8 @@ class TestUpload(TestCase):
 
         for upload_test in upload_tests:
 
-            test_file, upload_id, warnings, warnings_match, *extras = upload_test + [None] * 2
+            test_file, upload_id, warnings, warnings_match, *_ = \
+                upload_test + [None] * 2
 
             self.assertIsNotNone(upload_id, "Test must have upload identifier.")
 
@@ -1059,7 +1260,8 @@ class TestUpload(TestCase):
             new_path = os.path.join(test_file_directory, test_file)
 
             # Make sure test file exists
-            self.assertTrue(os.path.exists(new_path), 'Test upload ' + new_path + ' exists!')
+            self.assertTrue(os.path.exists(new_path), 'Test upload ' + new_path
+                            + ' exists!')
 
             # Create Uplaod object - this instance gets cleaned out
             upload = Upload(upload_id)
@@ -1083,16 +1285,19 @@ class TestUpload(TestCase):
                 # For the case where we are expecting warnings make sure upload has the right ones
                 if warnings:
 
-                    self.assertTrue(upload.has_warnings(), "This test is expected to generate warnings!")
+                    self.assertTrue(upload.has_warnings(),
+                                    "This test is expected to generate warnings!")
 
                     # Look for specific warning we are attempting to generate
                     if upload.has_warnings():
                         # print ("Upload process had warnings as expected")
                         # print("Search for warning: '" + warnings_match + "'")
                         # Complain if we didn't find speocfied warning
-                        string = f'This test is expected to generate specific warning: "{warnings_match}"'
+                        string = f'This test is expected to generate specific ' \
+                                 f'warning: "{warnings_match}"'
 
-                        self.assertTrue(upload.search_warnings(warnings_match), string)
+                        self.assertTrue(upload.search_warnings(warnings_match),
+                                        string)
 
                         # if upload.search_warnings(warnings_match):
                         # print("Found expected warning")
@@ -1101,7 +1306,8 @@ class TestUpload(TestCase):
                     else:
                         print("Upload completed without warnings (not expected)")
                 else:
-                    self.assertFalse(upload.has_warnings(), f'{test_file}: Not expecting warnings!')
+                    self.assertFalse(upload.has_warnings(),
+                                     f'{test_file}: Not expecting warnings!')
 
                 # Clean up workspace
                 upload.remove_workspace()

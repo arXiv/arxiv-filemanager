@@ -135,3 +135,6 @@ $ JWT_SECRET=foosecret FLASK_APP=app.py FLASK_DEBUG=1 pipenv run flask run
 
 Use the (rather long) token in your requests to authorized endpoints. Set the
 header ``Authorization: [token]``.
+
+### Push File Manager Image to Docker Hub.
+

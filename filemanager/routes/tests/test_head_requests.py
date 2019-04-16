@@ -9,6 +9,7 @@ from arxiv.integration.api import status
 from .. import upload_api
 from ...factory import create_web_app
 
+from typing import Any
 
 OS_ENVIRON = {'JWT_SECRET': 'foosecret'}
 
@@ -21,7 +22,7 @@ class TestContentLengthHeader(TestCase):
     entity-body were the client to retrieve the resource with a GET request.
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.app = create_web_app()
         self.app.config['JWT_SECRET'] = 'foosecret'
         self.client = self.app.test_client()
@@ -33,7 +34,7 @@ class TestContentLengthHeader(TestCase):
 
     @mock.patch('arxiv.users.auth.middleware.os.environ', OS_ENVIRON)
     @mock.patch(f'{upload_api.__name__}.upload.check_upload_content_exists')
-    def test_check_upload_content_exists(self, mock_controller):
+    def test_check_upload_content_exists(self, mock_controller: Any) -> None:
         """HEAD request to content status endpoint returns correct length."""
         mock_controller.return_value = {}, 200, {'Content-Length': '392351'}
         with self.app.app_context():
@@ -49,7 +50,7 @@ class TestContentLengthHeader(TestCase):
 
     @mock.patch('arxiv.users.auth.middleware.os.environ', OS_ENVIRON)
     @mock.patch(f'{upload_api.__name__}.upload.check_upload_file_content_exists')
-    def test_check_file_exists(self, mock_controller):
+    def test_check_file_exists(self, mock_controller: Any) -> None:
         """HEAD request to file status endpoint returns correct length."""
         mock_controller.return_value = {}, 200, {'Content-Length': '392351'}
         with self.app.app_context():
@@ -65,7 +66,7 @@ class TestContentLengthHeader(TestCase):
 
     @mock.patch('arxiv.users.auth.middleware.os.environ', OS_ENVIRON)
     @mock.patch(f'{upload_api.__name__}.upload.check_upload_source_log_exists')
-    def test_check_upload_source_log_exists(self, mock_controller):
+    def test_check_upload_source_log_exists(self, mock_controller: Any) -> None:
         """HEAD request to source log endpoint returns correct length."""
         mock_controller.return_value = {}, 200, {'Content-Length': '392351'}
         with self.app.app_context():
@@ -81,7 +82,7 @@ class TestContentLengthHeader(TestCase):
 
     @mock.patch('arxiv.users.auth.middleware.os.environ', OS_ENVIRON)
     @mock.patch(f'{upload_api.__name__}.upload.check_upload_service_log_exists')
-    def test_check_upload_service_log_exists(self, mock_controller):
+    def test_check_upload_service_log_exists(self, mock_controller: Any) -> None:
         """HEAD request to service log endpoint returns correct length."""
         mock_controller.return_value = {}, 200, {'Content-Length': '392351'}
         with self.app.app_context():
