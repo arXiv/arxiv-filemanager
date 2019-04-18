@@ -4,18 +4,18 @@ deployment:
 service:
   name: filemanager
 image:
-  tag: 0.0.4
+  tag: "0.3"
 labels:
   subsystem: submission
-secrets:
-  jwt:
-    name: jwt-secret-name
-    key: jwt-secret-key
+
 replicas: 1
 
+vault:
+  host: changeme
+  port: changeme
+  role: filemanager
+
 database:
-  secret:
-    name: "changeme"
-    key: "changeme"
+  host: changeme
 
 loglevel: 10

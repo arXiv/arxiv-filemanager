@@ -5,6 +5,7 @@
 from flask import Flask
 from celery import Celery
 
+from arxiv import vault
 from arxiv.base import Base
 from arxiv.base.middleware import wrap
 
@@ -31,7 +32,11 @@ def create_web_app() -> Flask:
     Base(app)    # Gives us access to the base UI templates and resources.
     auth.Auth(app)
     app.register_blueprint(upload_api.blueprint)
-    wrap(app, [auth.middleware.AuthMiddleware])
+
+    middleware = [auth.middleware.AuthMiddleware]
+    if app.config['VAULT_ENABLED']:
+        middleware.insert(0, vault.middleware.VaultMiddleware)
+    wrap(app, middleware)
 
     celery_app.config_from_object(celeryconfig)
     celery_app.autodiscover_tasks(['filemanager'], related_name='tasks', force=True)
