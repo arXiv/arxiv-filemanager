@@ -22,7 +22,7 @@ from filemanager.factory import create_web_app
 from filemanager.services import uploads
 
 from arxiv.users import domain, auth
-from arxiv import status
+from http import HTTPStatus as status
 
 TEST_FILES_STRIP_PS = os.path.join(os.getcwd(), 'tests/test_files_strip_postscript')
 
@@ -198,7 +198,7 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertEqual(response.status_code, 400, 'Valid authorization token not passed to server')
 
-        expected_data = {'reason': 'missing file/archive payload'}
+        expected_data = {'reason': 'file argument missing filename or file not selected'}
         self.assertDictEqual(json.loads(response.data), expected_data)
 
         # Set up new test
@@ -337,13 +337,13 @@ class TestUploadAPIRoutes(TestCase):
             f"/filemanager/api/{upload_data['upload_id']}/log",
             headers={'Authorization': admin_token}
         )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.FORBIDDEN)
 
         response = self.client.get(
             f"/filemanager/api/{upload_data['upload_id']}/log",
             headers={'Authorization': admin_token}
         )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.FORBIDDEN)
 
         # Add READ_UPLOAD_LOGS authorization to admin token
         admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
@@ -356,14 +356,14 @@ class TestUploadAPIRoutes(TestCase):
             f"/filemanager/api/{upload_data['upload_id']}/log",
             headers={'Authorization': admin_token}
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.OK)
         self.assertIn('ETag', response.headers, "Returns an ETag header")
 
         response = self.client.get(
             f"/filemanager/api/{upload_data['upload_id']}/log",
             headers={'Authorization': admin_token}
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.OK)
         self.assertIn('ETag', response.headers, "Returns an ETag header")
 
         # Look for something in upload source log
@@ -388,13 +388,13 @@ class TestUploadAPIRoutes(TestCase):
             f"/filemanager/api/log",
             headers={'Authorization': admin_token}
         )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.FORBIDDEN)
 
         response = self.client.get(
             f"/filemanager/api/log",
             headers={'Authorization': admin_token}
         )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.FORBIDDEN)
 
         # Create admin token for deleting upload workspace
         admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
@@ -407,7 +407,7 @@ class TestUploadAPIRoutes(TestCase):
             f"/filemanager/api/log",
             headers={'Authorization': admin_token}
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.OK)
         self.assertIn('ETag', response.headers, "Returns an ETag header")
 
         # Try to download service log
@@ -415,7 +415,7 @@ class TestUploadAPIRoutes(TestCase):
             f"/filemanager/api/log",
             headers={'Authorization': admin_token}
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.OK)
         self.assertIn('ETag', response.headers, "Returns an ETag header")
 
         # Write service log to file (to save temporary directory where we saved source_log)
@@ -477,7 +477,7 @@ class TestUploadAPIRoutes(TestCase):
             f"/filemanager/api/{upload_data['upload_id']}/main_a.tex/content",
             headers={'Authorization': token}
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.OK)
         self.assertIn('ETag', response.headers, "Returns an ETag header")
 
         # Download content file
@@ -485,7 +485,7 @@ class TestUploadAPIRoutes(TestCase):
             f"/filemanager/api/{upload_data['upload_id']}/main_a.tex/content",
             headers={'Authorization': token}
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.OK)
         self.assertIn('ETag', response.headers, "Returns an ETag header")
 
         workdir = tempfile.mkdtemp()
@@ -505,7 +505,7 @@ class TestUploadAPIRoutes(TestCase):
             f"/filemanager/api/{upload_data['upload_id']}/doesntexist.tex/content",
             headers={'Authorization': token}
         )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND,
+        self.assertEqual(response.status_code, status.NOT_FOUND,
                          "Trying to check non-existent should fail.")
         #self.assertIn('ETag', response.headers, "Returns an ETag header")
 
@@ -514,7 +514,7 @@ class TestUploadAPIRoutes(TestCase):
             f"/filemanager/api/{upload_data['upload_id']}/doesntexist.tex/content",
             headers={'Authorization': token}
         )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.NOT_FOUND)
 
 
         # Try to be naughty and download something outside of workspace
@@ -528,7 +528,7 @@ class TestUploadAPIRoutes(TestCase):
             headers={'Authorization': token}
         )
 
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND,
+        self.assertEqual(response.status_code, status.NOT_FOUND,
                          "Trying to check non-existent should fail.")
 
         # Delete the workspace
@@ -1538,7 +1538,7 @@ class TestUploadAPIRoutes(TestCase):
             f"/filemanager/api/{upload_data['upload_id']}/{test_filename}/content",
             headers={'Authorization': token}
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.OK)
         self.assertIn('ETag', response.headers, "Returns an ETag header")
 
         # Download content file
@@ -1546,7 +1546,7 @@ class TestUploadAPIRoutes(TestCase):
             f"/filemanager/api/{upload_data['upload_id']}/{test_filename}/content",
             headers={'Authorization': token}
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.OK)
         self.assertIn('ETag', response.headers, "Returns an ETag header")
 
         workdir = tempfile.mkdtemp()
@@ -1612,7 +1612,7 @@ class TestUploadAPIRoutes(TestCase):
             f"/filemanager/api/{upload_data['upload_id']}/{test_filename}/content",
             headers={'Authorization': token}
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.OK)
         self.assertIn('ETag', response.headers, "Returns an ETag header")
 
         # Download content file
@@ -1620,7 +1620,7 @@ class TestUploadAPIRoutes(TestCase):
             f"/filemanager/api/{upload_data['upload_id']}/{test_filename}/content",
             headers={'Authorization': token}
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.OK)
         self.assertIn('ETag', response.headers, "Returns an ETag header")
 
         workdir = tempfile.mkdtemp()
@@ -1830,7 +1830,7 @@ class TestUploadAPIRoutes(TestCase):
             f"/filemanager/api/{upload_data['upload_id']}/content",
             headers={'Authorization': admin_token}
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.OK)
         self.assertIn('ETag', response.headers, "Returns an ETag header")
 
         # Download content
@@ -1838,7 +1838,7 @@ class TestUploadAPIRoutes(TestCase):
             f"/filemanager/api/{upload_data['upload_id']}/content",
             headers={'Authorization': admin_token}
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.OK)
         self.assertIn('ETag', response.headers, "Returns an ETag header")
         workdir = tempfile.mkdtemp()
         with tarfile.open(fileobj=BytesIO(response.data)) as tar:
