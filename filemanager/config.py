@@ -14,7 +14,7 @@ AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
 LOGFILE = os.environ.get('LOGFILE')
 LOGLEVEL = os.environ.get('LOGLEVEL', 20)
 
-SQLALCHEMY_DATABASE_URI = os.environ.get('FILE_MANAGMENT_SQLALCHEMY_DATABASE_URI',
+SQLALCHEMY_DATABASE_URI = os.environ.get('FILE_MANAGEMENT_SQLALCHEMY_DATABASE_URI',
                                          'sqlite:///filemanager.db')
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
@@ -49,3 +49,27 @@ MAX_CONTENT_LENGTH = 16 * 1024 * 1024
 
 UPLOAD_BASE_DIRECTORY = os.environ.get('UPLOAD_BASE_DIRECTORY',
                                        '/tmp/filemanagment/submissions')
+
+KUBE_TOKEN = os.environ.get('KUBE_TOKEN', 'fookubetoken')
+VAULT_ENABLED = bool(int(os.environ.get('VAULT_ENABLED', '0')))
+VAULT_HOST = os.environ.get('VAULT_HOST', 'foovaulthost')
+VAULT_PORT = os.environ.get('VAULT_PORT', '1234')
+VAULT_ROLE = os.environ.get('VAULT_ROLE', 'filemanager')
+VAULT_CERT = os.environ.get('VAULT_CERT')
+VAULT_REQUESTS = [
+    {'type': 'generic',
+     'name': 'JWT_SECRET',
+     'mount_point': 'secret-development/',
+     'path': 'jwt',
+     'key': 'jwt-secret',
+     'minimum_ttl': 60},
+    {'type': 'database',
+     'engine': os.environ.get('FILEMANAGER_DATABASE_ENGINE', 'mysql+mysqldb'),
+     'host': os.environ.get('FILEMANAGER_DATABASE_HOST', 'localhost'),
+     'database': os.environ.get('FILEMANAGER_DATABASE', 'filemanager'),
+     'params': 'charset=utf8mb4',
+     'port': '3306',
+     'name': 'FILE_MANAGEMENT_SQLALCHEMY_DATABASE_URI',
+     'mount_point': 'database-development/',
+     'role': 'filemanager-write'}
+]

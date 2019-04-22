@@ -5,6 +5,7 @@ import re
 from datetime import datetime
 
 import shutil
+import tempfile
 import tarfile
 import logging
 from hashlib import md5
@@ -23,6 +24,8 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from arxiv.base.globals import get_application_config
+from arxiv.base import logging as base_logging
+
 from filemanager.arxiv.file import File as File
 from filemanager.utilities.unpack import unpack_archive
 
@@ -42,10 +45,28 @@ PHOTOSHOP = 'Photoshop'
 PREVIEW = 'Preview'
 THUMBNAIL = 'Thumbnail'
 
+
+logger = base_logging.getLogger(__name__)
+logger.propagate = False
+
+
 def _get_base_directory() -> str:
     config = get_application_config()
     return config.get('UPLOAD_BASE_DIRECTORY',
                       '/tmp/filemanagment/submissions')
+
+
+def is_available() -> bool:
+    """Quick check to verify read/write on the filesystem."""
+    try:
+        with tempfile.TemporaryFile(dir=_get_base_directory()) as f:
+            f.write(b'ruok')
+            f.seek(0)
+            assert f.read() == b'ruok'
+    except Exception as e:
+        logger.error('Could not read or write filesystem: %s', e)
+        return False
+    return True
 
 
 # TODO: we will want to look at where this class is behaving statefully, and

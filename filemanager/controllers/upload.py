@@ -17,7 +17,7 @@ from werkzeug.exceptions import NotFound, BadRequest, InternalServerError, \
 from werkzeug.datastructures import FileStorage
 from flask.json import jsonify
 
-from arxiv import status
+from http import HTTPStatus as status
 from arxiv.users import domain as auth_domain
 from arxiv.base.globals import get_application_config
 
@@ -206,7 +206,7 @@ def delete_workspace(upload_id: int) -> Response:
     # Add 400 response to openapi.yaml
 
     response_data = {'reason': UPLOAD_DELETED_WORKSPACE}  # Get rid of pylint error
-    status_code = status.HTTP_200_OK
+    status_code = status.OK
     return response_data, status_code, {}
 
 
@@ -278,7 +278,7 @@ def client_delete_file(upload_id: int, public_file_path: str) -> Response:
         'reason': UPLOAD_DELETED_FILE,
         'checksum': upload_workspace.content_checksum()
     })  # Get rid of pylint errorT
-    return response_data, status.HTTP_200_OK, {}
+    return response_data, status.OK, {}
 
 
 def client_delete_all_files(upload_id: int) -> Response:
@@ -344,7 +344,7 @@ def client_delete_all_files(upload_id: int) -> Response:
         'reason': UPLOAD_DELETED_ALL_FILES,
         'checksum': upload_workspace.content_checksum()
     })  # Get rid of pylint error
-    return response_data, status.HTTP_200_OK, {}
+    return response_data, status.OK, {}
 
 
 def upload(upload_id: Optional[int], file: FileStorage, archive: str,
@@ -385,7 +385,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
     #
     # headers = {'Location': url_for('upload_api.upload_status',
     #                              task_id=result.task_id)}
-    # return ACCEPTED, status.HTTP_202_ACCEPTED, headers
+    # return ACCEPTED, status.ACCEPTED, headers
     # End delete
 
     # Check arguments for basic qualities like existing and such.
@@ -533,7 +533,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
         headers = {'Location': url_for('upload_api.upload_files',
                                        upload_id=upload_db_data.upload_id)}
 
-        status_code = status.HTTP_201_CREATED
+        status_code = status.CREATED
 
         response_data = _status_data(upload_db_data, upload_workspace)
         logger.info("%s: Generating upload summary.",
@@ -593,7 +593,7 @@ def upload_summary(upload_id: int) -> Response:
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
         if upload_db_data is None:
-            status_code = status.HTTP_404_NOT_FOUND
+            status_code = status.NOT_FOUND
             response_data = UPLOAD_NOT_FOUND
             raise NotFound(UPLOAD_NOT_FOUND)
 
@@ -615,7 +615,7 @@ def upload_summary(upload_id: int) -> Response:
             if not fileObj.removed:
                 details_list.append(file_details)
 
-        status_code = status.HTTP_200_OK
+        status_code = status.OK
         response_data = _status_data(upload_db_data, upload_workspace)
         response_data.update({'files': details_list, 'errors': []})
         logger.info("%s: Upload summary request.",
@@ -623,7 +623,7 @@ def upload_summary(upload_id: int) -> Response:
 
     except IOError:
         # response_data = ERROR_RETRIEVING_UPLOAD
-        # status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        # status_code = status.INTERNAL_SERVER_ERROR
         raise InternalServerError(ERROR_RETRIEVING_UPLOAD)
     except (TypeError, ValueError):
         logger.info("Error updating database.")
@@ -687,7 +687,7 @@ def upload_lock(upload_id: int) -> Response:
             uploads.update(upload_db_data)
 
         response_data = {'reason': UPLOAD_LOCKED_WORKSPACE}  # Get rid of pylint error
-        status_code = status.HTTP_200_OK
+        status_code = status.OK
 
     except IOError:
         logger.error("%s: Lock workspace request failed ", upload_id)
@@ -718,7 +718,7 @@ def upload_unlock(upload_id: int) -> Response:
 
     """
     # response_data = ERROR_REQUEST_NOT_IMPLEMENTED
-    # status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    # status_code = status.INTERNAL_SERVER_ERROR
     logger.info("%s: Unlock upload workspace.", upload_id)
 
     try:
@@ -740,7 +740,7 @@ def upload_unlock(upload_id: int) -> Response:
             uploads.update(upload_db_data)
 
         response_data = {'reason': UPLOAD_UNLOCKED_WORKSPACE}  # Get rid of pylint error
-        status_code = status.HTTP_200_OK
+        status_code = status.OK
 
     except IOError:
         logger.error("%s: Unlock workspace request failed ", upload_id)
@@ -801,11 +801,11 @@ def upload_release(upload_id: int) -> Response:
         if upload_db_data.state == Upload.RELEASED:
             logger.info("%s: Release: Workspace has already been released.", upload_id)
             response_data = {'reason': UPLOAD_RELEASED_WORKSPACE}  # Should this be an error?
-            status_code = status.HTTP_200_OK
+            status_code = status.OK
         elif upload_db_data.state == Upload.DELETED:
             logger.info("%s: Release failed: Workspace has been deleted.", upload_id)
             # response_data = {'reason': UPLOAD_WORKSPACE_ALREADY_DELETED}
-            # status_code = status.HTTP_200_OK
+            # status_code = status.OK
             raise NotFound(UPLOAD_WORKSPACE_ALREADY_DELETED)
         elif upload_db_data.state == Upload.ACTIVE:
             logger.info("%s: Release upload workspace.", upload_id)
@@ -816,7 +816,7 @@ def upload_release(upload_id: int) -> Response:
             uploads.update(upload_db_data)
 
             response_data = {'reason': UPLOAD_RELEASED_WORKSPACE}  # Get rid of pylint error
-            status_code = status.HTTP_200_OK
+            status_code = status.OK
 
     except IOError:
         logger.error("%s: Release workspace request failed.", upload_id)
@@ -881,13 +881,13 @@ def upload_unrelease(upload_id: int) -> Response:
         if upload_db_data.state == Upload.DELETED:
             # logger.info(f"{upload_id}: Unrelease Failed: Workspace has been deleted.")
             # response_data = {'reason': UPLOAD_WORKSPACE_ALREADY_DELETED}
-            # tatus_code = status.HTTP_200_OK
+            # tatus_code = status.OK
             raise NotFound(UPLOAD_WORKSPACE_ALREADY_DELETED)
 
         if upload_db_data.state == Upload.ACTIVE:
             logger.info("%s: Unrelease: Workspace is already active.", upload_id)
             response_data = {'reason': UPLOAD_UNRELEASED_WORKSPACE}  # Should this be an error?
-            status_code = status.HTTP_200_OK
+            status_code = status.OK
         elif upload_db_data.state == Upload.RELEASED:
             logger.info("%s: Unrelease upload workspace.", upload_id)
 
@@ -897,7 +897,7 @@ def upload_unrelease(upload_id: int) -> Response:
             uploads.update(upload_db_data)
 
             response_data = {'reason': UPLOAD_UNRELEASED_WORKSPACE}
-            status_code = status.HTTP_200_OK
+            status_code = status.OK
 
     except IOError:
         logger.error("%s: Unrelease workspace request failed.", upload_id)
@@ -951,11 +951,11 @@ def check_upload_content_exists(upload_id: int) -> Response:
     if upload_workspace.content_package_exists:
         modified = upload_workspace.content_package_modified
         size = upload_workspace.content_package_size
-        return {}, status.HTTP_200_OK, {'ETag': checksum,
+        return {}, status.OK, {'ETag': checksum,
                                         'Content-Length': size,
                                         'Last-Modified': modified}
 
-    return {}, status.HTTP_200_OK, {'ETag': checksum}
+    return {}, status.OK, {'ETag': checksum}
 
 
 def get_upload_content(upload_id: int) -> Response:
@@ -991,7 +991,7 @@ def get_upload_content(upload_id: int) -> Response:
         "Content-disposition": f"filename={filepointer.name}",
         'ETag': checksum
     }
-    return filepointer, status.HTTP_200_OK, headers
+    return filepointer, status.OK, headers
 
 
 def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> Response:
@@ -1031,7 +1031,7 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
             size = upload_workspace.content_file_size(public_file_path)
             modified = upload_workspace.content_file_last_modified(public_file_path)
             checksum = upload_workspace.content_file_checksum(public_file_path)
-            return {}, status.HTTP_200_OK, {'ETag': checksum,
+            return {}, status.OK, {'ETag': checksum,
                                             'Content-Length': size,
                                             'Last-Modified': modified
                                             }
@@ -1057,7 +1057,7 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    return {}, status.HTTP_200_OK, {'ETag': checksum}
+    return {}, status.OK, {'ETag': checksum}
 
 
 def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
@@ -1129,7 +1129,7 @@ def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    return filepointer, status.HTTP_200_OK, headers
+    return filepointer, status.OK, headers
 
 
 # Log controllers
@@ -1169,7 +1169,7 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
     size = upload_workspace.source_log_size
     modified = upload_workspace.source_log_last_modified
 
-    return {}, status.HTTP_200_OK, {'ETag': checksum,
+    return {}, status.OK, {'ETag': checksum,
                                     'Content-Length': size,
                                     'Last-Modified': modified}
 
@@ -1218,7 +1218,7 @@ def get_upload_source_log(upload_id: int) -> Response:
         'Content-Length': size,
         'Last-Modified': modified
     }
-    return filepointer, status.HTTP_200_OK, headers
+    return filepointer, status.OK, headers
 
 
 # Service log routine + support routine
@@ -1287,7 +1287,7 @@ def check_upload_service_log_exists() -> Response:
     checksum = __checksum(service_log_path)
     size = os.path.getsize(service_log_path)
     modified = __last_modified(service_log_path)
-    return {}, status.HTTP_200_OK, {'ETag': checksum,
+    return {}, status.OK, {'ETag': checksum,
                                     'Content-Length': size,
                                     'Last-Modified': modified
                                     }
@@ -1316,7 +1316,7 @@ def get_upload_service_log() -> Response:
         'Content-Length': size,
         'Last-Modified': modified
     }
-    return filepointer, status.HTTP_200_OK, headers
+    return filepointer, status.OK, headers
 
 
 def _status_data(upload_db_data: Upload,

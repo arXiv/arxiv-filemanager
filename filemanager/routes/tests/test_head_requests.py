@@ -43,7 +43,7 @@ class TestContentLengthHeader(TestCase):
 
         content_length = response.headers.getlist('Content-Length')
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.OK)
         self.assertEqual(len(content_length), 1, 'Only one value is returned')
         self.assertEqual(content_length[0], '392351',
                          'The value provided by the controller is returned')
@@ -59,7 +59,7 @@ class TestContentLengthHeader(TestCase):
 
         content_length = response.headers.getlist('Content-Length')
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.OK)
         self.assertEqual(len(content_length), 1, 'Only one value is returned')
         self.assertEqual(content_length[0], '392351',
                          'The value provided by the controller is returned')
@@ -75,7 +75,7 @@ class TestContentLengthHeader(TestCase):
 
         content_length = response.headers.getlist('Content-Length')
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.OK)
         self.assertEqual(len(content_length), 1, 'Only one value is returned')
         self.assertEqual(content_length[0], '392351',
                          'The value provided by the controller is returned')
@@ -91,7 +91,7 @@ class TestContentLengthHeader(TestCase):
 
         content_length = response.headers.getlist('Content-Length')
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.OK)
         self.assertEqual(len(content_length), 1, 'Only one value is returned')
         self.assertEqual(content_length[0], '392351',
                          'The value provided by the controller is returned')
