@@ -91,6 +91,9 @@ class Upload:
     REMOVED_PREFIX = 'removed'
     """The name of the removed directory within the upload workspace."""
 
+    CHECKPOINT_PREFIX = 'checkpoint'
+    """The name of the checkpoint directory within the upload workspace."""
+
     ANCILLARY_PREFIX = 'anc'
     """The directory within source directory where ancillary files are kept."""
 
@@ -705,6 +708,10 @@ class Upload:
         """Get directory where source archive files get moved when unpacked."""
         return os.path.join(self.get_upload_directory(), self.REMOVED_PREFIX)
 
+    def get_checkpoint_directory(self) -> str:
+        """Get directory where checkpoint archive files live."""
+        return os.path.join(self.get_upload_directory(), self.CHECKPOINT_PREFIX)
+
     def get_ancillary_directory(self) -> str:
         """
         Get directory where ancillary files are stored.
@@ -737,6 +744,13 @@ class Upload:
             # TODO determine if we need to set owner/modes
             os.makedirs(removed_dir, 0o755)
             # print("Created removed workarea\n");
+
+        checkpoint_dir = self.get_checkpoint_directory()
+
+        if not os.path.exists(checkpoint_dir):
+            # Create path for storing checkpoints
+            # TODO determine if we need to set owner/modes
+            os.makedirs(checkpoint_dir, 0o755)
 
         return base_dir
 
@@ -2834,3 +2848,180 @@ class Upload:
             source_format = 'tex'
 
         return source_format
+
+    # Checkpoint routines
+    #
+    #    Manage creating, viewing, removing, and restoring checkpoints.
+    #
+    #    checksum might be useful as key to identify specific checkpoint.
+    #
+    # TODO: Should we support admin provided description of checkpoint?
+    #
+
+    def create_checkpoint(self) -> str:
+        """
+        Create a chckpoint (backup) of workspace source files.
+
+        Returns
+        -------
+        checksum : str
+            Checksum for checkpoint tar gzipped archive we just created.
+
+        """
+        source_directory = self.get_source_directory()
+
+        entries = os.listdir(source_directory)
+
+        # Make sure there are files before we bother to create a checkpoint.
+        if (len(entries) > 0):
+
+            self.add_warning(entries[0], "Creating checkpoint.")
+            single_directory = os.path.join(source_directory, entries[0])
+
+            # Save copy in removed directory
+            checkpoint_filename = os.path.join(self.get_checkpoint_directory(),
+                                         'checkpoint_source_1.tar.gz')
+
+            # Allow maximum number of checkpoints (100?)
+            max_checkpoints = 10 # Use 10 for testing
+
+            # Create a new unique filename for checkpoint
+            count = 2
+            while os.path.exists(checkpoint_filename) and count <= max_checkpoints:
+                checkpoint_filename = \
+                    os.path.join(self.get_checkpoint_directory(),
+                                 f'checkpoint_source_{count}.tar.gz')
+                count = count + 1
+
+            if count > max_checkpoints:
+                print("Reached maximum checkpoints.\n")
+                # TODO: Need to throw an error here?
+                return ''
+
+            # Create the checkpoint archive
+            with tarfile.open(checkpoint_filename, "w:gz") as tar:
+                tar.add(source_directory, arcname=os.path.sep)
+
+            # Determine checksum for new checkpoint file
+            obj = File(checkpoint_filename, self.get_checkpoint_directory())
+
+            return obj.checksum
+
+
+    def list_checkpoints(self) -> list:
+        """
+        Generate a list of checkpoints.
+
+        Returns
+        -------
+        list of checkpoint information, includes date/time checkpoint was created and checksum key.
+
+        TODO: include description? or make one up on the fly?
+
+        """
+        checkpoints_dir = self.get_checkpoint_directory()
+
+        checkpoints = []
+
+        for root_directory, directories, files in os.walk(checkpoints_dir):
+            for file in files:
+                path = os.path.join(root_directory, file)
+                obj = File(path, checkpoints_dir)
+
+                details = {
+                    'name': file,
+                    'size': os.path.getsize(path),
+                    'checksum': obj.checksum,
+                    'modified_datetime': obj.modified_datetime,
+                }
+                checkpoints.append(details)
+
+                # Create log entry containing file, type, dir
+                #log_msg = f'List checkpoints: {obj.name} \t[{obj.type}] in {obj.dir}'
+                #self.log(log_msg)
+
+        return checkpoints
+
+
+    def remove_checkpoint(self, checksum: str) -> None:
+        """
+        Remove specified checkpoint.
+
+        """
+        checkpoint_list = self.list_checkpoints()
+
+        for checkpoint in checkpoint_list:
+            if checkpoint['checksum'] == checksum:
+                path = os.path.join(self.get_checkpoint_directory(),
+                                    checkpoint['name'])
+                if os.path.exists(path):
+                    os.unlink(path)
+
+                log_msg = f"Removed checkpoint: {checkpoint['name']}"
+                self.log(log_msg)
+
+
+
+    def remove_all_checkpoints(self) -> None:
+        """
+        Remove all checkpoints.
+
+        """
+        checkpoint_list = self.list_checkpoints()
+
+        for checkpoint in checkpoint_list:
+            self.remove_checkpoint(checkpoint['checksum'])
+
+        log_msg = f"Removed ALL checkpoint: {checkpoint['name']}"
+        self.log(log_msg)
+
+    def restore_checkpoint(self, checksum: str) -> None:
+        """
+        Restore a previous checkpoint.
+
+        First we delete all existing files under workspace source directory.
+
+        Next we unpack chackpoint file into src directory.
+
+        TODO: Decide whether to checkpoint source we are restoring over.
+        TODO: Probably not. Maybe should checkpoint if someone other than owner
+        TODO: is uploading file (forget to select checkpoint) but only if
+        TODO: previous upload was by owner.
+
+        Returns
+        -------
+
+        """
+        # We probably need to remove all existing source files before we
+        # extract files from checkpoint zipped tar archive.
+        self.client_remove_all_files()
+
+        # Locate the checkpoint we are interested in
+        checkpoint_list = self.list_checkpoints()
+        name = ''
+        restore_path = ''
+        for checkpoint in checkpoint_list:
+            if checkpoint['checksum'] == checksum:
+                name = checkpoint['name']
+                restore_path = os.path.join(self.get_checkpoint_directory(),
+                                    checkpoint['name'])
+
+        # Restore files from checkpoint
+        if os.path.exists(restore_path):
+            tar = tarfile.open(restore_path)
+            # untar file into source directory
+            tar.extractall(path=self.get_source_directory())
+            tar.close()
+        else:
+            self.add_error('', 'Unable to restore checkpoint. Not found.')
+
+        # Set permissions
+        self.set_file_permissions()
+
+        # Rebuild file list
+        self.create_file_list()
+
+        log_msg = f'Restored checkpoint: {name}'
+        self.log(log_msg)
+
+# TODO: According to UI mockup we need to add support to download checkpoint files!
