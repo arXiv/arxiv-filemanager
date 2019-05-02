@@ -212,6 +212,39 @@ strip_tests.append(['cone.eps',
                     ])
 
 
+def compare_file_lists(list1: list, list2: list) -> bool:
+    """
+    Compare two lists of File objects and determine if they are equal.
+
+    Since restore changes the modification time we will ignore this.
+
+    Parameters
+    ----------
+    list1: list
+        List of file objects
+    list2
+        List of file objects
+    Returns
+    -------
+    True if list of File objects is idenical on name, size, checsum fields,
+    otherwise False is returned.
+
+    """
+    names1 = {file.name for file in list1}
+    names2 = {file.name for file in list2}
+
+    if len(names1) != len(names2):
+        return False
+
+    # Compare the two lists
+    set1 = set((x.name, x.checksum, x.size) for x in list1)
+
+    difference = [x for x in list2 if (x.name, x.checksum, x.size) not in set1]
+
+    if not difference:
+        return True
+
+    return False
 
 # Internal Debugging test
 class TestInternalSupportRoutines(TestCase):
@@ -746,6 +779,159 @@ class TestInternalSupportRoutines(TestCase):
         self.assertTrue(is_same,
                         f"Repair Encapsulated Postscript file '{test_filename}'.")
 
+
+    def test_checkpoint(self) -> None:
+        """
+        Test basic checkpoint functionality.
+
+        """
+        test_id = '1234321'
+        upload = Upload(test_id)
+
+        # Upload initial set of files for first checkpoint
+        filename = os.path.join(TEST_FILES_DIRECTORY,
+                                'UnpackWithSubdirectories.tar.gz')
+
+        # For testing purposes, clean out existing workspace directory
+        workspace_dir = upload.create_upload_workspace()
+        if os.path.exists(workspace_dir):
+            shutil.rmtree(workspace_dir)
+
+        self.assertTrue(os.path.exists(filename), 'Test archive is available')
+
+        # Recreate FileStroage object that flask will be passing in
+        file = None
+        with open(filename, 'rb') as fp:
+            upload = Upload(test_id)
+            file = FileStorage(fp)
+            upload.process_upload(file)
+
+        # Save a list of files to compare againsgt restored checkpoint
+        test1_filelist = upload.create_file_list()
+
+        source_directory = upload.get_source_directory()
+
+        # Create a checkpoint
+        checkpoint1_sum = upload.create_checkpoint()
+
+        # Upload different set of files.
+        filename = os.path.join(TEST_FILES_DIRECTORY,
+                                'Upload2.tar.gz')
+
+        self.assertTrue(os.path.exists(filename), 'Test archive is available')
+
+        # Clear out existing files (pretend user is uploading new set of files)
+        upload.client_remove_all_files()
+
+        # Recreate FileStroage object that flask will be passing in
+        file = None
+        with open(filename, 'rb') as fp:
+            #upload = Upload(test_id)
+            file = FileStorage(fp)
+            upload.process_upload(file)
+
+        # Save a list of files to compare againsgt restored checkpoint
+        test2_filelist = upload.create_file_list()
+
+        # Create a second checkpoint
+        checkpoint2_sum = upload.create_checkpoint()
+
+        # Upload third set of files.
+        filename = os.path.join(TEST_FILES_DIRECTORY,
+                                'Upload3.tar.gz')
+
+        self.assertTrue(os.path.exists(filename), 'Test archive is available')
+
+        # Clear out existing files (pretend user is uploading new set of files)
+        upload.client_remove_all_files()
+
+        # Recreate FileStroage object that flask will be passing in
+        file = None
+        with open(filename, 'rb') as fp:
+            # upload = Upload(test_id)
+            file = FileStorage(fp)
+            upload.process_upload(file)
+
+        # Save a list of files to compare againsgt restored checkpoint
+        test3_filelist = upload.create_file_list()
+
+        # Create third checkpoint
+        checkpoint3_sum = upload.create_checkpoint()
+
+        # Now try to list checkpoints
+        checkpoint_list = upload.list_checkpoints()
+        print(f"\nList Checkpoints:{len(checkpoint_list)}")
+        for checkpoint in checkpoint_list:
+            print(f"\tCheckpoint; {checkpoint['name']}: {checkpoint['checksum']}")
+
+        # Now restore checkpoints and check whether the restored and original file
+        # lists are equivalent.
+
+        # Restore first checkpoint
+        #   - removes all files under src directory
+        print(f"\nRestore:{checkpoint1_sum}")
+        upload.restore_checkpoint(checkpoint1_sum)
+
+        # Check whether restored file list matches original list.
+        b1 = compare_file_lists(upload.create_file_list(), test1_filelist)
+        self.assertTrue(b1, "Restored file list equivalent to orignal file "
+                            "list for first checkpoint.")
+
+        # Restore second checkpoint
+        #   - removes all files under src directory
+        print(f"\nRestore:{checkpoint2_sum}")
+        upload.restore_checkpoint(checkpoint2_sum)
+
+        # Check whether restored file list matches original list.
+        b2 = compare_file_lists(upload.create_file_list(), test2_filelist)
+        self.assertTrue(b2, "Restored file list equivalent to orignal file "
+                            "list for second checkpoint.")
+
+        # Restore third checkpoint
+        #   - removes all files under src directory
+        print(f"\nRestore:{checkpoint3_sum}")
+        upload.restore_checkpoint(checkpoint3_sum)
+
+        # Check whether restored file list matches original list.
+        b3 = compare_file_lists(upload.create_file_list(), test3_filelist)
+        self.assertTrue(b3, "Restored file list equivalent to orignal file "
+                            "list for third checkpoint.")
+
+        # Intentionally mess things up and make sure we generate a failure
+        upload.client_remove_all_files()
+        bf = compare_file_lists(upload.create_file_list(), test3_filelist)
+        self.assertFalse(bf, "Restored file list is NOT equivalent to "
+                             "orignal file list (after deleting files).")
+
+        # Remove individual checkpoint files
+        print(f"\nRemove checkpoint {checkpoint_list[0]['checksum']}")
+
+        upload.remove_checkpoint(checkpoint_list[0]['checksum'])
+
+        # List checkpoint files
+        # Now try to list checkpoints
+        checkpoint_list = upload.list_checkpoints()
+        print(f"\nList Checkpoints:{len(checkpoint_list)}")
+        for checkpoint in checkpoint_list:
+            print(f"\tCheckpoint; {checkpoint['name']}: {checkpoint['checksum']}")
+
+        # Remove all remaining checkpoint files (what we didn't delete above)
+        upload.remove_all_checkpoints()
+
+        # Now try to list checkpoints
+        checkpoint_list = upload.list_checkpoints()
+        print(f"\nList Checkpoints:{len(checkpoint_list)}")
+        for checkpoint in checkpoint_list:
+            print(f"Checkpoint; {checkpoint['name']}: {checkpoint['checksum']}")
+
+        self.assertTrue(checkpoint_list == [],
+                        "All checkpoints have been removed.")
+
+        # cleanup workspace
+        #upload.remove_workspace()
+
+        # TODO: Clean up debugging and remove workspace when
+        #       finished develoment.
 
 class TestUpload(TestCase):
     """:func:`.process_upload` adds ones to :prop:`.Thing.name`."""
