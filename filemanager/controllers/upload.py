@@ -85,6 +85,10 @@ UPLOAD_LOCKED_WORKSPACE = 'locked workspace'
 UPLOAD_UNLOCKED_WORKSPACE = 'unlocked workspace'
 UPLOAD_RELEASED_WORKSPACE = 'released workspace'
 UPLOAD_UNRELEASED_WORKSPACE = 'unreleased workspace'
+UPLOAD_CREATED_CHECKPOINT = 'created checkpoint'
+UPLOAD_RESTOREDED_CHECKPOINT = 'restored checkpoint'
+UPLOAD_DELETED_CHECKPOINT = 'deleted checkpoint'
+UPLOAD_DELETED_ALL_CHECKPOINTS = 'deleted all checkpoint'
 
 UPLOAD_NOT_ACTIVE = 'upload workspace is not active.'
 UPLOAD_WORKSPACE_LOCKED = 'upload workspace is locked.'
@@ -1111,10 +1115,10 @@ def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
             raise NotFound(f"File '{public_file_path}' not found.")
 
     except IOError:
-        logger.error("%s: Delete file request failed ", upload_db_data.upload_id)
+        logger.error("%s: Get uploaded file request failed ", upload_db_data.upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
     except NotFound as nf:
-        logger.info("%s: DeleteFile: %s", upload_id, nf)
+        logger.info("%s: GetUploadFile: %s", upload_id, nf)
         raise nf
     except SecurityError as secerr:
         logger.info("%s: %s", upload_id, secerr.description)
@@ -1122,10 +1126,10 @@ def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
         # NotFound in order to provide as little feedback as posible to client.
         raise NotFound(UPLOAD_FILE_NOT_FOUND)
     except Forbidden as forb:
-        logger.info("%s: Delete file forbidden: %s.", upload_id, forb)
+        logger.info("%s: Get uploaded file forbidden: %s.", upload_id, forb)
         raise forb
     except Exception as ue:
-        logger.info("Unknown error in delete file. "
+        logger.info("Unknown error in get uploaded file. "
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
@@ -1170,8 +1174,8 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
     modified = upload_workspace.source_log_last_modified
 
     return {}, status.OK, {'ETag': checksum,
-                                    'Content-Length': size,
-                                    'Last-Modified': modified}
+                           'Content-Length': size,
+                           'Last-Modified': modified}
 
 
 def get_upload_source_log(upload_id: int) -> Response:
@@ -1316,6 +1320,420 @@ def get_upload_service_log() -> Response:
         'Content-Length': size,
         'Last-Modified': modified
     }
+    return filepointer, status.OK, headers
+
+
+# Checkpoint support routines
+
+def create_checkpoint(upload_id: int, user) -> Response:
+    """
+    Create checkpoint.
+
+    Admins will be able to manage checkpoints.
+
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for upload workspace.
+    use : str
+        User making create checkpoint request.
+
+    Returns
+    -------
+    Standard Response tuple containing response content, HTTP status, and HTTP headers.
+
+    """
+    user_id = str(user.username)
+    logger.info("%s: Create checkpoint ['%s'].", upload_id, user_id)
+
+    try:
+        # Make sure we have an upload_db_data to work with
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+
+        if upload_db_data is None:
+            # Invalid workspace identifier
+            raise NotFound(UPLOAD_NOT_FOUND)
+
+        upload_workspace = UploadWorkspace(upload_id)
+        checksum = upload_workspace.create_checkpoint(user)
+
+        ###
+        # Lock upload workspace
+        # update database
+        #if upload_db_data.lock == Upload.LOCKED:
+        #    logger.info("%s: Lock: Workspace is already locked.", upload_id)
+        #else:
+        #    upload_db_data.lock = Upload.LOCKED
+        #
+        # Store in DB
+        #   uploads.update(upload_db_data)
+        ###
+
+        response_data = {'reason': UPLOAD_CREATED_CHECKPOINT}  # Get rid of pylint error
+        status_code = status.OK
+
+    except IOError:
+        logger.error("%s: Lock workspace request failed ", upload_id)
+        raise InternalServerError(CANT_DELETE_FILE)
+    except NotFound as nf:
+        logger.info("%s: Lock: %s", upload_id, nf)
+        raise
+    except Exception as ue:
+        logger.info("Unknown error lock workspace. "
+                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+
+    return response_data, status_code, {'ETag': checksum}
+
+
+def list_checkpoints(upload_id: int, user) -> Response:
+    """
+    List checkpoints.
+
+    Admins will be able to manage checkpoints.
+
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for upload workspace.
+    user : str
+        User making create checkpoint request.
+
+    Returns
+    -------
+    Standard Response tuple containing response content, HTTP status, and HTTP headers.
+
+        Response content includes details for each checkpoint.
+
+    """
+    user_id = str(user.username)
+    logger.info("%s: List checkpoints ['%s'].", upload_id, user_id)
+
+    try:
+        # Make sure we have an upload_db_data to work with
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+
+        if upload_db_data is None:
+            # Invalid workspace identifier
+            raise NotFound(UPLOAD_NOT_FOUND)
+
+        upload_workspace = UploadWorkspace(upload_id)
+        checkpoint_list = upload_workspace.list_checkpoints(user)
+
+
+        response_data = {'upload_id': upload_id,
+                         'checkpoints': json.loads(json.dumps(checkpoint_list))
+                         }  # Get rid of pylint error
+        status_code = status.OK
+
+    except IOError:
+        logger.error("%s: List checkpoints request failed ", upload_id)
+        raise InternalServerError(CANT_DELETE_FILE)
+    except NotFound as nf:
+        logger.info("%s: List checkpoints: %s", upload_id, nf)
+        raise
+    except Exception as ue:
+        logger.info("Unknown error while listing checkpoints. "
+                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+
+    return response_data, status_code, {}
+
+
+def restore_checkpoint(upload_id: int, checkpoint_checksum: str,
+                        user) -> Response:
+    """
+    Restore checkpoint specified by checkpoint_checksum.
+
+    Admins will be able to manage checkpoints.
+
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for upload workspace.
+    checkpoint_checksum: str
+        Unique identifier/key for checkpoint.
+    user : str
+        User making create checkpoint request.
+
+    Returns
+    -------
+    Standard Response tuple containing response content, HTTP status, and HTTP headers.
+
+    """
+    user_id = str(user.username)
+    logger.info("%s: Restore checkpoints ['%s'].", upload_id, user_id)
+
+    try:
+        # Make sure we have an upload_db_data to work with
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+
+        if upload_db_data is None:
+            # Invalid workspace identifier
+            raise NotFound(UPLOAD_NOT_FOUND)
+
+        upload_workspace = UploadWorkspace(upload_id)
+        result = upload_workspace.restore_checkpoint(checkpoint_checksum, user)
+
+
+        response_data = {'reason': f"Restored checkpoint '{checkpoint_checksum}'"}  # Get rid of pylint error
+        status_code = status.OK
+
+    except IOError:
+        logger.error("%s: Restore checkpoint request failed ", upload_id)
+        raise InternalServerError(CANT_DELETE_FILE)
+    except NotFound as nf:
+        logger.info("%s: Checkpoint: %s", upload_id, nf)
+        raise
+    except Exception as ue:
+        logger.info("Unknown error while restoring checkpoint. "
+                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+
+    return response_data, status_code, {}
+
+
+
+def delete_checkpoint(upload_id: int, checkpoint_checksum: str,
+                        user) -> Response:
+    """
+    Delete checkpoint specified by checkpoint_checksum.
+
+    Admins will be able to manage checkpoints.
+
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for upload workspace.
+    checkpoint_checksum: str
+        Unique identifier/key for checkpoint to delete.
+    user : str
+        User making create checkpoint request.
+
+    Returns
+    -------
+    Standard Response tuple containing response content, HTTP status, and HTTP headers.
+
+    """
+    user_id = str(user.username)
+    logger.info("%s: Delete checkpoint '%s' ['%s'].", upload_id,
+                checkpoint_checksum, user_id)
+
+    try:
+        # Make sure we have an upload_db_data to work with
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+
+        if upload_db_data is None:
+            # Invalid workspace identifier
+            raise NotFound(UPLOAD_NOT_FOUND)
+
+        upload_workspace = UploadWorkspace(upload_id)
+        result = upload_workspace.delete_checkpoint(checkpoint_checksum, user)
+
+
+        response_data = {'reason': f"Deleted checkpoint '{checkpoint_checksum}'"}  # Get rid of pylint error
+        status_code = status.OK
+
+    except IOError:
+        logger.error("%s: Deleted checkpoint request failed ", upload_id)
+        raise InternalServerError(CANT_DELETE_FILE)
+    except NotFound as nf:
+        logger.info("%s: Checkpoint '%s'not found: %s", upload_id,
+                    checkpoint_checksum, nf)
+        raise
+    except Exception as ue:
+        logger.info("Unknown error while deleting checkpoint. "
+                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+
+    return response_data, status_code, {}
+
+
+def delete_all_checkpoints(upload_id: int, user) -> Response:
+    """
+    Delete all checkpoint files.
+
+    Admins will be able to manage checkpoints.
+
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for upload workspace.
+    user : str
+        User making create checkpoint request.
+
+    Returns
+    -------
+    Standard Response tuple containing response content, HTTP status, and HTTP headers.
+
+    """
+    user_id = str(user.username)
+    logger.info("%s: Delete all checkpoints ['%s'].", upload_id, user_id)
+
+    try:
+        # Make sure we have an upload_db_data to work with
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+
+        if upload_db_data is None:
+            # Invalid workspace identifier
+            raise NotFound(UPLOAD_NOT_FOUND)
+
+        upload_workspace = UploadWorkspace(upload_id)
+        checkpoint_list = upload_workspace.delete_all_checkpoints(user)
+
+
+        response_data = {'reason': f"Deleted all checkpoints."}  # Get rid of pylint error
+        status_code = status.OK
+
+    except IOError:
+        logger.error("%s: Delete all checkpoints request failed ", upload_id)
+        raise InternalServerError(CANT_DELETE_FILE)
+    except NotFound as nf:
+        logger.info("%s: Delete all checkpoints: %s", upload_id, nf)
+        raise
+    except Exception as ue:
+        logger.info("Unknown error while deleting all checkpoints. "
+                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+
+    return response_data, status_code, {}
+
+
+def check_checkpoint_file_exists(upload_id: int, checkpoint_checksum: str) -> Response:
+    """
+    Verify that the specified checkpoint content file exists/is available.
+
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for upload workspace.
+    checkpoint_checksum: str
+        checksum of checkpoint ile to be checked.
+
+    Returns
+    -------
+    Standard Response tuple containing content, HTTP status, and HTTP headers.
+
+    """
+    try:
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+    except IOError:
+        logger.error("%s: CheckpointFileExistsCheck: There was a problem "
+                     "connecting to database.", upload_id)
+        raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
+
+    if upload_db_data is None:
+        raise NotFound(UPLOAD_NOT_FOUND)
+
+    logger.info("%s: Checkpoint content file exists request.", upload_id)
+
+    try:
+
+        upload_workspace = UploadWorkspace(upload_id)
+
+        # file exists
+        if upload_workspace.checkpoint_file_exists(checkpoint_checksum):
+            size = upload_workspace.checkpoint_file_size(checkpoint_checksum)
+            modified = upload_workspace.checkpoint_file_last_modified(checkpoint_checksum)
+            #checksum = upload_workspace.content_file_checksum(public_file_path)
+            return {}, status.OK, {'ETag': checkpoint_checksum,
+                                   'Content-Length': size,
+                                   'Last-Modified': modified
+                                   }
+
+        raise NotFound(f"Checksum '{checkpoint_checksum}' not found.")
+
+    except IOError:
+        logger.error("%s: Checkpoint file exists request failed ", upload_db_data.upload_id)
+        raise InternalServerError(CANT_DELETE_FILE)
+    except NotFound as nf:
+        logger.info("%s: Checkpoint file not found: %s", upload_id, nf)
+        raise nf
+    except SecurityError as secerr:
+        logger.info("%s: %s", upload_id, secerr.description)
+        # TODO: Should this be BadRequest or NotFound. I'm leaning towards
+        # NotFound in order to provide as little feedback as posible to client.
+        raise NotFound("Checkpoint file not found.")
+    except Forbidden as forb:
+        logger.info("%s: Operation forbidden: %s.", upload_id, forb)
+        raise forb
+    except Exception as ue:
+        logger.info("Unknown error in checkpoint file exists operation. "
+                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+
+    return {}, status.OK, {'ETag': checkpoint_checksum}
+
+
+def get_checkpoint_file_content(upload_id: int, checkpoint_checksum: str) -> Response:
+    """
+    Get the checkpoint file specified by provided checksum.
+
+    Parameters
+    ----------
+    upload_id : int
+        The unique identifier for upload workspace.
+    checkpoint_checksum: str
+        checksum that uniquely identifies checkpoint.
+
+    Returns
+    -------
+    dict
+        Complete summary of upload processing.
+    int
+        An HTTP status code.
+    dict
+        Some extra headers to add to the response.
+
+    """
+    try:
+        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+    except IOError:
+        logger.error("%s: CheckpointFileDownload: There was a problem connecting to database.",
+                     upload_db_data.upload_id)
+        raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
+
+    if upload_db_data is None:
+        raise NotFound(UPLOAD_NOT_FOUND)
+
+    try:
+
+        upload_workspace = UploadWorkspace(upload_id)
+
+        # Returns path if file exists
+        if upload_workspace.checkpoint_file_exists(checkpoint_checksum):
+            size = upload_workspace.checkpoint_file_size(checkpoint_checksum)
+            modified = upload_workspace.checkpoint_file_last_modified(checkpoint_checksum)
+            #checksum = upload_workspace.content_file_checksum(public_file_path)
+            filepointer = upload_workspace.checkpoint_file_pointer(checkpoint_checksum)
+            headers = {
+                "Content-disposition": f"filename={filepointer.name}",
+                'ETag': checkpoint_checksum,
+                'Content-Length': size,
+                'Last-Modified': modified
+            }
+        else:
+            raise NotFound(f"File '{checkpoint_checksum}' not found.")
+
+    except IOError:
+        logger.error("%s: Checkpoint file request failed ", upload_db_data.upload_id)
+        raise InternalServerError(CANT_DELETE_FILE)
+    except NotFound as nf:
+        logger.info("%s: CheckpointFileDownload: %s", upload_id, nf)
+        raise nf
+    except SecurityError as secerr:
+        logger.info("%s: %s", upload_id, secerr.description)
+        # TODO: Should this be BadRequest or NotFound. I'm leaning towards
+        # NotFound in order to provide as little feedback as posible to client.
+        raise NotFound(UPLOAD_FILE_NOT_FOUND)
+    except Forbidden as forb:
+        logger.info("%s: Checkpoint file forbidden: %s.", upload_id, forb)
+        raise forb
+    except Exception as ue:
+        logger.info("Unknown error in delete file. "
+                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+
     return filepointer, status.OK, headers
 
 
