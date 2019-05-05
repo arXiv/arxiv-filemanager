@@ -36,6 +36,8 @@ UPLOAD_DELETE_ALL_FILE_FAILED = 'unable to delete all file'
 UPLOAD_FILE_NOT_FOUND = 'file not found'
 UPLOAD_WORKSPACE_NOT_FOUND = 'workspcae not found'
 
+CHECKPOINT_FILE_NOT_FOUND = 'checkpoint file not found'
+
 # File types unmacify is interested in
 PC = 'pc'
 MAC = 'mac'
@@ -2858,7 +2860,138 @@ class Upload:
     # TODO: Should we support admin provided description of checkpoint?
     #
 
-    def create_checkpoint(self) -> str:
+    def resolve_checkpoint_file_obj(self, checkpoint_checksum: str) -> str:
+        """
+        Returns File object for checkpoint file.
+
+        Parameters
+        ----------
+        checkpoint_checksum : str
+            Checksum that uniquely identifies checkpoint.
+
+        Returns
+        -------
+        Null if file does not exist.
+        """
+        checkpoint_directory = self.get_checkpoint_directory()
+
+        # Find the checkpoint file
+        for root_directory, directories, files in os.walk(checkpoint_directory):
+            for file in files:
+                path = os.path.join(root_directory, file)
+                obj = File(path, checkpoint_directory)
+
+                if obj.checksum == checkpoint_checksum:
+                    return obj
+
+        return None
+
+
+    def checkpoint_file_path(self, checkpoint_checksum: str) -> str:
+        """
+        Return the absolute path of content file given relative pointer.
+
+        Parameters
+        ----------
+        checkpoint_checksum : str
+            Checksum that uniquely identifies checkpoint.
+
+        Returns
+        -------
+        Path to checkpoint specified by unique checksum.
+        Null if file does not exist.
+
+        """
+        file_obj = self.resolve_checkpoint_file_obj(checkpoint_checksum)
+
+        if file_obj is not None:
+            return file_obj.filepath
+
+        return ""
+
+
+    def checkpoint_file_exists(self, checkpoint_checksum: str) -> bool:
+        """
+        Indicate whether checkpoint files exists.
+
+        Parameters
+        ----------
+        checkpoint_checksum : str
+            Checksum that uniquely identifies checkpoint.
+
+        Returns
+        -------
+        True if file exists, False otherwise.
+
+        """
+        file_obj = self.resolve_checkpoint_file_obj(checkpoint_checksum)
+
+        if file_obj is not None:
+            return os.path.exists(file_obj.filepath)
+
+        return False
+
+    def checkpoint_file_size(self, checkpoint_checksum: str) -> int:
+        """
+        Return size of specified file.
+
+        Parameters
+        ----------
+        checkpoint_checksum : str
+            Checksum that uniquely identifies checkpoint.
+
+        Returns
+        -------
+        Size in bytes.
+        """
+        file_obj = self.resolve_checkpoint_file_obj(checkpoint_checksum)
+        if file_obj is not None:
+            return file_obj.size
+
+        return 0
+
+    def checkpoint_file_pointer(self, checkpoint_checksum: str) -> io.BytesIO:
+        """
+        Open specified file and return file pointer.
+
+        Parameters
+        ----------
+        checkpoint_checksum : str
+            Checksum that uniquely identifies checkpoint.
+
+        Returns
+        -------
+        File pointer or Null string when filepath does not exist.
+
+        """
+        file_obj = self.resolve_checkpoint_file_obj(checkpoint_checksum)
+
+        if file_obj is not None and os.path.exists(file_obj.filepath):
+            return open(file_obj.filepath, 'rb')
+
+        return ""
+
+    def checkpoint_file_last_modified(self, checkpoint_checksum: str) -> datetime:
+        """
+        Return last modified time for specified file/package.
+
+        Parameters
+        ----------
+        checkpoint_checksum : str
+            Checksum that uniquely identifies checkpoint.
+
+        Returns
+        -------
+        Last modified date string.
+        """
+        file_obj = self.resolve_checkpoint_file_obj(checkpoint_checksum)
+
+        dt = datetime.utcfromtimestamp(os.path.getmtime(file_obj.filepath))
+        
+        return datetime.utcfromtimestamp(os.path.getmtime(file_obj.filepath))
+
+
+    def create_checkpoint(self, user) -> str:
         """
         Create a chckpoint (backup) of workspace source files.
 
@@ -2875,7 +3008,11 @@ class Upload:
         # Make sure there are files before we bother to create a checkpoint.
         if (len(entries) > 0):
 
-            self.add_warning(entries[0], "Creating checkpoint.")
+            if user:
+                self.add_warning(entries[0], f"Creating checkpoint. ['{user.username}']")
+            else:
+                self.add_warning(entries[0], f"Creating checkpoint.")
+
             single_directory = os.path.join(source_directory, entries[0])
 
             # Save copy in removed directory
@@ -2908,7 +3045,7 @@ class Upload:
             return obj.checksum
 
 
-    def list_checkpoints(self) -> list:
+    def list_checkpoints(self, user) -> list:
         """
         Generate a list of checkpoints.
 
@@ -2937,19 +3074,23 @@ class Upload:
                 checkpoints.append(details)
 
                 # Create log entry containing file, type, dir
-                #log_msg = f'List checkpoints: {obj.name} \t[{obj.type}] in {obj.dir}'
-                #self.log(log_msg)
+        if user:
+            log_msg = f'Created list of checkpoints [user.username].'
+        else:
+            log_msg = f'Created list of checkpoints.'
+        self.log(log_msg)
 
         return checkpoints
 
 
-    def remove_checkpoint(self, checksum: str) -> None:
+    def delete_checkpoint(self, checksum: str, user) -> None:
         """
         Remove specified checkpoint.
 
         """
-        checkpoint_list = self.list_checkpoints()
+        checkpoint_list = self.list_checkpoints(user)
 
+        found = False
         for checkpoint in checkpoint_list:
             if checkpoint['checksum'] == checksum:
                 path = os.path.join(self.get_checkpoint_directory(),
@@ -2957,25 +3098,42 @@ class Upload:
                 if os.path.exists(path):
                     os.unlink(path)
 
-                log_msg = f"Removed checkpoint: {checkpoint['name']}"
-                self.log(log_msg)
+                found = True
+
+        if found:
+            if user:
+                log_msg = f"Deleted checkpoint: {checkpoint['name']} ['{user.username}']."
+            else:
+                log_msg = f"Deleted checkpoint: {checkpoint['name']}."
+            self.log(log_msg)
+        else:
+            if user:
+                log_msg = f"ERROR: Checkpoint not found: {checksum} ['{user.username}']"
+            else:
+                log_msg = f"ERROR: Checkpoint not found: {checksum}."
+            self.log(log_msg)
+
+            raise NotFound(CHECKPOINT_FILE_NOT_FOUND)
 
 
-
-    def remove_all_checkpoints(self) -> None:
+    def delete_all_checkpoints(self, user) -> None:
         """
         Remove all checkpoints.
 
         """
-        checkpoint_list = self.list_checkpoints()
+        checkpoint_list = self.list_checkpoints(user)
 
         for checkpoint in checkpoint_list:
-            self.remove_checkpoint(checkpoint['checksum'])
+            self.delete_checkpoint(checkpoint['checksum'], user)
 
-        log_msg = f"Removed ALL checkpoint: {checkpoint['name']}"
+        if user:
+            log_msg = f"Deleted ALL checkpoint: {checkpoint['name']} ['{user.username}']."
+        else:
+            log_msg = f"Deleted ALL checkpoint: {checkpoint['name']}."
         self.log(log_msg)
 
-    def restore_checkpoint(self, checksum: str) -> None:
+
+    def restore_checkpoint(self, checksum: str, user) -> None:
         """
         Restore a previous checkpoint.
 
@@ -2997,7 +3155,7 @@ class Upload:
         self.client_remove_all_files()
 
         # Locate the checkpoint we are interested in
-        checkpoint_list = self.list_checkpoints()
+        checkpoint_list = self.list_checkpoints(user)
         name = ''
         restore_path = ''
         for checkpoint in checkpoint_list:
@@ -3021,7 +3179,10 @@ class Upload:
         # Rebuild file list
         self.create_file_list()
 
-        log_msg = f'Restored checkpoint: {name}'
+        if user:
+            log_msg = f'Restored checkpoint: {name} [{user.username}].'
+        else:
+            log_msg = f'Restored checkpoint: {name}.'
         self.log(log_msg)
 
 # TODO: According to UI mockup we need to add support to download checkpoint files!
