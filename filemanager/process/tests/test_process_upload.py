@@ -812,7 +812,7 @@ class TestInternalSupportRoutines(TestCase):
         source_directory = upload.get_source_directory()
 
         # Create a checkpoint
-        checkpoint1_sum = upload.create_checkpoint()
+        checkpoint1_sum = upload.create_checkpoint(None)
 
         # Upload different set of files.
         filename = os.path.join(TEST_FILES_DIRECTORY,
@@ -834,7 +834,7 @@ class TestInternalSupportRoutines(TestCase):
         test2_filelist = upload.create_file_list()
 
         # Create a second checkpoint
-        checkpoint2_sum = upload.create_checkpoint()
+        checkpoint2_sum = upload.create_checkpoint(None)
 
         # Upload third set of files.
         filename = os.path.join(TEST_FILES_DIRECTORY,
@@ -856,13 +856,13 @@ class TestInternalSupportRoutines(TestCase):
         test3_filelist = upload.create_file_list()
 
         # Create third checkpoint
-        checkpoint3_sum = upload.create_checkpoint()
+        checkpoint3_sum = upload.create_checkpoint(None)
 
         # Now try to list checkpoints
-        checkpoint_list = upload.list_checkpoints()
+        checkpoint_list = upload.list_checkpoints(None)
         print(f"\nList Checkpoints:{len(checkpoint_list)}")
         for checkpoint in checkpoint_list:
-            print(f"\tCheckpoint; {checkpoint['name']}: {checkpoint['checksum']}")
+            print(f"  Checkpoint; {checkpoint['name']}: {checkpoint['checksum']} : {checkpoint['size']}")
 
         # Now restore checkpoints and check whether the restored and original file
         # lists are equivalent.
@@ -870,7 +870,7 @@ class TestInternalSupportRoutines(TestCase):
         # Restore first checkpoint
         #   - removes all files under src directory
         print(f"\nRestore:{checkpoint1_sum}")
-        upload.restore_checkpoint(checkpoint1_sum)
+        upload.restore_checkpoint(checkpoint1_sum, None)
 
         # Check whether restored file list matches original list.
         b1 = compare_file_lists(upload.create_file_list(), test1_filelist)
@@ -880,7 +880,7 @@ class TestInternalSupportRoutines(TestCase):
         # Restore second checkpoint
         #   - removes all files under src directory
         print(f"\nRestore:{checkpoint2_sum}")
-        upload.restore_checkpoint(checkpoint2_sum)
+        upload.restore_checkpoint(checkpoint2_sum, None)
 
         # Check whether restored file list matches original list.
         b2 = compare_file_lists(upload.create_file_list(), test2_filelist)
@@ -890,7 +890,7 @@ class TestInternalSupportRoutines(TestCase):
         # Restore third checkpoint
         #   - removes all files under src directory
         print(f"\nRestore:{checkpoint3_sum}")
-        upload.restore_checkpoint(checkpoint3_sum)
+        upload.restore_checkpoint(checkpoint3_sum, None)
 
         # Check whether restored file list matches original list.
         b3 = compare_file_lists(upload.create_file_list(), test3_filelist)
@@ -903,26 +903,42 @@ class TestInternalSupportRoutines(TestCase):
         self.assertFalse(bf, "Restored file list is NOT equivalent to "
                              "orignal file list (after deleting files).")
 
+        # Test methods that support checkpoint download
+        exists = upload.checkpoint_file_exists(checkpoint3_sum)
+        self.assertTrue(exists, "Test whether known checkpoint exists.")
+
+        path = upload.checkpoint_file_path(checkpoint3_sum)
+        self.assertTrue(os.path.exists(path),
+                        "Test whether known checkpoint file exists")
+
+        size = upload.checkpoint_file_size(checkpoint3_sum)
+        self.assertTrue(9950 < size < 10005, "Test size of known checkpoint "
+                                      "is roughly '10001' bytes.")
+
+        mod_date = upload.checkpoint_file_last_modified(checkpoint3_sum)
+        self.assertTrue(mod_date, "Test modify date returned "
+                                  "something (for now).")
+
         # Remove individual checkpoint files
         print(f"\nRemove checkpoint {checkpoint_list[0]['checksum']}")
 
-        upload.remove_checkpoint(checkpoint_list[0]['checksum'])
+        upload.delete_checkpoint(checkpoint_list[0]['checksum'], None)
 
         # List checkpoint files
         # Now try to list checkpoints
-        checkpoint_list = upload.list_checkpoints()
+        checkpoint_list = upload.list_checkpoints(None)
         print(f"\nList Checkpoints:{len(checkpoint_list)}")
         for checkpoint in checkpoint_list:
-            print(f"\tCheckpoint; {checkpoint['name']}: {checkpoint['checksum']}")
+            print(f"  Checkpoint; {checkpoint['name']}: {checkpoint['checksum']} : {checkpoint['size']}")
 
         # Remove all remaining checkpoint files (what we didn't delete above)
-        upload.remove_all_checkpoints()
+        upload.delete_all_checkpoints(None)
 
         # Now try to list checkpoints
-        checkpoint_list = upload.list_checkpoints()
+        checkpoint_list = upload.list_checkpoints(None)
         print(f"\nList Checkpoints:{len(checkpoint_list)}")
         for checkpoint in checkpoint_list:
-            print(f"Checkpoint; {checkpoint['name']}: {checkpoint['checksum']}")
+            print(f"Checkpoint; {checkpoint['name']}: {checkpoint['checksum']} : {checkpoint['size']}")
 
         self.assertTrue(checkpoint_list == [],
                         "All checkpoints have been removed.")
