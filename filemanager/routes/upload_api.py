@@ -385,6 +385,154 @@ def get_upload_service_log() -> Response:
     response.set_etag(headers.get('ETag'))
     return response
 
+# Checkpoint related requests
+#
+# create
+# list
+# remove
+# remove_all
+# restore
+# checkpoint exists
+# checkpoint download
+
+# Create checkpoint
+@blueprint.route('<int:upload_id>/checkpoint', methods=['POST'])
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
+def create_checkpoint(upload_id: int) -> tuple:
+    """
+    Create checkpoint from current files in specified workspace.
+
+    Parameters
+    ----------
+    upload_id : int
+        Workspace identifier
+
+    """
+    data, status_code, headers = upload.create_checkpoint\
+        (upload_id, request.session.user)
+
+    return jsonify(data), status_code, headers
+
+# List checkpoints
+@blueprint.route('<int:upload_id>/list_checkpoints', methods=['GET'])
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
+def list_checkpoints(upload_id: int) -> tuple:
+    """
+    List checkpoint files associated with specified workspace.
+
+    Parameters
+    ----------
+    upload_id : int
+        Workspace identifier
+
+    """
+    data, status_code, headers = upload.list_checkpoints\
+        (upload_id, request.session.user)
+
+    return jsonify(data), status_code, headers
+
+# Restore checkpoint
+@blueprint.route('<int:upload_id>/restore_checkpoint/<checkpoint_checksum>',
+                 methods=['GET'])
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
+def restore_checkpoint(upload_id: int, checkpoint_checksum: str) -> tuple:
+    """
+    Create checkpoint from current files in specified workspace.
+
+    Parameters
+    ----------
+    upload_id : int
+        Workspace identifier
+
+    """
+    data, status_code, headers = upload.restore_checkpoint\
+        (upload_id, checkpoint_checksum, request.session.user)
+
+    return jsonify(data), status_code, headers
+
+# TODO: Need to revise scopes!!! Leave open during development.
+
+# Checkpoint remove and remove all
+
+@blueprint.route('<int:upload_id>/delete_checkpoint/<checkpoint_checksum>',
+                 methods=['DELETE'])
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
+def delete_checkpoint(upload_id: int, checkpoint_checksum: str) -> tuple:
+    """
+    Delete individual checkpoint file.
+
+    Parameters
+    ----------
+    upload_id : int
+        Workspace identifier
+    checkpoint_checksum : str
+        Checkpoint checksum that uniquely identifies file to be removed.
+
+    """
+    data, status_code, headers = upload.delete_checkpoint\
+        (upload_id, checkpoint_checksum, request.session.user)
+
+    return jsonify(data), status_code, headers
+
+# File and workspace deletion
+
+@blueprint.route('<int:upload_id>/delete_all_checkpoints', methods=['POST'])
+@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
+def delete_all_checkpoints(upload_id: int) -> tuple:
+    """
+    Delete all checkpoint files in specified workspace.
+
+    Parameters
+    ----------
+    upload_id : int
+        Workspace identifier
+
+    """
+    data, status_code, headers = upload.delete_all_checkpoints\
+        (upload_id, request.session.user)
+
+    return jsonify(data), status_code, headers
+
+
+# Checkpoint exists/download
+@blueprint.route('/<int:upload_id>/checkpoint/<checkpoint_checksum>',
+                 methods=['HEAD'])
+@scoped(scopes.READ_UPLOAD)
+def check_checkpoint_file_exists(upload_id: int, checkpoint_checksum: str) -> Response:
+    """
+    Verify that upload content exists.
+
+    Returns an ``ETag`` header with the current source package checksum.
+    """
+    data, status_code, headers = upload.check_checkpoint_file_exists\
+        (upload_id, checkpoint_checksum)
+    response = _update_headers(jsonify(data), headers)
+    response.status_code = status_code
+    return response
+
+
+@blueprint.route('/<int:upload_id>/checkpoint/<checkpoint_checksum>',
+                 methods=['GET'])
+@scoped(scopes.READ_UPLOAD)
+def get_checkpoint_file(upload_id: int, checkpoint_checksum: str) -> Response:
+    """
+    Get the upload content as a compressed tarball.
+
+    Returns a stream with mimetype ``application/tar+gzip``, and an ``ETag``
+    header with the current source package checksum.
+    """
+    logger.debug('Request for upload content: %s (%s)',
+                 upload_id, type(upload_id))
+    # Note: status_code is not used
+    data, _, headers = upload.get_checkpoint_file\
+        (upload_id, checkpoint_checksum)
+    response = send_file(data, mimetype="application/tar+gzip")
+    response.set_etag(headers.get('ETag'))
+    return response
+
+
+
+
 # Exception handling
 
 
