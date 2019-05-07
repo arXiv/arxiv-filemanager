@@ -1665,7 +1665,7 @@ def check_checkpoint_file_exists(upload_id: int, checkpoint_checksum: str) -> Re
     return {}, status.OK, {'ETag': checkpoint_checksum}
 
 
-def get_checkpoint_file_content(upload_id: int, checkpoint_checksum: str) -> Response:
+def get_checkpoint_file(upload_id: int, checkpoint_checksum: str) -> Response:
     """
     Get the checkpoint file specified by provided checksum.
 
