@@ -24,6 +24,9 @@ from filemanager.services import uploads
 from arxiv.users import domain, auth
 from http import HTTPStatus as status
 
+from hashlib import md5
+from base64 import urlsafe_b64encode
+
 TEST_FILES_STRIP_PS = os.path.join(os.getcwd(), 'tests/test_files_strip_postscript')
 
 
@@ -69,6 +72,53 @@ def generate_token(app: Flask, scope: List[str]) -> str:
     )
     token = auth.tokens.encode(session, secret)
     return token
+
+
+def checksum(filepath) -> str:
+    """
+    Calculate MD5 checksum for file.
+
+    Returns
+    -------
+    Returns Null string if file does not exist otherwise
+    return b64-encoded MD5 hash of the specified file.
+
+    """
+    if os.path.exists(filepath):
+        hash_md5 = md5()
+        with open(filepath, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+        return urlsafe_b64encode(hash_md5.digest()).decode('utf-8')
+
+    return ""
+
+def UnpackTarFile(tarfile_path: str, target_directory: str) -> None:
+    """
+    Fast and dirty routine to unpack
+    Parameters
+    ----------
+    file
+    target_directory
+
+    """
+    with tarfile.open(tarfile_path) as tar:
+        tar.extractall(path=target_directory)
+
+    found = True
+
+    while found:
+
+        found = False
+
+        for root_directory, directories, files in os.walk(target_directory):
+            for file in files:
+                if re.search('.*.tar.gz', file):
+                    found = True
+                    sub_filepath_ref = os.path.join(root_directory, file)
+                    with tarfile.open(sub_filepath_ref) as tar:
+                        tar.extractall(path=root_directory)
+                    os.remove(sub_filepath_ref)
 
 
 class TestUploadAPIRoutes(TestCase):
@@ -1652,6 +1702,239 @@ class TestUploadAPIRoutes(TestCase):
         # This cleans out the workspace. Comment out if you want to inspect files
         # in workspace. Source log is saved to 'deleted_workspace_logs' directory.
         self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
+
+    def test_checkpoints(self) -> None:
+        """
+        Test various checkpoint functions.
+
+        Returns
+        -------
+
+        """
+        cwd = os.getcwd()
+        testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
+
+        # Create a token for writing to upload workspace
+        token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                          auth.scopes.WRITE_UPLOAD,
+                                          auth.scopes.DELETE_UPLOAD_FILE])
+
+
+        # Upload tests files
+        filepath1 = os.path.join(testfiles_dir, 'UnpackWithSubdirectories.tar.gz')
+        filename1 = os.path.basename(filepath1)
+        response = self.client.post('/filemanager/api/',
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        'file': (open(filepath1, 'rb'), filename1),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        with open('schema/resources/uploadResult.json') as f:
+            result_schema = json.load(f)
+
+        try:
+            jsonschema.validate(json.loads(response.data), result_schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/checkpoint",
+                                   headers={'Authorization': token},
+                                   #        content_type='application/gzip')
+                                   content_type='multipart/form-data')
+
+        # Upload different set of files - checkpoint
+
+        # Delete all files in my workspace (normal)
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
+                                    headers={'Authorization': token},
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, 200, "Delete all user-uploaded files.")
+
+        # Upload tests files
+        filepath1 = os.path.join(testfiles_dir, 'Upload2.tar.gz')
+        filename1 = os.path.basename(filepath1)
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        'file': (open(filepath1, 'rb'), filename1),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        with open('schema/resources/uploadResult.json') as f:
+            result_schema = json.load(f)
+
+        try:
+            jsonschema.validate(json.loads(response.data), result_schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/checkpoint",
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        # End second upload
+
+        # Create unecessary checkpoint
+
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/checkpoint",
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        # List checkpoints
+        response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}/list_checkpoints",
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+        checkpoints = upload_data['checkpoints']
+
+        self.assertEqual(len(checkpoints), 3, "So far we've created three checkpoints.")
+
+        checkpoint_checksum = checkpoints[0]['checksum']
+
+
+
+        # List checkpoints
+        response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}/"
+                                   f"restore_checkpoint/{checkpoint_checksum}",
+                                   headers={'Authorization': token},
+                                   content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, status.OK)
+
+        # Check if known checkpoint exists
+        response = self.client.head(
+            f"/filemanager/api/{upload_data['upload_id']}/checkpoint/{checkpoint_checksum}",
+            headers={'Authorization': token}
+        )
+        self.assertEqual(response.status_code, status.OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+        # Check whether bad/invalid checkpoint exists
+        response = self.client.head(
+            f"/filemanager/api/{upload_data['upload_id']}/checkpoint/0981354098324",
+            headers={'Authorization': token}
+        )
+        self.assertEqual(response.status_code, status.NOT_FOUND)
+
+        # Download content
+        response = self.client.get(
+            f"/filemanager/api/{upload_data['upload_id']}/checkpoint/{checkpoint_checksum}",
+            headers={'Authorization': token}
+        )
+        self.assertEqual(response.status_code, status.OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+        workdir = tempfile.mkdtemp()
+        with tarfile.open(fileobj=BytesIO(response.data)) as tar:
+            tar.extractall(path=workdir)
+
+        # Compare downloaded checksum gzipped tar to original test submission
+        # gzipped tar.
+        #
+        # Note that this comparison WILL NOT WORK for submissions in the case
+        # where the file manager has edited/modified files during the upload
+        # process.
+        #
+        checkpoint_checksum_dict = {}
+        for root_directory, directories, files in os.walk(workdir):
+            for file in files:
+                path = os.path.join(root_directory, file)
+                checkpoint_checksum_dict[file] = checksum(path)
+            for dir in directories:
+                path = os.path.join(root_directory, dir)
+                checkpoint_checksum_dict[dir] = dir
+
+        # Analyze original submission gzipped tar
+        workdir_ref = tempfile.mkdtemp()
+        filepath_ref = os.path.join(testfiles_dir, 'UnpackWithSubdirectories.tar.gz')
+
+        # unpack the tar file
+        UnpackTarFile(filepath_ref, workdir_ref)
+
+        reference_checksum_dict = {}
+        for root_directory, directories, files in os.walk(workdir_ref):
+            for file in files:
+                path = os.path.join(root_directory, file)
+                reference_checksum_dict[file] = checksum(path)
+            for dir in directories:
+                path = os.path.join(root_directory, dir)
+                reference_checksum_dict[dir] = dir
+
+        # Create sets containing file/checksum for checkpoint and original test
+        # archive
+        filesetc = set(checkpoint_checksum_dict.items())
+        filesetr = set(reference_checksum_dict.items())
+
+        # Test that checkpoint and submission contain the same files.
+        self.assertSetEqual(filesetc, filesetr,
+                            "The checkpoint and orginal submission gzipped tar"
+                            " files should contain the same files/directories.")
+
+
+        # Let's delete second checkpoint file
+        checkpoint_checksum = checkpoints[1]['checksum']
+
+        # Delete checkpoints
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/"
+                                   f"delete_checkpoint/{checkpoint_checksum}",
+                                   headers={'Authorization': token},
+                                   content_type='multipart/form-data')
+
+        # List checkpoint to see what we have left
+        response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}/list_checkpoints",
+                                   headers={'Authorization': token},
+                                   #        content_type='application/gzip')
+                                   content_type='multipart/form-data')
+        self.assertEqual(response.status_code, status.OK)
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+        checkpoints = upload_data['checkpoints']
+        self.assertEqual(len(checkpoints), 2, "There are two checkpoints left.")
+
+        # Now let's blow away all checkpoints
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all_checkpoints",
+                                   headers={'Authorization': token},
+                                   #        content_type='application/gzip')
+                                   content_type='multipart/form-data')
+        self.assertEqual(response.status_code, status.OK)
+
+        # List checkpoint to see what we have left after remove all
+        response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}/list_checkpoints",
+                                   headers={'Authorization': token},
+                                   #        content_type='application/gzip')
+                                   content_type='multipart/form-data')
+        self.assertEqual(response.status_code, status.OK)
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+        checkpoints = upload_data['checkpoints']
+        self.assertEqual(len(checkpoints), 0, "All checkpoints have been deleted.")
+
+
+        # Try to restore a checkpoint that was deleted.
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/"
+                                      f"delete_checkpoint/{checkpoint_checksum}",
+                                      headers={'Authorization': token},
+                                      content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, status.NOT_FOUND)
+
+        # REMEMBER TO DELETE WORKSPACE
+
 
     def xxx_test_one_off_situations(self) -> None:
         """
