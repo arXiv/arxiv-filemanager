@@ -2987,7 +2987,7 @@ class Upload:
         file_obj = self.resolve_checkpoint_file_obj(checkpoint_checksum)
 
         dt = datetime.utcfromtimestamp(os.path.getmtime(file_obj.filepath))
-        
+
         return datetime.utcfromtimestamp(os.path.getmtime(file_obj.filepath))
 
 
@@ -3005,6 +3005,11 @@ class Upload:
 
         entries = os.listdir(source_directory)
 
+        if user:
+            user_string = '_' + user.username
+        else:
+            user_string = ''
+
         # Make sure there are files before we bother to create a checkpoint.
         if (len(entries) > 0):
 
@@ -3017,7 +3022,7 @@ class Upload:
 
             # Save copy in removed directory
             checkpoint_filename = os.path.join(self.get_checkpoint_directory(),
-                                         'checkpoint_source_1.tar.gz')
+                                         f'checkpoint_1{user_string}.tar.gz')
 
             # Allow maximum number of checkpoints (100?)
             max_checkpoints = 10 # Use 10 for testing
@@ -3025,9 +3030,10 @@ class Upload:
             # Create a new unique filename for checkpoint
             count = 2
             while os.path.exists(checkpoint_filename) and count <= max_checkpoints:
+
                 checkpoint_filename = \
                     os.path.join(self.get_checkpoint_directory(),
-                                 f'checkpoint_source_{count}.tar.gz')
+                                 f'checkpoint_{count}{user_string}.tar.gz')
                 count = count + 1
 
             if count > max_checkpoints:
