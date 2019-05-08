@@ -48,6 +48,7 @@ def service_status() -> tuple:
     response_data, code, headers = status.service_status()
     return jsonify(response_data), code, headers
 
+# TODO: Am I able to start off by loading ancillary files?
 
 @blueprint.route('/', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD)
@@ -77,6 +78,35 @@ def new_upload() -> tuple:
 
     return jsonify(data), status_code, headers
 
+# TODO : Need to set scope correctly once new auth release is minted.
+
+@blueprint.route('<int:upload_id>/checkpoint_with_upload', methods=['POST'])
+@scoped(scopes.WRITE_UPLOAD)
+def upload_files_with_checkpoint(upload_id: int) -> tuple:
+    """
+    Upload files to existing workspace after creating checkpoint.
+
+    Upload individual files or compressed archive
+    and add to existing upload workspace. Multiple uploads accepted.
+
+    Parameters
+    ----------
+    upload_id : int
+        Workspace identifier
+
+    Note: This request is reserved to users with special scope so
+           we won't limit access to 'is_owner'.
+
+    """
+    archive_arg = request.form.get('archive')
+    ancillary = request.form.get('ancillary', None) == 'True'
+    file = request.files.get('file', None)
+    # Attempt to process upload
+    data, status_code, headers = upload.upload(upload_id, file, archive_arg,
+                                               request.session.user,
+                                               ancillary=ancillary,
+                                               checkpoint=True)
+    return jsonify(data), status_code, headers
 
 @blueprint.route('<int:upload_id>', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
