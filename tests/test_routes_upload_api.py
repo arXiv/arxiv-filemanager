@@ -1719,6 +1719,8 @@ class TestUploadAPIRoutes(TestCase):
                                           auth.scopes.WRITE_UPLOAD,
                                           auth.scopes.DELETE_UPLOAD_FILE])
 
+        # TEST INDEPENDENT CHECKPOINT REQUESTS (checkpoint/list_checkpoints/
+        #       delete_checkpoint/delete_all_checkpoints/restore_checkpoint)
 
         # Upload tests files
         filepath1 = os.path.join(testfiles_dir, 'UnpackWithSubdirectories.tar.gz')
@@ -1932,6 +1934,78 @@ class TestUploadAPIRoutes(TestCase):
                                       content_type='multipart/form-data')
 
         self.assertEqual(response.status_code, status.NOT_FOUND)
+
+        # Delete the workspace
+        # Create admin token for deleting upload workspace
+        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                                auth.scopes.WRITE_UPLOAD,
+                                                auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
+
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+                                      headers={'Authorization': admin_token}
+                                      )
+
+        # This cleans out the workspace. Comment out if you want to inspect files
+        # in workspace. Source log is saved to 'deleted_workspace_logs' directory.
+        self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
+
+
+        # NOW TEST API LEVEL CHECKPOINT VIA UPLOAD REQUEST
+
+        # Upload tests files
+        filepath1 = os.path.join(testfiles_dir, 'UnpackWithSubdirectories.tar.gz')
+        filename1 = os.path.basename(filepath1)
+        response = self.client.post('/filemanager/api/',
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        'file': (open(filepath1, 'rb'), filename1),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        with open('schema/resources/uploadResult.json') as f:
+            result_schema = json.load(f)
+
+        try:
+            jsonschema.validate(json.loads(response.data), result_schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+        # Upload tests files
+        filepath1 = os.path.join(testfiles_dir, 'Upload2.tar.gz')
+        filename1 = os.path.basename(filepath1)
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/checkpoint_with_upload",
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        'file': (open(filepath1, 'rb'), filename1),
+                                    },
+                                    headers={'Authorization': token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        with open('schema/resources/uploadResult.json') as f:
+            result_schema = json.load(f)
+
+        try:
+            jsonschema.validate(json.loads(response.data), result_schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
+
+        upload_data: Dict[str, Any] = json.loads(response.data)
+
+        # List checkpoint to see what we have left after remove all
+        response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}/list_checkpoints",
+                                   headers={'Authorization': token},
+                                   #        content_type='application/gzip')
+                                   content_type='multipart/form-data')
+        self.assertEqual(response.status_code, status.OK)
+
+        print("Checkload1 Created: Response:\n")
+        print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
+
 
         # REMEMBER TO DELETE WORKSPACE
 
