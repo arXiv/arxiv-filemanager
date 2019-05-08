@@ -352,7 +352,8 @@ def client_delete_all_files(upload_id: int) -> Response:
 
 
 def upload(upload_id: Optional[int], file: FileStorage, archive: str,
-           user: auth_domain.User, ancillary: bool = False) -> Response:
+           user: auth_domain.User, ancillary: bool = False,
+           checkpoint: bool = False) -> Response:
     """
     Upload individual files or compressed archive into specified workspace.
 
@@ -371,6 +372,9 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
         If ``True``, the file is to be treated as an ancillary file. This means
         (presently) that the file is stored in a special subdirectory within
         the source package.
+    checkpoint : bool
+        Create a checkpoint (backup) of source files before unpacking and
+        installing file payload for this request.
 
     Returns
     -------
@@ -391,12 +395,17 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
     #                              task_id=result.task_id)}
     # return ACCEPTED, status.ACCEPTED, headers
     # End delete
+    username = ''
+    if user:
+        username = user.username;
+    else:
+        username = 'NA'
 
     # Check arguments for basic qualities like existing and such.
 
     # File argument is required to exist and have a name associated with it.
     # It is standard practice that if user fails to select file the filename is null.
-    logger.debug('Handling upload request for %s', upload_id)
+    logger.debug('Handling upload request for %s [%s]', upload_id, username)
     if file is None:
         # Crash and burn...not quite...do we need info about client?
         logger.error('Upload request is missing file/archive payload.')
@@ -483,7 +492,12 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
         # Create Upload object
         upload_workspace = UploadWorkspace(upload_id)
 
-        # Process upload_db_data
+        # checkpoint - create backup of user files in workspace
+        if checkpoint:
+            checksum = upload_workspace.create_checkpoint(user)
+            upload_workspace.client_remove_all_files()
+
+        # Process uploaded file(s)
         upload_workspace.process_upload(file, ancillary=ancillary)
 
         completion_datetime = datetime.now(UTC)
