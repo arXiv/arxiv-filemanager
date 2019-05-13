@@ -1822,9 +1822,6 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertEqual(response.status_code, status.OK)
 
-        print("CreateCheckpoints Response:\n")
-        print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
-
         # List checkpoints
         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}/list_checkpoints",
                                     headers={'Authorization': checkpoint_token},
@@ -1842,8 +1839,13 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertEqual(len(checkpoints), 3, "So far we've created three checkpoints.")
 
-        checkpoint_checksum = checkpoints[0]['checksum']
+        # Locate the first checkpoint
+        for item in checkpoints:
+            if item['name'] == "checkpoint_1_theuser.tar.gz":
+                checkpoint_checksum = item['checksum']
 
+        # checkpoint_checksum = checkpoints[0]['checksum']
+        print(f"checkpoint to restore: {checkpoint_checksum}")
 
 
         # Restore checkpoints
