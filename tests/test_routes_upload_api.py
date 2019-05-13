@@ -2021,7 +2021,7 @@ class TestUploadAPIRoutes(TestCase):
         upload_data: Dict[str, Any] = json.loads(response.data)
 
         # Upload tests files
-        filepath1 = os.path.join(testfiles_dir, 'Upload2.tar.gz')
+        filepath1 = os.path.join(testfiles_dir, 'upload2.tar.gz')
         filename1 = os.path.basename(filepath1)
         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/checkpoint_with_upload",
                                     data={
