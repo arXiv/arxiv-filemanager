@@ -1822,6 +1822,9 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertEqual(response.status_code, status.OK)
 
+        print("CreateCheckpoints Response:\n")
+        print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
+
         # List checkpoints
         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}/list_checkpoints",
                                     headers={'Authorization': checkpoint_token},
@@ -1829,6 +1832,9 @@ class TestUploadAPIRoutes(TestCase):
                                     content_type='multipart/form-data')
 
         self.assertEqual(response.status_code, status.OK)
+
+        print("ListCheckpoints Response:\n")
+        print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
 
         upload_data: Dict[str, Any] = json.loads(response.data)
 
@@ -1840,13 +1846,16 @@ class TestUploadAPIRoutes(TestCase):
 
 
 
-        # List checkpoints
+        # Restore checkpoints
         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}/"
                                    f"restore_checkpoint/{checkpoint_checksum}",
                                    headers={'Authorization': checkpoint_token},
                                    content_type='multipart/form-data')
 
         self.assertEqual(response.status_code, status.OK)
+
+        print(f"RestoreCheckpoint:{checkpoint_checksum} Response:\n")
+        print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
 
         # Check if known checkpoint exists
         response = self.client.head(
@@ -1894,6 +1903,8 @@ class TestUploadAPIRoutes(TestCase):
         # Analyze original submission gzipped tar
         workdir_ref = tempfile.mkdtemp()
         filepath_ref = os.path.join(testfiles_dir, 'UnpackWithSubdirectories.tar.gz')
+
+        print(f"Checkpoint files:{workdir} Reference Files:{workdir_ref}\n")
 
         # unpack the tar file
         UnpackTarFile(filepath_ref, workdir_ref)
