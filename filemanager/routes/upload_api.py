@@ -81,7 +81,7 @@ def new_upload() -> tuple:
 # TODO : Need to set scope correctly once new auth release is minted.
 
 @blueprint.route('<int:upload_id>/checkpoint_with_upload', methods=['POST'])
-@scoped(scopes.WRITE_UPLOAD)
+@scoped(scopes.CREATE_UPLOAD_CHECKPOINT)
 def upload_files_with_checkpoint(upload_id: int) -> tuple:
     """
     Upload files to existing workspace after creating checkpoint.
@@ -427,7 +427,7 @@ def get_upload_service_log() -> Response:
 
 # Create checkpoint
 @blueprint.route('<int:upload_id>/checkpoint', methods=['POST'])
-@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
+@scoped(scopes.CREATE_UPLOAD_CHECKPOINT, authorizer=is_owner)
 def create_checkpoint(upload_id: int) -> tuple:
     """
     Create checkpoint from current files in specified workspace.
@@ -445,7 +445,7 @@ def create_checkpoint(upload_id: int) -> tuple:
 
 # List checkpoints
 @blueprint.route('<int:upload_id>/list_checkpoints', methods=['GET'])
-@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
+@scoped(scopes.READ_UPLOAD_CHECKPOINT, authorizer=is_owner)
 def list_checkpoints(upload_id: int) -> tuple:
     """
     List checkpoint files associated with specified workspace.
@@ -464,7 +464,7 @@ def list_checkpoints(upload_id: int) -> tuple:
 # Restore checkpoint
 @blueprint.route('<int:upload_id>/restore_checkpoint/<checkpoint_checksum>',
                  methods=['GET'])
-@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
+@scoped(scopes.RESTORE_UPLOAD_CHECKPOINT, authorizer=is_owner)
 def restore_checkpoint(upload_id: int, checkpoint_checksum: str) -> tuple:
     """
     Create checkpoint from current files in specified workspace.
@@ -486,7 +486,7 @@ def restore_checkpoint(upload_id: int, checkpoint_checksum: str) -> tuple:
 
 @blueprint.route('<int:upload_id>/delete_checkpoint/<checkpoint_checksum>',
                  methods=['DELETE'])
-@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
+@scoped(scopes.DELETE_UPLOAD_CHECKPOINT, authorizer=is_owner)
 def delete_checkpoint(upload_id: int, checkpoint_checksum: str) -> tuple:
     """
     Delete individual checkpoint file.
@@ -507,7 +507,7 @@ def delete_checkpoint(upload_id: int, checkpoint_checksum: str) -> tuple:
 # File and workspace deletion
 
 @blueprint.route('<int:upload_id>/delete_all_checkpoints', methods=['POST'])
-@scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
+@scoped(scopes.DELETE_UPLOAD_CHECKPOINT, authorizer=is_owner)
 def delete_all_checkpoints(upload_id: int) -> tuple:
     """
     Delete all checkpoint files in specified workspace.
@@ -527,7 +527,7 @@ def delete_all_checkpoints(upload_id: int) -> tuple:
 # Checkpoint exists/download
 @blueprint.route('/<int:upload_id>/checkpoint/<checkpoint_checksum>',
                  methods=['HEAD'])
-@scoped(scopes.READ_UPLOAD)
+@scoped(scopes.READ_UPLOAD_CHECKPOINT)
 def check_checkpoint_file_exists(upload_id: int, checkpoint_checksum: str) -> Response:
     """
     Verify that upload content exists.
@@ -543,7 +543,7 @@ def check_checkpoint_file_exists(upload_id: int, checkpoint_checksum: str) -> Re
 
 @blueprint.route('/<int:upload_id>/checkpoint/<checkpoint_checksum>',
                  methods=['GET'])
-@scoped(scopes.READ_UPLOAD)
+@scoped(scopes.READ_UPLOAD_CHECKPOINT)
 def get_checkpoint_file(upload_id: int, checkpoint_checksum: str) -> Response:
     """
     Get the upload content as a compressed tarball.
