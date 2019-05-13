@@ -1719,6 +1719,17 @@ class TestUploadAPIRoutes(TestCase):
                                           auth.scopes.WRITE_UPLOAD,
                                           auth.scopes.DELETE_UPLOAD_FILE])
 
+        # Create a token with checkpoint scopes with upload read/write scopes
+        checkpoint_token = generate_token(self.app,
+                                          [auth.scopes.READ_UPLOAD,
+                                           auth.scopes.WRITE_UPLOAD,
+                                           auth.scopes.DELETE_UPLOAD_FILE,
+                                           auth.scopes.CREATE_UPLOAD_CHECKPOINT,
+                                           auth.scopes.READ_UPLOAD_CHECKPOINT,
+                                           auth.scopes.DELETE_UPLOAD_CHECKPOINT,
+                                           auth.scopes.RESTORE_UPLOAD_CHECKPOINT
+                                           ])
+
         # TEST INDEPENDENT CHECKPOINT REQUESTS (checkpoint/list_checkpoints/
         #       delete_checkpoint/delete_all_checkpoints/restore_checkpoint)
 
@@ -1749,6 +1760,17 @@ class TestUploadAPIRoutes(TestCase):
                                    #        content_type='application/gzip')
                                    content_type='multipart/form-data')
 
+        self.assertEqual(response.status_code, status.FORBIDDEN)
+
+        # Try with correct token with checkpoint scopes
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/checkpoint",
+                                    headers={'Authorization': checkpoint_token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, status.OK)
+
+
         # Upload different set of files - checkpoint
 
         # Delete all files in my workspace (normal)
@@ -1769,6 +1791,8 @@ class TestUploadAPIRoutes(TestCase):
                                     headers={'Authorization': token},
                                     #        content_type='application/gzip')
                                     content_type='multipart/form-data')
+        self.assertEqual(response.status_code, 201,
+                         "Accepted and processed uploaded Submission Contents")
 
         with open('schema/resources/uploadResult.json') as f:
             result_schema = json.load(f)
@@ -1781,24 +1805,30 @@ class TestUploadAPIRoutes(TestCase):
         upload_data: Dict[str, Any] = json.loads(response.data)
 
         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/checkpoint",
-                                    headers={'Authorization': token},
+                                    headers={'Authorization': checkpoint_token},
                                     #        content_type='application/gzip')
                                     content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, status.OK)
 
         # End second upload
 
         # Create unecessary checkpoint
 
         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/checkpoint",
-                                    headers={'Authorization': token},
+                                    headers={'Authorization': checkpoint_token},
                                     #        content_type='application/gzip')
                                     content_type='multipart/form-data')
 
+        self.assertEqual(response.status_code, status.OK)
+
         # List checkpoints
         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}/list_checkpoints",
-                                    headers={'Authorization': token},
+                                    headers={'Authorization': checkpoint_token},
                                     #        content_type='application/gzip')
                                     content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, status.OK)
 
         upload_data: Dict[str, Any] = json.loads(response.data)
 
@@ -1813,7 +1843,7 @@ class TestUploadAPIRoutes(TestCase):
         # List checkpoints
         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}/"
                                    f"restore_checkpoint/{checkpoint_checksum}",
-                                   headers={'Authorization': token},
+                                   headers={'Authorization': checkpoint_token},
                                    content_type='multipart/form-data')
 
         self.assertEqual(response.status_code, status.OK)
@@ -1821,7 +1851,7 @@ class TestUploadAPIRoutes(TestCase):
         # Check if known checkpoint exists
         response = self.client.head(
             f"/filemanager/api/{upload_data['upload_id']}/checkpoint/{checkpoint_checksum}",
-            headers={'Authorization': token}
+            headers={'Authorization': checkpoint_token}
         )
         self.assertEqual(response.status_code, status.OK)
         self.assertIn('ETag', response.headers, "Returns an ETag header")
@@ -1829,14 +1859,14 @@ class TestUploadAPIRoutes(TestCase):
         # Check whether bad/invalid checkpoint exists
         response = self.client.head(
             f"/filemanager/api/{upload_data['upload_id']}/checkpoint/0981354098324",
-            headers={'Authorization': token}
+            headers={'Authorization': checkpoint_token}
         )
         self.assertEqual(response.status_code, status.NOT_FOUND)
 
         # Download content
         response = self.client.get(
             f"/filemanager/api/{upload_data['upload_id']}/checkpoint/{checkpoint_checksum}",
-            headers={'Authorization': token}
+            headers={'Authorization': checkpoint_token}
         )
         self.assertEqual(response.status_code, status.OK)
         self.assertIn('ETag', response.headers, "Returns an ETag header")
@@ -1894,12 +1924,13 @@ class TestUploadAPIRoutes(TestCase):
         # Delete checkpoints
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/"
                                    f"delete_checkpoint/{checkpoint_checksum}",
-                                   headers={'Authorization': token},
+                                   headers={'Authorization': checkpoint_token},
                                    content_type='multipart/form-data')
+        self.assertEqual(response.status_code, status.OK)
 
         # List checkpoint to see what we have left
         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}/list_checkpoints",
-                                   headers={'Authorization': token},
+                                   headers={'Authorization': checkpoint_token},
                                    #        content_type='application/gzip')
                                    content_type='multipart/form-data')
         self.assertEqual(response.status_code, status.OK)
@@ -1910,14 +1941,14 @@ class TestUploadAPIRoutes(TestCase):
 
         # Now let's blow away all checkpoints
         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all_checkpoints",
-                                   headers={'Authorization': token},
+                                   headers={'Authorization': checkpoint_token},
                                    #        content_type='application/gzip')
                                    content_type='multipart/form-data')
         self.assertEqual(response.status_code, status.OK)
 
         # List checkpoint to see what we have left after remove all
         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}/list_checkpoints",
-                                   headers={'Authorization': token},
+                                   headers={'Authorization': checkpoint_token},
                                    #        content_type='application/gzip')
                                    content_type='multipart/form-data')
         self.assertEqual(response.status_code, status.OK)
@@ -1930,7 +1961,7 @@ class TestUploadAPIRoutes(TestCase):
         # Try to restore a checkpoint that was deleted.
         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/"
                                       f"delete_checkpoint/{checkpoint_checksum}",
-                                      headers={'Authorization': token},
+                                      headers={'Authorization': checkpoint_token},
                                       content_type='multipart/form-data')
 
         self.assertEqual(response.status_code, status.NOT_FOUND)
@@ -1963,6 +1994,8 @@ class TestUploadAPIRoutes(TestCase):
                                     headers={'Authorization': token},
                                     #        content_type='application/gzip')
                                     content_type='multipart/form-data')
+        self.assertEqual(response.status_code, 201,
+                         "Accepted and processed uploaded Submission Contents")
 
         with open('schema/resources/uploadResult.json') as f:
             result_schema = json.load(f)
@@ -1982,9 +2015,11 @@ class TestUploadAPIRoutes(TestCase):
                                         # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
                                         'file': (open(filepath1, 'rb'), filename1),
                                     },
-                                    headers={'Authorization': token},
+                                    headers={'Authorization': checkpoint_token},
                                     #        content_type='application/gzip')
                                     content_type='multipart/form-data')
+        self.assertEqual(response.status_code, 201,
+                         "Accepted and processed uploaded Submission Contents")
 
         with open('schema/resources/uploadResult.json') as f:
             result_schema = json.load(f)
@@ -1998,16 +2033,24 @@ class TestUploadAPIRoutes(TestCase):
 
         # List checkpoint to see what we have left after remove all
         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}/list_checkpoints",
-                                   headers={'Authorization': token},
+                                   headers={'Authorization': checkpoint_token},
                                    #        content_type='application/gzip')
                                    content_type='multipart/form-data')
         self.assertEqual(response.status_code, status.OK)
 
-        print("Checkload1 Created: Response:\n")
-        print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
+        # Delete the workspace
+        # Create admin token for deleting upload workspace
+        admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                                auth.scopes.WRITE_UPLOAD,
+                                                auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
 
+        response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+                                      headers={'Authorization': admin_token}
+                                      )
 
-        # REMEMBER TO DELETE WORKSPACE
+        # This cleans out the workspace. Comment out if you want to inspect files
+        # in workspace. Source log is saved to 'deleted_workspace_logs' directory.
+        self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
 
 
     def xxx_test_one_off_situations(self) -> None:
