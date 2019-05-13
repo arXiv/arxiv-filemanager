@@ -1781,7 +1781,7 @@ class TestUploadAPIRoutes(TestCase):
         self.assertEqual(response.status_code, 200, "Delete all user-uploaded files.")
 
         # Upload tests files
-        filepath1 = os.path.join(testfiles_dir, 'Upload2.tar.gz')
+        filepath1 = os.path.join(testfiles_dir, 'upload2.tar.gz')
         filename1 = os.path.basename(filepath1)
         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
                                     data={
