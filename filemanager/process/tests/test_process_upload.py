@@ -838,7 +838,7 @@ class TestInternalSupportRoutines(TestCase):
 
         # Upload third set of files.
         filename = os.path.join(TEST_FILES_DIRECTORY,
-                                'Upload3.tar.gz')
+                                'upload3.tar.gz')
 
         self.assertTrue(os.path.exists(filename), 'Test archive is available')
 
