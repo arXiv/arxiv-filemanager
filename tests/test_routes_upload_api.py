@@ -1830,9 +1830,6 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertEqual(response.status_code, status.OK)
 
-        print("ListCheckpoints Response:\n")
-        print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
-
         upload_data: Dict[str, Any] = json.loads(response.data)
 
         checkpoints = upload_data['checkpoints']
@@ -1855,9 +1852,6 @@ class TestUploadAPIRoutes(TestCase):
                                    content_type='multipart/form-data')
 
         self.assertEqual(response.status_code, status.OK)
-
-        print(f"RestoreCheckpoint:{checkpoint_checksum} Response:\n")
-        print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
 
         # Check if known checkpoint exists
         response = self.client.head(
@@ -1905,8 +1899,6 @@ class TestUploadAPIRoutes(TestCase):
         # Analyze original submission gzipped tar
         workdir_ref = tempfile.mkdtemp()
         filepath_ref = os.path.join(testfiles_dir, 'UnpackWithSubdirectories.tar.gz')
-
-        print(f"Checkpoint files:{workdir} Reference Files:{workdir_ref}\n")
 
         # unpack the tar file
         UnpackTarFile(filepath_ref, workdir_ref)
