@@ -48,6 +48,28 @@ def _get_service_logs_directory() -> str:
     config = get_application_config()
     return config.get('UPLOAD_SERVICE_LOG_DIRECTORY', '')
 
+def _format_user_information_for_logging(user) -> str:
+    """
+    Format user information for logging purposes.
+
+    user_id is immutable but difficult to interpret.
+    username is a little easier to understand.
+
+    Centralize formatting to make it easier to adjust in the future.
+
+    Parameters
+    ----------
+    user :
+        Contains user information from auth session.
+
+    Returns
+    -------
+    str
+        String formatted with desired user information.
+
+    """
+    return f"user:{user.user_id}:{user.username}"
+
 
 service_log_path = os.path.join(_get_service_logs_directory(), 'upload.log')
 
@@ -63,6 +85,8 @@ file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 logger.setLevel(logging.DEBUG)
 logger.propagate = True
+
+DEBUG_UPLOAD = False
 
 # End logging configuration
 
@@ -124,7 +148,7 @@ SOME_ERROR = {'Need to define and assign better error'}
 Response = Tuple[Optional[dict], int, dict]
 
 
-def delete_workspace(upload_id: int) -> Response:
+def delete_workspace(upload_id: int, user) -> Response:
     """
     Delete workspace.
 
@@ -143,7 +167,8 @@ def delete_workspace(upload_id: int) -> Response:
         Some extra headers to add to the response.
 
     """
-    logger.info('%s: Deleting upload workspace.', upload_id)
+    user_string = _format_user_information_for_logging(user)
+    logger.info('%s: Deleting upload workspace [%s].', upload_id, user_string)
 
     # Need to add several checks here
 
@@ -214,7 +239,7 @@ def delete_workspace(upload_id: int) -> Response:
     return response_data, status_code, {}
 
 
-def client_delete_file(upload_id: int, public_file_path: str) -> Response:
+def client_delete_file(upload_id: int, public_file_path: str, user) -> Response:
     """Delete a single file.
 
     This request is being received from API so we need to be extra careful.
@@ -236,7 +261,9 @@ def client_delete_file(upload_id: int, public_file_path: str) -> Response:
         Some extra headers to add to the response.
 
     """
-    logger.info("%s: Delete file '%s'.", upload_id, public_file_path)
+    user_string = _format_user_information_for_logging(user)
+    logger.info("%s: Delete file '%s' [%s].", upload_id, public_file_path,
+                user_string)
 
     try:
         # Make sure we have an upload_db_data to work with
@@ -273,8 +300,8 @@ def client_delete_file(upload_id: int, public_file_path: str) -> Response:
         logger.info("%s: Delete file forbidden: %s.", upload_id, forb)
         raise forb
     except Exception as ue:
-        logger.info("Unknown error in delete file. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error in delete file. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     response_data = _status_data(upload_db_data, upload_workspace)
@@ -285,7 +312,7 @@ def client_delete_file(upload_id: int, public_file_path: str) -> Response:
     return response_data, status.OK, {}
 
 
-def client_delete_all_files(upload_id: int) -> Response:
+def client_delete_all_files(upload_id: int, user) -> Response:
     """
     Delete all files uploaded by client from specified workspace.
 
@@ -308,7 +335,9 @@ def client_delete_all_files(upload_id: int) -> Response:
         Some extra headers to add to the response.
 
     """
-    logger.info("%s: Deleting all uploaded files from this workspace.", upload_id)
+    user_string = _format_user_information_for_logging(user)
+    logger.info("%s: Deleting all uploaded files from this workspace [%s].",
+                upload_id, user_string)
 
     try:
         # Make sure we have an upload_db_data to work with
@@ -339,8 +368,8 @@ def client_delete_all_files(upload_id: int) -> Response:
         logger.info("%s: Upload failed: '%s'.", upload_id, forb)
         raise forb
     except Exception as ue:
-        logger.info("Unknown error in delete all files. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error in delete all files. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     response_data = _status_data(upload_db_data, upload_workspace)
@@ -353,7 +382,8 @@ def client_delete_all_files(upload_id: int) -> Response:
 
 def upload(upload_id: Optional[int], file: FileStorage, archive: str,
            user: auth_domain.User, ancillary: bool = False,
-           checkpoint: bool = False) -> Response:
+           checkpoint: bool = False, clear_source_files: bool = False) \
+        -> Response:
     """
     Upload individual files or compressed archive into specified workspace.
 
@@ -395,45 +425,45 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
     #                              task_id=result.task_id)}
     # return ACCEPTED, status.ACCEPTED, headers
     # End delete
-    username = ''
+
+    # Log username and upload_id or new
+    username = None
     if user:
-        username = user.username;
-    else:
-        username = 'NA'
+        user_string = _format_user_information_for_logging(user);
+
+    id_string = upload_id
+    if upload_id == None:
+        id_string = "New"
 
     # Check arguments for basic qualities like existing and such.
 
     # File argument is required to exist and have a name associated with it.
     # It is standard practice that if user fails to select file the filename is null.
-    logger.debug('Handling upload request for %s [%s]', upload_id, username)
+    ##logger.debug('%s: Upload request for [%s]', id_string, user_string)
     if file is None:
         # Crash and burn...not quite...do we need info about client?
-        logger.error('Upload request is missing file/archive payload.')
+        logger.error('%s: Upload request is missing file/archive payload.',
+                     upload_id)
         raise BadRequest(UPLOAD_MISSING_FILE)
 
     if file.filename == '':
         # Client needs to select file, or provide name to upload payload
-        logger.error('Upload file is missing filename. File to upload may not be selected.')
+        logger.error('%s: Upload file is missing filename. File to upload may '
+                     'not be selected.', id_string)
         raise BadRequest(UPLOAD_MISSING_FILENAME)
 
     # What about archive argument.
     if archive is None:
-        # TODO: Discussion about how to treat omission of archive argument.
-        # Is this an HTTP exception? Oversize limits are configured per archive.
-        # Or is this a warning/error returned in upload summary?
-        #
-        # Most submissions can get by with default size limitations so we'll add a warning
-        # message for the upload (this will appear on upload page and get logged). This
-        # warning will get generated in process/upload.py and not here.
-        logger.error("Upload 'archive' not specified. Oversize calculation "
-                     "will use default values.")
+        # No longer need archive for stamp
+        pass
 
     # If this is a new upload then we need to create a workspace and add to database.
     if upload_id is None:
-        logger.debug('This is a new upload workspace.')
+        ##logger.debug('This is a new upload workspace.')
         try:
             logger.info("Create new workspace: Upload request: "
-                        "file='%s' archive='%s'", file.filename, archive)
+                        "file='%s' archive='%s' [%s]", file.filename,
+                        archive, user_string)
             user_id = str(user.user_id)
 
             if archive is None:
@@ -458,7 +488,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
             logger.info("Error adding new workspace to database: '%s'.", dbe)
             raise InternalServerError(UPLOAD_DB_ERROR)
         except Exception as ue:
-            logger.info("Unknown error in upload for new workspace. "
+            logger.info("Unknown error creating new workspace. "
                         " Add except clauses for '%s'. DO IT NOW!", ue)
             raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
@@ -484,7 +514,8 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
         #       some point in future. Depends in time it takes to process
         #       uploads.retrieve
         logger.info("%s: Upload files to existing "
-                    "workspace: file='%s'", upload_db_data.upload_id, file.filename)
+                    "workspace: file='%s' [%s].", upload_db_data.upload_id,
+                    file.filename, user_string)
 
         # Keep track of how long processing upload_db_data takes
         start_datetime = datetime.now(UTC)
@@ -492,9 +523,16 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
         # Create Upload object
         upload_workspace = UploadWorkspace(upload_id)
 
-        # checkpoint - create backup of user files in workspace
+        # checkpoint - create backup of user uploaded files
         if checkpoint:
             checksum = upload_workspace.create_checkpoint(user)
+
+        # Admin may want to clear out existing files so that existing files
+        # do not cause problems or interfere with processing uploaded files.
+        #
+        # Steps are 1) checkpoint 2) clear source files 3) unpack upload
+        #
+        if clear_source_files:
             upload_workspace.client_remove_all_files()
 
         # Process uploaded file(s)
@@ -540,8 +578,10 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
         # Store in DB
         uploads.update(upload_db_data)
 
-        logger.info("%s: Processed upload. "
-                    "Saved to DB. Preparing upload summary.", upload_db_data.upload_id)
+        if DEBUG_UPLOAD:
+            logger.info("%s: Processed upload. "
+                        "Saved to DB. Preparing upload summary.",
+                        upload_db_data.upload_id)
 
         # Do we want affirmative log messages after processing each request
         # or maybe just report errors like:
@@ -554,9 +594,10 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
         status_code = status.CREATED
 
         response_data = _status_data(upload_db_data, upload_workspace)
-        logger.info("%s: Generating upload summary.",
-                    upload_db_data.upload_id)
-        logger.debug('Response data: %s', response_data)
+
+        if DEBUG_UPLOAD:
+            logger.debug('%s: Upload response data: %s',
+                         upload_db_data.upload_id, response_data)
         return response_data, status_code, headers
 
     except IOError as e:
@@ -564,7 +605,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
                      "for file='%s'", upload_id, file.filename)
         raise InternalServerError(f'{UPLOAD_IO_ERROR}: {e}') from e
     except (TypeError, ValueError) as dbe:
-        logger.info("Error updating database: '%s'", dbe)
+        logger.info("%s: Error updating database: '%s'", upload_id, dbe)
         raise InternalServerError(UPLOAD_DB_ERROR)
     except BadRequest as breq:
         logger.info("%s: '%s'.", upload_id, breq)
@@ -576,8 +617,8 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
         logger.info("%s: Upload failed: '{forb}'.", upload_id)
         raise forb
     except Exception as ue:
-        logger.info("Unknown error with existing workspace."
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error with existing workspace."
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return None
@@ -615,8 +656,6 @@ def upload_summary(upload_id: int) -> Response:
             response_data = UPLOAD_NOT_FOUND
             raise NotFound(UPLOAD_NOT_FOUND)
 
-        logger.info("%s: Upload summary request.", upload_db_data.upload_id)
-
         # Create Upload object
         upload_workspace = UploadWorkspace(upload_id)
         file_list = upload_workspace.create_file_list()
@@ -636,22 +675,24 @@ def upload_summary(upload_id: int) -> Response:
         status_code = status.OK
         response_data = _status_data(upload_db_data, upload_workspace)
         response_data.update({'files': details_list, 'errors': []})
-        logger.info("%s: Upload summary request.",
-                    upload_db_data.upload_id)
+
+        if DEBUG_UPLOAD:
+            logger.info("%s: Upload summary request.",
+                        upload_db_data.upload_id)
 
     except IOError:
         # response_data = ERROR_RETRIEVING_UPLOAD
         # status_code = status.INTERNAL_SERVER_ERROR
         raise InternalServerError(ERROR_RETRIEVING_UPLOAD)
     except (TypeError, ValueError):
-        logger.info("Error updating database.")
+        logger.info("%s: Error updating database.", upload_id)
         raise InternalServerError(UPLOAD_DB_ERROR)
     except NotFound as nf:
         logger.info("%s: UploadSummary: '%s'", upload_id, nf)
         raise
     except Exception as ue:
-        logger.info("Unknown error with existing workspace."
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error with existing workspace."
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return response_data, status_code, {}
@@ -662,7 +703,7 @@ def upload_summary(upload_id: int) -> Response:
 # TODO: Is there another flavor of lock? Administrative lock? Or do admin
 # TODO: and submitter coordinate on changes to upload workspace.
 
-def upload_lock(upload_id: int) -> Response:
+def upload_lock(upload_id: int, user) -> Response:
     """
     Lock upload workspace.
 
@@ -681,10 +722,13 @@ def upload_lock(upload_id: int) -> Response:
 
     Returns
     -------
-    Standard Response tuple containing response content, HTTP status, and HTTP headers.
+    tuple
+        Standard Response tuple containing response content, HTTP status, and
+        HTTP headers.
 
     """
-    logger.info("%s: Lock upload workspace.", upload_id)
+    user_string = _format_user_information_for_logging(user);
+    logger.info("%s: Lock upload workspace [%s].", upload_id, user_string)
 
     try:
         # Make sure we have an upload_db_data to work with
@@ -714,14 +758,14 @@ def upload_lock(upload_id: int) -> Response:
         logger.info("%s: Lock: %s", upload_id, nf)
         raise
     except Exception as ue:
-        logger.info("Unknown error lock workspace. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error lock workspace. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return response_data, status_code, {}
 
 
-def upload_unlock(upload_id: int) -> Response:
+def upload_unlock(upload_id: int, user) -> Response:
     """
     Unlock upload workspace.
 
@@ -732,12 +776,15 @@ def upload_unlock(upload_id: int) -> Response:
 
     Returns
     -------
-    Standard Response tuple containing response content, HTTP status, and HTTP headers.
+    tuple
+        Standard Response tuple containing response content, HTTP status, and
+        HTTP headers.
 
     """
     # response_data = ERROR_REQUEST_NOT_IMPLEMENTED
     # status_code = status.INTERNAL_SERVER_ERROR
-    logger.info("%s: Unlock upload workspace.", upload_id)
+    user_string = _format_user_information_for_logging(user);
+    logger.info("%s: Unlock upload workspace [%s].", upload_id, user_string)
 
     try:
         # Make sure we have an upload_db_data to work with
@@ -767,14 +814,14 @@ def upload_unlock(upload_id: int) -> Response:
         logger.info("%s: Unlock workspace: %s", upload_id, nf)
         raise
     except Exception as ue:
-        logger.info("Unknown error in unlock workspace. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error in unlock workspace. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return response_data, status_code, {}
 
 
-def upload_release(upload_id: int) -> Response:
+def upload_release(upload_id: int, user) -> Response:
     """
     Release inidcates owner is done with upload workspace.
 
@@ -803,6 +850,8 @@ def upload_release(upload_id: int) -> Response:
     # Again, as with delete workspace, authentication, authorization, and
     # existence of workspace is verified in route level
 
+    user_string = _format_user_information_for_logging(user);
+
     # Expect workspace to be in ACTIVE state.
 
     try:
@@ -817,16 +866,19 @@ def upload_release(upload_id: int) -> Response:
         # update database
 
         if upload_db_data.state == Upload.RELEASED:
-            logger.info("%s: Release: Workspace has already been released.", upload_id)
+            logger.info("%s: Release: Workspace has already been released "
+                        "[%s].", upload_id, user_string)
             response_data = {'reason': UPLOAD_RELEASED_WORKSPACE}  # Should this be an error?
             status_code = status.OK
         elif upload_db_data.state == Upload.DELETED:
-            logger.info("%s: Release failed: Workspace has been deleted.", upload_id)
+            logger.info("%s: Release failed: Workspace has been deleted [%s].",
+                        upload_id, user_string)
             # response_data = {'reason': UPLOAD_WORKSPACE_ALREADY_DELETED}
             # status_code = status.OK
             raise NotFound(UPLOAD_WORKSPACE_ALREADY_DELETED)
         elif upload_db_data.state == Upload.ACTIVE:
-            logger.info("%s: Release upload workspace.", upload_id)
+            logger.info("%s: Release upload workspace [%s].", upload_id,
+                        user_string)
 
             upload_db_data.state = Upload.RELEASED
 
@@ -843,14 +895,14 @@ def upload_release(upload_id: int) -> Response:
         logger.info("%s: Release workspace: %s", upload_id, nf)
         raise
     except Exception as ue:
-        logger.info("Unknown error in release workspace. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error in release workspace. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return response_data, status_code, {}
 
 
-def upload_unrelease(upload_id: int) -> Response:
+def upload_unrelease(upload_id: int, user) -> Response:
     """
     Unrelease returns released workspace to active state.
 
@@ -882,9 +934,11 @@ def upload_unrelease(upload_id: int) -> Response:
     # Again, as with delete workspace, authentication, authorization, and
     # existence of workspace is verified in route level
 
+    user_string = _format_user_information_for_logging(user);
+
     # Expect workspace to be in RELEASED state.
 
-    logger.info("%s: Unrelease upload workspace.", upload_id)
+    logger.info("%s: Unrelease upload workspace [%s].", upload_id, user_string)
 
     try:
         # Make sure we have an upload_db_data to work with
@@ -903,11 +957,13 @@ def upload_unrelease(upload_id: int) -> Response:
             raise NotFound(UPLOAD_WORKSPACE_ALREADY_DELETED)
 
         if upload_db_data.state == Upload.ACTIVE:
-            logger.info("%s: Unrelease: Workspace is already active.", upload_id)
+            logger.info("%s: Unrelease: Workspace is already active [%s].",
+                        upload_id, user_string)
             response_data = {'reason': UPLOAD_UNRELEASED_WORKSPACE}  # Should this be an error?
             status_code = status.OK
         elif upload_db_data.state == Upload.RELEASED:
-            logger.info("%s: Unrelease upload workspace.", upload_id)
+            logger.info("%s: Unrelease upload workspace [%s].", upload_id,
+                        user_string)
 
             upload_db_data.state = Upload.ACTIVE
 
@@ -924,8 +980,8 @@ def upload_unrelease(upload_id: int) -> Response:
         logger.info("%s: Unrelease workspace: '%s'", upload_id, nf)
         raise
     except Exception as ue:
-        logger.info("Unknown error in unrelease workspace. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error in unrelease workspace. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return response_data, status_code, {}
@@ -944,7 +1000,9 @@ def check_upload_content_exists(upload_id: int) -> Response:
 
     Returns
     -------
-    Standard Response tuple containing response content, HTTP status, and HTTP headers.
+    tuple
+        Standard Response tuple containing response content, HTTP status, and
+        HTTP headers.
 
     """
     try:
@@ -957,7 +1015,6 @@ def check_upload_content_exists(upload_id: int) -> Response:
     if upload_db_data is None:
         raise NotFound(UPLOAD_NOT_FOUND)
 
-    logger.info("%s: Upload content summary request.", upload_id)
     upload_workspace = UploadWorkspace(upload_id)
 
     # This will potentially build content package if it does not exist
@@ -976,7 +1033,7 @@ def check_upload_content_exists(upload_id: int) -> Response:
     return {}, status.OK, {'ETag': checksum}
 
 
-def get_upload_content(upload_id: int) -> Response:
+def get_upload_content(upload_id: int, user) -> Response:
     """
     Package up files for downloading as a compressed gzipped tar file.
 
@@ -987,14 +1044,20 @@ def get_upload_content(upload_id: int) -> Response:
 
     Returns
     -------
-    Standard Response tuple containing compressed content, HTTP status, and HTTP headers.
+    tuple
+        Standard Response tuple containing compressed content, HTTP status, and
+        HTTP headers.
 
     """
+    user_string = _format_user_information_for_logging(user);
+    logger.info("%s: Download workspace source content [%s].", upload_id,
+                user_string)
+
     try:
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
     except IOError:
-        logger.error("%s: ContentDownload: There was a problem connecting "
-                     "to database.", upload_id)
+        logger.error("%s: Download workspace source content: There was a "
+                     "problem connecting to database.", upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
 
     if upload_db_data is None:
@@ -1025,7 +1088,9 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
 
     Returns
     -------
-    Standard Response tuple containing content, HTTP status, and HTTP headers.
+    tuple
+        Standard Response tuple containing content, HTTP status, and
+        HTTP headers.
 
     """
     try:
@@ -1037,8 +1102,6 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
 
     if upload_db_data is None:
         raise NotFound(UPLOAD_NOT_FOUND)
-
-    logger.info("%s: Upload content file exists request.", upload_id)
 
     try:
 
@@ -1071,14 +1134,14 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
         logger.info("%s: Operation forbidden: %s.", upload_id, forb)
         raise forb
     except Exception as ue:
-        logger.info("Unknown error in content file exists operation. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error in content file exists operation. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return {}, status.OK, {'ETag': checksum}
 
 
-def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
+def get_upload_file_content(upload_id: int, public_file_path: str, user) -> Response:
     """
     Get the source log associated with upload workspace.
 
@@ -1102,7 +1165,7 @@ def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
     try:
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
     except IOError:
-        logger.error("%s: ContentFileDownload: There was a problem connecting to database.",
+        logger.error("%s: Download file: There was a problem connecting to database.",
                      upload_db_data.upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
 
@@ -1110,6 +1173,11 @@ def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
         raise NotFound(UPLOAD_NOT_FOUND)
 
     try:
+
+        user_string = _format_user_information_for_logging(user);
+        logger.info("%s: Download file '%s' [%s].", upload_id,
+                    public_file_path, user_string)
+
 
         upload_workspace = UploadWorkspace(upload_id)
 
@@ -1143,8 +1211,8 @@ def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
         logger.info("%s: Get uploaded file forbidden: %s.", upload_id, forb)
         raise forb
     except Exception as ue:
-        logger.info("Unknown error in get uploaded file. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error in get uploaded file. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return filepointer, status.OK, headers
@@ -1180,7 +1248,6 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
     if upload_db_data is None:
         raise NotFound(UPLOAD_NOT_FOUND)
 
-    logger.info("%s: Test for source log.", upload_id)
     upload_workspace = UploadWorkspace(upload_id)
 
     checksum = upload_workspace.source_log_checksum
@@ -1192,7 +1259,7 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
                            'Last-Modified': modified}
 
 
-def get_upload_source_log(upload_id: int) -> Response:
+def get_upload_source_log(upload_id: int, user) -> Response:
     """
     Get upload workspace log.
 
@@ -1206,9 +1273,16 @@ def get_upload_source_log(upload_id: int) -> Response:
 
     Returns
     -------
-    Standard Response tuple containing content, HTTP status, and HTTP headers.
+    tuple
+        Standard Response tuple containing content, HTTP status, and
+        HTTP headers.
+
     """
     try:
+
+        user_string = _format_user_information_for_logging(user);
+        logger.info("%s: Download source log [%s].", upload_id, user_string)
+
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
     except IOError:
         logger.error("%s: GetSourceLog: There was a problem connecting to database.",
@@ -1275,8 +1349,8 @@ def __content_pointer(log_path: str) -> io.BytesIO:
 
     Returns
     -------
-    Standard Response tuple containing service log content, HTTP status,
-    and HTTP headers.
+    io.BytesIO
+        Open file pointer for service log content.
 
     """
     return open(log_path, 'rb')
@@ -1294,12 +1368,13 @@ def check_upload_service_log_exists() -> Response:
 
     Returns
     -------
-    Standard Response tuple containing content, HTTP status, and HTTP headers.
+    tuple
+        Standard Response tuple containing content, HTTP status, and
+        HTTP headers.
+
     """
     # Need path to upload.log which is currently stored at top level
     # of filemanager service.
-
-    logger.info("%s: Check whether upload service log exists.")
 
     # service_log_path is global set during startup log init
     checksum = __checksum(service_log_path)
@@ -1311,7 +1386,7 @@ def check_upload_service_log_exists() -> Response:
                                     }
 
 
-def get_upload_service_log() -> Response:
+def get_upload_service_log(user) -> Response:
     """
     Return the service-level file manager service log.
 
@@ -1321,8 +1396,15 @@ def get_upload_service_log() -> Response:
 
     Returns
     -------
-    Standard Response tuple containing content, HTTP status, and HTTP headers.
+    tuple
+        Standard Response tuple containing content, HTTP status, and
+        HTTP headers.
+
     """
+    user_string = _format_user_information_for_logging(user);
+    logger.info("sys: Download file manager service log [%s].",
+                user_string)
+
     # service_log_path is global set during startup log init
     checksum = __checksum(service_log_path)
     size = os.path.getsize(service_log_path)
@@ -1354,11 +1436,13 @@ def create_checkpoint(upload_id: int, user) -> Response:
 
     Returns
     -------
-    Standard Response tuple containing response content, HTTP status, and HTTP headers.
+    tuple
+        Standard Response tuple containing response content, HTTP status, and
+        HTTP headers.
 
     """
-    user_id = str(user.username)
-    logger.info("%s: Create checkpoint ['%s'].", upload_id, user_id)
+    user_string = _format_user_information_for_logging(user)
+    logger.info("%s: Create checkpoint [%s].", upload_id, user_string)
 
     try:
         # Make sure we have an upload_db_data to work with
@@ -1387,14 +1471,14 @@ def create_checkpoint(upload_id: int, user) -> Response:
         status_code = status.OK
 
     except IOError:
-        logger.error("%s: Lock workspace request failed ", upload_id)
+        logger.error("%s: Create checkpoint request failed ", upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
     except NotFound as nf:
-        logger.info("%s: Lock: %s", upload_id, nf)
+        logger.info("%s: Create checkpoint: %s", upload_id, nf)
         raise
     except Exception as ue:
-        logger.info("Unknown error lock workspace. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error create checkpoint. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return response_data, status_code, {'ETag': checksum}
@@ -1415,13 +1499,15 @@ def list_checkpoints(upload_id: int, user) -> Response:
 
     Returns
     -------
-    Standard Response tuple containing response content, HTTP status, and HTTP headers.
+    tuple
+        Standard Response tuple containing response content, HTTP status, and
+        HTTP headers.
 
         Response content includes details for each checkpoint.
 
     """
-    user_id = str(user.username)
-    logger.info("%s: List checkpoints ['%s'].", upload_id, user_id)
+    user_string = _format_user_information_for_logging(user)
+    logger.info("%s: List checkpoints [%s].", upload_id, user_string)
 
     try:
         # Make sure we have an upload_db_data to work with
@@ -1447,8 +1533,8 @@ def list_checkpoints(upload_id: int, user) -> Response:
         logger.info("%s: List checkpoints: %s", upload_id, nf)
         raise
     except Exception as ue:
-        logger.info("Unknown error while listing checkpoints. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error while listing checkpoints. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return response_data, status_code, {}
@@ -1472,11 +1558,13 @@ def restore_checkpoint(upload_id: int, checkpoint_checksum: str,
 
     Returns
     -------
-    Standard Response tuple containing response content, HTTP status, and HTTP headers.
+    tuple
+        Standard Response tuple containing response content, HTTP status, and
+        HTTP headers.
 
     """
-    user_id = str(user.username)
-    logger.info("%s: Restore checkpoints ['%s'].", upload_id, user_id)
+    user_string = _format_user_information_for_logging(user)
+    logger.info("%s: Restore checkpoints [%s].", upload_id, user_string)
 
     try:
         # Make sure we have an upload_db_data to work with
@@ -1497,11 +1585,11 @@ def restore_checkpoint(upload_id: int, checkpoint_checksum: str,
         logger.error("%s: Restore checkpoint request failed ", upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
     except NotFound as nf:
-        logger.info("%s: Checkpoint: %s", upload_id, nf)
+        logger.info("%s: Restore checkpoint: %s", upload_id, nf)
         raise
     except Exception as ue:
-        logger.info("Unknown error while restoring checkpoint. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error while restoring checkpoint. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return response_data, status_code, {}
@@ -1526,12 +1614,14 @@ def delete_checkpoint(upload_id: int, checkpoint_checksum: str,
 
     Returns
     -------
-    Standard Response tuple containing response content, HTTP status, and HTTP headers.
+    tuple
+        Standard Response tuple containing response content, HTTP status, and
+        HTTP headers.
 
     """
-    user_id = str(user.username)
-    logger.info("%s: Delete checkpoint '%s' ['%s'].", upload_id,
-                checkpoint_checksum, user_id)
+    user_string = _format_user_information_for_logging(user)
+    logger.info("%s: Delete checkpoint '%s' [%s].", upload_id,
+                checkpoint_checksum, user_string)
 
     try:
         # Make sure we have an upload_db_data to work with
@@ -1556,8 +1646,8 @@ def delete_checkpoint(upload_id: int, checkpoint_checksum: str,
                     checkpoint_checksum, nf)
         raise
     except Exception as ue:
-        logger.info("Unknown error while deleting checkpoint. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error while deleting checkpoint. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return response_data, status_code, {}
@@ -1578,11 +1668,13 @@ def delete_all_checkpoints(upload_id: int, user) -> Response:
 
     Returns
     -------
-    Standard Response tuple containing response content, HTTP status, and HTTP headers.
+    tuple
+        Standard Response tuple containing response content, HTTP status, and
+        HTTP headers.
 
     """
-    user_id = str(user.username)
-    logger.info("%s: Delete all checkpoints ['%s'].", upload_id, user_id)
+    user_string = _format_user_information_for_logging(user)
+    logger.info("%s: Delete all checkpoints [%s].", upload_id, user_string)
 
     try:
         # Make sure we have an upload_db_data to work with
@@ -1606,8 +1698,8 @@ def delete_all_checkpoints(upload_id: int, user) -> Response:
         logger.info("%s: Delete all checkpoints: %s", upload_id, nf)
         raise
     except Exception as ue:
-        logger.info("Unknown error while deleting all checkpoints. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error while deleting all checkpoints. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return response_data, status_code, {}
@@ -1626,7 +1718,9 @@ def check_checkpoint_file_exists(upload_id: int, checkpoint_checksum: str) -> Re
 
     Returns
     -------
-    Standard Response tuple containing content, HTTP status, and HTTP headers.
+    tuple
+        Standard Response tuple containing content, HTTP status, and
+        HTTP headers.
 
     """
     try:
@@ -1639,7 +1733,7 @@ def check_checkpoint_file_exists(upload_id: int, checkpoint_checksum: str) -> Re
     if upload_db_data is None:
         raise NotFound(UPLOAD_NOT_FOUND)
 
-    logger.info("%s: Checkpoint content file exists request.", upload_id)
+    ##logger.info("%s: Checkpoint content file exists request.", upload_id)
 
     try:
 
@@ -1647,8 +1741,8 @@ def check_checkpoint_file_exists(upload_id: int, checkpoint_checksum: str) -> Re
 
         # file exists
         if upload_workspace.checkpoint_file_exists(checkpoint_checksum):
-            size = upload_workspace.checkpoint_file_size(checkpoint_checksum)
-            modified = upload_workspace.checkpoint_file_last_modified(checkpoint_checksum)
+            size = upload_workspace.get_checkpoint_file_size(checkpoint_checksum)
+            modified = upload_workspace.get_checkpoint_file_last_modified(checkpoint_checksum)
             #checksum = upload_workspace.content_file_checksum(public_file_path)
             return {}, status.OK, {'ETag': checkpoint_checksum,
                                    'Content-Length': size,
@@ -1672,14 +1766,14 @@ def check_checkpoint_file_exists(upload_id: int, checkpoint_checksum: str) -> Re
         logger.info("%s: Operation forbidden: %s.", upload_id, forb)
         raise forb
     except Exception as ue:
-        logger.info("Unknown error in checkpoint file exists operation. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error in checkpoint file exists operation. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return {}, status.OK, {'ETag': checkpoint_checksum}
 
 
-def get_checkpoint_file(upload_id: int, checkpoint_checksum: str) -> Response:
+def get_checkpoint_file(upload_id: int, checkpoint_checksum: str, user) -> Response:
     """
     Get the checkpoint file specified by provided checksum.
 
@@ -1701,14 +1795,16 @@ def get_checkpoint_file(upload_id: int, checkpoint_checksum: str) -> Response:
 
     """
     try:
+
+        user_string = _format_user_information_for_logging(user)
+        logger.info("%s: Download checkpoint: '%s' [%s].", upload_id,
+                    checkpoint_checksum, user_string)
+
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
     except IOError:
         logger.error("%s: CheckpointFileDownload: There was a problem connecting to database.",
                      upload_db_data.upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
-
-    if upload_db_data is None:
-        raise NotFound(UPLOAD_NOT_FOUND)
 
     try:
 
@@ -1716,10 +1812,10 @@ def get_checkpoint_file(upload_id: int, checkpoint_checksum: str) -> Response:
 
         # Returns path if file exists
         if upload_workspace.checkpoint_file_exists(checkpoint_checksum):
-            size = upload_workspace.checkpoint_file_size(checkpoint_checksum)
-            modified = upload_workspace.checkpoint_file_last_modified(checkpoint_checksum)
+            size = upload_workspace.get_checkpoint_file_size(checkpoint_checksum)
+            modified = upload_workspace.get_checkpoint_file_last_modified(checkpoint_checksum)
             #checksum = upload_workspace.content_file_checksum(public_file_path)
-            filepointer = upload_workspace.checkpoint_file_pointer(checkpoint_checksum)
+            filepointer = upload_workspace.get_checkpoint_file_pointer(checkpoint_checksum)
             headers = {
                 "Content-disposition": f"filename={filepointer.name}",
                 'ETag': checkpoint_checksum,
@@ -1731,7 +1827,7 @@ def get_checkpoint_file(upload_id: int, checkpoint_checksum: str) -> Response:
 
     except IOError:
         logger.error("%s: Checkpoint file request failed ", upload_db_data.upload_id)
-        raise InternalServerError(CANT_DELETE_FILE)
+        raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
     except NotFound as nf:
         logger.info("%s: CheckpointFileDownload: %s", upload_id, nf)
         raise nf
@@ -1744,8 +1840,8 @@ def get_checkpoint_file(upload_id: int, checkpoint_checksum: str) -> Response:
         logger.info("%s: Checkpoint file forbidden: %s.", upload_id, forb)
         raise forb
     except Exception as ue:
-        logger.info("Unknown error in delete file. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error in get checkpoint file. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return filepointer, status.OK, headers
