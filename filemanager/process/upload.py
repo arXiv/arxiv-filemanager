@@ -2339,7 +2339,7 @@ class Upload:
             return True
         return self.last_modified > self.content_package_modified
 
-    def content_checksum(self) -> Optional[str]:
+    def get_content_checksum(self) -> Optional[str]:
         """
         Return b64-encoded MD5 hash of the packed content tarball.
 
@@ -2362,7 +2362,7 @@ class Upload:
 
     # Content file routines
 
-    def content_file_path(self, public_file_path: str) -> str:
+    def get_content_file_path(self, public_file_path: str) -> str:
         """
         Return the absolute path of content file given relative pointer.
 
@@ -2403,7 +2403,7 @@ class Upload:
 
         return False
 
-    def content_file_size(self, public_file_path: str) -> int:
+    def get_content_file_size(self, public_file_path: str) -> int:
         """
         Return size of specified file.
 
@@ -2422,7 +2422,7 @@ class Upload:
 
         return 0
 
-    def content_file_checksum(self, public_file_path: str) -> str:
+    def get_content_file_checksum(self, public_file_path: str) -> str:
         """
         Generic routine to calculate checksum for arbitrary file argument.
 
@@ -2444,7 +2444,7 @@ class Upload:
 
         return ""
 
-    def content_file_pointer(self, public_file_path: str) -> io.BytesIO:
+    def get_content_file_pointer(self, public_file_path: str) -> io.BytesIO:
         """
         Open specified file and return file pointer.
 
@@ -2465,7 +2465,7 @@ class Upload:
 
         return ""
 
-    def content_file_last_modified(self, public_file_path: str) -> datetime:
+    def get_content_file_last_modified(self, public_file_path: str) -> datetime:
         """
         Return last modified time for specified file/package.
 
@@ -2548,7 +2548,7 @@ class Upload:
 
         return ""
 
-    def source_log_file_pointer(self) -> io.BytesIO:
+    def get_source_log_file_pointer(self) -> io.BytesIO:
         """Get a file-pointer for source log."""
         source_log_path = self.get_upload_source_log_path()
 
@@ -2887,7 +2887,7 @@ class Upload:
         return None
 
 
-    def checkpoint_file_path(self, checkpoint_checksum: str) -> str:
+    def get_checkpoint_file_path(self, checkpoint_checksum: str) -> str:
         """
         Return the absolute path of content file given relative pointer.
 
@@ -2921,7 +2921,8 @@ class Upload:
 
         Returns
         -------
-        True if file exists, False otherwise.
+        bool
+            True if file exists, False otherwise.
 
         """
         file_obj = self.resolve_checkpoint_file_obj(checkpoint_checksum)
@@ -2931,7 +2932,7 @@ class Upload:
 
         return False
 
-    def checkpoint_file_size(self, checkpoint_checksum: str) -> int:
+    def get_checkpoint_file_size(self, checkpoint_checksum: str) -> int:
         """
         Return size of specified file.
 
@@ -2948,9 +2949,9 @@ class Upload:
         if file_obj is not None:
             return file_obj.size
 
-        return 0
+        raise NotFound(CHECKPOINT_FILE_NOT_FOUND)
 
-    def checkpoint_file_pointer(self, checkpoint_checksum: str) -> io.BytesIO:
+    def get_checkpoint_file_pointer(self, checkpoint_checksum: str) -> io.BytesIO:
         """
         Open specified file and return file pointer.
 
@@ -2961,17 +2962,15 @@ class Upload:
 
         Returns
         -------
-        File pointer or Null string when filepath does not exist.
+        io.BytesIO
+            File pointer or exception string when filepath does not exist.
 
         """
         file_obj = self.resolve_checkpoint_file_obj(checkpoint_checksum)
 
-        if file_obj is not None and os.path.exists(file_obj.filepath):
-            return open(file_obj.filepath, 'rb')
+        return open(file_obj.filepath, 'rb')
 
-        return ""
-
-    def checkpoint_file_last_modified(self, checkpoint_checksum: str) -> datetime:
+    def get_checkpoint_file_last_modified(self, checkpoint_checksum: str) -> datetime:
         """
         Return last modified time for specified file/package.
 
@@ -3014,7 +3013,7 @@ class Upload:
         if (len(entries) > 0):
 
             if user:
-                self.add_warning(entries[0], f"Creating checkpoint. ['{user.username}']")
+                self.add_warning(entries[0], f"Creating checkpoint. ['{user.user_id}']")
             else:
                 self.add_warning(entries[0], f"Creating checkpoint.")
 
@@ -3190,5 +3189,3 @@ class Upload:
         else:
             log_msg = f'Restored checkpoint: {name}.'
         self.log(log_msg)
-
-# TODO: According to UI mockup we need to add support to download checkpoint files!

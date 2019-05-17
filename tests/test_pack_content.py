@@ -61,8 +61,8 @@ class TestPackContent(TestCase):
         """Generate a checksum based on the tarball content."""
         mock_get_base_dir.return_value = self.base_directory
         self.upload.pack_content()
-        checksum = self.upload.content_checksum()
-        self.assertEqual(checksum, self.upload.content_checksum(),
+        checksum = self.upload.get_content_checksum()
+        self.assertEqual(checksum, self.upload.get_content_checksum(),
                          'The checksum should remain the same.')
 
 

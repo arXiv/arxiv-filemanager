@@ -307,7 +307,7 @@ def client_delete_file(upload_id: int, public_file_path: str, user) -> Response:
     response_data = _status_data(upload_db_data, upload_workspace)
     response_data.update({
         'reason': UPLOAD_DELETED_FILE,
-        'checksum': upload_workspace.content_checksum()
+        'checksum': upload_workspace.get_content_checksum()
     })  # Get rid of pylint errorT
     return response_data, status.OK, {}
 
@@ -375,7 +375,7 @@ def client_delete_all_files(upload_id: int, user) -> Response:
     response_data = _status_data(upload_db_data, upload_workspace)
     response_data.update({
         'reason': UPLOAD_DELETED_ALL_FILES,
-        'checksum': upload_workspace.content_checksum()
+        'checksum': upload_workspace.get_content_checksum()
     })  # Get rid of pylint error
     return response_data, status.OK, {}
 
@@ -1018,7 +1018,7 @@ def check_upload_content_exists(upload_id: int) -> Response:
     upload_workspace = UploadWorkspace(upload_id)
 
     # This will potentially build content package if it does not exist
-    checksum = upload_workspace.content_checksum()
+    checksum = upload_workspace.get_content_checksum()
     modified = ''
     size = 0
 
@@ -1063,7 +1063,7 @@ def get_upload_content(upload_id: int, user) -> Response:
     if upload_db_data is None:
         raise NotFound(UPLOAD_NOT_FOUND)
     upload_workspace = UploadWorkspace(upload_id)
-    checksum = upload_workspace.content_checksum()
+    checksum = upload_workspace.get_content_checksum()
     try:
         filepointer = upload_workspace.get_content()
     except FileNotFoundError as e:
@@ -1109,9 +1109,9 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
 
         # file exists
         if upload_workspace.content_file_exists(public_file_path):
-            size = upload_workspace.content_file_size(public_file_path)
-            modified = upload_workspace.content_file_last_modified(public_file_path)
-            checksum = upload_workspace.content_file_checksum(public_file_path)
+            size = upload_workspace.get_content_file_size(public_file_path)
+            modified = upload_workspace.get_content_file_last_modified(public_file_path)
+            checksum = upload_workspace.get_content_file_checksum(public_file_path)
             return {}, status.OK, {'ETag': checksum,
                                             'Content-Length': size,
                                             'Last-Modified': modified
@@ -1183,10 +1183,10 @@ def get_upload_file_content(upload_id: int, public_file_path: str, user) -> Resp
 
         # Returns path if file exists
         if upload_workspace.content_file_exists(public_file_path):
-            size = upload_workspace.content_file_size(public_file_path)
-            modified = upload_workspace.content_file_last_modified(public_file_path)
-            checksum = upload_workspace.content_file_checksum(public_file_path)
-            filepointer = upload_workspace.content_file_pointer(public_file_path)
+            size = upload_workspace.get_content_file_size(public_file_path)
+            modified = upload_workspace.get_content_file_last_modified(public_file_path)
+            checksum = upload_workspace.get_content_file_checksum(public_file_path)
+            filepointer = upload_workspace.get_content_file_pointer(public_file_path)
             headers = {
                 "Content-disposition": f"filename={filepointer.name}",
                 'ETag': checksum,
@@ -1298,7 +1298,7 @@ def get_upload_source_log(upload_id: int, user) -> Response:
     size = upload_workspace.source_log_size
     modified = upload_workspace.source_log_last_modified
 
-    filepointer = upload_workspace.source_log_file_pointer()
+    filepointer = upload_workspace.get_source_log_file_pointer()
     if filepointer:
         name = filepointer.name
     else:
@@ -1863,5 +1863,5 @@ def _status_data(upload_db_data: Upload,
         'workspace_state': upload_db_data.state,
         'lock_state': upload_db_data.lock,
         'source_format': upload_workspace.source_format,
-        'checksum': upload_workspace.content_checksum()
+        'checksum': upload_workspace.get_content_checksum()
     }

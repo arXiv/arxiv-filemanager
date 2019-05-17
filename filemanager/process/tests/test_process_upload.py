@@ -907,15 +907,15 @@ class TestInternalSupportRoutines(TestCase):
         exists = upload.checkpoint_file_exists(checkpoint3_sum)
         self.assertTrue(exists, "Test whether known checkpoint exists.")
 
-        path = upload.checkpoint_file_path(checkpoint3_sum)
+        path = upload.get_checkpoint_file_path(checkpoint3_sum)
         self.assertTrue(os.path.exists(path),
                         "Test whether known checkpoint file exists")
 
-        size = upload.checkpoint_file_size(checkpoint3_sum)
+        size = upload.get_checkpoint_file_size(checkpoint3_sum)
         self.assertTrue(9950 < size < 10005, "Test size of known checkpoint "
                                       "is roughly '10001' bytes.")
 
-        mod_date = upload.checkpoint_file_last_modified(checkpoint3_sum)
+        mod_date = upload.get_checkpoint_file_last_modified(checkpoint3_sum)
         self.assertTrue(mod_date, "Test modify date returned "
                                   "something (for now).")
 
