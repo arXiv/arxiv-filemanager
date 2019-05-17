@@ -163,8 +163,8 @@ def delete_file(upload_id: int, public_file_path: str) -> tuple:
         Relative file path that uniquely identifies file to be removed.
 
     """
-    data, status_code, headers = upload.client_delete_file(upload_id,
-                                                           public_file_path)
+    data, status_code, headers = upload.client_delete_file\
+        (upload_id, public_file_path, request.session.user)
     return jsonify(data), status_code, headers
 
 # File and workspace deletion
@@ -181,7 +181,8 @@ def delete_all_files(upload_id: int) -> tuple:
         Workspace identifier
 
     """
-    data, status_code, headers = upload.client_delete_all_files(upload_id)
+    data, status_code, headers = upload.client_delete_all_files\
+        (upload_id, request.session.user)
     return jsonify(data), status_code, headers
 
 
@@ -197,7 +198,8 @@ def workspace_delete(upload_id: int) -> tuple:
         Workspace identifier
 
     """
-    data, status_code, headers = upload.delete_workspace(upload_id)
+    data, status_code, headers = upload.delete_workspace\
+        (upload_id, request.session.user)
     return jsonify(data), status_code, headers
 
 
@@ -218,7 +220,8 @@ def lock(upload_id: int) -> tuple:
         Workspace identifier
 
     """
-    data, status_code, headers = upload.upload_lock(upload_id)
+    data, status_code, headers = upload.upload_lock\
+        (upload_id, request.session.user)
     return jsonify(data), status_code, headers
 
 
@@ -227,7 +230,8 @@ def lock(upload_id: int) -> tuple:
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
 def unlock(upload_id: int) -> tuple:
     """Unlock submission workspace and allow updates."""
-    data, status_code, headers = upload.upload_unlock(upload_id)
+    data, status_code, headers = upload.upload_unlock\
+        (upload_id, request.session.user)
     return jsonify(data), status_code, headers
 
 
@@ -241,7 +245,8 @@ def release(upload_id: int) -> tuple:
     File management service is free to remove submissions files,
     or schedule workspace for removal.
     """
-    data, status_code, headers = upload.upload_release(upload_id)
+    data, status_code, headers = upload.upload_release\
+        (upload_id, request.session.user)
     return jsonify(data), status_code, headers
 
 
@@ -255,7 +260,8 @@ def unrelease(upload_id: int) -> tuple:
     Workspace was previously release by client. Client has changed their
     mind and does not want to remove workspace.
     """
-    data, status_code, headers = upload.upload_unrelease(upload_id)
+    data, status_code, headers = upload.upload_unrelease\
+        (upload_id, request.session.user)
     return jsonify(data), status_code, headers
 
 
@@ -287,7 +293,7 @@ def get_upload_content(upload_id: int) -> Response:
     logger.debug('Request for upload content: %s (%s)',
                  upload_id, type(upload_id))
     # Note: status_code is not used
-    data, _, headers = upload.get_upload_content(upload_id)
+    data, _, headers = upload.get_upload_content(upload_id, request.session.user)
     response = send_file(data, mimetype="application/tar+gzip")
     response.set_etag(headers.get('ETag'))
     return response
@@ -321,7 +327,8 @@ def get_file_content(upload_id: int, public_file_path: str) -> Response:
     """
     # Note: status_code not used
     data, _, headers = \
-        upload.get_upload_file_content(upload_id, public_file_path)
+        upload.get_upload_file_content(upload_id, public_file_path,
+                                       request.session.user)
     response = send_file(data, mimetype="application/*")
     response.set_etag(headers.get('ETag'))
     return response
@@ -370,7 +377,8 @@ def get_upload_source_log(upload_id: int) -> Response:
 
     """
     # Note: status_code not used
-    data, _, headers = upload.get_upload_source_log(upload_id)
+    data, _, headers = upload.get_upload_source_log(upload_id,
+                                                    request.session.user)
     response = send_file(data, mimetype="application/tar+gzip")
     response.set_etag(headers.get('ETag'))
     return response
@@ -410,7 +418,7 @@ def get_upload_service_log() -> Response:
 
     """
     # Note: status_code not used
-    data, _, headers = upload.get_upload_service_log()
+    data, _, headers = upload.get_upload_service_log(request.session.user)
     response = send_file(data, mimetype="application/tar+gzip")
     response.set_etag(headers.get('ETag'))
     return response
@@ -555,7 +563,7 @@ def get_checkpoint_file(upload_id: int, checkpoint_checksum: str) -> Response:
                  upload_id, type(upload_id))
     # Note: status_code is not used
     data, _, headers = upload.get_checkpoint_file\
-        (upload_id, checkpoint_checksum)
+        (upload_id, checkpoint_checksum, request.session.user)
     response = send_file(data, mimetype="application/tar+gzip")
     response.set_etag(headers.get('ETag'))
     return response
