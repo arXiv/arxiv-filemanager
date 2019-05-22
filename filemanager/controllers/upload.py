@@ -27,6 +27,9 @@ from filemanager.shared import url_for
 from filemanager.domain import Upload
 from filemanager.services import uploads
 from filemanager.process.upload import Upload as UploadWorkspace
+from filemanager.process.upload import EmptyUploadContentError, \
+    UploadFileSecurityError, InvalidUploadContentError
+
 from filemanager.arxiv.file import File
 
 # Temporary logging at service level - just to get something in place to build on
@@ -93,9 +96,10 @@ DEBUG_UPLOAD = False
 # exceptions
 UPLOAD_MISSING_FILE = 'missing file/archive payload'
 UPLOAD_MISSING_FILENAME = 'file argument missing filename or file not selected'
-# UPLOAD_FILE_EMPTY = {'file payload is zero length'}
+UPLOAD_FILE_EMPTY = 'file payload is zero length'
 
-UPLOAD_NOT_FOUND = 'upload workspace not found'
+UPLOAD_NOT_FOUND = 'workspace not found'
+UPLOAD_CHECKPOINT_NOT_FOUND = 'checkpoint not found'
 UPLOAD_DB_ERROR = 'unable to create/insert new upload workspace into database'
 UPLOAD_DB_CONNECT_ERROR = "There was a problem connecting to database."
 UPLOAD_IO_ERROR = 'encountered an IOError'
@@ -184,13 +188,6 @@ def delete_workspace(upload_id: int, user) -> Response:
         # Make sure we have an existing upload workspace to work with
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_db_data is None:
-            # invalid workspace identifier
-            # Note: DB entry will exist for workspace that has already been
-            #       deleted
-            raise NotFound(UPLOAD_NOT_FOUND)
-
-
         # Actually remove entire workspace directory structure. Log
         # everything to global log since source log is being removed!
 
@@ -222,12 +219,13 @@ def delete_workspace(upload_id: int, user) -> Response:
     except IOError:
         logger.error("%s: Delete workspace request failed ", upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
-    except NotFound as nf:
-        logger.info("%s: Delete Workspace: '%s'", upload_id, nf)
-        raise
+    except (NotFound, uploads.WorkspaceNotFound) as nf:
+        # Should we distinguish between non-existent and deleted workspace?
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(UPLOAD_NOT_FOUND)
     except Exception as ue:
-        logger.info("Unknown error in delete workspace. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error in delete workspace. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     # API doesn't provide for returning errors resulting from delete.
@@ -269,9 +267,6 @@ def client_delete_file(upload_id: int, public_file_path: str, user) -> Response:
         # Make sure we have an upload_db_data to work with
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_db_data is None:
-            # Invalid workspace identifier
-            raise NotFound(UPLOAD_NOT_FOUND)
         if upload_db_data.state != Upload.ACTIVE:
             # Do we log anything for these requests
             raise Forbidden(UPLOAD_NOT_ACTIVE)
@@ -285,20 +280,24 @@ def client_delete_file(upload_id: int, public_file_path: str, user) -> Response:
         # Call routine that will do the actual work
         upload_workspace.client_remove_file(public_file_path)
 
-    except IOError:
-        logger.error("%s: Delete file request failed ", upload_id)
-        raise InternalServerError(CANT_DELETE_FILE)
-    except NotFound as nf:
-        logger.info("%s: DeleteFile: %s", upload_id, nf)
-        raise nf
-    except SecurityError as secerr:
-        logger.info("%s: %s", upload_id, secerr.description)
+    except (NotFound, uploads.WorkspaceNotFound) as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(UPLOAD_NOT_FOUND)
+    except FileNotFoundError as nf:
+        logger.info("%s: Requested file '%s' not found: '%s'", upload_id,
+                    public_file_path, nf)
+        raise NotFound(UPLOAD_FILE_NOT_FOUND)
+    except UploadFileSecurityError as secerr:
+        logger.info("%s: %s", upload_id, secerr)
         # TODO: Should this be BadRequest or NotFound. I'm leaning towards
         # NotFound in order to provide as little feedback as posible to client.
         raise NotFound(UPLOAD_FILE_NOT_FOUND)
     except Forbidden as forb:
         logger.info("%s: Delete file forbidden: %s.", upload_id, forb)
         raise forb
+    except IOError as ioe:
+        logger.error("%s: Delete file request failed: %s ", upload_id, ioe)
+        raise InternalServerError(CANT_DELETE_FILE)
     except Exception as ue:
         logger.info("%s: Unknown error in delete file. "
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
@@ -364,6 +363,9 @@ def client_delete_all_files(upload_id: int, user) -> Response:
     except NotFound as nf:
         logger.info("%s: DeleteAllFiles: '%s'", upload_id, nf)
         raise
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(UPLOAD_NOT_FOUND)
     except Forbidden as forb:
         logger.info("%s: Upload failed: '%s'.", upload_id, forb)
         raise forb
@@ -481,12 +483,15 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
             upload_id = new_upload.upload_id
 
-        except IOError as e:
-            logger.info("Error creating new workspace: %s", e)
-            raise InternalServerError(f'{UPLOAD_IO_ERROR}: {e}')
+        #except InvalidUploadContentError as breq:
+        #    logger.info("%s: '%s'.", upload_id, breq)
+        #    raise BadRequest(UPLOAD_MISSING_FILE)
         except (TypeError, ValueError) as dbe:
             logger.info("Error adding new workspace to database: '%s'.", dbe)
             raise InternalServerError(UPLOAD_DB_ERROR)
+        except IOError as e:
+            logger.info("Error creating new workspace: %s", e)
+            raise InternalServerError(f'{UPLOAD_IO_ERROR}: {e}')
         except Exception as ue:
             logger.info("Unknown error creating new workspace. "
                         " Add except clauses for '%s'. DO IT NOW!", ue)
@@ -497,9 +502,6 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_db_data is None:
-            # Invalid workspace identifier
-            raise NotFound(UPLOAD_NOT_FOUND)
         if upload_db_data.state != Upload.ACTIVE:
             # Do we log anything for these requests
             logger.debug('Forbidden, workspace not active')
@@ -600,22 +602,26 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
                          upload_db_data.upload_id, response_data)
         return response_data, status_code, headers
 
+
+    except InvalidUploadContentError as breq:
+        logger.info("%s: '%s'.", upload_id, breq)
+        raise BadRequest(UPLOAD_MISSING_FILE)
+    except EmptyUploadContentError as ereq:
+        logger.info("%s: '%s'.", upload_id, ereq)
+        raise BadRequest(UPLOAD_FILE_EMPTY)
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(UPLOAD_NOT_FOUND)
+    except Forbidden as forb:
+        logger.info("%s: Upload failed: '%s'.", forb, upload_id)
+        raise forb
+    except (TypeError, ValueError) as dbe:
+        logger.info("%s: Error updating database: '%s'", upload_id, dbe)
+        raise InternalServerError(UPLOAD_DB_ERROR)
     except IOError as e:
         logger.error("%s: File upload_db_data request failed "
                      "for file='%s'", upload_id, file.filename)
         raise InternalServerError(f'{UPLOAD_IO_ERROR}: {e}') from e
-    except (TypeError, ValueError) as dbe:
-        logger.info("%s: Error updating database: '%s'", upload_id, dbe)
-        raise InternalServerError(UPLOAD_DB_ERROR)
-    except BadRequest as breq:
-        logger.info("%s: '%s'.", upload_id, breq)
-        raise
-    except NotFound as nfdb:
-        logger.info("%s: Upload: '{nfdb}'.", upload_id)
-        raise nfdb
-    except Forbidden as forb:
-        logger.info("%s: Upload failed: '{forb}'.", upload_id)
-        raise forb
     except Exception as ue:
         logger.info("%s: Unknown error with existing workspace."
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
@@ -651,11 +657,6 @@ def upload_summary(upload_id: int) -> Response:
         # Make sure we have an upload_db_data to work with
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_db_data is None:
-            status_code = status.NOT_FOUND
-            response_data = UPLOAD_NOT_FOUND
-            raise NotFound(UPLOAD_NOT_FOUND)
-
         # Create Upload object
         upload_workspace = UploadWorkspace(upload_id)
         file_list = upload_workspace.create_file_list()
@@ -687,9 +688,9 @@ def upload_summary(upload_id: int) -> Response:
     except (TypeError, ValueError):
         logger.info("%s: Error updating database.", upload_id)
         raise InternalServerError(UPLOAD_DB_ERROR)
-    except NotFound as nf:
-        logger.info("%s: UploadSummary: '%s'", upload_id, nf)
-        raise
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(UPLOAD_NOT_FOUND)
     except Exception as ue:
         logger.info("%s: Unknown error with existing workspace."
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
@@ -734,10 +735,6 @@ def upload_lock(upload_id: int, user) -> Response:
         # Make sure we have an upload_db_data to work with
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_db_data is None:
-            # Invalid workspace identifier
-            raise NotFound(UPLOAD_NOT_FOUND)
-
         # Lock upload workspace
         # update database
         if upload_db_data.lock == Upload.LOCKED:
@@ -754,9 +751,9 @@ def upload_lock(upload_id: int, user) -> Response:
     except IOError:
         logger.error("%s: Lock workspace request failed ", upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
-    except NotFound as nf:
-        logger.info("%s: Lock: %s", upload_id, nf)
-        raise
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(UPLOAD_NOT_FOUND)
     except Exception as ue:
         logger.info("%s: Unknown error lock workspace. "
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
@@ -790,10 +787,6 @@ def upload_unlock(upload_id: int, user) -> Response:
         # Make sure we have an upload_db_data to work with
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_db_data is None:
-            # Invalid workspace identifier
-            raise NotFound(UPLOAD_NOT_FOUND)
-
         # Lock upload workspace
         # update database
         if upload_db_data.lock == Upload.UNLOCKED:
@@ -810,9 +803,9 @@ def upload_unlock(upload_id: int, user) -> Response:
     except IOError:
         logger.error("%s: Unlock workspace request failed ", upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
-    except NotFound as nf:
-        logger.info("%s: Unlock workspace: %s", upload_id, nf)
-        raise
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(UPLOAD_NOT_FOUND)
     except Exception as ue:
         logger.info("%s: Unknown error in unlock workspace. "
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
@@ -858,10 +851,6 @@ def upload_release(upload_id: int, user) -> Response:
         # Make sure we have an upload_db_data to work with
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_db_data is None:
-            # Invalid workspace identifier
-            raise NotFound(UPLOAD_NOT_FOUND)
-
         # Release upload workspace
         # update database
 
@@ -891,9 +880,9 @@ def upload_release(upload_id: int, user) -> Response:
     except IOError:
         logger.error("%s: Release workspace request failed.", upload_id)
         raise InternalServerError(CANT_RELEASE_WORKSPACE)
-    except NotFound as nf:
-        logger.info("%s: Release workspace: %s", upload_id, nf)
-        raise
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(UPLOAD_NOT_FOUND)
     except Exception as ue:
         logger.info("%s: Unknown error in release workspace. "
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
@@ -944,10 +933,6 @@ def upload_unrelease(upload_id: int, user) -> Response:
         # Make sure we have an upload_db_data to work with
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_db_data is None:
-            # Invalid workspace identifier
-            raise NotFound(UPLOAD_NOT_FOUND)
-
         # Unrelease upload workspace
         # update database
         if upload_db_data.state == Upload.DELETED:
@@ -976,9 +961,9 @@ def upload_unrelease(upload_id: int, user) -> Response:
     except IOError:
         logger.error("%s: Unrelease workspace request failed.", upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
-    except NotFound as nf:
-        logger.info("%s: Unrelease workspace: '%s'", upload_id, nf)
-        raise
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(UPLOAD_NOT_FOUND)
     except Exception as ue:
         logger.info("%s: Unknown error in unrelease workspace. "
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
@@ -1011,8 +996,8 @@ def check_upload_content_exists(upload_id: int) -> Response:
         logger.error("%s: ContentExistsCheck: There was a problem connecting "
                      "to database.", upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
-
-    if upload_db_data is None:
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(UPLOAD_NOT_FOUND)
 
     upload_workspace = UploadWorkspace(upload_id)
@@ -1059,9 +1044,10 @@ def get_upload_content(upload_id: int, user) -> Response:
         logger.error("%s: Download workspace source content: There was a "
                      "problem connecting to database.", upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
-
-    if upload_db_data is None:
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(UPLOAD_NOT_FOUND)
+
     upload_workspace = UploadWorkspace(upload_id)
     checksum = upload_workspace.get_content_checksum()
     try:
@@ -1099,8 +1085,8 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
         logger.error("%s: ContentFileExistsCheck: There was a problem "
                      "connecting to database.", upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
-
-    if upload_db_data is None:
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(UPLOAD_NOT_FOUND)
 
     try:
@@ -1125,8 +1111,8 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
     except NotFound as nf:
         logger.info("%s: File not found: %s", upload_id, nf)
         raise nf
-    except SecurityError as secerr:
-        logger.info("%s: %s", upload_id, secerr.description)
+    except UploadFileSecurityError as secerr:
+        logger.info("%s: %s", upload_id, secerr)
         # TODO: Should this be BadRequest or NotFound. I'm leaning towards
         # NotFound in order to provide as little feedback as posible to client.
         raise NotFound(UPLOAD_FILE_NOT_FOUND)
@@ -1168,8 +1154,8 @@ def get_upload_file_content(upload_id: int, public_file_path: str, user) -> Resp
         logger.error("%s: Download file: There was a problem connecting to database.",
                      upload_db_data.upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
-
-    if upload_db_data is None:
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(UPLOAD_NOT_FOUND)
 
     try:
@@ -1202,8 +1188,8 @@ def get_upload_file_content(upload_id: int, public_file_path: str, user) -> Resp
     except NotFound as nf:
         logger.info("%s: GetUploadFile: %s", upload_id, nf)
         raise nf
-    except SecurityError as secerr:
-        logger.info("%s: %s", upload_id, secerr.description)
+    except UploadFileSecurityError as secerr:
+        logger.info("%s: %s", upload_id, secerr)
         # TODO: Should this be BadRequest or NotFound. I'm leaning towards
         # NotFound in order to provide as little feedback as posible to client.
         raise NotFound(UPLOAD_FILE_NOT_FOUND)
@@ -1244,8 +1230,8 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
         logger.error("%s: SourceLogExistCheck: There was a problem connecting to database.",
                      upload_db_data.upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
-
-    if upload_db_data is None:
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(UPLOAD_NOT_FOUND)
 
     upload_workspace = UploadWorkspace(upload_id)
@@ -1288,8 +1274,8 @@ def get_upload_source_log(upload_id: int, user) -> Response:
         logger.error("%s: GetSourceLog: There was a problem connecting to database.",
                      upload_db_data.upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
-
-    if upload_db_data is None:
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(UPLOAD_NOT_FOUND)
 
     upload_workspace = UploadWorkspace(upload_id)
@@ -1448,10 +1434,6 @@ def create_checkpoint(upload_id: int, user) -> Response:
         # Make sure we have an upload_db_data to work with
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_db_data is None:
-            # Invalid workspace identifier
-            raise NotFound(UPLOAD_NOT_FOUND)
-
         upload_workspace = UploadWorkspace(upload_id)
         checksum = upload_workspace.create_checkpoint(user)
 
@@ -1473,9 +1455,9 @@ def create_checkpoint(upload_id: int, user) -> Response:
     except IOError:
         logger.error("%s: Create checkpoint request failed ", upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
-    except NotFound as nf:
-        logger.info("%s: Create checkpoint: %s", upload_id, nf)
-        raise
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(UPLOAD_NOT_FOUND)
     except Exception as ue:
         logger.info("%s: Unknown error create checkpoint. "
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
@@ -1513,10 +1495,6 @@ def list_checkpoints(upload_id: int, user) -> Response:
         # Make sure we have an upload_db_data to work with
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_db_data is None:
-            # Invalid workspace identifier
-            raise NotFound(UPLOAD_NOT_FOUND)
-
         upload_workspace = UploadWorkspace(upload_id)
         checkpoint_list = upload_workspace.list_checkpoints(user)
 
@@ -1529,9 +1507,9 @@ def list_checkpoints(upload_id: int, user) -> Response:
     except IOError:
         logger.error("%s: List checkpoints request failed ", upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
-    except NotFound as nf:
-        logger.info("%s: List checkpoints: %s", upload_id, nf)
-        raise
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(UPLOAD_NOT_FOUND)
     except Exception as ue:
         logger.info("%s: Unknown error while listing checkpoints. "
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
@@ -1570,10 +1548,6 @@ def restore_checkpoint(upload_id: int, checkpoint_checksum: str,
         # Make sure we have an upload_db_data to work with
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_db_data is None:
-            # Invalid workspace identifier
-            raise NotFound(UPLOAD_NOT_FOUND)
-
         upload_workspace = UploadWorkspace(upload_id)
         result = upload_workspace.restore_checkpoint(checkpoint_checksum, user)
 
@@ -1584,9 +1558,13 @@ def restore_checkpoint(upload_id: int, checkpoint_checksum: str,
     except IOError:
         logger.error("%s: Restore checkpoint request failed ", upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
-    except NotFound as nf:
-        logger.info("%s: Restore checkpoint: %s", upload_id, nf)
-        raise
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(UPLOAD_NOT_FOUND)
+    except FileNotFoundError as nf:
+        logger.info("%s: Requested checkpoint '%s' not found: '%s'", upload_id,
+                    checkpoint_checksum, nf)
+        raise NotFound(UPLOAD_CHECKPOINT_NOT_FOUND)
     except Exception as ue:
         logger.info("%s: Unknown error while restoring checkpoint. "
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
@@ -1627,10 +1605,6 @@ def delete_checkpoint(upload_id: int, checkpoint_checksum: str,
         # Make sure we have an upload_db_data to work with
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_db_data is None:
-            # Invalid workspace identifier
-            raise NotFound(UPLOAD_NOT_FOUND)
-
         upload_workspace = UploadWorkspace(upload_id)
         result = upload_workspace.delete_checkpoint(checkpoint_checksum, user)
 
@@ -1638,13 +1612,16 @@ def delete_checkpoint(upload_id: int, checkpoint_checksum: str,
         response_data = {'reason': f"Deleted checkpoint '{checkpoint_checksum}'"}  # Get rid of pylint error
         status_code = status.OK
 
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(UPLOAD_NOT_FOUND)
+    except FileNotFoundError as nf:
+        logger.info("%s: Requested checkpoint '%s' not found: '%s'", upload_id,
+                    checkpoint_checksum, nf)
+        raise NotFound(UPLOAD_CHECKPOINT_NOT_FOUND)
     except IOError:
         logger.error("%s: Deleted checkpoint request failed ", upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
-    except NotFound as nf:
-        logger.info("%s: Checkpoint '%s'not found: %s", upload_id,
-                    checkpoint_checksum, nf)
-        raise
     except Exception as ue:
         logger.info("%s: Unknown error while deleting checkpoint. "
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
@@ -1680,13 +1657,8 @@ def delete_all_checkpoints(upload_id: int, user) -> Response:
         # Make sure we have an upload_db_data to work with
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
 
-        if upload_db_data is None:
-            # Invalid workspace identifier
-            raise NotFound(UPLOAD_NOT_FOUND)
-
         upload_workspace = UploadWorkspace(upload_id)
         checkpoint_list = upload_workspace.delete_all_checkpoints(user)
-
 
         response_data = {'reason': f"Deleted all checkpoints."}  # Get rid of pylint error
         status_code = status.OK
@@ -1694,9 +1666,9 @@ def delete_all_checkpoints(upload_id: int, user) -> Response:
     except IOError:
         logger.error("%s: Delete all checkpoints request failed ", upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
-    except NotFound as nf:
-        logger.info("%s: Delete all checkpoints: %s", upload_id, nf)
-        raise
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(UPLOAD_NOT_FOUND)
     except Exception as ue:
         logger.info("%s: Unknown error while deleting all checkpoints. "
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
@@ -1729,8 +1701,8 @@ def check_checkpoint_file_exists(upload_id: int, checkpoint_checksum: str) -> Re
         logger.error("%s: CheckpointFileExistsCheck: There was a problem "
                      "connecting to database.", upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
-
-    if upload_db_data is None:
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(UPLOAD_NOT_FOUND)
 
     ##logger.info("%s: Checkpoint content file exists request.", upload_id)
@@ -1757,8 +1729,8 @@ def check_checkpoint_file_exists(upload_id: int, checkpoint_checksum: str) -> Re
     except NotFound as nf:
         logger.info("%s: Checkpoint file not found: %s", upload_id, nf)
         raise nf
-    except SecurityError as secerr:
-        logger.info("%s: %s", upload_id, secerr.description)
+    except UploadFileSecurityError as secerr:
+        logger.info("%s: %s", upload_id, secerr)
         # TODO: Should this be BadRequest or NotFound. I'm leaning towards
         # NotFound in order to provide as little feedback as posible to client.
         raise NotFound("Checkpoint file not found.")
@@ -1805,6 +1777,9 @@ def get_checkpoint_file(upload_id: int, checkpoint_checksum: str, user) -> Respo
         logger.error("%s: CheckpointFileDownload: There was a problem connecting to database.",
                      upload_db_data.upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
+    except uploads.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(UPLOAD_NOT_FOUND)
 
     try:
 
@@ -1831,8 +1806,8 @@ def get_checkpoint_file(upload_id: int, checkpoint_checksum: str, user) -> Respo
     except NotFound as nf:
         logger.info("%s: CheckpointFileDownload: %s", upload_id, nf)
         raise nf
-    except SecurityError as secerr:
-        logger.info("%s: %s", upload_id, secerr.description)
+    except UploadFileSecurityError as secerr:
+        logger.info("%s: %s", upload_id, secerr)
         # TODO: Should this be BadRequest or NotFound. I'm leaning towards
         # NotFound in order to provide as little feedback as posible to client.
         raise NotFound(UPLOAD_FILE_NOT_FOUND)

@@ -18,8 +18,6 @@ import struct
 
 from pytz import UTC
 
-
-from werkzeug.exceptions import BadRequest, NotFound, SecurityError
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
@@ -51,6 +49,19 @@ THUMBNAIL = 'Thumbnail'
 logger = base_logging.getLogger(__name__)
 logger.propagate = False
 
+class UploadFileSecurityError(RuntimeError):
+    """Potential file path security issue.
+
+    This error is generated when s client supplied file path changes after we
+    sanitize the public file path. This indicates potential manipulation of
+    public_file_path argument to process methods.
+    """
+
+class InvalidUploadContentError(ValueError):
+    """ The upload content payload is invalid."""
+
+class EmptyUploadContentError(ValueError):
+    """ The upload content payload is invalid."""
 
 def _get_base_directory() -> str:
     config = get_application_config()
@@ -490,7 +501,7 @@ class Upload:
             message = f"SECURITY WARNING: file to delete contains illegal " \
                       f"constructs: '{public_file_path}'"
             self.log(message)
-            raise SecurityError(message)
+            raise UploadFileSecurityError(message)
 
         # Secure filename should not change length of valid file path (but it will
         # mess with directory slashes '/')
@@ -502,7 +513,7 @@ class Upload:
             message = f"SECURITY WARNING: sanitized file is different " \
                       f"length: '{filename}' <=> '{public_file_path}'"
             self.log(message)
-            raise SecurityError(message)
+            raise UploadFileSecurityError(message)
 
         # Resolve relative path of file to filesystem
         source_directory = self.get_source_directory()
@@ -574,7 +585,7 @@ class Upload:
             message = f"SECURITY WARNING: file to delete contains illegal " \
                       f"constructs: '{public_file_path}'"
             self.log(message)
-            raise SecurityError(message)
+            raise UploadFileSecurityError(message)
 
         # Secure filename should not change length of valid file path (but it will
         # mess with directory slashes '/')
@@ -586,7 +597,7 @@ class Upload:
             message = f"SECURITY WARNING: sanitized file is different " \
                       f"length: '{filename}' <=> '{public_file_path}'"
             self.log(message)
-            raise SecurityError(message)
+            raise UploadFileSecurityError(message)
 
         # Resolve relative path of file to filesystem
         src_directory = self.get_source_directory()
@@ -632,7 +643,7 @@ class Upload:
             return False
 
         self.log(f"File to delete not found: '{public_file_path}' '{filename}'")
-        raise NotFound(UPLOAD_FILE_NOT_FOUND)
+        raise FileNotFoundError(UPLOAD_FILE_NOT_FOUND)
 
     def client_remove_all_files(self) -> None:
         """Delete all files uploaded by client from specified workspace.
@@ -820,7 +831,7 @@ class Upload:
             # Might be a good to delete zero length file we just deposited
             # in upload workspace.
             os.remove(upload_path)
-            raise BadRequest(UPLOAD_FILE_EMPTY)
+            raise EmptyUploadContentError(UPLOAD_FILE_EMPTY)
         return upload_path
 
     # These messages take parameters
@@ -2949,7 +2960,7 @@ class Upload:
         if file_obj is not None:
             return file_obj.size
 
-        raise NotFound(CHECKPOINT_FILE_NOT_FOUND)
+        raise FileNotFoundError(CHECKPOINT_FILE_NOT_FOUND)
 
     def get_checkpoint_file_pointer(self, checkpoint_checksum: str) -> io.BytesIO:
         """
@@ -3118,7 +3129,7 @@ class Upload:
                 log_msg = f"ERROR: Checkpoint not found: {checksum}."
             self.log(log_msg)
 
-            raise NotFound(CHECKPOINT_FILE_NOT_FOUND)
+            raise FileNotFoundError(CHECKPOINT_FILE_NOT_FOUND)
 
 
     def delete_all_checkpoints(self, user) -> None:

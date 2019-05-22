@@ -51,7 +51,8 @@ class TestUploadGetter(TestCase):
 
     def test_get_an_upload_that_doesnt_exist(self) -> None:
         """When the upload doesn't exist, returns None."""
-        self.assertIsNone(uploads.retrieve(666))
+        with self.assertRaises(uploads.WorkspaceNotFound):
+            self.uploads.retrieve(666)
 
     @mock.patch('filemanager.services.uploads.db.session.query')
     def test_get_upload_when_db_is_unavailable(self, mock_query: Any) -> None:

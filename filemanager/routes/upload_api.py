@@ -28,8 +28,10 @@ blueprint = Blueprint('upload_api', __name__, url_prefix='/filemanager/api')
 def is_owner(session: auth_domain.Session, upload_id: str,
              **kwargs: Any) -> bool:
     """User must be the upload owner, or an admin."""
-    upload_obj = uploads.retrieve(upload_id)
-    if upload_obj is None:
+    try:
+        upload_obj = uploads.retrieve(upload_id)
+    except uploads.WorkspaceNotFound:
+        # Assume user is creating new upload when upload_id is not found.
         return True
 
     return str(session.user.user_id) \

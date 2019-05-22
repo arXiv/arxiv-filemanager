@@ -13,6 +13,9 @@ from .models import db, DBUpload
 
 logger = logging.getLogger(__name__)
 
+class WorkspaceNotFound(RuntimeError):
+    """Workspace not found in file manager database."""
+
 
 def init_app(app: Optional[LocalProxy]) -> None:
     """Set configuration defaults and attach session to the application."""
@@ -73,7 +76,8 @@ def retrieve(upload_id: int, skip_cache: bool = False) -> Optional[Upload]:
             raise IOError('Could not query database: %s' % e.detail) from e
 
         if upload_data is None:
-            return None
+            raise WorkspaceNotFound(f"Workspace '{upload_id}' "
+                                    f"not found in database.")
 
         if g:
             g.uploads[upload_id] = upload_data  # Cache for next time.
