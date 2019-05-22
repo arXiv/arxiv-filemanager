@@ -15,7 +15,7 @@ class TestCheckServiceStatus(TestCase):
                 mock.MagicMock(return_value=True))
     def test_all_ok(self):
         """All dependencies are available."""
-        response_data, code, headers = status.service_status()
+        response_data, code, _ = status.service_status()
         self.assertEqual(code, HTTPStatus.OK, 'Returns 200 OK')
         self.assertTrue(response_data['database'], 'Database reports OK')
         self.assertTrue(response_data['filesystem'], 'Filesystem reports OK')
@@ -26,7 +26,7 @@ class TestCheckServiceStatus(TestCase):
                 mock.MagicMock(return_value=True))
     def test_database_not_available(self):
         """Database is unavailable."""
-        response_data, code, headers = status.service_status()
+        response_data, code, _ = status.service_status()
         self.assertEqual(code, HTTPStatus.SERVICE_UNAVAILABLE,
                          'Returns 503 Service Unavailable')
         self.assertFalse(response_data['database'], 'Database reports not OK')
@@ -38,7 +38,7 @@ class TestCheckServiceStatus(TestCase):
                 mock.MagicMock(return_value=False))
     def test_filesystem_not_available(self):
         """Database is unavailable."""
-        response_data, code, headers = status.service_status()
+        response_data, code, _ = status.service_status()
         self.assertEqual(code, HTTPStatus.SERVICE_UNAVAILABLE,
                          'Returns 503 Service Unavailable')
         self.assertTrue(response_data['database'], 'Database reports OK')

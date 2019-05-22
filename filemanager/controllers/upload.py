@@ -8,8 +8,8 @@ import os.path
 from hashlib import md5
 from base64 import urlsafe_b64encode
 import io
+from http import HTTPStatus as status
 from pytz import UTC
-
 
 from werkzeug.exceptions import NotFound, BadRequest, InternalServerError, \
     NotImplemented, SecurityError, Forbidden
@@ -17,18 +17,16 @@ from werkzeug.exceptions import NotFound, BadRequest, InternalServerError, \
 from werkzeug.datastructures import FileStorage
 from flask.json import jsonify
 
-from http import HTTPStatus as status
 from arxiv.users import domain as auth_domain
 from arxiv.base.globals import get_application_config
 
-import filemanager
 from filemanager.shared import url_for
 
 from filemanager.domain import Upload
 from filemanager.services import uploads
 from filemanager.process.upload import Upload as UploadWorkspace
 from filemanager.process.upload import EmptyUploadContentError, \
-    UploadFileSecurityError, InvalidUploadContentError
+    UploadFileSecurityError, InvalidUploadContentError, NoSourceFilesToCheckpoint
 
 from filemanager.arxiv.file import File
 
@@ -51,7 +49,8 @@ def _get_service_logs_directory() -> str:
     config = get_application_config()
     return config.get('UPLOAD_SERVICE_LOG_DIRECTORY', '')
 
-def _format_user_information_for_logging(user) -> str:
+
+def _format_user_information_for_logging(user: auth_domain.User) -> str:
     """
     Format user information for logging purposes.
 
@@ -118,9 +117,10 @@ UPLOAD_RESTOREDED_CHECKPOINT = 'restored checkpoint'
 UPLOAD_DELETED_CHECKPOINT = 'deleted checkpoint'
 UPLOAD_DELETED_ALL_CHECKPOINTS = 'deleted all checkpoint'
 
+
 UPLOAD_NOT_ACTIVE = 'upload workspace is not active.'
 UPLOAD_WORKSPACE_LOCKED = 'upload workspace is locked.'
-
+UPLOAD_WORKSPACE_IS_EMPTY = 'workspace is empty'
 UPLOAD_WORKSPACE_ALREADY_DELETED = 'Request failed. Workspace has been deleted.'
 
 # upload status codes
@@ -152,7 +152,7 @@ SOME_ERROR = {'Need to define and assign better error'}
 Response = Tuple[Optional[dict], int, dict]
 
 
-def delete_workspace(upload_id: int, user) -> Response:
+def delete_workspace(upload_id: int, user: auth_domain.User) -> Response:
     """
     Delete workspace.
 
@@ -237,7 +237,7 @@ def delete_workspace(upload_id: int, user) -> Response:
     return response_data, status_code, {}
 
 
-def client_delete_file(upload_id: int, public_file_path: str, user) -> Response:
+def client_delete_file(upload_id: int, public_file_path: str, user: auth_domain.User) -> Response:
     """Delete a single file.
 
     This request is being received from API so we need to be extra careful.
@@ -272,7 +272,6 @@ def client_delete_file(upload_id: int, public_file_path: str, user) -> Response:
             raise Forbidden(UPLOAD_NOT_ACTIVE)
         if upload_db_data.lock == Upload.LOCKED:
             raise Forbidden(UPLOAD_WORKSPACE_LOCKED)
-
 
         # Create Upload object
         upload_workspace = UploadWorkspace(upload_id)
@@ -311,7 +310,7 @@ def client_delete_file(upload_id: int, public_file_path: str, user) -> Response:
     return response_data, status.OK, {}
 
 
-def client_delete_all_files(upload_id: int, user) -> Response:
+def client_delete_all_files(upload_id: int, user: auth_domain.User) -> Response:
     """
     Delete all files uploaded by client from specified workspace.
 
@@ -429,9 +428,9 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
     # End delete
 
     # Log username and upload_id or new
-    username = None
+    user_string = 'None'
     if user:
-        user_string = _format_user_information_for_logging(user);
+        user_string = _format_user_information_for_logging(user)
 
     id_string = upload_id
     if upload_id == None:
@@ -483,7 +482,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
             upload_id = new_upload.upload_id
 
-        #except InvalidUploadContentError as breq:
+        # except InvalidUploadContentError as breq:
         #    logger.info("%s: '%s'.", upload_id, breq)
         #    raise BadRequest(UPLOAD_MISSING_FILE)
         except (TypeError, ValueError) as dbe:
@@ -527,7 +526,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
         # checkpoint - create backup of user uploaded files
         if checkpoint:
-            checksum = upload_workspace.create_checkpoint(user)
+            upload_workspace.create_checkpoint(user)
 
         # Admin may want to clear out existing files so that existing files
         # do not cause problems or interfere with processing uploaded files.
@@ -609,6 +608,9 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
     except EmptyUploadContentError as ereq:
         logger.info("%s: '%s'.", upload_id, ereq)
         raise BadRequest(UPLOAD_FILE_EMPTY)
+    except NoSourceFilesToCheckpoint as nsf:
+        logger.info("%s: No source files to checkpoint: %s", upload_id, nsf)
+        raise BadRequest(UPLOAD_WORKSPACE_IS_EMPTY)
     except uploads.WorkspaceNotFound as nf:
         logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(UPLOAD_NOT_FOUND)
@@ -704,7 +706,7 @@ def upload_summary(upload_id: int) -> Response:
 # TODO: Is there another flavor of lock? Administrative lock? Or do admin
 # TODO: and submitter coordinate on changes to upload workspace.
 
-def upload_lock(upload_id: int, user) -> Response:
+def upload_lock(upload_id: int, user: auth_domain.User) -> Response:
     """
     Lock upload workspace.
 
@@ -728,7 +730,7 @@ def upload_lock(upload_id: int, user) -> Response:
         HTTP headers.
 
     """
-    user_string = _format_user_information_for_logging(user);
+    user_string = _format_user_information_for_logging(user)
     logger.info("%s: Lock upload workspace [%s].", upload_id, user_string)
 
     try:
@@ -762,7 +764,7 @@ def upload_lock(upload_id: int, user) -> Response:
     return response_data, status_code, {}
 
 
-def upload_unlock(upload_id: int, user) -> Response:
+def upload_unlock(upload_id: int, user: auth_domain.User) -> Response:
     """
     Unlock upload workspace.
 
@@ -780,7 +782,7 @@ def upload_unlock(upload_id: int, user) -> Response:
     """
     # response_data = ERROR_REQUEST_NOT_IMPLEMENTED
     # status_code = status.INTERNAL_SERVER_ERROR
-    user_string = _format_user_information_for_logging(user);
+    user_string = _format_user_information_for_logging(user)
     logger.info("%s: Unlock upload workspace [%s].", upload_id, user_string)
 
     try:
@@ -814,7 +816,7 @@ def upload_unlock(upload_id: int, user) -> Response:
     return response_data, status_code, {}
 
 
-def upload_release(upload_id: int, user) -> Response:
+def upload_release(upload_id: int, user: auth_domain.User) -> Response:
     """
     Release inidcates owner is done with upload workspace.
 
@@ -843,7 +845,7 @@ def upload_release(upload_id: int, user) -> Response:
     # Again, as with delete workspace, authentication, authorization, and
     # existence of workspace is verified in route level
 
-    user_string = _format_user_information_for_logging(user);
+    user_string = _format_user_information_for_logging(user)
 
     # Expect workspace to be in ACTIVE state.
 
@@ -891,7 +893,7 @@ def upload_release(upload_id: int, user) -> Response:
     return response_data, status_code, {}
 
 
-def upload_unrelease(upload_id: int, user) -> Response:
+def upload_unrelease(upload_id: int, user: auth_domain.User) -> Response:
     """
     Unrelease returns released workspace to active state.
 
@@ -923,7 +925,7 @@ def upload_unrelease(upload_id: int, user) -> Response:
     # Again, as with delete workspace, authentication, authorization, and
     # existence of workspace is verified in route level
 
-    user_string = _format_user_information_for_logging(user);
+    user_string = _format_user_information_for_logging(user)
 
     # Expect workspace to be in RELEASED state.
 
@@ -991,7 +993,7 @@ def check_upload_content_exists(upload_id: int) -> Response:
 
     """
     try:
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        uploads.retrieve(upload_id)
     except IOError:
         logger.error("%s: ContentExistsCheck: There was a problem connecting "
                      "to database.", upload_id)
@@ -1012,13 +1014,13 @@ def check_upload_content_exists(upload_id: int) -> Response:
         modified = upload_workspace.content_package_modified
         size = upload_workspace.content_package_size
         return {}, status.OK, {'ETag': checksum,
-                                        'Content-Length': size,
-                                        'Last-Modified': modified}
+                               'Content-Length': size,
+                               'Last-Modified': modified}
 
     return {}, status.OK, {'ETag': checksum}
 
 
-def get_upload_content(upload_id: int, user) -> Response:
+def get_upload_content(upload_id: int, user: auth_domain.User) -> Response:
     """
     Package up files for downloading as a compressed gzipped tar file.
 
@@ -1034,12 +1036,12 @@ def get_upload_content(upload_id: int, user) -> Response:
         HTTP headers.
 
     """
-    user_string = _format_user_information_for_logging(user);
+    user_string = _format_user_information_for_logging(user)
     logger.info("%s: Download workspace source content [%s].", upload_id,
                 user_string)
 
     try:
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        uploads.retrieve(upload_id)
     except IOError:
         logger.error("%s: Download workspace source content: There was a "
                      "problem connecting to database.", upload_id)
@@ -1099,9 +1101,9 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
             modified = upload_workspace.get_content_file_last_modified(public_file_path)
             checksum = upload_workspace.get_content_file_checksum(public_file_path)
             return {}, status.OK, {'ETag': checksum,
-                                            'Content-Length': size,
-                                            'Last-Modified': modified
-                                            }
+                                   'Content-Length': size,
+                                   'Last-Modified': modified
+                                   }
 
         raise NotFound(f"File '{public_file_path}' not found.")
 
@@ -1127,7 +1129,7 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
     return {}, status.OK, {'ETag': checksum}
 
 
-def get_upload_file_content(upload_id: int, public_file_path: str, user) -> Response:
+def get_upload_file_content(upload_id: int, public_file_path: str, user: auth_domain.User) -> Response:
     """
     Get the source log associated with upload workspace.
 
@@ -1160,10 +1162,9 @@ def get_upload_file_content(upload_id: int, public_file_path: str, user) -> Resp
 
     try:
 
-        user_string = _format_user_information_for_logging(user);
+        user_string = _format_user_information_for_logging(user)
         logger.info("%s: Download file '%s' [%s].", upload_id,
                     public_file_path, user_string)
-
 
         upload_workspace = UploadWorkspace(upload_id)
 
@@ -1245,7 +1246,7 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
                            'Last-Modified': modified}
 
 
-def get_upload_source_log(upload_id: int, user) -> Response:
+def get_upload_source_log(upload_id: int, user: auth_domain.User) -> Response:
     """
     Get upload workspace log.
 
@@ -1266,7 +1267,7 @@ def get_upload_source_log(upload_id: int, user) -> Response:
     """
     try:
 
-        user_string = _format_user_information_for_logging(user);
+        user_string = _format_user_information_for_logging(user)
         logger.info("%s: Download source log [%s].", upload_id, user_string)
 
         upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
@@ -1311,6 +1312,7 @@ def __checksum(filepath: str) -> str:
         return urlsafe_b64encode(hash_md5.digest()).decode('utf-8')
     return ""
 
+
 def __last_modified(filepath: str) -> str:
     """Return last modified time of file.
 
@@ -1324,6 +1326,7 @@ def __last_modified(filepath: str) -> str:
     Last modified date string for specified file.
     """
     return datetime.utcfromtimestamp(os.path.getmtime(filepath))
+
 
 def __content_pointer(log_path: str) -> io.BytesIO:
     """Get a file-pointer for service log.
@@ -1367,12 +1370,12 @@ def check_upload_service_log_exists() -> Response:
     size = os.path.getsize(service_log_path)
     modified = __last_modified(service_log_path)
     return {}, status.OK, {'ETag': checksum,
-                                    'Content-Length': size,
-                                    'Last-Modified': modified
-                                    }
+                           'Content-Length': size,
+                           'Last-Modified': modified
+                           }
 
 
-def get_upload_service_log(user) -> Response:
+def get_upload_service_log(user: auth_domain.User) -> Response:
     """
     Return the service-level file manager service log.
 
@@ -1387,7 +1390,7 @@ def get_upload_service_log(user) -> Response:
         HTTP headers.
 
     """
-    user_string = _format_user_information_for_logging(user);
+    user_string = _format_user_information_for_logging(user)
     logger.info("sys: Download file manager service log [%s].",
                 user_string)
 
@@ -1407,7 +1410,7 @@ def get_upload_service_log(user) -> Response:
 
 # Checkpoint support routines
 
-def create_checkpoint(upload_id: int, user) -> Response:
+def create_checkpoint(upload_id: int, user: auth_domain.User) -> Response:
     """
     Create checkpoint.
 
@@ -1432,7 +1435,7 @@ def create_checkpoint(upload_id: int, user) -> Response:
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        uploads.retrieve(upload_id)
 
         upload_workspace = UploadWorkspace(upload_id)
         checksum = upload_workspace.create_checkpoint(user)
@@ -1440,9 +1443,9 @@ def create_checkpoint(upload_id: int, user) -> Response:
         ###
         # Lock upload workspace
         # update database
-        #if upload_db_data.lock == Upload.LOCKED:
+        # if upload_db_data.lock == Upload.LOCKED:
         #    logger.info("%s: Lock: Workspace is already locked.", upload_id)
-        #else:
+        # else:
         #    upload_db_data.lock = Upload.LOCKED
         #
         # Store in DB
@@ -1455,6 +1458,9 @@ def create_checkpoint(upload_id: int, user) -> Response:
     except IOError:
         logger.error("%s: Create checkpoint request failed ", upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
+    except NoSourceFilesToCheckpoint as nsf:
+        logger.info("%s: No source files to checkpoint: %s", upload_id, nsf)
+        raise BadRequest(UPLOAD_WORKSPACE_IS_EMPTY)
     except uploads.WorkspaceNotFound as nf:
         logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(UPLOAD_NOT_FOUND)
@@ -1466,7 +1472,7 @@ def create_checkpoint(upload_id: int, user) -> Response:
     return response_data, status_code, {'ETag': checksum}
 
 
-def list_checkpoints(upload_id: int, user) -> Response:
+def list_checkpoints(upload_id: int, user: auth_domain.User) -> Response:
     """
     List checkpoints.
 
@@ -1493,11 +1499,10 @@ def list_checkpoints(upload_id: int, user) -> Response:
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        uploads.retrieve(upload_id)
 
         upload_workspace = UploadWorkspace(upload_id)
         checkpoint_list = upload_workspace.list_checkpoints(user)
-
 
         response_data = {'upload_id': upload_id,
                          'checkpoints': json.loads(json.dumps(checkpoint_list))
@@ -1519,7 +1524,7 @@ def list_checkpoints(upload_id: int, user) -> Response:
 
 
 def restore_checkpoint(upload_id: int, checkpoint_checksum: str,
-                        user) -> Response:
+                       user: auth_domain.User) -> Response:
     """
     Restore checkpoint specified by checkpoint_checksum.
 
@@ -1546,18 +1551,15 @@ def restore_checkpoint(upload_id: int, checkpoint_checksum: str,
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        uploads.retrieve(upload_id)
 
         upload_workspace = UploadWorkspace(upload_id)
-        result = upload_workspace.restore_checkpoint(checkpoint_checksum, user)
+        upload_workspace.restore_checkpoint(checkpoint_checksum, user)
 
-
-        response_data = {'reason': f"Restored checkpoint '{checkpoint_checksum}'"}  # Get rid of pylint error
+        response_data = {'reason': f"Restored checkpoint "
+                                   f"'{checkpoint_checksum}'"}
         status_code = status.OK
 
-    except IOError:
-        logger.error("%s: Restore checkpoint request failed ", upload_id)
-        raise InternalServerError(CANT_DELETE_FILE)
     except uploads.WorkspaceNotFound as nf:
         logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(UPLOAD_NOT_FOUND)
@@ -1565,6 +1567,9 @@ def restore_checkpoint(upload_id: int, checkpoint_checksum: str,
         logger.info("%s: Requested checkpoint '%s' not found: '%s'", upload_id,
                     checkpoint_checksum, nf)
         raise NotFound(UPLOAD_CHECKPOINT_NOT_FOUND)
+    except IOError:
+        logger.error("%s: Restore checkpoint request failed ", upload_id)
+        raise InternalServerError(CANT_DELETE_FILE)
     except Exception as ue:
         logger.info("%s: Unknown error while restoring checkpoint. "
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
@@ -1573,9 +1578,8 @@ def restore_checkpoint(upload_id: int, checkpoint_checksum: str,
     return response_data, status_code, {}
 
 
-
 def delete_checkpoint(upload_id: int, checkpoint_checksum: str,
-                        user) -> Response:
+                      user: auth_domain.User) -> Response:
     """
     Delete checkpoint specified by checkpoint_checksum.
 
@@ -1603,13 +1607,13 @@ def delete_checkpoint(upload_id: int, checkpoint_checksum: str,
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        uploads.retrieve(upload_id)
 
         upload_workspace = UploadWorkspace(upload_id)
-        result = upload_workspace.delete_checkpoint(checkpoint_checksum, user)
+        upload_workspace.delete_checkpoint(checkpoint_checksum, user)
 
-
-        response_data = {'reason': f"Deleted checkpoint '{checkpoint_checksum}'"}  # Get rid of pylint error
+        response_data = {'reason': f"Deleted checkpoint "
+                                   f"'{checkpoint_checksum}'"}
         status_code = status.OK
 
     except uploads.WorkspaceNotFound as nf:
@@ -1630,7 +1634,7 @@ def delete_checkpoint(upload_id: int, checkpoint_checksum: str,
     return response_data, status_code, {}
 
 
-def delete_all_checkpoints(upload_id: int, user) -> Response:
+def delete_all_checkpoints(upload_id: int, user: auth_domain.User) -> Response:
     """
     Delete all checkpoint files.
 
@@ -1655,10 +1659,10 @@ def delete_all_checkpoints(upload_id: int, user) -> Response:
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        uploads.retrieve(upload_id)
 
         upload_workspace = UploadWorkspace(upload_id)
-        checkpoint_list = upload_workspace.delete_all_checkpoints(user)
+        upload_workspace.delete_all_checkpoints(user)
 
         response_data = {'reason': f"Deleted all checkpoints."}  # Get rid of pylint error
         status_code = status.OK
@@ -1715,7 +1719,7 @@ def check_checkpoint_file_exists(upload_id: int, checkpoint_checksum: str) -> Re
         if upload_workspace.checkpoint_file_exists(checkpoint_checksum):
             size = upload_workspace.get_checkpoint_file_size(checkpoint_checksum)
             modified = upload_workspace.get_checkpoint_file_last_modified(checkpoint_checksum)
-            #checksum = upload_workspace.content_file_checksum(public_file_path)
+            # checksum = upload_workspace.content_file_checksum(public_file_path)
             return {}, status.OK, {'ETag': checkpoint_checksum,
                                    'Content-Length': size,
                                    'Last-Modified': modified
@@ -1745,7 +1749,7 @@ def check_checkpoint_file_exists(upload_id: int, checkpoint_checksum: str) -> Re
     return {}, status.OK, {'ETag': checkpoint_checksum}
 
 
-def get_checkpoint_file(upload_id: int, checkpoint_checksum: str, user) -> Response:
+def get_checkpoint_file(upload_id: int, checkpoint_checksum: str, user: auth_domain.User) -> Response:
     """
     Get the checkpoint file specified by provided checksum.
 
@@ -1789,7 +1793,7 @@ def get_checkpoint_file(upload_id: int, checkpoint_checksum: str, user) -> Respo
         if upload_workspace.checkpoint_file_exists(checkpoint_checksum):
             size = upload_workspace.get_checkpoint_file_size(checkpoint_checksum)
             modified = upload_workspace.get_checkpoint_file_last_modified(checkpoint_checksum)
-            #checksum = upload_workspace.content_file_checksum(public_file_path)
+            # checksum = upload_workspace.content_file_checksum(public_file_path)
             filepointer = upload_workspace.get_checkpoint_file_pointer(checkpoint_checksum)
             headers = {
                 "Content-disposition": f"filename={filepointer.name}",

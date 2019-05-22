@@ -319,7 +319,7 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertEqual(response.status_code, 404, "Accepted uploaded Submission Contents")
 
-        expected_data = {'reason': 'upload workspace not found'}
+        expected_data = {'reason': 'workspace not found'}
 
         self.maxDiff = None
         self.assertDictEqual(json.loads(response.data), expected_data)
@@ -329,7 +329,7 @@ class TestUploadAPIRoutes(TestCase):
 
         self.assertEqual(response.status_code, 404, "Accepted uploaded Submission Contents")
 
-        expected_data = {'reason': 'upload workspace not found'}
+        expected_data = {'reason': 'workspace not found'}
 
         self.maxDiff = None
         self.assertDictEqual(json.loads(response.data), expected_data)
@@ -831,7 +831,7 @@ class TestUploadAPIRoutes(TestCase):
         self.assertEqual(response.status_code, 404,
                          "Delete all user-uploaded files for non-existent workspace.")
 
-        expected_data = {'reason': 'upload workspace not found'}
+        expected_data = {'reason': 'workspace not found'}
         self.assertDictEqual(json.loads(response.data), expected_data)
 
         # Try an delete an individual file ...we'll know if delete all files really worked.
@@ -2042,6 +2042,42 @@ class TestUploadAPIRoutes(TestCase):
                                    #        content_type='application/gzip')
                                    content_type='multipart/form-data')
         self.assertEqual(response.status_code, status.OK)
+
+        # Delete all files and then try to create checkpoint (fail)
+
+        # Delete all files in my workspace (success before failure)
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
+                                    headers={'Authorization': token},
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, 200, "Delete all user-uploaded files.")
+
+        # Now try to create checkpoint when there are no source files.
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/checkpoint",
+                                    headers={'Authorization': checkpoint_token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, status.BAD_REQUEST)
+
+        # One last sneaky test for checkpoint when there are no files.
+        # Let's upload a submission (with checkpoint) when there are no
+        # source files.
+
+        # Upload tests files
+        filepath1 = os.path.join(testfiles_dir, 'upload2.tar.gz')
+        filename1 = os.path.basename(filepath1)
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/checkpoint_with_upload",
+                                    data={
+                                        # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
+                                        'file': (open(filepath1, 'rb'), filename1),
+                                    },
+                                    headers={'Authorization': checkpoint_token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+        self.assertEqual(response.status_code, status.BAD_REQUEST,
+                         "Try to checkpoint with upload when there are no "
+                         "existing files in workspace.")
 
         # Delete the workspace
         # Create admin token for deleting upload workspace

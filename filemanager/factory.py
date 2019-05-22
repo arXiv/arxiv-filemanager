@@ -8,13 +8,14 @@ from celery import Celery
 from arxiv import vault
 from arxiv.base import Base
 from arxiv.base.middleware import wrap
+from arxiv.users import auth
 
 from filemanager import celeryconfig
 from filemanager.encode import ISO8601JSONEncoder
 from filemanager.routes import upload_api
 from filemanager.services import uploads
 
-from arxiv.users import auth
+
 
 celery_app = Celery(__name__, results=celeryconfig.result_backend,
                     broker=celeryconfig.broker_url)

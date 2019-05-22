@@ -28,7 +28,7 @@ def is_available() -> bool:
         db.session.execute('SELECT 1')
         return True
     except Exception as e:
-        logger.error(f'Database not available: %s', e)
+        logger.error('Database not available: %s', e)
         return False
 
 

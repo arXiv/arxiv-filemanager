@@ -10,7 +10,6 @@ from werkzeug.exceptions import NotFound, Forbidden, Unauthorized, \
     InternalServerError, HTTPException, BadRequest
 from arxiv.base import routes as base_routes
 from arxiv.base import logging
-from http import HTTPStatus
 
 from arxiv.users import domain as auth_domain
 from arxiv.users.auth import scopes

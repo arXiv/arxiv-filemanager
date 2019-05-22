@@ -333,7 +333,6 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
             return 'TYPE_MULTI_PART_MIME', '', ''
         # LaTeX2e/PDFLaTeX
         if line[0:6] == '%!TEX ' and line_no == 1:
-            # TODO investigate reset of file pointer - understand what is going on
             _type_of_latex2e(file, line_no)
 
         # Accumulate what we've already seen
@@ -369,8 +368,7 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
             if match is not None:
                 latex_type = re.search(rb'^\r?%&([^\s\n]+)', line).group(1)
 
-                if (latex_type == 'latex209' or latex_type == 'biglatex'
-                        or latex_type == 'latex' or latex_type == 'LaTeX'):
+                if latex_type in ('latex209', 'biglatex', 'latex', 'LaTeX'):
                     return 'TYPE_LATEX', str(latex_type), ''
 
                 return 'TYPE_TEX_MAC', str(latex_type), ''

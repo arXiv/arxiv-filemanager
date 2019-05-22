@@ -24,16 +24,15 @@ from werkzeug.utils import secure_filename
 from arxiv.base.globals import get_application_config
 from arxiv.base import logging as base_logging
 
-from filemanager.arxiv.file import File as File
+from filemanager.arxiv.file import File
 from filemanager.utilities.unpack import unpack_archive
-
 
 UPLOAD_FILE_EMPTY = 'file payload is zero length'
 UPLOAD_DELETE_FILE_FAILED = 'unable to delete file'
 UPLOAD_DELETE_ALL_FILE_FAILED = 'unable to delete all file'
 UPLOAD_FILE_NOT_FOUND = 'file not found'
 UPLOAD_WORKSPACE_NOT_FOUND = 'workspcae not found'
-
+UPLOAD_WORKSPACE_IS_EMPTY = 'workspace is empty'
 CHECKPOINT_FILE_NOT_FOUND = 'checkpoint file not found'
 
 # File types unmacify is interested in
@@ -45,9 +44,9 @@ PHOTOSHOP = 'Photoshop'
 PREVIEW = 'Preview'
 THUMBNAIL = 'Thumbnail'
 
-
 logger = base_logging.getLogger(__name__)
 logger.propagate = False
+
 
 class UploadFileSecurityError(RuntimeError):
     """Potential file path security issue.
@@ -57,11 +56,18 @@ class UploadFileSecurityError(RuntimeError):
     public_file_path argument to process methods.
     """
 
+
 class InvalidUploadContentError(ValueError):
-    """ The upload content payload is invalid."""
+    """The upload content payload is invalid."""
+
 
 class EmptyUploadContentError(ValueError):
-    """ The upload content payload is invalid."""
+    """The upload content payload is invalid."""
+
+
+class NoSourceFilesToCheckpoint(RuntimeError):
+    """There are no user uploaded files to checkpoint."""
+
 
 def _get_base_directory() -> str:
     config = get_application_config()
@@ -171,7 +177,6 @@ class Upload:
         "the fonts in the final preview PDF that our system generates."
     )
 
-
     def __init__(self, upload_id: int):
         """
         Initialize Upload object.
@@ -218,7 +223,6 @@ class Upload:
     def debug(self) -> bool:
         """Return value of debug setting. True = on."""
         return self.__debug
-
 
     # Files
 
@@ -310,7 +314,7 @@ class Upload:
             True if warning we are searching for exists. False otherwise.
         """
         for entry in self.__warnings:
-            #filename, warning = entry
+            # filename, warning = entry
             _, warning = entry
             if re.match(search, warning):
                 return True
@@ -350,7 +354,7 @@ class Upload:
             True if error we are searching for exists. False otherwise.
         """
         for entry in self.__errors:
-            #filename, error = entry
+            # filename, error = entry
             _, error = entry
             if re.match(search, error):
                 return True
@@ -967,7 +971,7 @@ class Upload:
                 # We need to check this before tilde character gets translated to undderscore.
                 # Otherwise this warning never gets generated properly for .tex~
                 if re.search(r'(.+)\.(tex_|tex.bak|tex\~)$', file_name, re.IGNORECASE):
-                    msg = f"File '{file_name}' may be a backup file. Please "\
+                    msg = f"File '{file_name}' may be a backup file. Please " \
                           "inspect and remove extraneous backup files."
                     _warnings.append(msg)
 
@@ -1028,7 +1032,7 @@ class Upload:
                 if re.search(r'^(espcrc2|lamuphys)\.sty$', file_name):
                     obj = _add_file(file_path, _warnings, _errors)
                     # TeX: styles that conflict with internal hypertex package
-                    msg = f"Found hyperlink-compatible package '{file_name}'. "\
+                    msg = f"Found hyperlink-compatible package '{file_name}'. " \
                           "Will remove and use hypertex-compatible local version"
 
                     self.remove_file(obj, msg)
@@ -1038,7 +1042,7 @@ class Upload:
                     _warnings.append(
                         f"Possible submitter error. Unwanted '{file_name}'"
                     )
-                elif file_name == 'uufiles' or file_name == 'core' or file_name == 'splread.1st':
+                elif file_name in ('uufiles', 'core', 'splread.1st'):
                     # Remove these files
                     msg = f"Removed the file '{file_name}' [File not allowed]."
                     self.remove_file(obj, msg)
@@ -1156,10 +1160,9 @@ class Upload:
                     # Doc warning
                     msg = Upload.doc_warning
 
-                    #_errors.append(msg)
+                    # _errors.append(msg)
                     self.add_error(obj.public_filepath, msg)
                     self.remove_file(obj, "")
-
 
                 # Finished basic file checks
 
@@ -1213,7 +1216,7 @@ class Upload:
                     # TODO: Find example and test
 
                 # TeX: Check form of source for latex and latex2e
-                elif file_type == 'latex' or file_type == 'latex2e':
+                elif file_type in ('latex', 'latex2e'):
                     # Check to see if preprint documentstyle is used
                     self.formcheck(obj)
 
@@ -1221,7 +1224,7 @@ class Upload:
                 elif file_type == 'image' \
                         and re.search(r'\.(pcx|bmp|wmf|opj|pct|tiff?)$',
                                       file_name, re.IGNORECASE):
-                    self.graphics_error(obj)
+                    self.get_graphic_error_msg(obj)
 
                 # Uuencode file: decode uuencoded file
                 elif file_type == 'uuencoded':
@@ -1237,7 +1240,7 @@ class Upload:
                     _errors.append(msg)
 
                 # unmacify files of type PC and MAC
-                elif file_type == 'pc' or file_type == 'mac':
+                elif file_type in ('pc', 'mac'):
                     self.unmacify(obj)
 
                 # Repair files of type PS_PC
@@ -1273,7 +1276,6 @@ class Upload:
 
                 obj = _add_file(file_path, _warnings, _errors)
                 # End of file type checks
-
 
     def check_file_termination(self, file_obj: File) -> None:
         r"""
@@ -1359,7 +1361,6 @@ class Upload:
                                  (f"File '{file_obj.public_filepath}' does "
                                   "not end with newline (\\n), TRUNCATED?."))
 
-
     def unmacify(self, file_obj: File) -> None:
         """
         Cleans up files containing carriage returns and line feeds.
@@ -1383,7 +1384,7 @@ class Upload:
 
         # Check whether file contains '\r\n' sequence
         with open(filepath, 'rb', 0) as file, \
-            mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ) as s:
+                mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ) as s:
             if s.find(b"\r\n") != -1:
                 file_type = PC
 
@@ -1394,7 +1395,7 @@ class Upload:
         #
         new_filepath = filepath + ".new"
         with open(filepath, 'rb', 0) as infile, \
-            open(new_filepath, 'wb', 0) as outfile, \
+                open(new_filepath, 'wb', 0) as outfile, \
                 mmap.mmap(infile.fileno(), 0, access=mmap.ACCESS_READ) as s:
 
             if file_type == PC:
@@ -1415,7 +1416,6 @@ class Upload:
 
             # Check for unwanted termination character
             self.check_file_termination(file_obj)
-
 
     def strip_tiff(self, file_obj: File) -> None:
         """
@@ -1469,7 +1469,6 @@ class Upload:
 
                 # Find TIFF marker
                 if re.search(lb_marker, line):
-
                     offset = len(line)
                     end = infile.tell() - offset
                     infile.seek(end, 1)
@@ -1485,14 +1484,12 @@ class Upload:
                 if re.search(rb'\S', line):
                     lastnw = line
 
-
             # Truncate file after EOF marker
             if end:
                 infile.truncate(end)
 
                 msg = f"Non-compliant attached TIFF removed from '{file_obj.name}'"
                 self.add_warning(file_obj.name, msg)
-
 
     def strip_preview(self, file_obj: File, what_to_strip: str) -> None:
         """
@@ -1544,7 +1541,7 @@ class Upload:
 
                 # Check line for start pattern
                 if retain and re.search(start_re, line):
-                    strip_warning = f"Unnecessary {what_to_strip} removed "\
+                    strip_warning = f"Unnecessary {what_to_strip} removed " \
                                     + f"from '{file_obj.name}' from line {line_no}"
                     retain = False
 
@@ -1572,7 +1569,7 @@ class Upload:
                 shutil.copy(stripped_filepath, original_filepath)
                 os.remove(stripped_filepath)
 
-                msg = f" reduced from {orig_size} bytes to {strip_size} bytes "\
+                msg = f" reduced from {orig_size} bytes to {strip_size} bytes " \
                       + "(see http://arxiv.org/help/sizes)"
                 strip_warning = strip_warning + msg
             else:
@@ -1631,7 +1628,7 @@ class Upload:
             (psoffset, pslength, _, _, tiffoffset,
              tifflength) = struct.unpack('6i', pb)
 
-            #(f"psoffset:{psoffset} len:{pslength} tiffoffset:{tiffoffset}"
+            # (f"psoffset:{psoffset} len:{pslength} tiffoffset:{tiffoffset}"
             # f"len:{tifflength}")
 
             if not (psoffset > 0 and pslength > 0 and tiffoffset > 0
@@ -1659,7 +1656,7 @@ class Upload:
 
                 fixed_ps_filepath = os.path.join(file_obj.dir,
                                                  file_obj.name + ".fixed")
-                #print(f"Write fixed file:{fixed_ps_filepath}")
+                # print(f"Write fixed file:{fixed_ps_filepath}")
                 with open(fixed_ps_filepath, 'wb', 0) as outfile:
                     # write out first line
                     outfile.write(first_line)
@@ -1731,6 +1728,7 @@ class Upload:
                     return (f"stripped trailing tiff at {tiffoffset} bytes "
                             f"and {psoffset} leading bytes")
 
+        return ""
 
     def repair_postscript(self, file_obj: File) -> str:
         """
@@ -1883,7 +1881,7 @@ class Upload:
             # resulted in more admin interventions to manually fix.
             header = self.repair_postscript(file_obj)
 
-            msg = f"File '{file_obj.public_filepath}' did not have proper "\
+            msg = f"File '{file_obj.public_filepath}' did not have proper " \
                   + f"Postscript header, repaired to '{header}'."
             self.add_warning(file_obj.public_filepath, msg)
 
@@ -1928,11 +1926,10 @@ class Upload:
 
         # TODO: Check for TIFF (need another ticket to tackle this task)
 
-        tiff_found = 0 # Some search of file for TIFF markers
+        tiff_found = 0  # Some search of file for TIFF markers
 
         if tiff_found:
             self.strip_tiff(file_obj)
-
 
     def formcheck(self, file_obj: File) -> None:
         """
@@ -1946,7 +1943,7 @@ class Upload:
 
         """
         msg = "NOT IMPLEMENTED: formcheck routine needs to be implemented."
-        #self.add_warning(file_obj.public_filepath, msg)
+        # self.add_warning(file_obj.public_filepath, msg)
         self.log(file_obj.public_filepath + msg)
 
     def graphic_error(self, file_obj: File) -> None:
@@ -1962,7 +1959,7 @@ class Upload:
             File we do not accept.
 
         """
-        msg = self.get_graphic_error_msg("TIFF") # pylint
+        msg = self.get_graphic_error_msg("TIFF")  # pylint
         msg = "NOT IMPLEMENTED: graphic error routine needs to be implemented."
         self.add_warning(file_obj.public_filepath, msg)
 
@@ -2093,7 +2090,7 @@ class Upload:
             self.log("File Summary")
             for fileObj in self.get_files():
                 # Temp debug
-                #print("\tFile:" + fileObj.name + "\tFilePath: " + fileObj.public_filepath
+                # print("\tFile:" + fileObj.name + "\tFilePath: " + fileObj.public_filepath
                 #     + "\tRemoved: " + str(fileObj.removed) + " Size: " + str(fileObj.size))
 
                 # Collect details we would like to return to client
@@ -2370,7 +2367,6 @@ class Upload:
                 hash_md5.update(chunk)
         return urlsafe_b64encode(hash_md5.digest()).decode('utf-8')
 
-
     # Content file routines
 
     def get_content_file_path(self, public_file_path: str) -> str:
@@ -2581,9 +2577,9 @@ class Upload:
             as value.
         """
         # Initialize file type accumulators and counters
-        format_list = {'ancillary':0, 'all_files':0, 'directory':0, 'docx':0,
-                       'html':0, 'image':0, 'ignore':0, 'include':0, 'odf':0,
-                       'invalid':0, 'pdf':0, 'postscript':0, 'readme':0, 'texaux':0}
+        format_list = {'ancillary': 0, 'all_files': 0, 'directory': 0, 'docx': 0,
+                       'html': 0, 'image': 0, 'ignore': 0, 'include': 0, 'odf': 0,
+                       'invalid': 0, 'pdf': 0, 'postscript': 0, 'readme': 0, 'texaux': 0}
 
         file_list = self.create_file_list()
 
@@ -2644,7 +2640,6 @@ class Upload:
 
         return None
 
-
     def fix_file_ext(self, file_obj: File, new_extension: str) -> Optional[File]:
         """
         Rename a file on disk to have the specified extension.
@@ -2694,11 +2689,11 @@ class Upload:
                 return new_file_obj
         except FileNotFoundError as nf:
             self.add_error(file_obj.name, f"File '{file_obj.name}' to fix extension not found:"
-                           f"Error:{nf}")
+                                          f"Error:{nf}")
         except Exception as ce:
             self.add_error(file_obj.name, f"renaming file '{file_obj.name}' to have proper "
-                           f"'.{new_extension}' extension failed: "
-                           f"[{new_file}]: Error:{ce}")
+                                          f"'.{new_extension}' extension failed: "
+                                          f"[{new_file}]: Error:{ce}")
 
         # Update counts (assumine we are at point where counts are important)
         # Since we removed and added a file of same type I don't believe we need to
@@ -2844,16 +2839,16 @@ class Upload:
 
         # Multiple file submissions
         elif formats['html'] > 0 and \
-            formats['files'] == (formats['html'] + formats['image'] +
-                                 formats['include'] +
-                                 formats['postscript'] + formats['pdf'] +
-                                 formats['directory'] + formats['readme']):
+                formats['files'] == (formats['html'] + formats['image'] +
+                                     formats['include'] +
+                                     formats['postscript'] + formats['pdf'] +
+                                     formats['directory'] + formats['readme']):
             # HTML submissions may contain the above formats
             source_format = 'html'
         elif formats['postscript'] > 0 and \
-            formats['files'] == (formats['postscript'] + formats['pdf'] +
-                                 formats['ignore'] + formats['directory'] +
-                                 formats['image']):
+                formats['files'] == (formats['postscript'] + formats['pdf'] +
+                                     formats['ignore'] + formats['directory'] +
+                                     formats['image']):
             # Postscript submission may be composed of several other formats
             source_format = 'ps'
         else:
@@ -2887,7 +2882,7 @@ class Upload:
         checkpoint_directory = self.get_checkpoint_directory()
 
         # Find the checkpoint file
-        for root_directory, directories, files in os.walk(checkpoint_directory):
+        for root_directory, _, files in os.walk(checkpoint_directory):
             for file in files:
                 path = os.path.join(root_directory, file)
                 obj = File(path, checkpoint_directory)
@@ -2896,7 +2891,6 @@ class Upload:
                     return obj
 
         return None
-
 
     def get_checkpoint_file_path(self, checkpoint_checksum: str) -> str:
         """
@@ -2919,7 +2913,6 @@ class Upload:
             return file_obj.filepath
 
         return ""
-
 
     def checkpoint_file_exists(self, checkpoint_checksum: str) -> bool:
         """
@@ -2996,10 +2989,7 @@ class Upload:
         """
         file_obj = self.resolve_checkpoint_file_obj(checkpoint_checksum)
 
-        dt = datetime.utcfromtimestamp(os.path.getmtime(file_obj.filepath))
-
         return datetime.utcfromtimestamp(os.path.getmtime(file_obj.filepath))
-
 
     def create_checkpoint(self, user) -> str:
         """
@@ -3021,7 +3011,7 @@ class Upload:
             user_string = ''
 
         # Make sure there are files before we bother to create a checkpoint.
-        if (len(entries) > 0):
+        if entries:
 
             if user:
                 self.add_warning(entries[0], f"Creating checkpoint. ['{user.user_id}']")
@@ -3032,15 +3022,14 @@ class Upload:
 
             # Save copy in removed directory
             checkpoint_filename = os.path.join(self.get_checkpoint_directory(),
-                                         f'checkpoint_1{user_string}.tar.gz')
+                                               f'checkpoint_1{user_string}.tar.gz')
 
             # Allow maximum number of checkpoints (100?)
-            max_checkpoints = 10 # Use 10 for testing
+            max_checkpoints = 10  # Use 10 for testing
 
             # Create a new unique filename for checkpoint
             count = 2
             while os.path.exists(checkpoint_filename) and count <= max_checkpoints:
-
                 checkpoint_filename = \
                     os.path.join(self.get_checkpoint_directory(),
                                  f'checkpoint_{count}{user_string}.tar.gz')
@@ -3060,6 +3049,7 @@ class Upload:
 
             return obj.checksum
 
+        raise NoSourceFilesToCheckpoint(UPLOAD_WORKSPACE_IS_EMPTY)
 
     def list_checkpoints(self, user) -> list:
         """
@@ -3098,13 +3088,12 @@ class Upload:
 
         return checkpoints
 
-
     def delete_checkpoint(self, checksum: str, user) -> None:
-        """
-        Remove specified checkpoint.
-
-        """
+        """Remove specified checkpoint."""
         checkpoint_list = self.list_checkpoints(user)
+
+        if not checkpoint_list:
+            raise FileNotFoundError(CHECKPOINT_FILE_NOT_FOUND)
 
         found = False
         for checkpoint in checkpoint_list:
@@ -3131,12 +3120,8 @@ class Upload:
 
             raise FileNotFoundError(CHECKPOINT_FILE_NOT_FOUND)
 
-
     def delete_all_checkpoints(self, user) -> None:
-        """
-        Remove all checkpoints.
-
-        """
+        """Remove all checkpoints."""
         checkpoint_list = self.list_checkpoints(user)
 
         for checkpoint in checkpoint_list:
@@ -3147,7 +3132,6 @@ class Upload:
         else:
             log_msg = f"Deleted ALL checkpoint: {checkpoint['name']}."
         self.log(log_msg)
-
 
     def restore_checkpoint(self, checksum: str, user) -> None:
         """
@@ -3162,9 +3146,6 @@ class Upload:
         TODO: is uploading file (forget to select checkpoint) but only if
         TODO: previous upload was by owner.
 
-        Returns
-        -------
-
         """
         # We probably need to remove all existing source files before we
         # extract files from checkpoint zipped tar archive.
@@ -3178,7 +3159,7 @@ class Upload:
             if checkpoint['checksum'] == checksum:
                 name = checkpoint['name']
                 restore_path = os.path.join(self.get_checkpoint_directory(),
-                                    checkpoint['name'])
+                                            checkpoint['name'])
 
         # Restore files from checkpoint
         if os.path.exists(restore_path):

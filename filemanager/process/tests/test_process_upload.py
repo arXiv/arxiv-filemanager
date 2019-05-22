@@ -12,10 +12,14 @@ import filecmp
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
+
+from filemanager.process.upload import EmptyUploadContentError, \
+    UploadFileSecurityError, InvalidUploadContentError, NoSourceFilesToCheckpoint
+
 from ...arxiv.file import File
 
-
 from ..upload import Upload
+
 
 VERBOSE = 0
 
@@ -246,6 +250,7 @@ def compare_file_lists(list1: list, list2: list) -> bool:
 
     return False
 
+
 # Internal Debugging test
 class TestInternalSupportRoutines(TestCase):
     """
@@ -342,10 +347,9 @@ class TestInternalSupportRoutines(TestCase):
         # Copy the files that will be modified to temporary location
         tmp_dir = tempfile.mkdtemp()
 
-
         upload = Upload(1234566)
 
-        #upload.set_debug(True)
+        # upload.set_debug(True)
 
         # 1
         tfilename = os.path.join(TEST_FILES_DIRECTORY, 'terminators1.txt')
@@ -382,9 +386,9 @@ class TestInternalSupportRoutines(TestCase):
         upload.check_file_termination(file_obj)
 
         # Check that file generated is what we expected
-        #reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterUnPCify.eps')
-        #is_same = filecmp.cmp(destfilename, reference)
-        #self.assertTrue(is_same, 'Eliminated unwanted CR characters from DOS file.')
+        # reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterUnPCify.eps')
+        # is_same = filecmp.cmp(destfilename, reference)
+        # self.assertTrue(is_same, 'Eliminated unwanted CR characters from DOS file.')
 
         # 4
         tfilename = os.path.join(TEST_FILES_DIRECTORY, 'BeforeUnPCify.eps')
@@ -418,6 +422,7 @@ class TestInternalSupportRoutines(TestCase):
         Test the filtering of unwanted CR characters from specified file.
         :return:
         """
+
         def has_cr(path: str) -> bool:
             with open(path, 'rb') as f:
                 for line in f:
@@ -546,7 +551,6 @@ class TestInternalSupportRoutines(TestCase):
         # cleanup workspace
         upload.remove_workspace()
 
-
     def test_check_postscript(self) -> None:
         """
         Test the filtering of unwanted previews in Postscript file.
@@ -584,7 +588,6 @@ class TestInternalSupportRoutines(TestCase):
 
         # cleanup workspace
         upload.remove_workspace()
-
 
     def test_strip_tiff(self) -> None:
         """
@@ -649,7 +652,7 @@ class TestInternalSupportRoutines(TestCase):
                         f"Verify TIFF removed warning added to list.")
 
         # cleanup workspace
-        #upload.remove_workspace()
+        upload.remove_workspace()
 
     def test_postscript_repair(self) -> None:
         """
@@ -735,7 +738,6 @@ class TestInternalSupportRoutines(TestCase):
         # cleanup workspace
         upload.remove_workspace()
 
-
     def test_repair_dos_eps(self) -> None:
         """
         Test eps Postscript repair routine.
@@ -779,7 +781,6 @@ class TestInternalSupportRoutines(TestCase):
         self.assertTrue(is_same,
                         f"Repair Encapsulated Postscript file '{test_filename}'.")
 
-
     def test_checkpoint(self) -> None:
         """
         Test basic checkpoint functionality.
@@ -809,8 +810,6 @@ class TestInternalSupportRoutines(TestCase):
         # Save a list of files to compare againsgt restored checkpoint
         test1_filelist = upload.create_file_list()
 
-        source_directory = upload.get_source_directory()
-
         # Create a checkpoint
         checkpoint1_sum = upload.create_checkpoint(None)
 
@@ -826,7 +825,7 @@ class TestInternalSupportRoutines(TestCase):
         # Recreate FileStroage object that flask will be passing in
         file = None
         with open(filename, 'rb') as fp:
-            #upload = Upload(test_id)
+            # upload = Upload(test_id)
             file = FileStorage(fp)
             upload.process_upload(file)
 
@@ -862,7 +861,8 @@ class TestInternalSupportRoutines(TestCase):
         checkpoint_list = upload.list_checkpoints(None)
         print(f"\nList Checkpoints:{len(checkpoint_list)}")
         for checkpoint in checkpoint_list:
-            print(f"  Checkpoint; {checkpoint['name']}: {checkpoint['checksum']} : {checkpoint['size']}")
+            print(f"  Checkpoint; {checkpoint['name']}: "
+                  f"{checkpoint['checksum']} : {checkpoint['size']}")
 
         # Now restore checkpoints and check whether the restored and original file
         # lists are equivalent.
@@ -913,7 +913,7 @@ class TestInternalSupportRoutines(TestCase):
 
         size = upload.get_checkpoint_file_size(checkpoint3_sum)
         self.assertTrue(9950 < size < 10005, "Test size of known checkpoint "
-                                      "is roughly '10001' bytes.")
+                                             "is roughly '10001' bytes.")
 
         mod_date = upload.get_checkpoint_file_last_modified(checkpoint3_sum)
         self.assertTrue(mod_date, "Test modify date returned "
@@ -929,7 +929,8 @@ class TestInternalSupportRoutines(TestCase):
         checkpoint_list = upload.list_checkpoints(None)
         print(f"\nList Checkpoints:{len(checkpoint_list)}")
         for checkpoint in checkpoint_list:
-            print(f"  Checkpoint; {checkpoint['name']}: {checkpoint['checksum']} : {checkpoint['size']}")
+            print(f"  Checkpoint; {checkpoint['name']}: "
+                  f"{checkpoint['checksum']} : {checkpoint['size']}")
 
         # Remove all remaining checkpoint files (what we didn't delete above)
         upload.delete_all_checkpoints(None)
@@ -938,16 +939,24 @@ class TestInternalSupportRoutines(TestCase):
         checkpoint_list = upload.list_checkpoints(None)
         print(f"\nList Checkpoints:{len(checkpoint_list)}")
         for checkpoint in checkpoint_list:
-            print(f"Checkpoint; {checkpoint['name']}: {checkpoint['checksum']} : {checkpoint['size']}")
+            print(f"Checkpoint; {checkpoint['name']}: "
+                  f"{checkpoint['checksum']} : {checkpoint['size']}")
 
         self.assertTrue(checkpoint_list == [],
                         "All checkpoints have been removed.")
 
-        # cleanup workspace
-        #upload.remove_workspace()
+        # Try to create checkpoint when there are no source files.
 
-        # TODO: Clean up debugging and remove workspace when
-        #       finished develoment.
+        # Clean out the source files
+        upload.client_remove_all_files()
+
+        # Create a second checkpoint
+        with self.assertRaises(NoSourceFilesToCheckpoint):
+            checkpoint_nothing = upload.create_checkpoint(None)
+
+        # cleanup workspace
+        upload.remove_workspace()
+
 
 class TestUpload(TestCase):
     """:func:`.process_upload` adds ones to :prop:`.Thing.name`."""
@@ -1203,14 +1212,13 @@ class TestUpload(TestCase):
 
                 self.assertEqual(sub_type, exp_sub_type,
                                  f"Correctly identified submission of type "
-                                 f"'{sub_type}'.")
+                                 f"'{sub_type}' : {description}.")
 
                 # Clean out files to get ready for next test.
                 upload.client_remove_all_files()
 
                 # cleanup workspace
                 upload.remove_workspace()
-
 
     def test_process_anc_upload(self) -> None:
         """Process upload with ancillary files in anc directory"""
@@ -1252,7 +1260,6 @@ class TestUpload(TestCase):
         workspace_dir = upload.create_upload_workspace()
         if os.path.exists(workspace_dir):
             shutil.rmtree(workspace_dir)
-
 
         # Test common behavior of submitting .bib file without .bbl file and
         # then follow by adding .bbl file to make submission whole.
@@ -1404,7 +1411,6 @@ class TestUpload(TestCase):
                 # clean up workspace
                 upload.remove_workspace()
 
-
     def xxx_test_one_off_upload(self) -> None:
         """Test one-off submssions."""
         upload_id = 29990049
@@ -1433,14 +1439,11 @@ class TestUpload(TestCase):
             upload = Upload(upload_id)
             upload.process_upload(file)
 
-
             file_list = upload.create_file_upload_summary()
             import json
             length = len(json.dumps(file_list))
             print(f"Length of file summary: {length}")
             print(f"Response:\n{json.dumps(file_list)}\nDONE")
-
-
 
     def test_process_general_upload(self) -> None:
         """Test series of uniform test cases with specified outcomes"""
