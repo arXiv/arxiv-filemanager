@@ -19,3 +19,7 @@ database:
   host: changeme
 
 loglevel: 10
+
+ingress:
+  host: "development.arxiv.org"
+  path: "/source"

@@ -38,8 +38,12 @@ def create_web_app() -> Flask:
         middleware.insert(0, vault.middleware.VaultMiddleware)
     wrap(app, middleware)
 
+    if app.config['VAULT_ENABLED']:
+        app.middlewares['VaultMiddleware'].update_secrets({})
+
     celery_app.config_from_object(celeryconfig)
-    celery_app.autodiscover_tasks(['filemanager'], related_name='tasks', force=True)
+    celery_app.autodiscover_tasks(['filemanager'], related_name='tasks',
+                                  force=True)
     celery_app.conf.task_default_queue = 'filemanager-worker'
 
     return app
