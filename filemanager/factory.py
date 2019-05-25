@@ -2,8 +2,9 @@
 
 #import logging
 
-from flask import Flask
-from celery import Celery
+from flask import Flask, jsonify, Response
+from werkzeug.exceptions import HTTPException, Forbidden, Unauthorized, \
+    BadRequest, MethodNotAllowed, InternalServerError, NotFound
 
 from arxiv import vault
 from arxiv.base import Base
@@ -15,9 +16,6 @@ from filemanager.routes import upload_api
 from filemanager.services import uploads
 
 from arxiv.users import auth
-
-celery_app = Celery(__name__, results=celeryconfig.result_backend,
-                    broker=celeryconfig.broker_url)
 
 
 def create_web_app() -> Flask:
@@ -41,23 +39,23 @@ def create_web_app() -> Flask:
     if app.config['VAULT_ENABLED']:
         app.middlewares['VaultMiddleware'].update_secrets({})
 
-    celery_app.config_from_object(celeryconfig)
-    celery_app.autodiscover_tasks(['filemanager'], related_name='tasks',
-                                  force=True)
-    celery_app.conf.task_default_queue = 'filemanager-worker'
-
+    register_error_handlers(app)
     return app
 
 
-def create_worker_app() -> Celery:
-    """Initialize and configure the filemanager worker application."""
-    app = Flask('filemanager')
-    app.config.from_pyfile('config.py')
+def register_error_handlers(app: Flask) -> None:
+    """Register error handlers for the Flask app."""
+    app.errorhandler(Forbidden)(jsonify_exception)
+    app.errorhandler(Unauthorized)(jsonify_exception)
+    app.errorhandler(BadRequest)(jsonify_exception)
+    app.errorhandler(InternalServerError)(jsonify_exception)
+    app.errorhandler(NotFound)(jsonify_exception)
+    app.errorhandler(MethodNotAllowed)(jsonify_exception)
 
-    uploads.init_app(app)
 
-    celery_app.config_from_object(celeryconfig)
-    celery_app.autodiscover_tasks(['filemanager'], related_name='tasks', force=True)
-    celery_app.conf.task_default_queue = 'filemanager-worker'
-
-    return app
+def jsonify_exception(error: HTTPException) -> Response:
+    """Render exceptions as JSON."""
+    exc_resp = error.get_response()
+    response: Response = jsonify(reason=error.description)
+    response.status_code = exc_resp.status_code
+    return response

@@ -13,4 +13,5 @@ def application(environ, start_response):
         if key == 'SERVER_NAME':    # This will only confuse Flask.
             continue
         os.environ[key] = str(value)
+        __flask_app__.config[key] = value
     return __flask_app__(environ, start_response)

@@ -12,7 +12,7 @@ metadata:
       more_set_headers "Request-Id: $req_id";
     ingress.kubernetes.io/limit-connections: "4"
     ingress.kubernetes.io/limit-rps: "16"
-    ingress.kubernetes.io/rewrite-target: /
+    ingress.kubernetes.io/rewrite-target: /filemanager/api
 spec:
   tls:  # This will use the default certificate for the ingress controller.
   - hosts:

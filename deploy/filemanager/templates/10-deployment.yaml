@@ -73,6 +73,8 @@ spec:
           value: "{{ .Values.database.host }}"
         - name: UPLOAD_BASE_DIRECTORY
           value: /data
+        - name: APPLICATION_ROOT
+          value: "{{ .Values.ingress.path }}"
 
         volumeMounts:
         - mountPath: /data
