@@ -1,7 +1,5 @@
 """Application factory for file management app."""
 
-#import logging
-
 from flask import Flask, jsonify, Response
 from werkzeug.exceptions import HTTPException, Forbidden, Unauthorized, \
     BadRequest, MethodNotAllowed, InternalServerError, NotFound

@@ -18,7 +18,7 @@ celery = "*"
 redis = "*"
 arxiv-auth = "==0.3.2rc6"
 mysqlclient = "==1.4.2"
-arxiv-vault = "==0.1.1rc13"
+arxiv-vault = "==0.1.1rc15"
 
 [dev-packages]
 coveralls = "*"
