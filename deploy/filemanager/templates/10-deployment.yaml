@@ -75,6 +75,8 @@ spec:
           value: /data
         - name: APPLICATION_ROOT
           value: "{{ .Values.ingress.path }}"
+        - name: NAMESPACE
+          value: "{{ .Values.namespace }}"
 
         volumeMounts:
         - mountPath: /data

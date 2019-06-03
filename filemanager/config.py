@@ -89,7 +89,7 @@ VAULT_REQUESTS = [
      'database': os.environ.get('FILEMANAGER_DATABASE', 'filemanager'),
      'params': 'charset=utf8mb4',
      'port': '3306',
-     'name': 'FILE_MANAGEMENT_SQLALCHEMY_DATABASE_URI',
+     'name': 'SQLALCHEMY_DATABASE_URI',
      'mount_point': f'database{NS_AFFIX}/',
      'role': 'filemanager-write'}
 ]
