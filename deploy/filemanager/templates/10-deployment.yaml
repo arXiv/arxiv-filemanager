@@ -21,7 +21,7 @@ metadata:
     env: "{{ .Values.namespace }}"
   namespace: "{{ .Values.namespace }}"
 spec:
-  replicas: {{ default 1 .Values.replicas }}
+  replicas: {{ int .Values.scaling.replicas }}
   template:
     metadata:
       labels:
