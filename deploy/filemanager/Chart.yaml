@@ -1,0 +1,7 @@
+name: filemanager
+version: 0.1.1
+appVersion: 0.1.1
+description: File management service for the submission system.
+sources:
+  - https://github.com/arxiv/arxiv-filemanager
+engine: gotpl

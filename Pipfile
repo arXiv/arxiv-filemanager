@@ -1,0 +1,27 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+arxiv-base = "==0.15.8rc4"
+flask = "*"
+"nose2" = "*"
+flask-sqlalchemy = "*"
+pylint = "*"
+mypy = "*"
+requests = "*"
+uwsgi = "*"
+pyjwt = "*"
+jsonschema = "*"
+celery = "*"
+redis = "*"
+arxiv-auth = "==0.3.2rc6"
+mysqlclient = "==1.4.2"
+arxiv-vault = "==0.1.1rc15"
+
+[dev-packages]
+coveralls = "*"
+
+[requires]
+python_version = "3.6"

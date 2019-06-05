@@ -1,0 +1,29 @@
+language: python
+sudo: required
+env:
+  MIN_PYLINT_SCORE: 8
+os:
+  - linux
+python:
+  - "3.6"
+script:
+  - pip install pipenv
+  - pipenv install --dev
+  - pipenv run nose2 --with-coverage
+after_success:
+  - coveralls
+
+deploy:
+- provider: script
+  script:
+    ./deploy/make_and_push_image.sh filemanager
+  on:
+    all_branches: true
+- provider: script
+  script:
+    ./deploy/make_and_push_image.sh filemanager &&
+    ./deploy/install_helm.sh &&
+    ./deploy/publish_helm_chart.sh &&
+    ./deploy/deploy.sh filemanager development
+  on:
+    tags: true

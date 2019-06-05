@@ -1,0 +1,31 @@
+{
+  "title": "UploadCreate",
+  "description": "Describes the current processing status of an uploaded source package.",
+  "additionalProperties": false,
+  "required": ["upload_id", "create_datetime"],
+  "type": "object",
+  "properties": {
+    "checksum": {
+      "description": "Base64-encoded MD5 hash of the source package.",
+      "type": "string"
+    },
+    "upload_id": {
+      "description": "Short-lived task identifier for the upload.",
+      "type": "integer"
+    },
+    "status": {
+      "description": "Current status of the upload processing task.",
+      "type": "string",
+      "enum": ["FAILED", "SUCCEEDED", "CANCELLED", "PENDING", "IN_PROGRESS"]
+    },
+    "create_datetime": {
+      "description": "The date-time when upload processing began.",
+      "type": "string",
+      "format": "datetime"
+    },
+    "url": {
+      "description": "The url to upload data to.",
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+namespace: development
+deployment:
+  name: filemanager
+service:
+  name: filemanager
+image:
+  tag: "0.3"
+labels:
+  subsystem: submission
+
+scaling:
+  replicas: 3
+
+vault:
+  host: changeme
+  port: changeme
+  role: filemanager
+
+database:
+  host: changeme
+
+loglevel: 10
+
+ingress:
+  host: "development.arxiv.org"
+  path: "/source"
