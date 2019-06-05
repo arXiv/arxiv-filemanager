@@ -1,6 +1,6 @@
 """Handles all upload-related requests."""
 
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 from datetime import datetime
 import json
 import logging
@@ -350,7 +350,8 @@ def client_delete_all_files(upload_id: int) -> Response:
 
 
 def upload(upload_id: Optional[int], file: FileStorage, archive: str,
-           user: auth_domain.User, ancillary: bool = False) -> Response:
+           user: Union[auth_domain.User, auth_domain.Client],
+           ancillary: bool = False) -> Response:
     """
     Upload individual files or compressed archive into specified workspace.
 
@@ -423,7 +424,11 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
         try:
             logger.info("Create new workspace: Upload request: "
                         "file='%s' archive='%s'", file.filename, archive)
-            user_id = str(user.user_id)
+            # TODO: we need better handling for client-only requests here.
+            if isinstance(user, auth_domain.User):
+                user_id = str(user.user_id)
+            elif isinstance(user, auth_domain.Client):
+                user_id = str(user.owner_id)   # User ID of the client owner.
 
             if archive is None:
                 arch = ''

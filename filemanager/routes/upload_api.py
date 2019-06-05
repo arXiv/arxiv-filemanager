@@ -32,8 +32,14 @@ def is_owner(session: auth_domain.Session, upload_id: str,
     if upload_obj is None:
         return True
 
-    return str(session.user.user_id) \
-        == str(uploads.retrieve(upload_id).owner_user_id)
+    if session.user:
+        owner_id = str(request.session.user.user_id)
+    elif session.client:
+        owner_id = str(request.session.client.owner_id)
+    else:
+        raise Unauthorized('No user or client on authenticated session')
+
+    return owner_id == str(uploads.retrieve(upload_id).owner_user_id)
 
 
 @blueprint.route('/status', methods=['GET'])
@@ -71,9 +77,16 @@ def new_upload() -> tuple:
     # Required file payload
     file = request.files.get('file', None)
 
+    if request.session.user:
+        user_or_client = request.session.user
+    elif request.session.client:
+        user_or_client = request.session.client
+    else:
+        raise Unauthorized('No user or client on authenticated session')
+
     # Collect arguments and call main upload controller
     data, status_code, headers = upload.upload(None, file, archive_arg,
-                                               request.session.user)
+                                               user_or_client)
 
     return jsonify(data), status_code, headers
 
