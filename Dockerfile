@@ -22,6 +22,8 @@ RUN chmod 777 upload.log
 
 EXPOSE 8000
 
+ENV APPLICATION_ROOT "/"
+
 ENV LOGLEVEL 10
 
 ENTRYPOINT ["pipenv", "run"]

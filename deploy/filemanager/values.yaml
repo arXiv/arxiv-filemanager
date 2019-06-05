@@ -8,6 +8,9 @@ image:
 labels:
   subsystem: submission
 
+authenticator:
+  service: authenticator
+
 scaling:
   replicas: 3
 
