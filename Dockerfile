@@ -25,14 +25,4 @@ EXPOSE 8000
 ENV LOGLEVEL 10
 
 ENTRYPOINT ["pipenv", "run"]
-CMD ["uwsgi", "--http-socket", ":8000", \
-     "-M", \
-     "-t 3000", \
-     "--manage-script-name", \
-     "--processes", "1", \
-     "--threads", "1", \
-     "--async", "0", \
-     "--queue", "0", \
-     "--wsgi-disable-file-wrapper", \
-     "--mount", "/=wsgi.py", \
-     "--logformat", "%(addr) %(addr) - %(user_id)|%(session_id) [%(rtime)] [%(uagent)] \"%(method) %(uri) %(proto)\" %(status) %(size) %(micros) %(ttfb)"]
+CMD ["uwsgi", "--ini", "/opt/arxiv/uwsgi.ini"]
