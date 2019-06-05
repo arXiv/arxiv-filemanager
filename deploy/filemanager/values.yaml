@@ -8,7 +8,8 @@ image:
 labels:
   subsystem: submission
 
-replicas: 1
+scaling:
+  replicas: 3
 
 vault:
   host: changeme
@@ -19,3 +20,7 @@ database:
   host: changeme
 
 loglevel: 10
+
+ingress:
+  host: "development.arxiv.org"
+  path: "/source"

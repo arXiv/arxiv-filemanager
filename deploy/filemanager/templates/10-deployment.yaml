@@ -21,7 +21,7 @@ metadata:
     env: "{{ .Values.namespace }}"
   namespace: "{{ .Values.namespace }}"
 spec:
-  replicas: {{ default 1 .Values.replicas }}
+  replicas: {{ int .Values.scaling.replicas }}
   template:
     metadata:
       labels:
@@ -73,6 +73,10 @@ spec:
           value: "{{ .Values.database.host }}"
         - name: UPLOAD_BASE_DIRECTORY
           value: /data
+        - name: APPLICATION_ROOT
+          value: "{{ .Values.ingress.path }}"
+        - name: NAMESPACE
+          value: "{{ .Values.namespace }}"
 
         volumeMounts:
         - mountPath: /data

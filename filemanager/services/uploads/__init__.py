@@ -4,10 +4,14 @@ from typing import Any, Dict, Optional
 import time
 from datetime import datetime
 from pytz import UTC
+
 from werkzeug.local import LocalProxy
 from sqlalchemy.exc import OperationalError
+from retry import retry
+
 from arxiv.base.globals import get_application_global
 from arxiv.base import logging
+
 from filemanager.domain import Upload
 from .models import db, DBUpload
 
@@ -19,6 +23,9 @@ def init_app(app: Optional[LocalProxy]) -> None:
     db.init_app(app)
 
 
+# OperationalError is often due to a transient connection problem that can be
+# resolved with a retry.
+@retry(OperationalError, tries=3, backoff=2)
 def is_available() -> bool:
     """Make a quick check to see whether databse is available."""
     try:
