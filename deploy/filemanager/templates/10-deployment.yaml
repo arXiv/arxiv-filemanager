@@ -80,7 +80,8 @@ spec:
 
         volumeMounts:
         - mountPath: /data
-          name: "{{ default "filemanager" .Values.deployment.name }}-data"
+          name: test-data
+          # name: "{{ default "filemanager" .Values.deployment.name }}-data"
         - name: vault-certificate
           mountPath: /etc/vault-certificate
           readOnly: true
@@ -110,3 +111,6 @@ spec:
       - name: "{{ default "filemanager" .Values.deployment.name }}-data"
         persistentVolumeClaim:
           claimName: "{{ default "filemanager" .Values.deployment.name }}-data"
+      - name: test-data
+        emptyDir:
+          medium: Memory

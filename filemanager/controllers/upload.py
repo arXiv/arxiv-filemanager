@@ -1,5 +1,6 @@
 """Handles all upload-related requests."""
 
+import time
 from typing import Tuple, Optional, Union
 from datetime import datetime
 import json
@@ -349,7 +350,7 @@ def client_delete_all_files(upload_id: int) -> Response:
     return response_data, status.OK, headers
 
 
-def upload(upload_id: Optional[int], file: FileStorage, archive: str,
+def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
            user: Union[auth_domain.User, auth_domain.Client],
            ancillary: bool = False) -> Response:
     """
@@ -380,6 +381,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
     dict
         Some extra headers to add to the response.
     """
+    start = time.time()
     # TODO: Hook up async processing (celery/redis) - doesn't work now
     # TODO: Will likely delete this code if processing time is reasonable
     # print(f'Controller: Schedule upload_db_data task for {upload_id}')
@@ -393,8 +395,9 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
     # Check arguments for basic qualities like existing and such.
 
-    # File argument is required to exist and have a name associated with it.
-    # It is standard practice that if user fails to select file the filename is null.
+    # File argument is required to exist and have a name associated with it. It
+    # is standard practice that if user fails to select file the filename is
+    # null.
     logger.debug('Handling upload request for %s', upload_id)
     if file is None:
         # Crash and burn...not quite...do we need info about client?
@@ -403,22 +406,28 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
     if file.filename == '':
         # Client needs to select file, or provide name to upload payload
-        logger.error('Upload file is missing filename. File to upload may not be selected.')
+        logger.error('Upload file is missing filename. File to upload may not'
+                     ' be selected.')
         raise BadRequest(UPLOAD_MISSING_FILENAME)
 
+    # TODO: remove this -- out of scope for file manager service; policies like
+    # size limits are enforced by submission agent. --Erick
+    #
     # What about archive argument.
     if archive is None:
-        # TODO: Discussion about how to treat omission of archive argument.
-        # Is this an HTTP exception? Oversize limits are configured per archive.
+        # TODO: Discussion about how to treat omission of archive argument. Is
+        # this an HTTP exception? Oversize limits are configured per archive.
         # Or is this a warning/error returned in upload summary?
         #
-        # Most submissions can get by with default size limitations so we'll add a warning
-        # message for the upload (this will appear on upload page and get logged). This
-        # warning will get generated in process/upload.py and not here.
+        # Most submissions can get by with default size limitations so we'll
+        # add a warning message for the upload (this will appear on upload page
+        # and get logged). This warning will get generated in process/upload.py
+        # and not here.
         logger.error("Upload 'archive' not specified. Oversize calculation "
                      "will use default values.")
 
-    # If this is a new upload then we need to create a workspace and add to database.
+    # If this is a new upload then we need to create a workspace and add to
+    # database.
     if upload_id is None:
         logger.debug('This is a new upload workspace.')
         try:
@@ -456,6 +465,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
                         " Add except clauses for '%s'. DO IT NOW!", ue)
             raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
+    print('upload workspace exists at', time.time() - start)
     # At this point we expect upload to exist in system
     try:
 
@@ -477,22 +487,26 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
         # NOTE: This will need to be migrated to task.py using Celery at
         #       some point in future. Depends in time it takes to process
         #       uploads.retrieve
-        logger.info("%s: Upload files to existing "
-                    "workspace: file='%s'", upload_db_data.upload_id, file.filename)
+        logger.info("%s: Upload files to existing workspace: file='%s'",
+                    upload_db_data.upload_id, file.filename)
+        print('upload workspace retrieved at', time.time() - start)
 
         # Keep track of how long processing upload_db_data takes
         start_datetime = datetime.now(UTC)
 
         # Create Upload object
         upload_workspace = UploadWorkspace(upload_id)
+        print('upload managaer intantiated at', time.time() - start)
 
         # Process upload_db_data
         upload_workspace.process_upload(file, ancillary=ancillary)
+        print('workspace finished processing upload at', time.time() - start)
 
         completion_datetime = datetime.now(UTC)
 
         # Keep track of files processed (this included deleted files)
         file_list = upload_workspace.create_file_upload_summary()
+        print('workspace summary at', time.time() - start)
 
         # Determine readiness state of upload content
         upload_status = Upload.READY
@@ -528,9 +542,10 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
 
         # Store in DB
         uploads.update(upload_db_data)
+        print('db updated at', time.time() - start)
 
-        logger.info("%s: Processed upload. "
-                    "Saved to DB. Preparing upload summary.", upload_db_data.upload_id)
+        logger.info("%s: Processed upload. Saved to DB. Preparing upload "
+                    "summary.", upload_db_data.upload_id)
 
         # Do we want affirmative log messages after processing each request
         # or maybe just report errors like:
@@ -547,6 +562,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
                     upload_db_data.upload_id)
         logger.debug('Response data: %s', response_data)
         headers.update({'ARXIV-OWNER': upload_db_data.owner_user_id})
+        print('done at', time.time() - start)
         return response_data, status_code, headers
 
     except IOError as e:

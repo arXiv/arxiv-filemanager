@@ -1,5 +1,6 @@
 """Provides functions that sanitizes :class:`.Upload."""
 
+import time
 import os
 import re
 from datetime import datetime
@@ -2200,6 +2201,8 @@ class Upload:
         ----------
         Original Perl code is located in Upload.pm (in arXivLib/lib/arXiv/Submit)
         """
+        start = time.time()
+        print('processing upload')
         # Upload_id and filename exists
         # Move this to log
         # print("\n---> Upload id: " + str(self.upload_id) + " FilenamePath: " + file.filename
@@ -2209,6 +2212,7 @@ class Upload:
 
         # Move uploaded archive/file to source directory
         self.deposit_upload(file, ancillary=ancillary)
+        print('processing upload: deposited upload at', time.time() - start)
 
         self.log('\n******** File Upload Processing *****\n\n')
 
@@ -2217,18 +2221,23 @@ class Upload:
 
         # Unpack upload archive (if necessary). Completes minor cleanup.
         unpack_archive(self)
+        print('processing upload: archive unpacked at', time.time() - start)
 
         # Build list of files
         self.create_file_list()
+        print('processing upload: file list created at', time.time() - start)
 
         # Check files
         self.check_files()
+        print('processing upload: files checked at', time.time() - start)
 
         # Check total file size
         self.calculate_client_upload_size()
+        print('processing upload: size calculated at', time.time() - start)
 
         # Final cleanup
         self.finalize_upload()
+        print('processing upload: finalized at', time.time() - start)
 
         self.log('\n******** File Upload Finished *****\n\n')
 
