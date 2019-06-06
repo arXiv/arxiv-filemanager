@@ -307,7 +307,8 @@ def client_delete_file(upload_id: int, public_file_path: str, user: auth_domain.
         'reason': UPLOAD_DELETED_FILE,
         'checksum': upload_workspace.get_content_checksum()
     })  # Get rid of pylint errorT
-    return response_data, status.OK, {}
+    headers = {'ARXIV-OWNER': upload_db_data.owner_user_id}
+    return response_data, status.OK, headers
 
 
 def client_delete_all_files(upload_id: int, user: auth_domain.User) -> Response:
@@ -378,7 +379,8 @@ def client_delete_all_files(upload_id: int, user: auth_domain.User) -> Response:
         'reason': UPLOAD_DELETED_ALL_FILES,
         'checksum': upload_workspace.get_content_checksum()
     })  # Get rid of pylint error
-    return response_data, status.OK, {}
+    headers = {'ARXIV-OWNER': upload_db_data.owner_user_id}
+    return response_data, status.OK, headers
 
 
 def upload(upload_id: Optional[int], file: FileStorage, archive: str,
@@ -599,6 +601,10 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
         if DEBUG_UPLOAD:
             logger.debug('%s: Upload response data: %s',
                          upload_db_data.upload_id, response_data)
+        logger.info("%s: Generating upload summary.",
+                    upload_db_data.upload_id)
+        logger.debug('Response data: %s', response_data)
+        headers.update({'ARXIV-OWNER': upload_db_data.owner_user_id})
         return response_data, status_code, headers
 
 
@@ -698,7 +704,8 @@ def upload_summary(upload_id: int) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    return response_data, status_code, {}
+    headers = {'ARXIV-OWNER': upload_db_data.owner_user_id}
+    return response_data, status_code, headers
 
 
 # TODO: How do we keep submitter from updating workspace while admin
@@ -761,7 +768,8 @@ def upload_lock(upload_id: int, user: auth_domain.User) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    return response_data, status_code, {}
+    headers = {'ARXIV-OWNER': upload_db_data.owner_user_id}
+    return response_data, status_code, headers
 
 
 def upload_unlock(upload_id: int, user: auth_domain.User) -> Response:
@@ -813,7 +821,8 @@ def upload_unlock(upload_id: int, user: auth_domain.User) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    return response_data, status_code, {}
+    headers = {'ARXIV-OWNER': upload_db_data.owner_user_id}
+    return response_data, status_code, headers
 
 
 def upload_release(upload_id: int, user: auth_domain.User) -> Response:
@@ -890,7 +899,8 @@ def upload_release(upload_id: int, user: auth_domain.User) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    return response_data, status_code, {}
+    headers = {'ARXIV-OWNER': upload_db_data.owner_user_id}
+    return response_data, status_code, headers
 
 
 def upload_unrelease(upload_id: int, user: auth_domain.User) -> Response:
@@ -971,7 +981,8 @@ def upload_unrelease(upload_id: int, user: auth_domain.User) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    return response_data, status_code, {}
+    headers = {'ARXIV-OWNER': upload_db_data.owner_user_id}
+    return response_data, status_code, headers
 
 
 # Content download controllers
@@ -1016,8 +1027,8 @@ def check_upload_content_exists(upload_id: int) -> Response:
         return {}, status.OK, {'ETag': checksum,
                                'Content-Length': size,
                                'Last-Modified': modified}
-
-    return {}, status.OK, {'ETag': checksum}
+    headers = {'ARXIV-OWNER': upload_db_data.owner_user_id, 'ETag': checksum}
+    return {}, status.OK, headers
 
 
 def get_upload_content(upload_id: int, user: auth_domain.User) -> Response:
@@ -1058,7 +1069,8 @@ def get_upload_content(upload_id: int, user: auth_domain.User) -> Response:
         raise NotFound("No content in workspace") from e
     headers = {
         "Content-disposition": f"filename={filepointer.name}",
-        'ETag': checksum
+        'ETag': checksum,
+        'ARXIV-OWNER': upload_db_data.owner_user_id
     }
     return filepointer, status.OK, headers
 
@@ -1126,7 +1138,8 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    return {}, status.OK, {'ETag': checksum}
+    headers = {'ARXIV-OWNER': upload_db_data.owner_user_id, 'ETag': checksum}
+    return {}, status.OK, headers
 
 
 def get_upload_file_content(upload_id: int, public_file_path: str, user: auth_domain.User) -> Response:
@@ -1202,6 +1215,7 @@ def get_upload_file_content(upload_id: int, public_file_path: str, user: auth_do
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
+    headers.update({'ARXIV-OWNER': upload_db_data.owner_user_id})
     return filepointer, status.OK, headers
 
 
@@ -1241,9 +1255,13 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
     size = upload_workspace.source_log_size
     modified = upload_workspace.source_log_last_modified
 
-    return {}, status.OK, {'ETag': checksum,
-                           'Content-Length': size,
-                           'Last-Modified': modified}
+    headers = {
+        'ETag': checksum,
+        'Content-Length': size,
+        'Last-Modified': modified,
+        'ARXIV-OWNER': upload_db_data.owner_user_id
+    }
+    return {}, status.OK, headers
 
 
 def get_upload_source_log(upload_id: int, user: auth_domain.User) -> Response:
@@ -1295,7 +1313,8 @@ def get_upload_source_log(upload_id: int, user: auth_domain.User) -> Response:
         "Content-disposition": f"filename={name}",
         'ETag': checksum,
         'Content-Length': size,
-        'Last-Modified': modified
+        'Last-Modified': modified,
+        'ARXIV-OWNER': upload_db_data.owner_user_id
     }
     return filepointer, status.OK, headers
 
