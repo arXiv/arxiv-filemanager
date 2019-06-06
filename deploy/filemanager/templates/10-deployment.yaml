@@ -21,7 +21,7 @@ metadata:
     env: "{{ .Values.namespace }}"
   namespace: "{{ .Values.namespace }}"
 spec:
-  replicas: {{ default 1 .Values.replicas }}
+  replicas: {{ int .Values.scaling.replicas }}
   template:
     metadata:
       labels:
@@ -73,6 +73,10 @@ spec:
           value: "{{ .Values.database.host }}"
         - name: UPLOAD_BASE_DIRECTORY
           value: /data
+        - name: APPLICATION_ROOT
+          value: "{{ .Values.ingress.path }}"
+        - name: NAMESPACE
+          value: "{{ .Values.namespace }}"
 
         volumeMounts:
         - mountPath: /data
@@ -89,14 +93,14 @@ spec:
             memory: 128Mi
         livenessProbe:
           initialDelaySeconds: 2
-          periodSeconds: 5
+          periodSeconds: 30
           httpGet:
-            path: /filemanager/api/status
+            path: "{{ .Values.ingress.path }}/filemanager/api/status"
             port: 8000
         readinessProbe:
-          periodSeconds: 5
+          periodSeconds: 30
           httpGet:
-            path: /filemanager/api/status
+            path: "{{ .Values.ingress.path }}/filemanager/api/status"
             port: 8000
 
       volumes:
