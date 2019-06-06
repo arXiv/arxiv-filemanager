@@ -33,7 +33,7 @@ class File:
         self.__filepath = filepath
         self.__base_dir = base_dir
         self.__description = ''
-        self.__removed = 0
+        self.__removed = ''
         self.__type = self.initialize_type()
         self.__size = os.path.getsize(self.filepath)
         mtime = os.path.getmtime(filepath)
@@ -202,7 +202,7 @@ class File:
         return self.__modified_datetime.isoformat()
 
     @property
-    def removed(self) -> int:
+    def removed(self) -> str:
         """Indicate whether file has been flagged as removed."""
         return self.__removed
 

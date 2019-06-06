@@ -1,6 +1,6 @@
 """Handles all upload-related requests."""
 
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union, Any, BinaryIO
 from datetime import datetime
 import json
 import logging
@@ -37,7 +37,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
-def _get_service_logs_directory() -> str:
+def _get_service_logs_directory() -> Any:
     """
     Return path to service logs directory.
 
@@ -117,7 +117,6 @@ UPLOAD_RESTOREDED_CHECKPOINT = 'restored checkpoint'
 UPLOAD_DELETED_CHECKPOINT = 'deleted checkpoint'
 UPLOAD_DELETED_ALL_CHECKPOINTS = 'deleted all checkpoint'
 
-
 UPLOAD_NOT_ACTIVE = 'upload workspace is not active.'
 UPLOAD_WORKSPACE_LOCKED = 'upload workspace is locked.'
 UPLOAD_WORKSPACE_IS_EMPTY = 'workspace is empty'
@@ -150,6 +149,8 @@ MISSING_NAME = {'an upload needs a name'}
 SOME_ERROR = {'Need to define and assign better error'}
 
 Response = Tuple[Optional[dict], int, dict]
+
+Content_Response = Tuple[BinaryIO, int, dict]
 
 
 def delete_workspace(upload_id: int, user: auth_domain.User) -> Response:
@@ -186,7 +187,7 @@ def delete_workspace(upload_id: int, user: auth_domain.User) -> Response:
 
     try:
         # Make sure we have an existing upload workspace to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Upload = uploads.retrieve(upload_id)
 
         # Actually remove entire workspace directory structure. Log
         # everything to global log since source log is being removed!
@@ -265,7 +266,7 @@ def client_delete_file(upload_id: int, public_file_path: str, user: auth_domain.
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Upload = uploads.retrieve(upload_id)
 
         if upload_db_data.state != Upload.ACTIVE:
             # Do we log anything for these requests
@@ -339,7 +340,7 @@ def client_delete_all_files(upload_id: int, user: auth_domain.User) -> Response:
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Upload = uploads.retrieve(upload_id)
 
         if upload_db_data is None:
             # Invalid workspace identifier
@@ -381,7 +382,7 @@ def client_delete_all_files(upload_id: int, user: auth_domain.User) -> Response:
     return response_data, status.OK, {}
 
 
-def upload(upload_id: Optional[int], file: FileStorage, archive: str,
+def upload(upload_id: Union[int, None], file: Union[FileStorage, Any],
            user: auth_domain.User, ancillary: bool = False,
            checkpoint: bool = False, clear_source_files: bool = False) \
         -> Response:
@@ -428,12 +429,13 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
     # End delete
 
     # Log username and upload_id or new
+    id_string = ""
     user_string = 'None'
     if user:
         user_string = _format_user_information_for_logging(user)
 
-    id_string = upload_id
-    if upload_id == None:
+    id_string = str(upload_id)
+    if upload_id is None:
         id_string = "New"
 
     # Check arguments for basic qualities like existing and such.
@@ -453,27 +455,16 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
                      'not be selected.', id_string)
         raise BadRequest(UPLOAD_MISSING_FILENAME)
 
-    # What about archive argument.
-    if archive is None:
-        # No longer need archive for stamp
-        pass
-
     # If this is a new upload then we need to create a workspace and add to database.
     if upload_id is None:
         ##logger.debug('This is a new upload workspace.')
         try:
             logger.info("Create new workspace: Upload request: "
-                        "file='%s' archive='%s' [%s]", file.filename,
-                        archive, user_string)
+                        "file='%s' [%s]", file.filename, user_string)
             user_id = str(user.user_id)
 
-            if archive is None:
-                arch = ''
-            else:
-                arch = archive
-
             current_time = datetime.now(UTC)
-            new_upload = Upload(owner_user_id=user_id, archive=arch,
+            new_upload = Upload(owner_user_id=user_id,
                                 created_datetime=current_time,
                                 modified_datetime=current_time,
                                 state=Upload.ACTIVE)
@@ -499,7 +490,7 @@ def upload(upload_id: Optional[int], file: FileStorage, archive: str,
     # At this point we expect upload to exist in system
     try:
 
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Upload = uploads.retrieve(upload_id)
 
         if upload_db_data.state != Upload.ACTIVE:
             # Do we log anything for these requests
@@ -657,7 +648,7 @@ def upload_summary(upload_id: int) -> Response:
     """
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Upload = uploads.retrieve(upload_id)
 
         # Create Upload object
         upload_workspace = UploadWorkspace(upload_id)
@@ -735,7 +726,7 @@ def upload_lock(upload_id: int, user: auth_domain.User) -> Response:
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Upload = uploads.retrieve(upload_id)
 
         # Lock upload workspace
         # update database
@@ -787,7 +778,7 @@ def upload_unlock(upload_id: int, user: auth_domain.User) -> Response:
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Upload = uploads.retrieve(upload_id)
 
         # Lock upload workspace
         # update database
@@ -851,7 +842,7 @@ def upload_release(upload_id: int, user: auth_domain.User) -> Response:
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Upload = uploads.retrieve(upload_id)
 
         # Release upload workspace
         # update database
@@ -933,7 +924,7 @@ def upload_unrelease(upload_id: int, user: auth_domain.User) -> Response:
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Upload = uploads.retrieve(upload_id)
 
         # Unrelease upload workspace
         # update database
@@ -1011,7 +1002,7 @@ def check_upload_content_exists(upload_id: int) -> Response:
 
     # Double check package exists
     if upload_workspace.content_package_exists:
-        modified = upload_workspace.content_package_modified
+        modified = str(upload_workspace.content_package_modified)
         size = upload_workspace.content_package_size
         return {}, status.OK, {'ETag': checksum,
                                'Content-Length': size,
@@ -1020,7 +1011,7 @@ def check_upload_content_exists(upload_id: int) -> Response:
     return {}, status.OK, {'ETag': checksum}
 
 
-def get_upload_content(upload_id: int, user: auth_domain.User) -> Response:
+def get_upload_content(upload_id: int, user: auth_domain.User) -> Content_Response:
     """
     Package up files for downloading as a compressed gzipped tar file.
 
@@ -1082,7 +1073,7 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
 
     """
     try:
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Upload = uploads.retrieve(upload_id)
     except IOError:
         logger.error("%s: ContentFileExistsCheck: There was a problem "
                      "connecting to database.", upload_id)
@@ -1105,14 +1096,9 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
                                    'Last-Modified': modified
                                    }
 
-        raise NotFound(f"File '{public_file_path}' not found.")
-
-    except IOError:
-        logger.error("%s: Content file exists request failed ", upload_db_data.upload_id)
-        raise InternalServerError(CANT_DELETE_FILE)
-    except NotFound as nf:
+    except FileNotFoundError as nf:
         logger.info("%s: File not found: %s", upload_id, nf)
-        raise nf
+        raise NotFound(UPLOAD_FILE_NOT_FOUND)
     except UploadFileSecurityError as secerr:
         logger.info("%s: %s", upload_id, secerr)
         # TODO: Should this be BadRequest or NotFound. I'm leaning towards
@@ -1121,15 +1107,19 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
     except Forbidden as forb:
         logger.info("%s: Operation forbidden: %s.", upload_id, forb)
         raise forb
+    except IOError as ioe:
+        logger.error("%s: Content file exists request failed: %e ",
+                     upload_db_data.upload_id, ioe)
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
     except Exception as ue:
         logger.info("%s: Unknown error in content file exists operation. "
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    return {}, status.OK, {'ETag': checksum}
+    return {}, status.NOT_FOUND, {}
 
-
-def get_upload_file_content(upload_id: int, public_file_path: str, user: auth_domain.User) -> Response:
+def get_upload_file_content(upload_id: int, public_file_path: str,
+                            user: auth_domain.User) -> Content_Response:
     """
     Get the source log associated with upload workspace.
 
@@ -1151,7 +1141,7 @@ def get_upload_file_content(upload_id: int, public_file_path: str, user: auth_do
 
     """
     try:
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Upload = uploads.retrieve(upload_id)
     except IOError:
         logger.error("%s: Download file: There was a problem connecting to database.",
                      upload_db_data.upload_id)
@@ -1183,12 +1173,9 @@ def get_upload_file_content(upload_id: int, public_file_path: str, user: auth_do
         else:
             raise NotFound(f"File '{public_file_path}' not found.")
 
-    except IOError:
-        logger.error("%s: Get uploaded file request failed ", upload_db_data.upload_id)
-        raise InternalServerError(CANT_DELETE_FILE)
-    except NotFound as nf:
-        logger.info("%s: GetUploadFile: %s", upload_id, nf)
-        raise nf
+    except FileNotFoundError as nf:
+        logger.info("%s: File not found: %s", upload_id, nf)
+        raise NotFound(UPLOAD_FILE_NOT_FOUND)
     except UploadFileSecurityError as secerr:
         logger.info("%s: %s", upload_id, secerr)
         # TODO: Should this be BadRequest or NotFound. I'm leaning towards
@@ -1197,6 +1184,10 @@ def get_upload_file_content(upload_id: int, public_file_path: str, user: auth_do
     except Forbidden as forb:
         logger.info("%s: Get uploaded file forbidden: %s.", upload_id, forb)
         raise forb
+    except IOError as ioe:
+        logger.error("%s: Get uploaded file request failed: %s ",
+                     upload_db_data.upload_id, ioe)
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
     except Exception as ue:
         logger.info("%s: Unknown error in get uploaded file. "
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
@@ -1226,10 +1217,10 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
     published and the associated workspace deleted.
     """
     try:
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
-    except IOError:
-        logger.error("%s: SourceLogExistCheck: There was a problem connecting to database.",
-                     upload_db_data.upload_id)
+        upload_db_data: Upload = uploads.retrieve(upload_id)
+    except IOError as ioe:
+        logger.error("%s: SourceLogExistCheck: There was a problem connecting"
+                     " to database: %s", upload_db_data.upload_id, ioe)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
     except uploads.WorkspaceNotFound as nf:
         logger.info("%s: Workspace not found: '%s'", upload_id, nf)
@@ -1246,7 +1237,7 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
                            'Last-Modified': modified}
 
 
-def get_upload_source_log(upload_id: int, user: auth_domain.User) -> Response:
+def get_upload_source_log(upload_id: int, user: auth_domain.User) -> Content_Response:
     """
     Get upload workspace log.
 
@@ -1270,7 +1261,7 @@ def get_upload_source_log(upload_id: int, user: auth_domain.User) -> Response:
         user_string = _format_user_information_for_logging(user)
         logger.info("%s: Download source log [%s].", upload_id, user_string)
 
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Upload = uploads.retrieve(upload_id)
     except IOError:
         logger.error("%s: GetSourceLog: There was a problem connecting to database.",
                      upload_db_data.upload_id)
@@ -1313,7 +1304,7 @@ def __checksum(filepath: str) -> str:
     return ""
 
 
-def __last_modified(filepath: str) -> str:
+def __last_modified(filepath: str) -> datetime:
     """Return last modified time of file.
 
     Perameters
@@ -1328,7 +1319,7 @@ def __last_modified(filepath: str) -> str:
     return datetime.utcfromtimestamp(os.path.getmtime(filepath))
 
 
-def __content_pointer(log_path: str) -> io.BytesIO:
+def __content_pointer(log_path: str) -> BinaryIO:
     """Get a file-pointer for service log.
 
     Parameters
@@ -1375,7 +1366,7 @@ def check_upload_service_log_exists() -> Response:
                            }
 
 
-def get_upload_service_log(user: auth_domain.User) -> Response:
+def get_upload_service_log(user: auth_domain.User) -> Content_Response:
     """
     Return the service-level file manager service log.
 
@@ -1547,7 +1538,8 @@ def restore_checkpoint(upload_id: int, checkpoint_checksum: str,
 
     """
     user_string = _format_user_information_for_logging(user)
-    logger.info("%s: Restore checkpoints [%s].", upload_id, user_string)
+    logger.info("%s: Restore checkpoint '%s' [%s].", upload_id,
+                checkpoint_checksum, user_string)
 
     try:
         # Make sure we have an upload_db_data to work with
@@ -1667,12 +1659,13 @@ def delete_all_checkpoints(upload_id: int, user: auth_domain.User) -> Response:
         response_data = {'reason': f"Deleted all checkpoints."}  # Get rid of pylint error
         status_code = status.OK
 
-    except IOError:
-        logger.error("%s: Delete all checkpoints request failed ", upload_id)
-        raise InternalServerError(CANT_DELETE_FILE)
     except uploads.WorkspaceNotFound as nf:
         logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(UPLOAD_NOT_FOUND)
+    except IOError as ioe:
+        logger.error("%s: Delete all checkpoints request failed: %s ",
+                     upload_id, ioe)
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
     except Exception as ue:
         logger.info("%s: Unknown error while deleting all checkpoints. "
                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
@@ -1700,7 +1693,7 @@ def check_checkpoint_file_exists(upload_id: int, checkpoint_checksum: str) -> Re
 
     """
     try:
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Upload = uploads.retrieve(upload_id)
     except IOError:
         logger.error("%s: CheckpointFileExistsCheck: There was a problem "
                      "connecting to database.", upload_id)
@@ -1749,7 +1742,8 @@ def check_checkpoint_file_exists(upload_id: int, checkpoint_checksum: str) -> Re
     return {}, status.OK, {'ETag': checkpoint_checksum}
 
 
-def get_checkpoint_file(upload_id: int, checkpoint_checksum: str, user: auth_domain.User) -> Response:
+def get_checkpoint_file(upload_id: int, checkpoint_checksum: str,
+                        user: auth_domain.User) -> Content_Response:
     """
     Get the checkpoint file specified by provided checksum.
 
@@ -1776,7 +1770,7 @@ def get_checkpoint_file(upload_id: int, checkpoint_checksum: str, user: auth_dom
         logger.info("%s: Download checkpoint: '%s' [%s].", upload_id,
                     checkpoint_checksum, user_string)
 
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Upload = uploads.retrieve(upload_id)
     except IOError:
         logger.error("%s: CheckpointFileDownload: There was a problem connecting to database.",
                      upload_db_data.upload_id)

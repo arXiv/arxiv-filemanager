@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 blueprint = Blueprint('upload_api', __name__, url_prefix='/filemanager/api')
 
 
-def is_owner(session: auth_domain.Session, upload_id: str,
+def is_owner(session: auth_domain.Session, upload_id: int,
              **kwargs: Any) -> bool:
     """User must be the upload owner, or an admin."""
     try:
@@ -63,19 +63,11 @@ def new_upload() -> tuple:
 
     Client response include upload_id which is necessary for subsequent requests.
     """
-    # Optional category/archive - this is required to accurately calculate
-    # whether submission is oversize.
-    archive_arg = request.form.get('archive', None)
-
-    # is this optional??
-    archive_arg = request.args.get('archive')
-
     # Required file payload
     file = request.files.get('file', None)
 
     # Collect arguments and call main upload controller
-    data, status_code, headers = upload.upload(None, file, archive_arg,
-                                               request.session.user)
+    data, status_code, headers = upload.upload(None, file, request.session.user)
 
     return jsonify(data), status_code, headers
 
@@ -99,11 +91,10 @@ def upload_files_with_checkpoint(upload_id: int) -> tuple:
            we won't limit access to 'is_owner'.
 
     """
-    archive_arg = request.form.get('archive')
     ancillary = request.form.get('ancillary', None) == 'True'
     file = request.files.get('file', None)
     # Attempt to process upload
-    data, status_code, headers = upload.upload(upload_id, file, archive_arg,
+    data, status_code, headers = upload.upload(upload_id, file,
                                                request.session.user,
                                                ancillary=ancillary,
                                                checkpoint=True)
@@ -124,11 +115,10 @@ def upload_files(upload_id: int) -> tuple:
         Workspace identifier
 
     """
-    archive_arg = request.form.get('archive')
     ancillary = request.form.get('ancillary', None) == 'True'
     file = request.files.get('file', None)
     # Attempt to process upload
-    data, status_code, headers = upload.upload(upload_id, file, archive_arg,
+    data, status_code, headers = upload.upload(upload_id, file,
                                                request.session.user,
                                                ancillary=ancillary)
     return jsonify(data), status_code, headers
@@ -295,7 +285,7 @@ def get_upload_content(upload_id: int) -> Response:
                  upload_id, type(upload_id))
     # Note: status_code is not used
     data, _, headers = upload.get_upload_content(upload_id, request.session.user)
-    response = send_file(data, mimetype="application/tar+gzip")
+    response: Response = send_file(data, mimetype="application/tar+gzip")
     response.set_etag(headers.get('ETag'))
     return response
 
@@ -330,7 +320,7 @@ def get_file_content(upload_id: int, public_file_path: str) -> Response:
     data, _, headers = \
         upload.get_upload_file_content(upload_id, public_file_path,
                                        request.session.user)
-    response = send_file(data, mimetype="application/*")
+    response: Response = send_file(data, mimetype="application/*")
     response.set_etag(headers.get('ETag'))
     return response
 
@@ -380,7 +370,7 @@ def get_upload_source_log(upload_id: int) -> Response:
     # Note: status_code not used
     data, _, headers = upload.get_upload_source_log(upload_id,
                                                     request.session.user)
-    response = send_file(data, mimetype="application/tar+gzip")
+    response: Response = send_file(data, mimetype="application/tar+gzip")
     response.set_etag(headers.get('ETag'))
     return response
 
@@ -420,7 +410,7 @@ def get_upload_service_log() -> Response:
     """
     # Note: status_code not used
     data, _, headers = upload.get_upload_service_log(request.session.user)
-    response = send_file(data, mimetype="application/tar+gzip")
+    response: Response = send_file(data, mimetype="application/tar+gzip")
     response.set_etag(headers.get('ETag'))
     return response
 
@@ -565,7 +555,7 @@ def get_checkpoint_file(upload_id: int, checkpoint_checksum: str) -> Response:
     # Note: status_code is not used
     data, _, headers = upload.get_checkpoint_file\
         (upload_id, checkpoint_checksum, request.session.user)
-    response = send_file(data, mimetype="application/tar+gzip")
+    response: Response = send_file(data, mimetype="application/tar+gzip")
     response.set_etag(headers.get('ETag'))
     return response
 
@@ -594,13 +584,13 @@ def handle_exception(error: HTTPException) -> Response:
 
     # Each Werkzeug HTTP exception has a class attribute called ``code``; we
     # can use that to set the status code on the response.
-    response = make_response(content, error.code)
+    response: Response = make_response(content, error.code)
     return response
 
 
 def _update_headers(response: Response, headers: Dict[str, Any]) -> Response:
     if 'Content-Length' in response.headers:
-        response.headers.remove('Content-Length')
+        response.headers.remove('Content-Length') # type: ignore
     for key, value in headers.items():
-        response.headers.add(key, value)
+        response.headers.add(key, value) # type: ignore
     return response

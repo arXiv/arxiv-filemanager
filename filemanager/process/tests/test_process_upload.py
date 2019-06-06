@@ -20,7 +20,6 @@ from ...arxiv.file import File
 
 from ..upload import Upload
 
-
 VERBOSE = 0
 
 UPLOAD_BASE_DIRECTORY = '/tmp/filemanagment/submissions'
@@ -317,7 +316,7 @@ class TestInternalSupportRoutines(TestCase):
             # Go ahead and deposit file in source directory
             basename = os.path.basename(tfilename)
             # Sanitize file name before saving it
-            filename = secure_filename(basename)
+            filename = secure_filename(basename) # type: ignore
             source_directory = upload.get_source_directory()
             path = os.path.join(source_directory, filename)
             # Remove existing file - should we warn?
@@ -1059,8 +1058,9 @@ class TestUpload(TestCase):
                              "Total number of files matches is 0.")
 
             # Test get_single_file()
-            self.assertEqual(upload.get_single_file(), None,
-                             "This is not a valid single file submission.")
+            with self.assertRaises(FileNotFoundError,
+                                   msg="This is not a valid single file submission."):
+                upload.get_single_file()
 
             # Clean out files. Try exception cases.
             upload.client_remove_all_files()
@@ -1111,8 +1111,9 @@ class TestUpload(TestCase):
                              "Total number of files matches is 1.")
 
             # Test get_single_file()
-            self.assertEqual(upload.get_single_file(), None,
-                             "This is not a valid single file submission.")
+            with self.assertRaises(FileNotFoundError,
+                                   msg="This is not a valid single file submission."):
+                upload.get_single_file()
 
             # Clean out files to get ready for next test.
             upload.client_remove_all_files()

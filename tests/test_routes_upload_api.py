@@ -556,7 +556,7 @@ class TestUploadAPIRoutes(TestCase):
             headers={'Authorization': token}
         )
         self.assertEqual(response.status_code, status.NOT_FOUND,
-                         "Trying to check non-existent should fail.")
+                         f"Trying to check non-existent should fail {upload_data['upload_id']}.")
         #self.assertIn('ETag', response.headers, "Returns an ETag header")
 
         # Try to download non-existent file anyways
@@ -1755,6 +1755,14 @@ class TestUploadAPIRoutes(TestCase):
 
         upload_data: Dict[str, Any] = json.loads(response.data)
 
+
+        # Let's clean out all checkpoints
+        response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all_checkpoints",
+                                    headers={'Authorization': checkpoint_token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+        self.assertEqual(response.status_code, status.OK, "Delete all checkpoints")
+
         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/checkpoint",
                                    headers={'Authorization': token},
                                    #        content_type='application/gzip')
@@ -1842,7 +1850,7 @@ class TestUploadAPIRoutes(TestCase):
                 checkpoint_checksum = item['checksum']
 
         # checkpoint_checksum = checkpoints[0]['checksum']
-        print(f"checkpoint to restore: {checkpoint_checksum}")
+        print(f"***Checkpoint to restore: {checkpoint_checksum}***")
 
 
         # Restore checkpoints

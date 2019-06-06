@@ -13,7 +13,7 @@ from base64 import urlsafe_b64encode
 import io
 import mmap
 import filecmp
-from typing import Optional, Union
+from typing import Optional, Union, BinaryIO, List
 import struct
 
 from pytz import UTC
@@ -21,6 +21,7 @@ from pytz import UTC
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
+from arxiv.users import domain as auth_domain
 from arxiv.base.globals import get_application_config
 from arxiv.base import logging as base_logging
 
@@ -33,7 +34,9 @@ UPLOAD_DELETE_ALL_FILE_FAILED = 'unable to delete all file'
 UPLOAD_FILE_NOT_FOUND = 'file not found'
 UPLOAD_WORKSPACE_NOT_FOUND = 'workspcae not found'
 UPLOAD_WORKSPACE_IS_EMPTY = 'workspace is empty'
-CHECKPOINT_FILE_NOT_FOUND = 'checkpoint file not found'
+UPLOAD_SOURCE_LOG_NOT_FOUND = 'source.log file not found'
+UPLOAD_CHECKPOINT_FILE_NOT_FOUND = 'checkpoint file not found'
+UPLOAD_NOT_SINGLE_FILE = 'upload is not single file submission'
 
 # File types unmacify is interested in
 PC = 'pc'
@@ -62,7 +65,7 @@ class InvalidUploadContentError(ValueError):
 
 
 class EmptyUploadContentError(ValueError):
-    """The upload content payload is invalid."""
+    """The upload content payload is empty."""
 
 
 class NoSourceFilesToCheckpoint(RuntimeError):
@@ -71,8 +74,8 @@ class NoSourceFilesToCheckpoint(RuntimeError):
 
 def _get_base_directory() -> str:
     config = get_application_config()
-    return config.get('UPLOAD_BASE_DIRECTORY',
-                      '/tmp/filemanagment/submissions')
+    return str(config.get('UPLOAD_BASE_DIRECTORY',
+                          '/tmp/filemanagment/submissions'))
 
 
 def is_available() -> bool:
@@ -189,15 +192,15 @@ class Upload:
         """
         self.__upload_id = upload_id
 
-        self.__warnings = []
-        self.__errors = []
-        self.__files = []
+        self.__warnings: List[List[str]] = []
+        self.__errors: List[List[str]] = []
+        self.__files: List[File] = []
         self.__debug = False
 
         # total client upload workspace source directory size (in bytes)
         self.__total_upload_size = 0
 
-        self.__log = ''
+        self.__log: logging.Logger
         self.create_upload_workspace()
         self.create_upload_log()
         # Calculate size just in case client is making request that does
@@ -495,7 +498,7 @@ class Upload:
 
         """
         # Sanitize file name
-        filename = secure_filename(public_file_path)
+        filename = secure_filename(public_file_path)  # type: ignore
 
         # Our UI will never attempt to delete a file path containing components that attempt
         # to escape out of workspace and this would be removed by secure_filename().
@@ -548,7 +551,7 @@ class Upload:
             file_obj = File(file_path, source_directory)
             return file_obj
 
-        return None
+        raise FileNotFoundError(UPLOAD_FILE_NOT_FOUND)
 
     def client_remove_file(self, public_file_path: str) -> bool:
         """Delete a single file.
@@ -579,7 +582,7 @@ class Upload:
         # TODO: Switch to use resolve relative file path to eliminate duplicate code
 
         # Sanitize file name
-        filename = secure_filename(public_file_path)
+        filename = secure_filename(public_file_path)  # type: ignore
 
         # Our UI will never attempt to delete a file path containing components that attempt
         # to escape out of workspace and this would be removed by secure_filename().
@@ -818,7 +821,7 @@ class Upload:
         basename = os.path.basename(file.filename)
 
         # Sanitize file name before saving it
-        filename = secure_filename(basename)
+        filename = secure_filename(basename)  # type: ignore
         self.log(f"Uploded file '{filename}'.")
 
         if basename != filename:
@@ -917,7 +920,7 @@ class Upload:
                 # Hold these until we're done with the file, since file names
                 # can change here.
                 _warnings = []
-                _errors = []
+                _errors: List[str] = []
 
                 file_path = os.path.join(root_directory, file)
                 obj = File(file_path, source_directory)
@@ -1224,7 +1227,7 @@ class Upload:
                 elif file_type == 'image' \
                         and re.search(r'\.(pcx|bmp|wmf|opj|pct|tiff?)$',
                                       file_name, re.IGNORECASE):
-                    self.get_graphic_error_msg(obj)
+                    self.get_graphic_error_msg(file_name)
 
                 # Uuencode file: decode uuencoded file
                 elif file_type == 'uuencoded':
@@ -1448,7 +1451,7 @@ class Upload:
 
         with open(filepath, 'rb+', 0) as infile:
 
-            lastnw = ""
+            lastnw = b""
             end = 0
 
             # Read each line
@@ -1750,12 +1753,12 @@ class Upload:
         broken_filepath = file_obj.filepath
         fixed_filepath = os.path.join(file_obj.dir, file_obj.name + '.fixed')
         orig_type = file_obj.type
-        first_line = "%!\n"
+        first_line: bytes = b"%!\n"
 
         with open(broken_filepath, 'rb', 0) as infile, \
                 open(fixed_filepath, 'wb', 0) as outfile:
 
-            line = ''
+            line: bytes = b''
             line_no = 0
             fixed = False
             stripped = b""
@@ -1841,9 +1844,9 @@ class Upload:
                 os.remove(fixed_filepath)
 
             # Return first line
-            return first_line[0:75]
+            return str(first_line[0:75])
 
-    def check_postscript(self, file_obj: File, tiff_flag: Union[str, None]) -> str:
+    def check_postscript(self, file_obj: File, tiff_flag: Union[str, None]) -> None:
         """
         Check Postscript file for unwanted inclusions.
 
@@ -1905,7 +1908,7 @@ class Upload:
                 mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ) as s:
 
             # Search file for embedded preview markers
-            results = pattern.findall(s)
+            results = pattern.findall(s)  # type: ignore
 
             if results:
                 for match in results:
@@ -2290,7 +2293,7 @@ class Upload:
                           in os.walk(self.get_source_directory()))
         return datetime.fromtimestamp(most_recent, tz=UTC)
 
-    def get_content(self) -> io.BufferedReader:
+    def get_content(self) -> BinaryIO:
         """Get a file-pointer for the packed content tarball."""
         if not self.has_files_on_disk():
             raise FileNotFoundError('No content to get')
@@ -2387,7 +2390,7 @@ class Upload:
         if file_obj is not None:
             return file_obj.filepath
 
-        return ""
+        raise FileNotFoundError(UPLOAD_FILE_NOT_FOUND)
 
     def content_file_exists(self, public_file_path: str) -> bool:
         """
@@ -2427,7 +2430,7 @@ class Upload:
         if file_obj is not None:
             return file_obj.size
 
-        return 0
+        raise FileNotFoundError(UPLOAD_FILE_NOT_FOUND)
 
     def get_content_file_checksum(self, public_file_path: str) -> str:
         """
@@ -2449,9 +2452,9 @@ class Upload:
         if file_obj is not None:
             return file_obj.checksum
 
-        return ""
+        raise FileNotFoundError(UPLOAD_FILE_NOT_FOUND)
 
-    def get_content_file_pointer(self, public_file_path: str) -> io.BytesIO:
+    def get_content_file_pointer(self, public_file_path: str) -> BinaryIO:
         """
         Open specified file and return file pointer.
 
@@ -2470,7 +2473,7 @@ class Upload:
         if file_obj is not None and os.path.exists(file_obj.filepath):
             return open(file_obj.filepath, 'rb')
 
-        return ""
+        raise FileNotFoundError(UPLOAD_FILE_NOT_FOUND)
 
     def get_content_file_last_modified(self, public_file_path: str) -> datetime:
         """
@@ -2522,7 +2525,7 @@ class Upload:
         return os.path.getsize(source_log_path)
 
     @property
-    def source_log_last_modified(self) -> str:
+    def source_log_last_modified(self) -> datetime:
         """
         Last modified date of source log (UTC).
 
@@ -2555,14 +2558,14 @@ class Upload:
 
         return ""
 
-    def get_source_log_file_pointer(self) -> io.BytesIO:
+    def get_source_log_file_pointer(self) -> BinaryIO:
         """Get a file-pointer for source log."""
         source_log_path = self.get_upload_source_log_path()
 
         if os.path.exists(source_log_path):
             return open(source_log_path, 'rb')
 
-        return ""
+        raise FileNotFoundError(UPLOAD_SOURCE_LOG_NOT_FOUND)
 
     def count_file_types(self) -> dict:
         """
@@ -2605,7 +2608,7 @@ class Upload:
 
         return format_list
 
-    def get_single_file(self) -> Optional[File]:
+    def get_single_file(self) -> File:
         """
         Return File object for single-file submission.
 
@@ -2638,7 +2641,7 @@ class Upload:
             msg = "No file found."
             self.add_error("", msg)
 
-        return None
+        raise FileNotFoundError(UPLOAD_NOT_SINGLE_FILE)
 
     def fix_file_ext(self, file_obj: File, new_extension: str) -> Optional[File]:
         """
@@ -2866,7 +2869,7 @@ class Upload:
     # TODO: Should we support admin provided description of checkpoint?
     #
 
-    def resolve_checkpoint_file_obj(self, checkpoint_checksum: str) -> str:
+    def resolve_checkpoint_file_obj(self, checkpoint_checksum: str) -> File:
         """
         Returns File object for checkpoint file.
 
@@ -2890,7 +2893,7 @@ class Upload:
                 if obj.checksum == checkpoint_checksum:
                     return obj
 
-        return None
+        raise FileNotFoundError(UPLOAD_FILE_NOT_FOUND)
 
     def get_checkpoint_file_path(self, checkpoint_checksum: str) -> str:
         """
@@ -2912,7 +2915,7 @@ class Upload:
         if file_obj is not None:
             return file_obj.filepath
 
-        return ""
+        raise FileNotFoundError(UPLOAD_FILE_NOT_FOUND)
 
     def checkpoint_file_exists(self, checkpoint_checksum: str) -> bool:
         """
@@ -2929,12 +2932,14 @@ class Upload:
             True if file exists, False otherwise.
 
         """
-        file_obj = self.resolve_checkpoint_file_obj(checkpoint_checksum)
 
-        if file_obj is not None:
+        try:
+            file_obj = self.resolve_checkpoint_file_obj(checkpoint_checksum)
+
             return os.path.exists(file_obj.filepath)
 
-        return False
+        except FileNotFoundError:
+            return False
 
     def get_checkpoint_file_size(self, checkpoint_checksum: str) -> int:
         """
@@ -2951,11 +2956,11 @@ class Upload:
         """
         file_obj = self.resolve_checkpoint_file_obj(checkpoint_checksum)
         if file_obj is not None:
-            return file_obj.size
+            return int(file_obj.size)
 
-        raise FileNotFoundError(CHECKPOINT_FILE_NOT_FOUND)
+        raise FileNotFoundError(UPLOAD_CHECKPOINT_FILE_NOT_FOUND)
 
-    def get_checkpoint_file_pointer(self, checkpoint_checksum: str) -> io.BytesIO:
+    def get_checkpoint_file_pointer(self, checkpoint_checksum: str) -> BinaryIO:
         """
         Open specified file and return file pointer.
 
@@ -2991,7 +2996,7 @@ class Upload:
 
         return datetime.utcfromtimestamp(os.path.getmtime(file_obj.filepath))
 
-    def create_checkpoint(self, user) -> str:
+    def create_checkpoint(self, user: auth_domain.User) -> str:
         """
         Create a chckpoint (backup) of workspace source files.
 
@@ -3051,7 +3056,7 @@ class Upload:
 
         raise NoSourceFilesToCheckpoint(UPLOAD_WORKSPACE_IS_EMPTY)
 
-    def list_checkpoints(self, user) -> list:
+    def list_checkpoints(self, user: auth_domain.User) -> list:
         """
         Generate a list of checkpoints.
 
@@ -3088,12 +3093,12 @@ class Upload:
 
         return checkpoints
 
-    def delete_checkpoint(self, checksum: str, user) -> None:
+    def delete_checkpoint(self, checksum: str, user: auth_domain.User) -> None:
         """Remove specified checkpoint."""
         checkpoint_list = self.list_checkpoints(user)
 
         if not checkpoint_list:
-            raise FileNotFoundError(CHECKPOINT_FILE_NOT_FOUND)
+            raise FileNotFoundError(UPLOAD_CHECKPOINT_FILE_NOT_FOUND)
 
         found = False
         for checkpoint in checkpoint_list:
@@ -3118,9 +3123,9 @@ class Upload:
                 log_msg = f"ERROR: Checkpoint not found: {checksum}."
             self.log(log_msg)
 
-            raise FileNotFoundError(CHECKPOINT_FILE_NOT_FOUND)
+            raise FileNotFoundError(UPLOAD_CHECKPOINT_FILE_NOT_FOUND)
 
-    def delete_all_checkpoints(self, user) -> None:
+    def delete_all_checkpoints(self, user: auth_domain.User) -> None:
         """Remove all checkpoints."""
         checkpoint_list = self.list_checkpoints(user)
 
@@ -3128,12 +3133,12 @@ class Upload:
             self.delete_checkpoint(checkpoint['checksum'], user)
 
         if user:
-            log_msg = f"Deleted ALL checkpoint: {checkpoint['name']} ['{user.username}']."
+            log_msg = f"Deleted ALL checkpoints: ['{user.username}']."
         else:
-            log_msg = f"Deleted ALL checkpoint: {checkpoint['name']}."
+            log_msg = f"Deleted ALL checkpoints."
         self.log(log_msg)
 
-    def restore_checkpoint(self, checksum: str, user) -> None:
+    def restore_checkpoint(self, checksum: str, user: auth_domain.User) -> None:
         """
         Restore a previous checkpoint.
 

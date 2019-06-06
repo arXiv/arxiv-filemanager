@@ -32,7 +32,7 @@ def is_available() -> bool:
         return False
 
 
-def retrieve(upload_id: int, skip_cache: bool = False) -> Optional[Upload]:
+def retrieve(upload_id: int, skip_cache: bool = False) -> Upload:
     """
     Get data about a upload.
 
@@ -85,7 +85,7 @@ def retrieve(upload_id: int, skip_cache: bool = False) -> Optional[Upload]:
     args = {}
     args['upload_id'] = upload_data.upload_id
     args['owner_user_id'] = upload_data.owner_user_id
-    args['archive'] = upload_data.archive
+    #args['archive'] = upload_data.archive
     args['created_datetime'] = upload_data.created_datetime.replace(tzinfo=UTC)
     args['modified_datetime'] = upload_data.modified_datetime.replace(tzinfo=UTC)
     args['state'] = upload_data.state
@@ -127,7 +127,7 @@ def store(new_upload_data: Upload) -> Upload:
         When there is some other problem.
     """
     upload_data = DBUpload(owner_user_id=new_upload_data.owner_user_id,
-                           archive=new_upload_data.archive,
+                           #archive=new_upload_data.archive,
                            created_datetime=new_upload_data.created_datetime,
                            modified_datetime=new_upload_data.modified_datetime,
                            state=new_upload_data.state)
@@ -167,7 +167,7 @@ def update(upload_update_data: Upload) -> None:
 
     # owner_user_id, archive
     upload_data.owner_user_id = upload_update_data.owner_user_id
-    upload_data.archive = upload_update_data.archive
+    #upload_data.archive = upload_update_data.archive
 
     # We won't let client update created_datetime
 

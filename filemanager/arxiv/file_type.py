@@ -364,9 +364,9 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
         # LaTeX and TeX macros
         if line_no <= 12 and re.search(rb'^\r?%&([^\s\n]+)', line):
             match = re.search(rb'^\r?%&([^\s\n]+)', line)
-            latex_type = ''
+            latex_type: bytes = b''
             if match is not None:
-                latex_type = re.search(rb'^\r?%&([^\s\n]+)', line).group(1)
+                latex_type = re.search(rb'^\r?%&([^\s\n]+)', line).group(1) # type: ignore
 
                 if latex_type in ('latex209', 'biglatex', 'latex', 'LaTeX'):
                     return 'TYPE_LATEX', str(latex_type), ''
@@ -404,7 +404,7 @@ def guess_file_type(filepath: str) -> Tuple[str, str, str]:
         if re.search(rb'(^|\r)\s*(\\font|\\magnification|\\input|\\def|\\special|'
                      + rb'\\baselineskip|\\begin)', line):
             maybe_tex = 1
-            match = re.search(rb'(^|\r)\s*(\\font|\\magnification|\\input|\\def|'
+            match = re.search(rb'(^|\r)\s*(\\font|\\magnification|\\input|\\def|' # type: ignore
                               + rb'\\special|\\baselineskip|\\begin)',
                               line).group(2)
             if set == 0:
