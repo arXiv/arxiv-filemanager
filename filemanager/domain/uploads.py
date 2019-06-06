@@ -1,7 +1,9 @@
 """Describes the data that will be passed around inside of the service."""
 
-from typing import List, Callable, Optional, Any, Type, Dict
+from typing import List, Callable, Optional, Any, Type, Dict, Mapping, Union, \
+    Iterable
 import os
+from collections import defaultdict, Counter
 from datetime import datetime
 from enum import Enum
 from dataclasses import dataclass, field
@@ -40,8 +42,8 @@ class UploadedFile:
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     actions: List[str] = field(default_factory=list)
-    _meta: Dict[str, Any] = field(default_factory=dict)
-    """A register for checkers to store state between runs."""
+    meta: Dict[str, Any] = field(default_factory=dict)
+    """A register for checkers/strategies to store state between runs."""
 
     @property
     def name(self) -> str:
@@ -73,10 +75,20 @@ class UploadedFile:
             return 'Ancillary files directory'
         return 'Directory'
 
+    @property
+    def is_ancillary(self) -> bool:
+        """
+        Determine whether or not this file is an ancillary file.
+
+        Ancillary files are not considered first-class citizens in the e-print
+        source package.
+        """
+        return self.path.startswith('anc/')
+
 
 @dataclass
 class UploadWorkspace:
-    """All information about an upload."""
+    """An upload workspace contains a set of submission source files."""
 
     # Various state settings
 
@@ -139,6 +151,21 @@ class UploadWorkspace:
         Workspace is normally in this state.
         """
 
+    class SourceType(Enum):
+        """High-level type of the submission source as a whole."""
+
+        UNKNOWN = 'unknown'
+        INVALID = 'invalid'
+        POSTSCRIPT = 'ps'
+        PDF = 'pdf'
+        HTML = 'html'
+        TEX = 'tex'
+
+        @property
+        def is_unknown(self) -> bool:
+            """Indicate whether this is the :const:`.UNKNOWN` type."""
+            return self is self.UNKNOWN
+
     upload_id: int
     """Unique ID for the upload workspace."""
 
@@ -193,10 +220,77 @@ class UploadWorkspace:
     strategy: ICheckingStrategy
     """Strategy for performing file checks."""
 
-    files: List[UploadedFile] = field(default_factory=list)
-    """All of the files in this workspace."""
+    source_type: SourceType = field(default=SourceType.UNKNOWN)
+
+    errors: Mapping[str, List[str]] \
+        = field(default_factory=lambda: defaultdict(list))
+    warnings: Mapping[str, List[str]] \
+        = field(default_factory=lambda: defaultdict(list))
+    actions: Mapping[str, List[str]] \
+        = field(default_factory=lambda: defaultdict(list))
+
+    files: Dict[str, UploadedFile] = field(default_factory=list)
+    """All of the files in this workspace. Keys are path-like."""
+
+    def add_file(self, uploaded_file: UploadedFile) -> None:
+        """Add (or replace) a file in this workspace."""
+        self.files[uploaded_file.path] = uploaded_file
+        self.strategy.check(self, self.checkers)
+
+    def rename_file(self, uploaded_file: UploadedFile, new_path: str) -> None:
+        former_name = uploaded_file.path
+        self.files.pop(former_name)   # Discard old ref.
+        uploaded_file.path = new_path
+        self.files[uploaded_file.path] = uploaded_file
+        self.errors[uploaded_file.path] = self.errors.pop(former_name)
+        self.warnings[uploaded_file.path] = self.warnings.pop(former_name)
+        self.actions[uploaded_file.path] = self.actions.pop(former_name)
 
     def add_files(self, *uploaded_files: UploadedFile) -> None:
         """Add new :class:`.UploadedFile`s to this workspace."""
-        self.files.extend(uploaded_files)
+        for uploaded_file in uploaded_files:
+            self.files[uploaded_file.path] = uploaded_file
         self.strategy.check(self, self.checkers)
+
+    def add_error(self, uploaded_file: UploadedFile, message: str) -> None:
+        uploaded_file.errors.append(message)
+        self.errors[uploaded_file.path].append(message)
+
+    def add_warning(self, uploaded_file: UploadedFile, message: str) -> None:
+        uploaded_file.warnings.append(message)
+        self.warnings[uploaded_file.path].append(message)
+
+    def add_non_file_warning(self, message: str) -> None:
+        """Add a warning for the workspace that is not specific to a file."""
+        self.warnings['__all__'].append(message)
+
+    def add_action(self, uploaded_file: UploadedFile, message: str) -> None:
+        uploaded_file.actions.append(message)
+        self.actions[uploaded_file.path].append(message)
+
+    def set_source_type(self, source_type: SourceType,
+                        force: bool = False) -> None:
+        if self.source_type is not self.SourceType.UNKOWN and not force:
+            # Nothing to do; already set.
+            return
+        self.source_type = source_type
+
+    def iter_files(self) -> Iterable[UploadedFile]:
+        return self.files.values()
+
+    @property
+    def file_count(self) -> int:
+        """The total number of non-ancillary files in this workspace."""
+        return len((f for f in self.iter_files() if not f.is_ancillary))
+
+    def get_file_type_counts(self) -> Mapping[Union[FileType, str], int]:
+        """Get the number of files of each type in the workspace."""
+        counts = Counter()
+        for uploaded_file in self.iter_files():
+            counts['all_files'] += 1
+            if uploaded_file.is_ancillary:
+                counts['ancillary'] += 1
+                continue
+            counts[uploaded_file.file_type] += 1
+        counts['files'] = counts['all_files'] - counts['ancillary']
+        return counts

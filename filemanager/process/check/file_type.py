@@ -13,6 +13,37 @@ from .base import BaseChecker
 
 logger = logging.getLogger(__name__)
 
+
+class FileTypeChecker(BaseChecker):
+    """Attempt to check the :class:`.FileType` of an :class:`.UploadedFile`."""
+
+    def check_TYPE_UNKNOWN(self, workspace: UploadWorkspace,
+                           uploaded_file: UploadedFile) -> None:
+        """Perform file type check."""
+        for check_type in _type_checkers:
+            file_type = check_type(workspace, uploaded_file)
+            if file_type is not None:
+                uploaded_file.file_type = file_type
+                return
+
+        # We need up to the first kilobyte of the file.
+        with open(workspace.full_path(uploaded_file), 'rb') as f:
+            content = f.read(1024)
+
+        for check_type in _content_type_checkers:
+            file_type = check_type(workspace, uploaded_file, content)
+            if file_type is not None:
+                uploaded_file.file_type = file_type
+                return
+
+        file_type = _heavy_introspection(workspace, uploaded_file)
+        if file_type is not None:
+            uploaded_file.file_type = file_type
+
+        # Failed type identification
+        uploaded_file.file_type = FileType.TYPE_FAILED    # , '', ''
+
+
 # These are compiled ahead of time, since we may use them many many times in a
 # single request.
 ARXIV_COMMAND_FILE = re.compile(r'(^|/)00README\.XXX$')
@@ -458,71 +489,42 @@ def _type_of_latex2e(f: io.BytesIO, count: int) -> FileType:
     return FileType.TYPE_LATEX2e    # ', '', ''
 
 
-class FileTypeChecker(BaseChecker):
-    """Attempt to check the :class:`.FileType` of an :class:`.UploadedFile`."""
+_type_checkers: Callable[[UploadWorkspace, UploadedFile],
+                        Optional[FileType]] = [
+    _check_exists,
+    # Currently the following type identification relies on the extension
+    # to identify the type without inspecting content of file.
+    _check_command,
+    _check_dvips_temp,
+    _check_missing_font,
+    _check_aux_tex,
+    _check_abs_file,
+    _check_xfig,
+    _check_notebook,
+    _check_input,
+    _check_html,
+    _check_encrypted,
+    _check_zero_size,
+]
+"""Checks that do not require inspecting content."""
 
-    type_checkers: Callable[[UploadWorkspace, UploadedFile],
-                            Optional[FileType]] = [
-        _check_exists,
-        # Currently the following type identification relies on the extension
-        # to identify the type without inspecting content of file.
-        _check_command,
-        _check_dvips_temp,
-        _check_missing_font,
-        _check_aux_tex,
-        _check_abs_file,
-        _check_xfig,
-        _check_notebook,
-        _check_input,
-        _check_html,
-        _check_encrypted,
-        _check_zero_size,
-    ]
-    """Checks that do not require inspecting content."""
+_content_type_checkers: Callable[[UploadWorkspace, UploadedFile, bytes],
+                                 Optional[FileType]] = [
+    _check_compressed,
+    _check_gzipped,
+    _check_bzip2,
+    _check_posix_tarfile,
+    _check_dvi,
+    _check_gif8,
+    _check_png,
+    _check_tiff,
+    _check_jpeg,
+    _check_mpeg_image,
+    _check_zip_and_extensions,
+    _check_rar,
+    _check_dos_eps,
+    _check_pdf,
+    _check_mac,
 
-    content_type_checkers: Callable[[UploadWorkspace, UploadedFile, bytes],
-                                    Optional[FileType]] = [
-        _check_compressed,
-        _check_gzipped,
-        _check_bzip2,
-        _check_posix_tarfile,
-        _check_dvi,
-        _check_gif8,
-        _check_png,
-        _check_tiff,
-        _check_jpeg,
-        _check_mpeg_image,
-        _check_zip_and_extensions,
-        _check_rar,
-        _check_dos_eps,
-        _check_pdf,
-        _check_mac,
-
-    ]
-    """Checks requiring content inspection."""
-
-    def check_UNKNOWN(self, workspace: UploadWorkspace,
-                      uploaded_file: UploadedFile) -> None:
-        """Perform file type check."""
-        for check_type in self.type_checkers:
-            file_type = check_type(workspace, uploaded_file)
-            if file_type is not None:
-                uploaded_file.file_type = file_type
-                return
-
-        # We need up to the first kilobyte of the file.
-        with open(workspace.full_path(uploaded_file), 'rb') as f:
-            content = f.read(1024)
-
-        for check_type in self.content_type_checkers:
-            file_type = check_type(workspace, uploaded_file, content)
-            if file_type is not None:
-                uploaded_file.file_type = file_type
-                return
-
-        file_type = _heavy_introspection(workspace, uploaded_file)
-        if file_type is not None:
-            uploaded_file.file_type = file_type
-
-        # Failed type identification
-        uploaded_file.file_type = FileType.TYPE_FAILED    # , '', ''
+]
+"""Checks requiring content inspection."""
