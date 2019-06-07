@@ -8,85 +8,85 @@ import os.path
 
 type_tests = []
 #type_tests.append(['garbage.txt', 'shit'])
-type_tests.append(['00README.XXX', 'TYPE_README'])
+type_tests.append(['00README.XXX', 'README'])
 # Ignore/Abort
-type_tests.append(['head.tmp', 'TYPE_ALWAYS_IGNORE'])  # new
-type_tests.append(['body.tmp', 'TYPE_ALWAYS_IGNORE'])  # new
-type_tests.append(['missfont.log', 'TYPE_ABORT'])  # new
+type_tests.append(['head.tmp', 'ALWAYS_IGNORE'])  # new
+type_tests.append(['body.tmp', 'ALWAYS_IGNORE'])  # new
+type_tests.append(['missfont.log', 'ABORT'])  # new
 # TeX Auxillary Files
-type_tests.append(['ms.bbl', 'TYPE_TEXAUX'])  # new
-type_tests.append(['ol.sty', 'TYPE_TEXAUX'])  # new
+type_tests.append(['ms.bbl', 'TEXAUX'])  # new
+type_tests.append(['ol.sty', 'TEXAUX'])  # new
 
-type_tests.append(['SciPost.cls', 'TYPE_TEXAUX'])  # new
+type_tests.append(['SciPost.cls', 'TEXAUX'])  # new
 # archives
-type_tests.append(['compressed.Z', 'TYPE_COMPRESSED'])
-type_tests.append(['gzipped.gz', 'TYPE_GZIPPED'])
+type_tests.append(['compressed.Z', 'COMPRESSED'])
+type_tests.append(['gzipped.gz', 'GZIPPED'])
 # BZIP
-type_tests.append(['short-1.txt.bz2', 'TYPE_BZIP2'])
-type_tests.append(['short-4.txt.bz2', 'TYPE_BZIP2'])
-type_tests.append(['short-9.txt.bz2', 'TYPE_BZIP2'])
+type_tests.append(['short-1.txt.bz2', 'BZIP2'])
+type_tests.append(['short-4.txt.bz2', 'BZIP2'])
+type_tests.append(['short-9.txt.bz2', 'BZIP2'])
 # Tar
-type_tests.append(['testtar.tar', 'TYPE_TAR'])
+type_tests.append(['testtar.tar', 'TAR'])
 
-type_tests.append(['verlinde.dvi', 'TYPE_DVI'])
+type_tests.append(['verlinde.dvi', 'DVI'])
 
-# type_tests.append(['image.gif', 'TYPE_IMAGE'])
+# type_tests.append(['image.gif', 'IMAGE'])
 # Image
-type_tests.append(['image.tif', 'TYPE_IMAGE'])
-type_tests.append(['image.jpg', 'TYPE_IMAGE'])
-type_tests.append(['image.png', 'TYPE_IMAGE'])
-type_tests.append(['image.gif', 'TYPE_IMAGE'])  # new
-type_tests.append(['centaur_1_first1k.mpg', 'TYPE_ANIM'])
+type_tests.append(['image.tif', 'IMAGE'])
+type_tests.append(['image.jpg', 'IMAGE'])
+type_tests.append(['image.png', 'IMAGE'])
+type_tests.append(['image.gif', 'IMAGE'])  # new
+type_tests.append(['centaur_1_first1k.mpg', 'ANIM'])
 
-type_tests.append(['pipnss.jar', 'TYPE_JAR'])
-type_tests.append(['odf_test.odt', 'TYPE_ODF'])
-type_tests.append(['Hellotest.docx', 'TYPE_DOCX'])
-type_tests.append(['Agenda_Elegant_Style_EN.Level1.docx', 'TYPE_DOCX'])
-type_tests.append(['Helloworld.xlsx', 'TYPE_XLSX'])
-type_tests.append(['holtxdoc.zip', 'TYPE_ZIP'])
-type_tests.append(['Hellotest.not_docx_ext', 'TYPE_ZIP'])
-type_tests.append(['Helloworld.not_xlsx_ext', 'TYPE_ZIP'])
-type_tests.append(['odf_test.not_odt_ext', 'TYPE_ZIP'])
+type_tests.append(['pipnss.jar', 'JAR'])
+type_tests.append(['odf_test.odt', 'ODF'])
+type_tests.append(['Hellotest.docx', 'DOCX'])
+type_tests.append(['Agenda_Elegant_Style_EN.Level1.docx', 'DOCX'])
+type_tests.append(['Helloworld.xlsx', 'XLSX'])
+type_tests.append(['holtxdoc.zip', 'ZIP'])
+type_tests.append(['Hellotest.not_docx_ext', 'ZIP'])
+type_tests.append(['Helloworld.not_xlsx_ext', 'ZIP'])
+type_tests.append(['odf_test.not_odt_ext', 'ZIP'])
 
-type_tests.append(['0604408.pdf', 'TYPE_RAR'])
-type_tests.append(['minimal.pdf', 'TYPE_PDF'])  # new
+type_tests.append(['0604408.pdf', 'RAR'])
+type_tests.append(['minimal.pdf', 'PDF'])  # new
 
 # TeX
-type_tests.append(['polch.tex', 'TYPE_LATEX'])
-type_tests.append(['paper-t4.1_Vienna_preprint.tex', 'TYPE_LATEX2e'])
-type_tests.append(['minMac.tex', 'TYPE_LATEX2e', '', 'This file was generated on MAC with \r\n'])
-type_tests.append(['pascal_petit.tex', 'TYPE_PDFLATEX'])
+type_tests.append(['polch.tex', 'LATEX'])
+type_tests.append(['paper-t4.1_Vienna_preprint.tex', 'LATEX2e'])
+type_tests.append(['minMac.tex', 'LATEX2e', '', 'This file was generated on MAC with \r\n'])
+type_tests.append(['pascal_petit.tex', 'PDFLATEX'])
 
 # a \pdfoutput=1 may come in various places, all valid
-type_tests.append(['pdfoutput_before_documentclass.tex', 'TYPE_PDFLATEX'])
-type_tests.append(['pdfoutput_sameline_documentclass.tex', 'TYPE_PDFLATEX'])
-type_tests.append(['pdfoutput_after_documentclass.tex', 'TYPE_PDFLATEX'])
-type_tests.append(['pdfoutput_after_documentclass_big_comment_before.tex', 'TYPE_PDFLATEX'])
+type_tests.append(['pdfoutput_before_documentclass.tex', 'PDFLATEX'])
+type_tests.append(['pdfoutput_sameline_documentclass.tex', 'PDFLATEX'])
+type_tests.append(['pdfoutput_after_documentclass.tex', 'PDFLATEX'])
+type_tests.append(['pdfoutput_after_documentclass_big_comment_before.tex', 'PDFLATEX'])
 # but if we put it too late it is ignored
-type_tests.append(['pdfoutput_too_far_after_documentclass.tex', 'TYPE_LATEX2e'])
-type_tests.append(['pdfoutput_too_far_after_documentclass_big_comment_before.tex', 'TYPE_LATEX2e'])
+type_tests.append(['pdfoutput_too_far_after_documentclass.tex', 'LATEX2e'])
+type_tests.append(['pdfoutput_too_far_after_documentclass_big_comment_before.tex', 'LATEX2e'])
 # EPS
-type_tests.append(['dos_eps_1.eps', 'TYPE_DOS_EPS'])
-type_tests.append(['dos_eps_2.eps', 'TYPE_DOS_EPS'])
+type_tests.append(['dos_eps_1.eps', 'DOS_EPS'])
+type_tests.append(['dos_eps_2.eps', 'DOS_EPS'])
 
 # Need MAC
 
 # font files must not be detected as simple PS
-type_tests.append(['rtxss.pfb', 'TYPE_PS_FONT'])
-type_tests.append(['c059036l.pfb', 'TYPE_PS_FONT'])
-type_tests.append(['hrscs.pfa', 'TYPE_PS_FONT'])
-type_tests.append(['bchbi.pfa', 'TYPE_PS_FONT'])
-type_tests.append(['mutau2-sub_first10kB.tar', 'TYPE_PS_PC', '',
-                   'Should really be TYPE_TAR but this is old pre-posix tar which we will not support. Doing so would require re-implementation of the c-code used by the unix file command, there are no magic codes for this. http://issues.library.cornell.edu/browse/ARXIVDEV-146'])
+type_tests.append(['rtxss.pfb', 'PS_FONT'])
+type_tests.append(['c059036l.pfb', 'PS_FONT'])
+type_tests.append(['hrscs.pfa', 'PS_FONT'])
+type_tests.append(['bchbi.pfa', 'PS_FONT'])
+type_tests.append(['mutau2-sub_first10kB.tar', 'PS_PC', '',
+                   'Should really be TAR but this is old pre-posix tar which we will not support. Doing so would require re-implementation of the c-code used by the unix file command, there are no magic codes for this. http://issues.library.cornell.edu/browse/ARXIVDEV-146'])
 # error cases
-type_tests.append(['10240_null_chars.tar', 'TYPE_FAILED'])
-type_tests.append(['file_does_not_exit', 'TYPE_FAILED'])
+type_tests.append(['10240_null_chars.tar', 'FAILED'])
+type_tests.append(['file_does_not_exit', 'FAILED'])
 
-type_tests.append(['fmultipart.txt', 'TYPE_FAILED'])
-type_tests.append(['multipart.txt', 'TYPE_MULTI_PART_MIME'])
-type_tests.append(['one.ps', 'TYPE_POSTSCRIPT'])
-type_tests.append(['index.html', 'TYPE_HTML'])
-type_tests.append(['sample.bib', 'TYPE_BIBTEX'])  # new
+type_tests.append(['fmultipart.txt', 'FAILED'])
+type_tests.append(['multipart.txt', 'MULTI_PART_MIME'])
+type_tests.append(['one.ps', 'POSTSCRIPT'])
+type_tests.append(['index.html', 'HTML'])
+type_tests.append(['sample.bib', 'BIBTEX'])  # new
 
 name_tests = []
 
@@ -125,50 +125,50 @@ class TestGuessFileType(TestCase):
 
     def test_get_type_name(self):
         """Test human readable type name lookup."""
-        self.assertEqual(get_type_name('TYPE_LATEX'), 'LaTeX', 'Lookup type name')
-        self.assertEqual(get_type_name('TYPE_TAR'), 'TAR archive', 'Lookup type name')
-        self.assertEqual(get_type_name('TYPE_DAVID'), 'unknown', 'Lookup name for non existent type')
+        self.assertEqual(get_type_name('LATEX'), 'LaTeX', 'Lookup type name')
+        self.assertEqual(get_type_name('TAR'), 'TAR archive', 'Lookup type name')
+        self.assertEqual(get_type_name('DAVID'), 'unknown', 'Lookup name for non existent type')
 
 
     def test_is_tex_type(self):
         """Test that TeX file types are identified correctly."""
-        self.assertTrue(is_tex_type('TYPE_LATEX'), 'Expected TeX file type')
-        self.assertTrue(is_tex_type('TYPE_TEX'), 'Expected TeX file type')
-        self.assertTrue(is_tex_type('TYPE_TEX_priority2'), 'Expected TeX file type')
-        self.assertFalse(is_tex_type('TYPE_HTML'), 'Expected non-TeX file type')
+        self.assertTrue(is_tex_type('LATEX'), 'Expected TeX file type')
+        self.assertTrue(is_tex_type('TEX'), 'Expected TeX file type')
+        self.assertTrue(is_tex_type('TEX_priority2'), 'Expected TeX file type')
+        self.assertFalse(is_tex_type('HTML'), 'Expected non-TeX file type')
 
 
     def test_type_priority(self):
         """Spot check type priorities."""
-        self.assertEqual(get_type_priority('TYPE_DOES_NOT_EXIST'), 0,
+        self.assertEqual(get_type_priority('DOES_NOT_EXIST'), 0,
                          'Unknown type should return lowest priorit=0')
-        self.assertLess(get_type_priority('TYPE_BIBTEX'), get_type_priority('TYPE_TEX'),
+        self.assertLess(get_type_priority('BIBTEX'), get_type_priority('TEX'),
                         'TeX source higher priority than BibTeX')
-        self.assertLess(get_type_priority('TYPE_TEX'), get_type_priority('TYPE_PDFTEX'),
+        self.assertLess(get_type_priority('TEX'), get_type_priority('PDFTEX'),
                         'PDFTEX is higher priority then plain TEX source.')
-        self.assertLess(get_type_priority('TYPE_LATEX'), get_type_priority('TYPE_LATEX2e'),
+        self.assertLess(get_type_priority('LATEX'), get_type_priority('LATEX2e'),
                         'PDFTEX is higher priority then plain TEX source.')
-        self.assertLess(get_type_priority('TYPE_LATEX2e'), get_type_priority('TYPE_PDFLATEX'),
+        self.assertLess(get_type_priority('LATEX2e'), get_type_priority('PDFLATEX'),
                         'PDFTEX is higher priority then plain TEX source.')
 
-        self.assertLess(get_type_priority('TYPE_LATEX'), get_type_priority('TYPE_README'),
+        self.assertLess(get_type_priority('LATEX'), get_type_priority('README'),
                         'README directives file higher priority than TeX source')
 
         # Add some specific priority tests to catch inadvertant changes to new list
-        self.assertEqual(get_type_priority('TYPE_ABORT'), 1,
+        self.assertEqual(get_type_priority('ABORT'), 1,
                          'Expect signal for immediate stop.')
-        self.assertEqual(get_type_priority('TYPE_FAILED'), 2,
-                         'Expect priority for TYPE_FAILED type guess.')
-        self.assertEqual(get_type_priority('TYPE_PDF'), 13,
-                         'Expect priority for TYPE_PDF type guess.')
-        self.assertEqual(get_type_priority('TYPE_TEX'), 18,
-                         'Expect priority for TYPE_TEX type guess.')
-        self.assertEqual(get_type_priority('TYPE_LATEX'), 24,
-                         'Expect priority for TYPE_LATEX type guess.')
-        self.assertEqual(get_type_priority('TYPE_ZIP'), 39,
-                         'Expect priority for TYPE_ZIP type guess.')
-        self.assertEqual(get_type_priority('TYPE_INCLUDE'), 48,
-                         'Expect priority for TYPE_INCLUDE type guess.')
+        self.assertEqual(get_type_priority('FAILED'), 2,
+                         'Expect priority for FAILED type guess.')
+        self.assertEqual(get_type_priority('PDF'), 13,
+                         'Expect priority for PDF type guess.')
+        self.assertEqual(get_type_priority('TEX'), 18,
+                         'Expect priority for TEX type guess.')
+        self.assertEqual(get_type_priority('LATEX'), 24,
+                         'Expect priority for LATEX type guess.')
+        self.assertEqual(get_type_priority('ZIP'), 39,
+                         'Expect priority for ZIP type guess.')
+        self.assertEqual(get_type_priority('INCLUDE'), 48,
+                         'Expect priority for INCLUDE type guess.')
 
 
 class TestExternalMethods(TestCase):
@@ -182,5 +182,5 @@ class TestExternalMethods(TestCase):
         self.assertEqual(name('LATEX'), 'LaTeX', 'Lookup type name')
         self.assertTrue(_is_tex_type('LATEX'), 'Expected TeX file type')
         self.assertTrue(_is_tex_type('LATEX2E'), 'Expected TeX file type')
-        self.assertTrue(_is_tex_type('TYPE_TEX_PRIORITY'), 'Expected TeX file type')
-        self.assertFalse(_is_tex_type('TYPE_TEX_FAKE'), 'Expected non-TeX file type')
+        self.assertTrue(_is_tex_type('TEX_PRIORITY'), 'Expected TeX file type')
+        self.assertFalse(_is_tex_type('TEX_FAKE'), 'Expected non-TeX file type')

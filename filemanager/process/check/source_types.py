@@ -11,8 +11,19 @@ from .base import BaseChecker
 logger = logging.getLogger(__name__)
 
 
-class SourceTypeChecker(BaseChecker):
+class InferSourceType(BaseChecker):
     """Attempt to determine the source type for the workspace as a whole."""
+
+    def check(self, workspace: UploadWorkspace,
+              u_file: UploadedFile) -> None:
+        """Check for single-file TeX source package."""
+        if workspace.file_count != 1:
+            return
+        if u_file.is_ancillary or u_file.is_always_ignore:
+            workspace.set_source_type(UploadWorkspace.SourceType.INVALID,
+                                      force=True)
+            workspace.add_non_file_error('Found single ancillary file. Invalid'
+                                         ' submission.')
 
     def check_workspace(self, workspace: UploadWorkspace) -> None:
         """Determine the source type for the workspace as a whole."""
@@ -43,7 +54,7 @@ class SourceTypeChecker(BaseChecker):
             type_counts['ignore'], type_counts['directory'],
             type_counts['image']
         ))
-        if type_counts['files'] == type_counts[FileType.TYPE_INVALID]:
+        if type_counts['files'] == type_counts[FileType.INVALID]:
             workspace.set_source_type(UploadWorkspace.SourceType.INVALID)
             workspace.add_non_file_warning(
                 "All files are auto-ignore. If you intended to withdraw the"
@@ -64,43 +75,43 @@ class SourceTypeChecker(BaseChecker):
             # Default source type is TEX
             workspace.set_source_type(UploadWorkspace.SourceType.TEX)
 
-    def check_TYPE_TEX(self, workspace: UploadWorkspace,
-                       uploaded_file: UploadedFile) -> None:
+    def check_TEX(self, workspace: UploadWorkspace,
+                       u_file: UploadedFile) -> None:
         """Check for single-file TeX source package."""
         if workspace.source_type.is_unknown and workspace.file_count == 1:
             workspace.set_source_type(UploadWorkspace.SourceType.TEX)
             return
 
-    def check_TYPE_POSTSCRIPT(self, workspace: UploadWorkspace,
-                              uploaded_file: UploadedFile) -> None:
+    def check_POSTSCRIPT(self, workspace: UploadWorkspace,
+                              u_file: UploadedFile) -> None:
         """Check for single-file PostScript source package."""
         if workspace.source_type.is_unknown and workspace.file_count == 1:
             workspace.set_source_type(UploadWorkspace.SourceType.POSTSCRIPT)
 
-    def check_TYPE_PDF(self, workspace: UploadWorkspace,
-                       uploaded_file: UploadedFile) -> None:
+    def check_PDF(self, workspace: UploadWorkspace,
+                       u_file: UploadedFile) -> None:
         """Check for single-file PDF source package."""
         if workspace.source_type.is_unknown and workspace.file_count == 1:
             workspace.set_source_type(UploadWorkspace.SourceType.PDF)
 
-    def check_TYPE_HTML(self, workspace: UploadWorkspace,
-                        uploaded_file: UploadedFile) -> None:
+    def check_HTML(self, workspace: UploadWorkspace,
+                        u_file: UploadedFile) -> None:
         """Check for single-file HTML source package."""
         if workspace.source_type.is_unknown and workspace.file_count == 1:
             workspace.set_source_type(UploadWorkspace.SourceType.HTML)
 
-    def check_TYPE_FAILED(self, workspace: UploadWorkspace,
-                          uploaded_file: UploadedFile) -> None:
+    def check_FAILED(self, workspace: UploadWorkspace,
+                          u_file: UploadedFile) -> None:
         """Check for single-file source with failed type detection."""
         if workspace.source_type.is_unknown and workspace.file_count == 1:
             workspace.set_source_type(UploadWorkspace.SourceType.INVALID)
-            workspace.add_error(uploaded_file,
+            workspace.add_error(u_file,
                                 'Could not determine file type.')
 
     def check_finally(self, workspace: UploadWorkspace,
-                      uploaded_file: UploadedFile) -> None:
+                      u_file: UploadedFile) -> None:
         """Check for unknown single-file source."""
         if workspace.source_type.is_unknown and workspace.file_count == 1:
             workspace.set_source_type(UploadWorkspace.SourceType.INVALID)
-            workspace.add_error(uploaded_file,
+            workspace.add_error(u_file,
                                 'Could not determine file type.')

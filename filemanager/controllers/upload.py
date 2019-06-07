@@ -253,7 +253,7 @@ def client_delete_file(upload_id: int, public_file_path: str) -> Response:
         upload_workspace = UploadWorkspace(upload_id)
 
         # Call routine that will do the actual work
-        upload_workspace.client_remove_file(public_file_path)
+        upload_workspace.client_remove(public_file_path)
 
     except IOError:
         logger.error("%s: Delete file request failed ", upload_id)

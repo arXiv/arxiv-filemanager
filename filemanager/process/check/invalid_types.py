@@ -9,7 +9,7 @@ from .base import BaseChecker
 logger = logging.getLogger(__name__)
 
 
-class FlagInvalidFileTypes(BaseChecker):
+class FlagInvalidSourceTypes(BaseChecker):
     """Flag any invalid source types."""
 
     DOCX_ERROR_MESSAGE = (
@@ -31,37 +31,48 @@ class FlagInvalidFileTypes(BaseChecker):
         "This file appears to be a single auxiliary TeX file."
     )
 
-    def check_TYPE_DOCX(self, workspace: UploadWorkspace,
-                        uploaded_file: UploadedFile) -> None:
+    def check_DOCX(self, workspace: UploadWorkspace,
+                        u_file: UploadedFile) -> None:
         """We no longer support DOCX."""
         if workspace.file_count == 1:
             workspace.set_source_type(UploadWorkspace.SourceType.INVALID)
-            workspace.add_error(uploaded_file, self.DOCX_ERROR_MESSAGE)
+            workspace.add_error(u_file, self.DOCX_ERROR_MESSAGE)
 
-    def check_TYPE_ODF(self, workspace: UploadWorkspace,
-                       uploaded_file: UploadedFile) -> None:
+    def check_ODF(self, workspace: UploadWorkspace,
+                       u_file: UploadedFile) -> None:
         """We no longer support ODF."""
         if workspace.file_count == 1:
             workspace.set_source_type(UploadWorkspace.SourceType.INVALID)
-            workspace.add_error(uploaded_file, self.DOCX_ERROR_MESSAGE)
+            workspace.add_error(u_file, self.DOCX_ERROR_MESSAGE)
 
-    def check_TYPE_EPS(self, workspace: UploadWorkspace,
-                       uploaded_file: UploadedFile) -> None:
+    def check_EPS(self, workspace: UploadWorkspace,
+                       u_file: UploadedFile) -> None:
         """Encapsulated postscript format is not supported."""
         if workspace.file_count == 1:
             workspace.set_source_type(UploadWorkspace.SourceType.INVALID)
-            workspace.add_error(uploaded_file, self.EPS_ERROR_MESSAGE)
+            workspace.add_error(u_file, self.EPS_ERROR_MESSAGE)
 
-    def check_TYPE_TEXAUX(self, workspace: UploadWorkspace,
-                          uploaded_file: UploadedFile) -> None:
+    def check_TEXAUX(self, workspace: UploadWorkspace,
+                          u_file: UploadedFile) -> None:
         """Auxiliary TeX files are not allowed."""
         if workspace.file_count == 1:
             workspace.set_source_type(UploadWorkspace.INVALID)
-            workspace.add_error(uploaded_file, self.TEXAUX_ERROR_MESSAGE)
+            workspace.add_error(u_file, self.TEXAUX_ERROR_MESSAGE)
 
-    def check_TYPE_TEXAUX(self, workspace: UploadWorkspace,
-                          uploaded_file: UploadedFile) -> None:
+    def check_TEXAUX(self, workspace: UploadWorkspace,
+                          u_file: UploadedFile) -> None:
         """Auxiliary TeX files are not allowed."""
         if workspace.file_count == 1:
             workspace.set_source_type(UploadWorkspace.INVALID)
-            workspace.add_error(uploaded_file, self.TEXAUX_ERROR_MESSAGE)
+            workspace.add_error(u_file, self.TEXAUX_ERROR_MESSAGE)
+
+
+class FlagInvalidFileTypes(BaseChecker):
+    """Flag any invalid file types."""
+
+    def check_RAR(self, workspace: UploadWorkspace,
+                  u_file: UploadedFile) -> None:
+        """Disallow rar files."""
+        workspace.add_error(u_file,
+                            "We do not support 'rar' files. Please use 'zip'"
+                            " or 'tar' instead.")

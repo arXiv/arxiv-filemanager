@@ -14,34 +14,34 @@ from .base import BaseChecker
 logger = logging.getLogger(__name__)
 
 
-class FileTypeChecker(BaseChecker):
+class InferFileType(BaseChecker):
     """Attempt to check the :class:`.FileType` of an :class:`.UploadedFile`."""
 
-    def check_TYPE_UNKNOWN(self, workspace: UploadWorkspace,
-                           uploaded_file: UploadedFile) -> None:
+    def check_UNKNOWN(self, workspace: UploadWorkspace,
+                           u_file: UploadedFile) -> None:
         """Perform file type check."""
         for check_type in _type_checkers:
-            file_type = check_type(workspace, uploaded_file)
+            file_type = check_type(workspace, u_file)
             if file_type is not None:
-                uploaded_file.file_type = file_type
+                u_file.file_type = file_type
                 return
 
         # We need up to the first kilobyte of the file.
-        with open(workspace.full_path(uploaded_file), 'rb') as f:
+        with workspace.open(u_file, 'rb') as f:
             content = f.read(1024)
 
         for check_type in _content_type_checkers:
-            file_type = check_type(workspace, uploaded_file, content)
+            file_type = check_type(workspace, u_file, content)
             if file_type is not None:
-                uploaded_file.file_type = file_type
+                u_file.file_type = file_type
                 return
 
-        file_type = _heavy_introspection(workspace, uploaded_file)
+        file_type = _heavy_introspection(workspace, u_file)
         if file_type is not None:
-            uploaded_file.file_type = file_type
+            u_file.file_type = file_type
 
         # Failed type identification
-        uploaded_file.file_type = FileType.TYPE_FAILED    # , '', ''
+        u_file.file_type = FileType.FAILED    # , '', ''
 
 
 # These are compiled ahead of time, since we may use them many many times in a
@@ -102,139 +102,139 @@ PDF_OUTPUT = re.compile(rb'^[^%]*\\pdfoutput(?:\s+)?=(?:\s+)?1')
 
 
 def _check_exists(workspace: UploadWorkspace,
-                  uploaded_file: UploadedFile) -> Optional[FileType]:
+                  u_file: UploadedFile) -> Optional[FileType]:
     """Check whether file exists (new)."""
-    if not os.path.isfile(workspace.full_path(uploaded_file)):
-        return FileType.TYPE_FAILED    # , '', ''
+    if not os.path.isfile(workspace.get_full_path(u_file)):
+        return FileType.FAILED    # , '', ''
 
 
 def _check_command(workspace: UploadWorkspace,
-                   uploaded_file: UploadedFile) -> Optional[FileType]:
+                   u_file: UploadedFile) -> Optional[FileType]:
     """Check for arXiv's special command file."""
-    if ARXIV_COMMAND_FILE.search(uploaded_file.path):
-        return FileType.TYPE_README    # , '', ''
+    if ARXIV_COMMAND_FILE.search(u_file.path):
+        return FileType.README    # , '', ''
 
 
 def _check_dvips_temp(workspace: UploadWorkspace,
-                      uploaded_file: UploadedFile) -> Optional[FileType]:
+                      u_file: UploadedFile) -> Optional[FileType]:
     """Ignore tmp files created by (unpatched) dvihps, in top dir."""
-    if DVIPS_TEMP_FILE.search(uploaded_file.path):
-        return FileType.TYPE_ALWAYS_IGNORE    # , '', ''
+    if DVIPS_TEMP_FILE.search(u_file.path):
+        return FileType.ALWAYS_IGNORE    # , '', ''
 
 
 # QUESTION: is this still relevant, given that FM service is decoupled from
 # compilation? -- Erick
 def _check_missing_font(workspace: UploadWorkspace,
-                        uploaded_file: UploadedFile) -> Optional[FileType]:
+                        u_file: UploadedFile) -> Optional[FileType]:
     """Missing font error is fatal error."""
-    if MISSFONT_LOG_FILE.search(uploaded_file.path):
-        return FileType.TYPE_ABORT    # ', '', ''
+    if MISSFONT_LOG_FILE.search(u_file.path):
+        return FileType.ABORT    # ', '', ''
 
 
 def _check_aux_tex(workspace: UploadWorkspace,
-                   uploaded_file: UploadedFile) -> Optional[FileType]:
+                   u_file: UploadedFile) -> Optional[FileType]:
     """Check whether this is an auxillary TeX File."""
-    if AUX_TEX_FILE.search(uploaded_file.path):
-        return FileType.TYPE_TEXAUX    # ', '', ''
+    if AUX_TEX_FILE.search(u_file.path):
+        return FileType.TEXAUX    # ', '', ''
 
 
 def _check_abs_file(workspace: UploadWorkspace,
-                    uploaded_file: UploadedFile) -> Optional[FileType]:
+                    u_file: UploadedFile) -> Optional[FileType]:
     """Check whether this is an arXiv legacy abstract metadata record."""
-    if ABS_FILE.search(uploaded_file.path):
-        return FileType.TYPE_ABS    # ', '', ''
+    if ABS_FILE.search(u_file.path):
+        return FileType.ABS    # ', '', ''
 
 
 def _check_xfig(workspace: UploadWorkspace,
-                uploaded_file: UploadedFile) -> Optional[FileType]:
+                u_file: UploadedFile) -> Optional[FileType]:
     # Ignore xfig files
-    if XFIG_FILE.search(uploaded_file.path):
-        return FileType.TYPE_IGNORE    # , '', ''
+    if XFIG_FILE.search(u_file.path):
+        return FileType.IGNORE    # , '', ''
 
 
 def _check_notebook(workspace: UploadWorkspace,
-                    uploaded_file: UploadedFile) -> Optional[FileType]:
-    if NOTEBOOK_FILE.search(uploaded_file.path):
-        return FileType.TYPE_NOTEBOOK    # , '', ''
+                    u_file: UploadedFile) -> Optional[FileType]:
+    if NOTEBOOK_FILE.search(u_file.path):
+        return FileType.NOTEBOOK    # , '', ''
 
 
 def _check_input(workspace: UploadWorkspace,
-                 uploaded_file: UploadedFile) -> Optional[FileType]:
-    if INPUT_FILE.search(uploaded_file.path):
-        return FileType.TYPE_INPUT    # , '', ''
+                 u_file: UploadedFile) -> Optional[FileType]:
+    if INPUT_FILE.search(u_file.path):
+        return FileType.INPUT    # , '', ''
 
 
 def _check_html(workspace: UploadWorkspace,
-                uploaded_file: UploadedFile) -> Optional[FileType]:
-    if HTML_FILE.search(uploaded_file.path):
-        return FileType.TYPE_HTML    # , '', ''
+                u_file: UploadedFile) -> Optional[FileType]:
+    if HTML_FILE.search(u_file.path):
+        return FileType.HTML    # , '', ''
 
 
 def _check_encrypted(workspace: UploadWorkspace,
-                     uploaded_file: UploadedFile) -> Optional[FileType]:
-    if ENCRYPTED_FILE.search(uploaded_file.path):
-        return FileType.TYPE_ENCRYPTED    # , '', ''
+                     u_file: UploadedFile) -> Optional[FileType]:
+    if ENCRYPTED_FILE.search(u_file.path):
+        return FileType.ENCRYPTED    # , '', ''
 
 
 def _check_zero_size(workspace: UploadWorkspace,
-                     uploaded_file: UploadedFile) -> Optional[FileType]:
+                     u_file: UploadedFile) -> Optional[FileType]:
     """Check for zero size file size."""
-    if os.stat(uploaded_file.path).st_size == 0:
-        return FileType.TYPE_IGNORE    # , '', ''
+    if os.stat(u_file.path).st_size == 0:
+        return FileType.IGNORE    # , '', ''
 
 
 # Check for compressed formats (compressed,gzip,bzips)
-def _check_compressed(workspace: UploadWorkspace, uploaded_file: UploadedFile,
+def _check_compressed(workspace: UploadWorkspace, u_file: UploadedFile,
                       content: bytes) -> Optional[FileType]:
     if content[0] == 0x1F and content[1] == 0x9D:
-        return FileType.TYPE_COMPRESSED    # , '', ''
+        return FileType.COMPRESSED    # , '', ''
 
 
-def _check_gzipped(workspace: UploadWorkspace, uploaded_file: UploadedFile,
+def _check_gzipped(workspace: UploadWorkspace, u_file: UploadedFile,
                    content: bytes) -> Optional[FileType]:
     if content[0] == 0x1F and content[1] == 0x8B:
-        return FileType.TYPE_GZIPPED    # , '', ''
+        return FileType.GZIPPED    # , '', ''
 
 
-def _check_bzip2(workspace: UploadWorkspace, uploaded_file: UploadedFile,
+def _check_bzip2(workspace: UploadWorkspace, u_file: UploadedFile,
                  content: bytes) -> Optional[FileType]:
     if content[0] == 0x42 and content[1] == 0x5A \
             and content[2] == 0x68 and content[3] > 0x2F:
-        return FileType.TYPE_BZIP2   # , '', ''
+        return FileType.BZIP2   # , '', ''
 
 
 def _check_posix_tarfile(workspace: UploadWorkspace,
-                         uploaded_file: UploadedFile,
+                         u_file: UploadedFile,
                          content: bytes) -> Optional[FileType]:
     # POSIX tarfiles: look for the string 'ustar' at position 257
     # (There used to be additional code to detect non-POSIX tar files
     # which is not detected with above, no longer necessary)
     if content[257:262] == b'ustar':
-        return FileType.TYPE_TAR    # , '', ''
+        return FileType.TAR    # , '', ''
 
 
-def _check_dvi(workspace: UploadWorkspace, uploaded_file: UploadedFile,
+def _check_dvi(workspace: UploadWorkspace, u_file: UploadedFile,
                content: bytes) -> Optional[FileType]:
     """Check for DVI file."""
     if content[0] == 0xF7 and content[1] == 2:
-        return FileType.TYPE_DVI    # , '', ''
+        return FileType.DVI    # , '', ''
 
 
-def _check_gif8(workspace: UploadWorkspace, uploaded_file: UploadedFile,
+def _check_gif8(workspace: UploadWorkspace, u_file: UploadedFile,
                 content: bytes) -> Optional[FileType]:
     """Check for GIF8 image."""
     if content[0:4] == b'GIF8':
-        return FileType.TYPE_IMAGE    # , '', ''
+        return FileType.IMAGE    # , '', ''
 
 
-def _check_png(workspace: UploadWorkspace, uploaded_file: UploadedFile,
+def _check_png(workspace: UploadWorkspace, u_file: UploadedFile,
                content: bytes) -> Optional[FileType]:
     """Check for PNG image."""
     if content[0:8] == b'\211PNG\r\n\032\n':
-        return FileType.TYPE_IMAGE    # , '', ''
+        return FileType.IMAGE    # , '', ''
 
 
-def _check_tiff(workspace: UploadWorkspace, uploaded_file: UploadedFile,
+def _check_tiff(workspace: UploadWorkspace, u_file: UploadedFile,
                 content: bytes) -> Optional[FileType]:
     """
     Check for TIFF image (big endian and little endian).
@@ -242,14 +242,14 @@ def _check_tiff(workspace: UploadWorkspace, uploaded_file: UploadedFile,
     Should really test b3 and b4 also, see
     `https://en.wikipedia.org/wiki/List_of_file_signatures`_.
     """
-    if TIFF_FILE.search(uploaded_file.path):
+    if TIFF_FILE.search(u_file.path):
         if content[0] == 0x4D and content[1] == 0x4D:
-            return FileType.TYPE_IMAGE    # , '', ''
+            return FileType.IMAGE    # , '', ''
         if content[0] == 0x49 and content[1] == 0x49:
-            return FileType.TYPE_IMAGE    # , '', ''
+            return FileType.IMAGE    # , '', ''
 
 
-def _check_jpeg(workspace: UploadWorkspace, uploaded_file: UploadedFile,
+def _check_jpeg(workspace: UploadWorkspace, u_file: UploadedFile,
                 content: bytes) -> Optional[FileType]:
     """
     Check for JPEG image.
@@ -259,10 +259,10 @@ def _check_jpeg(workspace: UploadWorkspace, uploaded_file: UploadedFile,
     """
     if content[0] == 0xFF and content[1] == 0xD8 and content[2] == 0xFF \
             and (content[3] == 0xE0 or content[4] == 0xEE):
-        return FileType.TYPE_IMAGE    # , '', ''
+        return FileType.IMAGE    # , '', ''
 
 
-def _check_mpeg_image(workspace: UploadWorkspace, uploaded_file: UploadedFile,
+def _check_mpeg_image(workspace: UploadWorkspace, u_file: UploadedFile,
                       content: bytes) -> Optional[FileType]:
     """
     Check for MPEG image.
@@ -271,11 +271,11 @@ def _check_mpeg_image(workspace: UploadWorkspace, uploaded_file: UploadedFile,
     """
     if content[0] == 0x0 and content[1] == 0x0 and content[2] == 0x1 \
             and content[3] == 0xB3:
-        return FileType.TYPE_ANIM    # , '', ''
+        return FileType.ANIM    # , '', ''
 
 
 def _check_zip_and_extensions(workspace: UploadWorkspace,
-                              uploaded_file: UploadedFile,
+                              u_file: UploadedFile,
                               content: bytes) -> Optional[FileType]:
     """
     Check for zip format or an extension.
@@ -285,25 +285,25 @@ def _check_zip_and_extensions(workspace: UploadWorkspace,
     zip_preamble_1 = b'PK\003\004'
     zip_preamble_2 = b'PK00PK\003\004'
     if content[0:4] == zip_preamble_1 or content[0:8] == zip_preamble_2:
-        if JAR_FILE.search(uploaded_file.path):
-            return FileType.TYPE_JAR    # , '', ''
-        if ODT_FILE.search(uploaded_file.path):
-            return FileType.TYPE_ODF    # , '', ''
-        if DOCX_FILE.search(uploaded_file.path):
-            return FileType.TYPE_DOCX    # , '', ''
-        if XLSX_FILE.search(uploaded_file.path):
-            return FileType.TYPE_XLSX    # , '', ''
-        return FileType.TYPE_ZIP    # , '', ''
+        if JAR_FILE.search(u_file.path):
+            return FileType.JAR    # , '', ''
+        if ODT_FILE.search(u_file.path):
+            return FileType.ODF    # , '', ''
+        if DOCX_FILE.search(u_file.path):
+            return FileType.DOCX    # , '', ''
+        if XLSX_FILE.search(u_file.path):
+            return FileType.XLSX    # , '', ''
+        return FileType.ZIP    # , '', ''
 
 
-def _check_rar(workspace: UploadWorkspace, uploaded_file: UploadedFile,
+def _check_rar(workspace: UploadWorkspace, u_file: UploadedFile,
                content: bytes) -> Optional[FileType]:
     """Check for a RAR file."""
     if content[0:4] == b'Rar!':
-        return FileType.TYPE_RAR    # , '', ''
+        return FileType.RAR    # , '', ''
 
 
-def _check_dos_eps(workspace: UploadWorkspace, uploaded_file: UploadedFile,
+def _check_dos_eps(workspace: UploadWorkspace, u_file: UploadedFile,
                    content: bytes) -> Optional[FileType]:
     """
     Check for DOS EPS.
@@ -313,25 +313,25 @@ def _check_dos_eps(workspace: UploadWorkspace, uploaded_file: UploadedFile,
     """
     if content[0] == 0xC5 and content[1] == 0xD0 and content[2] == 0xD3 \
             and content[3] == 0xC6:
-        return FileType.TYPE_DOS_EPS    # , '', ''
+        return FileType.DOS_EPS    # , '', ''
 
 
-def _check_pdf(workspace: UploadWorkspace, uploaded_file: UploadedFile,
+def _check_pdf(workspace: UploadWorkspace, u_file: UploadedFile,
                content: bytes) -> Optional[FileType]:
     if PDF.search(content):
-        return FileType.TYPE_PDF    # , '', ''
+        return FileType.PDF    # , '', ''
 
 
-def _check_mac(workspace: UploadWorkspace, uploaded_file: UploadedFile,
+def _check_mac(workspace: UploadWorkspace, u_file: UploadedFile,
                content: bytes) -> Optional[FileType]:
     if MAC.search(content):
-        return FileType.TYPE_MAC    # , '', ''
+        return FileType.MAC    # , '', ''
 
 
 # TODO: this can use more refactoring, but didn't want to get too deep into
 # it right now. -- Erick
 def _heavy_introspection(workspace: UploadWorkspace,
-                         uploaded_file: UploadedFile) -> Optional[FileType]:
+                         u_file: UploadedFile) -> Optional[FileType]:
     """
     Perform final checks that involve heavy reading from the file.
 
@@ -344,23 +344,23 @@ def _heavy_introspection(workspace: UploadWorkspace,
     maybe_tex_priority2 = 0
 
     # Scan file line by line looking for a wide variety of type indicators
-    with open(workspace.full_path(uploaded_file), 'rb') as f:
+    with workspace.open(u_file, 'rb') as f:
         line_no = 1
         accum = b""
         for line in f:
             # Ignore
             if line_no <= 10 and AUTO_IGNORE.search(line):
-                return FileType.TYPE_IGNORE    # , '', ''
+                return FileType.IGNORE    # , '', ''
             # TeXinfo
             if line_no <= 10 and TEXINFO.search(line):
-                return FileType.TYPE_TEXINFO    # , '', ''
+                return FileType.TEXINFO    # , '', ''
             # Mult part document
             if line_no <= 40 and MULTI_PART_MIME.search(line):
-                return FileType.TYPE_MULTI_PART_MIME    # , '', ''
+                return FileType.MULTI_PART_MIME    # , '', ''
 
             # LaTeX2e/PDFLaTeX
             if line[0:6] == '%!TEX ' and line_no == 1:
-                return _type_of_latex2e(uploaded_file, line_no)
+                return _type_of_latex2e(u_file, line_no)
 
             accum += line   # Accumulate what we've already seen.
 
@@ -380,16 +380,16 @@ def _heavy_introspection(workspace: UploadWorkspace,
 
             # Postscript Font
             if line_no <= 7 and PS_FONT.search(accum):
-                return FileType.TYPE_PS_FONT    # , '', ''
+                return FileType.PS_FONT    # , '', ''
 
             # Postscript
             if POSTSCRIPT.search(line) and line_no == 1:
-                return FileType.TYPE_POSTSCRIPT    # , '', ''
+                return FileType.POSTSCRIPT    # , '', ''
 
             # TODO MUST Test this adjusted regex
             if ((line_no == 1 and PS_PC.search(line))
                     or (line_no <= 10 and PS.search(line) and maybe_tex == 0)):
-                return FileType.TYPE_PS_PC    # , '', ''
+                return FileType.PS_PC    # , '', ''
 
             # LaTeX and TeX macros
             match = LATEX_MACRO.search(line)
@@ -399,17 +399,17 @@ def _heavy_introspection(workspace: UploadWorkspace,
                     latex_type = match.group(1)
                     if (latex_type == 'latex209' or latex_type == 'biglatex'
                             or latex_type == 'latex' or latex_type == 'LaTeX'):
-                        return FileType.TYPE_LATEX    # , str(latex_type), ''
+                        return FileType.LATEX    # , str(latex_type), ''
 
-                    return FileType.TYPE_TEX_MAC    # , str(latex_type), ''
+                    return FileType.TEX_MAC    # , str(latex_type), ''
 
             # HTML
             if line_no <= 10 and HTML.search(line):
-                return FileType.TYPE_HTML    # , '', ''
+                return FileType.HTML    # , '', ''
 
             # Include
             if line_no <= 10 and INCLUDE.search(line):
-                return FileType.TYPE_INCLUDE    # , '', ''
+                return FileType.INCLUDE    # , '', ''
 
             # All subsequent checks have lines with '%' in them chopped.
             #  if we need to look for a % then do it earlier!
@@ -421,7 +421,7 @@ def _heavy_introspection(workspace: UploadWorkspace,
 
             # LaTeX
             if LATEX.search(line):
-                return FileType.TYPE_LATEX    # , '', ''
+                return FileType.LATEX    # , '', ''
 
             # LaTeX2e/PDFLaTeX
             if LATEX2E_PDFLATEX.search(line):
@@ -430,7 +430,7 @@ def _heavy_introspection(workspace: UploadWorkspace,
             if MAYBE_TEX.search(line):
                 maybe_tex = 1
                 if TEX_PRIORITY.search(line):
-                    return FileType.TYPE_TEX_priority    # , '', ''
+                    return FileType.TEX_priority    # , '', ''
 
             # Partianl Hint
             if PARTIAL_HINT_1.search(line):
@@ -441,38 +441,38 @@ def _heavy_introspection(workspace: UploadWorkspace,
                 maybe_tex_priority2 = 1
 
             if TEX_MAC.search(line):
-                return FileType.TYPE_TEX_MAC    # , '', ''
+                return FileType.TEX_MAC    # , '', ''
 
             # MetaFont
             if METAFONT.search(line):
-                return FileType.TYPE_MF    # , '', ''
+                return FileType.MF    # , '', ''
 
             # BibTeX
             if BIBTEX.search(line):
-                return FileType.TYPE_BIBTEX    # , '', ''
+                return FileType.BIBTEX    # , '', ''
 
             # Make some decisions using partial hints we've seen already
             # TeX,PC,UUENCODED
             if BEGIN.search(line):
                 if maybe_tex_priority:
-                    return FileType.TYPE_TEX_priority    # , '', ''
+                    return FileType.TEX_priority    # , '', ''
                 if maybe_tex:
-                    return FileType.TYPE_TEX    # , '', ''
+                    return FileType.TEX    # , '', ''
                 if CARRIAGE_RETURN.search(line):
-                    return FileType.TYPE_PC    # , '', ''
-                return FileType.TYPE_UUENCODED    # , '', ''
+                    return FileType.PC    # , '', ''
+                return FileType.UUENCODED    # , '', ''
 
             if ALWAYS_IGNORE.search(line):
-                return FileType.TYPE_ALWAYS_IGNORE    # , '', ''
+                return FileType.ALWAYS_IGNORE    # , '', ''
             line_no += 1
 
         # last chance guesses
         if maybe_tex_priority:
-            return FileType.TYPE_TEX_priority    # , '', ''
+            return FileType.TEX_priority    # , '', ''
         if maybe_tex_priority2:
-            return FileType.TYPE_TEX_priority2, '', ''
+            return FileType.TEX_priority2, '', ''
         if maybe_tex:
-            return FileType.TYPE_TEX    # , '', ''
+            return FileType.TEX    # , '', ''
 
 
 # Select bewteen PDFLATEX and LATEX2e types.
@@ -484,9 +484,9 @@ def _type_of_latex2e(f: io.BytesIO, count: int) -> FileType:
     for line in f:
         if INCLUDE_GRAPHICS.search(line) \
                 or (line_no < limit and PDF_OUTPUT.search(line)):
-            return FileType.TYPE_PDFLATEX    # ', '', ''
+            return FileType.PDFLATEX    # ', '', ''
         line_no += 1
-    return FileType.TYPE_LATEX2e    # ', '', ''
+    return FileType.LATEX2e    # ', '', ''
 
 
 _type_checkers: Callable[[UploadWorkspace, UploadedFile],

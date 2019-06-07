@@ -237,19 +237,19 @@ class TestInternalSupportRoutines(TestCase):
         # cleanup workspace
         upload.remove_workspace()
 
-    def test_get_source_directory(self) -> None:
+    def test_get_source_path(self) -> None:
         """Test getting source directory."""
         upload = Upload(12345680)
-        source_dir = upload.get_source_directory()
+        source_dir = upload.get_source_path()
         self.assertEqual(source_dir, os.path.join(UPLOAD_BASE_DIRECTORY, '12345680', 'src'),
                          "Check 'src' directory")
         # cleanup workspace
         upload.remove_workspace()
 
-    def test_get_removed_directory(self) -> None:
+    def test_get_removed_path(self) -> None:
         """Test getting removed directory where we stick deleted items."""
         upload = Upload(12345680)
-        removed_dir = upload.get_removed_directory()
+        removed_dir = upload.get_removed_path()
         self.assertEqual(removed_dir, os.path.join(UPLOAD_BASE_DIRECTORY, '12345680', 'removed'),
                          "Check 'removed' directory")
         # cleanup workspace
@@ -260,8 +260,8 @@ class TestInternalSupportRoutines(TestCase):
         upload = Upload(12345681)
         workspace_dir = upload.create_upload_workspace()
         dir_exists = os.path.exists(workspace_dir)
-        src_dir_exists = os.path.exists(upload.get_source_directory())
-        rem_dir_exists = os.path.exists(upload.get_removed_directory())
+        src_dir_exists = os.path.exists(upload.get_source_path())
+        rem_dir_exists = os.path.exists(upload.get_removed_path())
         self.assertEqual(dir_exists, True, 'Create workspace directory.')
         self.assertEqual(src_dir_exists, True, 'Create workspace source directory.')
         self.assertEqual(rem_dir_exists, True, 'Create workspace removed directory.')
@@ -280,7 +280,7 @@ class TestInternalSupportRoutines(TestCase):
             basename = os.path.basename(tfilename)
             # Sanitize file name before saving it
             filename = secure_filename(basename)
-            source_directory = upload.get_source_directory()
+            source_directory = upload.get_source_path()
             path = os.path.join(source_directory, filename)
             # Remove existing file - should we warn?
             if os.path.exists(path):
@@ -529,7 +529,7 @@ class TestInternalSupportRoutines(TestCase):
             # strip preview from Postscript
             test_filename = file_to_strip
             tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
-            workspace_src_dir = upload.get_source_directory()
+            workspace_src_dir = upload.get_source_path()
             destfilename = os.path.join(workspace_src_dir, test_filename)
             shutil.copy(tfilename, destfilename)
             file_obj = File(destfilename, workspace_src_dir)
@@ -564,7 +564,7 @@ class TestInternalSupportRoutines(TestCase):
         # strip preview from Postscript
         test_filename = 'PostscriptTIFF.eps'
         tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
-        workspace_src_dir = upload.get_source_directory()
+        workspace_src_dir = upload.get_source_path()
         destfilename = os.path.join(workspace_src_dir, test_filename)
         shutil.copy(tfilename, destfilename)
         file_obj = File(destfilename, workspace_src_dir)
@@ -591,7 +591,7 @@ class TestInternalSupportRoutines(TestCase):
         # strip preview from Postscript
         test_filename = 'PostscriptNOeofTIFF.eps'
         tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
-        workspace_src_dir = upload.get_source_directory()
+        workspace_src_dir = upload.get_source_path()
         destfilename = os.path.join(workspace_src_dir, test_filename)
         shutil.copy(tfilename, destfilename)
         file_obj = File(destfilename, workspace_src_dir)
@@ -628,7 +628,7 @@ class TestInternalSupportRoutines(TestCase):
         # Fix Postscript
         test_filename = 'ps1_broken.eps'
         tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
-        workspace_src_dir = upload.get_source_directory()
+        workspace_src_dir = upload.get_source_path()
         destfilename = os.path.join(workspace_src_dir, test_filename)
         shutil.copy(tfilename, destfilename)
         file_obj = File(destfilename, workspace_src_dir)
@@ -652,7 +652,7 @@ class TestInternalSupportRoutines(TestCase):
         # Fix Postscript
         test_filename = 'ps2_broken.eps'
         tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
-        workspace_src_dir = upload.get_source_directory()
+        workspace_src_dir = upload.get_source_path()
         destfilename = os.path.join(workspace_src_dir, test_filename)
         shutil.copy(tfilename, destfilename)
         file_obj = File(destfilename, workspace_src_dir)
@@ -677,7 +677,7 @@ class TestInternalSupportRoutines(TestCase):
         # Fix Postscript
         test_filename = 'ps3_broken.eps'
         tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
-        workspace_src_dir = upload.get_source_directory()
+        workspace_src_dir = upload.get_source_path()
         destfilename = os.path.join(workspace_src_dir, test_filename)
         shutil.copy(tfilename, destfilename)
         file_obj = File(destfilename, workspace_src_dir)
@@ -713,7 +713,7 @@ class TestInternalSupportRoutines(TestCase):
         # Fix Postscript
         test_filename = 'dos_eps_1.eps'
         tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
-        workspace_src_dir = upload.get_source_directory()
+        workspace_src_dir = upload.get_source_path()
         destfilename = os.path.join(workspace_src_dir, test_filename)
         shutil.copy(tfilename, destfilename)
         file_obj = File(destfilename, workspace_src_dir)
@@ -731,7 +731,7 @@ class TestInternalSupportRoutines(TestCase):
         # Fix Postscript
         test_filename = 'dos_eps_2.eps'
         tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
-        workspace_src_dir = upload.get_source_directory()
+        workspace_src_dir = upload.get_source_path()
         destfilename = os.path.join(workspace_src_dir, test_filename)
         shutil.copy(tfilename, destfilename)
         file_obj = File(destfilename, workspace_src_dir)
@@ -775,7 +775,7 @@ class TestUpload(TestCase):
             file = FileStorage(fp)
             upload.process_upload(file)
 
-        source_directory = upload.get_source_directory()
+        source_directory = upload.get_source_path()
 
         # These files were all contained in gzipped archives contained in original upload.
 

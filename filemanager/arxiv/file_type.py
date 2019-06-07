@@ -11,16 +11,16 @@ import re
 from typing import Tuple, Any
 
 # TeX types
-TEX_types = ['TYPE_LATEX',
-             'TYPE_TEX',
-             'TYPE_TEX_priority',
-             'TYPE_TEX_AMS',
-             'TYPE_TEX_MAC',
-             'TYPE_LATEX2e',
-             'TYPE_TEX_priority2',
-             'TYPE_TEXINFO',
-             'TYPE_PDFLATEX',
-             'TYPE_PDFTEX'
+TEX_types = ['LATEX',
+             'TEX',
+             'TEX_priority',
+             'TEX_AMS',
+             'TEX_MAC',
+             'LATEX2e',
+             'TEX_priority2',
+             'TEXINFO',
+             'PDFLATEX',
+             'PDFTEX'
             ]
 
 # Priorities may be redesigned and reimplemented once I understand the entire
@@ -28,54 +28,54 @@ TEX_types = ['TYPE_LATEX',
 # the original Perl version author's design until the point I know better.
 
 type_priorities = [
-    'TYPE_ABORT',
-    'TYPE_FAILED',
-    'TYPE_ALWAYS_IGNORE',
-    'TYPE_INPUT',
-    'TYPE_BIBTEX',
-    'TYPE_POSTSCRIPT',
-    'TYPE_DOS_EPS',
-    'TYPE_PS_FONT',
-    'TYPE_PS_PC',
-    'TYPE_IMAGE',
-    'TYPE_ANIM',
-    'TYPE_HTML',
-    'TYPE_PDF',
-    'TYPE_DVI',
-    'TYPE_NOTEBOOK',
-    'TYPE_ODF',
-    'TYPE_DOCX',
-    'TYPE_TEX',
-    'TYPE_PDFTEX',
-    'TYPE_TEX_priority2',
-    'TYPE_TEX_AMS',
-    'TYPE_TEX_priority',
-    'TYPE_TEX_MAC',
-    'TYPE_LATEX',
-    'TYPE_LATEX2e',
-    'TYPE_PDFLATEX',
-    'TYPE_TEXINFO',
-    'TYPE_MF',
-    'TYPE_UUENCODED',
-    'TYPE_ENCRYPTED',
-    'TYPE_PC',
-    'TYPE_MAC',
-    'TYPE_CSH',
-    'TYPE_SH',
-    'TYPE_JAR',
-    'TYPE_RAR',
-    'TYPE_XLSX',
-    'TYPE_COMPRESSED',
-    'TYPE_ZIP',
-    'TYPE_GZIPPED',
-    'TYPE_BZIP2',
-    'TYPE_MULTI_PART_MIME',
-    'TYPE_TAR',
-    'TYPE_IGNORE',
-    'TYPE_README',
-    'TYPE_TEXAUX',
-    'TYPE_ABS',
-    'TYPE_INCLUDE'
+    'ABORT',
+    'FAILED',
+    'ALWAYS_IGNORE',
+    'INPUT',
+    'BIBTEX',
+    'POSTSCRIPT',
+    'DOS_EPS',
+    'PS_FONT',
+    'PS_PC',
+    'IMAGE',
+    'ANIM',
+    'HTML',
+    'PDF',
+    'DVI',
+    'NOTEBOOK',
+    'ODF',
+    'DOCX',
+    'TEX',
+    'PDFTEX',
+    'TEX_priority2',
+    'TEX_AMS',
+    'TEX_priority',
+    'TEX_MAC',
+    'LATEX',
+    'LATEX2e',
+    'PDFLATEX',
+    'TEXINFO',
+    'MF',
+    'UUENCODED',
+    'ENCRYPTED',
+    'PC',
+    'MAC',
+    'CSH',
+    'SH',
+    'JAR',
+    'RAR',
+    'XLSX',
+    'COMPRESSED',
+    'ZIP',
+    'GZIPPED',
+    'BZIP2',
+    'MULTI_PART_MIME',
+    'TAR',
+    'IGNORE',
+    'README',
+    'TEXAUX',
+    'ABS',
+    'INCLUDE'
 ]
 
 
@@ -145,8 +145,8 @@ def name(type: str) -> str:
 
     type = type.upper()
 
-    if type.find('TYPE_LATEX2E') >= 0:
-        type = type.replace('TYPE_LATEX2E', 'TYPE_LATEX2e')
+    if type.find('LATEX2E') >= 0:
+        type = type.replace('LATEX2E', 'LATEX2e')
 
     return get_type_name(type)
 
@@ -160,8 +160,8 @@ def _is_tex_type(type: str) -> bool:
     if not type.startswith('TYPE_'):
         type = 'TYPE_' + type
     type = type.upper()
-    if type.find('TYPE_LATEX2E') >= 0:
-        type = type.replace('TYPE_LATEX2E', 'TYPE_LATEX2e')
+    if type.find('LATEX2E') >= 0:
+        type = type.replace('LATEX2E', 'LATEX2e')
     if type.find('PRIORITY') >= 0:
         type = type.replace('PRIORITY', 'priority')
     return is_tex_type(type)

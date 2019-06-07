@@ -105,7 +105,7 @@ class TestCompressedUpload(TestCase):
         self.assertGreater(original_size, 0,
                            "The package has some content in it now")
 
-        self.workspace.client_remove_file('bicycle.gif')
+        self.workspace.client_remove('bicycle.gif')
         self.assertLess(self.workspace.content_package_size, original_size,
                         "The package is smaller than it was before")
 

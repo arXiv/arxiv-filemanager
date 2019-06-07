@@ -9,14 +9,18 @@ class SynchronousCheckingStrategy:
 
     def check(self, workspace: 'UploadWorkspace', *checkers: Checker) -> None:
         """Run checks one file at a time."""
-        for path, uploaded_file in workspace.files.items():
-            # Don't run checks twice on the same file.
-            if 'file_checks' in uploaded_file.meta:
-                continue
-            for checker in checkers:
-                checker(workspace, uploaded_file)
-            uploaded_file.meta['file_checks'] = True
+        # This may take a few passes, as we may be unpacking compressed files.
+        while workspace.has_unchecked_files:
+            for u_file in workspace.iter_files():
+                if u_file.is_checked:   # Don't run checks twice on the same
+                    continue            # file.
+                for checker in checkers:
+                    checker(workspace, u_file)
+                    if u_file.is_removed:   # If a checker removes a file, no
+                        break               # further action should be taken.
+                u_file.is_checked = True
 
-        for checker in checkers:
-            if hasattr(checker, 'check_workspace'):
-                checker.check_workspace(workspace)
+            # Perform workspace-wide checks.
+            for checker in checkers:
+                if hasattr(checker, 'check_workspace'):
+                    checker.check_workspace(workspace)
