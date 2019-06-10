@@ -79,8 +79,11 @@ class FileType(Enum):
         """
         return self in TEX_TYPES
 
+    # QUESTION: The only place that I see this logic used is in tests. Is it
+    # actually still needed? -- Erick 2019-06-10
     @property
     def priority(self) -> int:
+        """Get the priority for this file type."""
         return get_type_priority(self)
 
 
@@ -151,9 +154,11 @@ TEX_TYPES = [
 ]
 
 
+# QUESTION: The only place that I see this logic used is in tests. Is it
+# actually still needed? -- Erick 2019-06-10
 def get_type_priority(file_type: FileType) -> int:
     """
-    Returns an integer indicating the processing priority of file type.
+    Return an integer indicating the processing priority of file type.
 
     Higher numbers should be processed first. Will return 0 (lower
     than all other types) if file_type is not recognized.

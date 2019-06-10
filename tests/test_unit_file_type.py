@@ -18,7 +18,6 @@ class TestFileTypes(TestCase):
         self.assertEqual(FileType.UNKNOWN.name, 'Unknown',
                          'Lookup name for non existent type')
 
-
     def test_is_tex_type(self):
         """Test that TeX file types are identified correctly."""
         self.assertTrue(FileType.LATEX.is_tex_type, 'Expected TeX file type')
@@ -42,7 +41,8 @@ class TestFileTypes(TestCase):
                         'PDFTEX is higher priority then plain TEX source.')
 
         self.assertLess(FileType.LATEX.priority, FileType.README.priority,
-                        'README directives file higher priority than TeX source')
+                        'README directives file higher priority than TeX'
+                        ' source')
 
         # Add some specific priority tests to catch inadvertant changes to new
         # list.

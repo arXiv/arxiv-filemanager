@@ -1,4 +1,10 @@
-"""Tests for :mod:`.check.file_type`."""
+"""
+Tests for :mod:`.check.file_type`.
+
+Moved these file type checks over from test_unit_file_type, since I separated
+the FileType domain class from the type inference routines (now in
+filemanager.process.check.file_type). -- Erick 2019-06-10
+"""
 
 import os
 from unittest import TestCase, mock
@@ -59,17 +65,23 @@ type_tests.append(['minimal.pdf', FileType.PDF])  # new
 # TeX
 type_tests.append(['polch.tex', FileType.LATEX])
 type_tests.append(['paper-t4.1_Vienna_preprint.tex', FileType.LATEX2e])
-type_tests.append(['minMac.tex', FileType.LATEX2e, '', 'This file was generated on MAC with \r\n'])
+type_tests.append(['minMac.tex', FileType.LATEX2e, '',
+                   'This file was generated on MAC with \r\n'])
 type_tests.append(['pascal_petit.tex', FileType.PDFLATEX])
 
 # a \pdfoutput=1 may come in various places, all valid
 type_tests.append(['pdfoutput_before_documentclass.tex', FileType.PDFLATEX])
 type_tests.append(['pdfoutput_sameline_documentclass.tex', FileType.PDFLATEX])
 type_tests.append(['pdfoutput_after_documentclass.tex', FileType.PDFLATEX])
-type_tests.append(['pdfoutput_after_documentclass_big_comment_before.tex', FileType.PDFLATEX])
+type_tests.append(['pdfoutput_after_documentclass_big_comment_before.tex',
+                  FileType.PDFLATEX])
 # but if we put it too late it is ignored
-type_tests.append(['pdfoutput_too_far_after_documentclass.tex', FileType.LATEX2e])
-type_tests.append(['pdfoutput_too_far_after_documentclass_big_comment_before.tex', FileType.LATEX2e])
+type_tests.append(['pdfoutput_too_far_after_documentclass.tex',
+                  FileType.LATEX2e])
+type_tests.append([
+    'pdfoutput_too_far_after_documentclass_big_comment_before.tex',
+    FileType.LATEX2e
+])
 # EPS
 type_tests.append(['dos_eps_1.eps', FileType.DOS_EPS])
 type_tests.append(['dos_eps_2.eps', FileType.DOS_EPS])
@@ -82,7 +94,11 @@ type_tests.append(['c059036l.pfb', FileType.PS_FONT])
 type_tests.append(['hrscs.pfa', FileType.PS_FONT])
 type_tests.append(['bchbi.pfa', FileType.PS_FONT])
 type_tests.append(['mutau2-sub_first10kB.tar', FileType.PS_PC, '',
-                   'Should really be TAR but this is old pre-posix tar which we will not support. Doing so would require re-implementation of the c-code used by the unix file command, there are no magic codes for this. http://issues.library.cornell.edu/browse/ARXIVDEV-146'])
+                   'Should really be TAR but this is old pre-posix tar which'
+                   ' we will not support. Doing so would require'
+                   ' re-implementation of the c-code used by the unix file'
+                   ' command, there are no magic codes for this.'
+                   ' http://issues.library.cornell.edu/browse/ARXIVDEV-146'])
 # error cases
 type_tests.append(['10240_null_chars.tar', FileType.FAILED])
 type_tests.append(['file_does_not_exit', FileType.FAILED])
@@ -106,29 +122,24 @@ class TestInferFileType(TestCase):
         self.mock_workspace.open.side_effect \
             = lambda f, m, **k: open(os.path.join(DATA_PATH, f.path), m, **k)
 
-    # def test_infer_gif(self):
-    #     """Infer file type of a gif image."""
-    #     mock_file = mock.MagicMock(path='image.gif',
-    #                                file_type=FileType.UNKNOWN,
-    #                                size_bytes=495)
-    #     self.check(self.mock_workspace, mock_file)
-    #     self.assertEqual(mock_file.file_type, FileType.IMAGE)
+    def test_infer_gif(self):
+        """Infer file type of a gif image."""
+        mock_file = mock.MagicMock(path='image.gif',
+                                   file_type=FileType.UNKNOWN,
+                                   size_bytes=495)
+        self.check(self.mock_workspace, mock_file)
+        self.assertEqual(mock_file.file_type, FileType.IMAGE)
 
     def test_file_type_guess(self):
-        """Test file type identification."""
+        """
+        Test file type identification.
 
-        cwd = os.getcwd()
-        testfiles_dir = os.path.join(cwd, 'tests/type_test_files')
-
-        # Reproduce tests from legacy system
+        Reproduces tests from legacy system.
+        """
         for test in type_tests:
-
             test_file, test_file_type, deep, note, *extras = test + [None] * 2
-            new_path = os.path.join(testfiles_dir, test_file)
-
             logger.debug("Test:%s:%s\tDeep: %s\tNote: %s",
                          test_file, test_file_type, str(deep), str(note))
-
             # Make the call - get the file type guess
             mock_file = mock.MagicMock(path=test_file,
                                        file_type=FileType.UNKNOWN)
