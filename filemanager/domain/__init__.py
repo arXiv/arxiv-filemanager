@@ -1,3 +1,3 @@
-from .uploads import UploadedFile, UploadWorkspace, Checker
+from .uploads import UploadedFile, UploadWorkspace
 from .file_type import FileType
-from .strategy import SynchronousCheckingStrategy
+# from .strategy import SynchronousCheckingStrategy

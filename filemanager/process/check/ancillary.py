@@ -15,5 +15,5 @@ class AncillaryFileChecker(BaseChecker):
 
     def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
         """Check for and mark ancillary files."""
-        if u_file.path.startswith(workspace.get_ancillary_path()):
+        if u_file.path.startswith(workspace.ancillary_path):
             u_file.is_ancillary = True

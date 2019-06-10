@@ -49,8 +49,8 @@ def unpack_archive(upload: 'Upload') -> None:
     #archive_name = os.path.basename(archive_path)
     # TODO debug logging ("*******Process upload: " + archive_name + '*****************')
 
-    source_directory = upload.get_source_path()
-    removed_directory = upload.get_removed_path()
+    source_directory = upload.source_path
+    removed_directory = upload.removed_path
 
     # Recursively scan source directory and uplack all archives until there
     # are no more gzipped/tar archives.

@@ -16,9 +16,9 @@ class BaseChecker:
     def __call__(self, workspace: UploadWorkspace,
                  u_file: UploadedFile) -> None:
         """Perform file checks."""
-        generic_check = getattr(self, 'check')
-        typed_check = getattr(self, f'check_{u_file.file_type.value}')
-        final_check = getattr(self, f'check_finally')
+        generic_check = getattr(self, 'check', None)
+        typed_check = getattr(self, f'check_{u_file.file_type.value}', None)
+        final_check = getattr(self, f'check_finally', None)
         if generic_check is not None:
             generic_check(workspace, u_file)
         if typed_check is not None:

@@ -1,12 +1,23 @@
+"""File type definitions."""
+
 from enum import Enum
 
 
+# TODO: add docstrings for each of these, so that it is clear what each type
+# represents.
 class FileType(Enum):
     """Known file types."""
 
     UNKNOWN = 'UNKNOWN'
+    """The file type has not been inferred."""
+
     ABORT = 'ABORT'
     FAILED = 'FAILED'
+    """Attempt to infer file type failed."""
+
+    DIRECTORY = 'DIRECTORY'
+    """Represents a directory."""
+
     ALWAYS_IGNORE = 'ALWAYS_IGNORE'
     INPUT = 'INPUT'
     BIBTEX = 'BIBTEX'
@@ -68,44 +79,48 @@ class FileType(Enum):
         """
         return self in TEX_TYPES
 
+    @property
+    def priority(self) -> int:
+        return get_type_priority(self)
+
 
 FILE_NAMES = {
     FileType.UNKNOWN: 'Unknown',
     FileType.ABORT: 'Immediate stop',
-    FileType.FAILED: FileType.unknown,
+    FileType.FAILED: 'unknown',
     FileType.ALWAYS_IGNORE: 'Always ignore',
     FileType.INPUT: 'Input for (La)TeX',
-    FileType.BIBTEX: FileType.BiBTeX,
-    FileType.POSTSCRIPT: FileType.Postscript,
+    FileType.BIBTEX: 'BiBTeX',
+    FileType.POSTSCRIPT: 'Postscript',
     FileType.DOS_EPS: 'DOS EPS Binary File',
     FileType.PS_FONT: 'Postscript Type 1 Font',
     FileType.PS_PC: '^D%! Postscript',
     FileType.IMAGE: 'Image (gif/jpg etc)',
     FileType.ANIM: 'Animation (mpeg etc)',
-    FileType.HTML: FileType.HTML,
-    FileType.PDF: FileType.PDF,
-    FileType.DVI: FileType.DVI,
+    FileType.HTML: 'HTML',
+    FileType.PDF: 'PDF',
+    FileType.DVI: 'DVI',
     FileType.NOTEBOOK: 'Mathematica Notebook',
     FileType.ODF: 'OpenDocument Format',
     FileType.DOCX: 'Microsoft DOCX',
-    FileType.TEX: FileType.TEX,
-    FileType.PDFTEX: FileType.PDFTEX,
+    FileType.TEX: 'TEX',
+    FileType.PDFTEX: 'PDFTEX',
     FileType.TEX_priority2:
         'TeX (with \\end or \\bye - not starting a line)',
-    FileType.TEX_AMS: FileType.AMSTeX,
+    FileType.TEX_AMS: 'AMSTeX',
     FileType.TEX_priority: 'TeX (with \\end or \\bye)',
     FileType.TEX_MAC: 'TeX +macros (harv,lanl..)',
-    FileType.LATEX: FileType.LaTeX,
-    FileType.LATEX2e: FileType.LATEX2e,
-    FileType.PDFLATEX: FileType.PDFLATEX,
-    FileType.TEXINFO: FileType.Texinfo,
-    FileType.MF: FileType.Metafont,
-    FileType.UUENCODED: FileType.UUencoded,
-    FileType.ENCRYPTED: FileType.Encrypted,
+    FileType.LATEX: 'LaTeX',
+    FileType.LATEX2e: 'LATEX2e',
+    FileType.PDFLATEX: 'PDFLATEX',
+    FileType.TEXINFO: 'Texinfo',
+    FileType.MF: 'Metafont',
+    FileType.UUENCODED: 'UUencoded',
+    FileType.ENCRYPTED: 'Encrypted',
     FileType.PC: 'PC-ctrl-Ms',
     FileType.MAC: 'MAC-ctrl-Ms',
-    FileType.CSH: FileType.CSH,
-    FileType.SH: FileType.SH,
+    FileType.CSH: 'CSH',
+    FileType.SH: 'SH',
     FileType.JAR: 'JAR archive',
     FileType.RAR: 'RAR archive',
     FileType.XLSX: 'Microsoft XLSX',
@@ -113,12 +128,12 @@ FILE_NAMES = {
     FileType.ZIP: 'ZIP-compressed',
     FileType.GZIPPED: 'GZIP-compressed',
     FileType.BZIP2: 'BZIP2-compressed',
-    FileType.MULTI_PART_MIME: FileType.MULTI_PART_MIME,
+    FileType.MULTI_PART_MIME: 'MULTI_PART_MIME',
     FileType.TAR: 'TAR archive',
     FileType.IGNORE: ' user defined IGNORE',
-    FileType.README: FileType.override,
+    FileType.README: 'override',
     FileType.TEXAUX: 'TeX auxiliary',
-    FileType.ABS: FileType.abstract,
+    FileType.ABS: 'abstract',
     FileType.INCLUDE: ' keep'
 }
 
@@ -134,3 +149,13 @@ TEX_TYPES = [
     FileType.PDFLATEX,
     FileType.PDFTEX
 ]
+
+
+def get_type_priority(file_type: FileType) -> int:
+    """
+    Returns an integer indicating the processing priority of file type.
+
+    Higher numbers should be processed first. Will return 0 (lower
+    than all other types) if file_type is not recognized.
+    """
+    return list(FileType).index(file_type)

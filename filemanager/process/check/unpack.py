@@ -70,7 +70,7 @@ class UnpackCompressedTarFiles(BaseChecker):
             return
 
         parent_dir, _ = os.path.split(u_file.path)
-        target_dir = os.path.join(workspace.get_source_path(), parent_dir)
+        target_dir = os.path.join(workspace.source_path, parent_dir)
         workspace.add_log_entry(f"***** unpack {u_file.file_type.value}"
                                 f" {u_file.path} to dir: {target_dir}")
 
@@ -98,7 +98,7 @@ class UnpackCompressedZIPFiles(BaseChecker):
     def check_ZIP(self, workspace: UploadWorkspace,
                   u_file: UploadedFile) -> None:
         parent_dir, _ = os.path.split(u_file.path)
-        target_dir = os.path.join(workspace.get_source_path(), parent_dir)
+        target_dir = os.path.join(workspace.source_path, parent_dir)
         logger.debug("*******Process zip archive: %s", u_file.path)
 
         workspace.add_log_entry(f'***** unpack {u_file.file_type}'

@@ -12,16 +12,19 @@ from .base import BaseChecker
 
 
 logger = logging.getLogger(__name__)
+logger.propagate = False
 
 
 class InferFileType(BaseChecker):
     """Attempt to check the :class:`.FileType` of an :class:`.UploadedFile`."""
 
     def check_UNKNOWN(self, workspace: UploadWorkspace,
-                           u_file: UploadedFile) -> None:
+                      u_file: UploadedFile) -> None:
         """Perform file type check."""
+        logger.debug('Identify a type for %s', u_file.path)
         for check_type in _type_checkers:
             file_type = check_type(workspace, u_file)
+            logger.debug('Tried %s, got %s', check_type.__name__, file_type)
             if file_type is not None:
                 u_file.file_type = file_type
                 return
@@ -32,15 +35,19 @@ class InferFileType(BaseChecker):
 
         for check_type in _content_type_checkers:
             file_type = check_type(workspace, u_file, content)
+            logger.debug('Tried %s, got %s', check_type.__name__, file_type)
             if file_type is not None:
                 u_file.file_type = file_type
                 return
 
         file_type = _heavy_introspection(workspace, u_file)
+        logger.debug('Tried %s, got %s', 'heavy_introspection', file_type)
         if file_type is not None:
             u_file.file_type = file_type
+            return
 
         # Failed type identification
+        logger.debug('Type identification failed for %s', u_file.path)
         u_file.file_type = FileType.FAILED    # , '', ''
 
 
@@ -179,7 +186,7 @@ def _check_encrypted(workspace: UploadWorkspace,
 def _check_zero_size(workspace: UploadWorkspace,
                      u_file: UploadedFile) -> Optional[FileType]:
     """Check for zero size file size."""
-    if os.stat(u_file.path).st_size == 0:
+    if os.stat(workspace.get_full_path(u_file)).st_size == 0:
         return FileType.IGNORE    # , '', ''
 
 

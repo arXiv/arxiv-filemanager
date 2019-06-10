@@ -31,7 +31,7 @@ class TestUploadAncillaryFile(TestCase):
             # Process upload
             u.process_upload(file, ancillary=True)
 
-        ancillary_path = u.get_ancillary_path()
+        ancillary_path = u.ancillary_path
         _, fname = os.path.split(fpath)
         self.assertIn(fname, os.listdir(ancillary_path),
                       'File should be stored in the ancillary directory')

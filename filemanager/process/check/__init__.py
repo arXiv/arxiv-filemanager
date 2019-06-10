@@ -12,7 +12,7 @@ from .errata import RemoveHyperlinkStyleFiles, RemoveDisallowedFiles, \
     RemoveAADemoFile, RemoveMissingFontFile, RemoveSyncTeXFiles, \
     FixTGZFileName, RemoveDOCFiles
 from .tex_generated import RemoveTeXGeneratedFiles, DisallowDVIFiles
-from .cleanup import UnMacify, CleanupPostScript
+from .cleanup import UnMacify, CleanupPostScript, RepairDOSEPSFiles
 from .tex_format import CheckTeXForm
 from .images import CheckForUnacceptableImages
 from .uuencoded import CheckForUUEncodedFiles
@@ -58,8 +58,8 @@ CHECKS = [
     CheckTeXForm(),
     CheckForUnacceptableImages(),
     CheckForUUEncodedFiles(),
+    RepairDOSEPSFiles(),
     FlagInvalidFileTypes(),
-
     InferSourceType(),
     FlagInvalidSourceTypes(),
 

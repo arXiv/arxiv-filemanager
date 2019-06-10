@@ -213,7 +213,7 @@ class Upload:
         This will return True regardless of whether we have processed the files
         in any way.
         """
-        for _, _, files in os.walk(self.get_source_path()):
+        for _, _, files in os.walk(self.source_path):
             for _ in files:
                 return True
         return False
@@ -379,7 +379,7 @@ class Upload:
         """
         # Move file to removed directory
         filepath = file.filepath
-        removed_path = os.path.join(self.get_removed_path(), file.name)
+        removed_path = os.path.join(self.removed_path, file.name)
         # self.__log.debug("Moving file " + file.name + " to removed dir: " + removed_path)
 
         if shutil.move(filepath, removed_path):
@@ -493,7 +493,7 @@ class Upload:
             raise SecurityError(message)
 
         # Resolve relative path of file to filesystem
-        source_directory = self.get_source_path()
+        source_directory = self.source_path
         file_path = os.path.join(source_directory, filename)
 
         # secure_filename will eliminate '/' making paths to subdirectories
@@ -577,7 +577,7 @@ class Upload:
             raise SecurityError(message)
 
         # Resolve relative path of file to filesystem
-        src_directory = self.get_source_path()
+        src_directory = self.source_path
         file_path = os.path.join(src_directory, filename)
 
         # secure_filename will eliminate '/' making paths to subdirectories
@@ -607,7 +607,7 @@ class Upload:
             clean_public_path = re.sub('/', '_', public_file_path)
 
             # Generate path in removed directory
-            removed_path = os.path.join(self.get_removed_path(), clean_public_path)
+            removed_path = os.path.join(self.removed_path, clean_public_path)
             self.log(f"Delete file: '{filename}'")
 
             if shutil.move(file_path, removed_path):
@@ -634,7 +634,7 @@ class Upload:
         # Cycle through list of files under src directory and remove them.
         #
         # For now we will remove file by moving it to 'removed' directory
-        src_directory = self.get_source_path()
+        src_directory = self.source_path
         self.log(f"Delete all files under directory '{src_directory}'")
 
         self.remove_content_package()
@@ -704,7 +704,7 @@ class Upload:
 
         If the directory does not already exist, it will be created.
         """
-        path = os.path.join(self.get_source_path(), self.ANCILLARY_PREFIX)
+        path = os.path.join(self.source_path, self.ANCILLARY_PREFIX)
         if not os.path.exists(path):
             os.mkdir(path)
         return path
@@ -715,7 +715,7 @@ class Upload:
         base_dir = self.create_upload_directory()
 
         # TODO what directories do we want to carry over from existing upload/submission system
-        src_dir = self.get_source_path()
+        src_dir = self.source_path
 
         if not os.path.exists(src_dir):
             # Create path for submissions
@@ -723,7 +723,7 @@ class Upload:
             os.makedirs(src_dir, 0o755)
             # print("Created src workarea\n");
 
-        removed_dir = self.get_removed_path()
+        removed_dir = self.removed_path
 
         if not os.path.exists(removed_dir):
             # Create path for submissions
@@ -787,9 +787,9 @@ class Upload:
             self.log(f'Secured filename: {filename} (basename + )')
 
         if ancillary:  # Put the file in the ancillary directory.
-            src_directory = self.get_ancillary_path()
+            src_directory = self.ancillary_path
         else:  # Store uploaded file/archive in source directory
-            src_directory = self.get_source_path()
+            src_directory = self.source_path
 
         upload_path = os.path.join(src_directory, filename)
         file.save(upload_path)
@@ -840,7 +840,7 @@ class Upload:
         """
         self.log('\n******** Check Files *****\n\n')
 
-        source_directory = self.get_source_path()
+        source_directory = self.source_path
 
         self.clear_file_list()
 
@@ -917,7 +917,7 @@ class Upload:
                 #     file_path = new_file_path
 
                 # Keep an eye out for special ancillary 'anc' directory
-                # anc_dir = os.path.join(self.get_source_path(),
+                # anc_dir = os.path.join(self.source_path,
                 #                        self.ANCILLARY_PREFIX)
                 # if file_path.startswith(anc_dir):
                 #     statinfo = os.stat(file_path)
@@ -1551,153 +1551,153 @@ class Upload:
     #             os.remove(stripped_filepath)
     #
     #         self.add_warning(file_obj.public_filepath, strip_warning)
-
-    def repair_dos_eps(self, file_obj: File) -> str:
-        """
-        Look for leading/trailing TIFF bitmaps and remove them.
-
-        ADD MORE HERE
-
-        Parameters
-        ----------
-        file_obj : File
-            File we are repairing.
-
-        Returns
-        -------
-            String message indicates that something was done and message details what was done.
-
-        Notes
-        -----
-            DOS EPS Binary File Header
-
-            0-3   Must be hex C5D0D3C6 (byte 0=C5).
-            4-7   Byte position in file for start of PostScript language code section.
-            8-11  Byte length of PostScript language section
-            12-15 Byte position in file for start of Metafile screen representation.
-            16-19 Byte length of Metafile section (PSize).
-            20-23 Byte position of TIFF representation.
-            24-27 Byte length of TIFF section.
-
-        """
-        ps_filepath = file_obj.filepath
-
-        if not os.path.exists(ps_filepath):
-            self.log(f"{file_obj.public_filepath}: File not found")
-            return ""
-
-        with open(ps_filepath, 'r+b', 0) as infile:
-
-            # Read past ESP file marker (C5D0D3C6)
-            infile.seek(4, 0)
-
-            # Read header bytes we are interested in
-            header = infile.read(24)
-            pb = struct.pack('24s', header)
-
-            # Extract offsets/lengths for Postscript and TIFF
-            (psoffset, pslength, _, _, tiffoffset,
-             tifflength) = struct.unpack('6i', pb)
-
-            #(f"psoffset:{psoffset} len:{pslength} tiffoffset:{tiffoffset}"
-            # f"len:{tifflength}")
-
-            if not (psoffset > 0 and pslength > 0 and tiffoffset > 0
-                    and tifflength > 0):
-                # Encapsulated Postscript does not contain embedded TIFF
-                return ""
-
-            # Extract Postscript
-
-            if psoffset > tiffoffset:
-                # Postscript follows TIFF so we will seek
-                # to Postscript and extract (eliminate header and TIFF)
-
-                # Seek to postscript
-                infile.seek(psoffset, 0)
-
-                # Look for start of Postscript
-                first_line = infile.readline()
-
-                if not re.search(b'^%!PS-', first_line):
-                    # Issue a warning.
-                    self.log(f"{file_obj.public_filepath}: Couldn't find "
-                             f"beginning of Postscript section")
-                    return ""
-
-                fixed_ps_filepath = os.path.join(file_obj.dir,
-                                                 file_obj.name + ".fixed")
-                #print(f"Write fixed file:{fixed_ps_filepath}")
-                with open(fixed_ps_filepath, 'wb', 0) as outfile:
-                    # write out first line
-                    outfile.write(first_line)
-
-                    # Read each line
-                    for line in infile:
-                        outfile.write(line)
-
-                    # Move repaired file into place
-                    shutil.copy(fixed_ps_filepath, ps_filepath)
-                    os.remove(fixed_ps_filepath)
-
-                    # Indicate we stripped header and leading TIFF
-                    return f"stripped {psoffset} leading bytes"
-
-            elif psoffset < tiffoffset:
-                # truncate the trailing TIFF image
-                # strip off eps header leaving Postscript
-
-                # save a copy of original file before we hack it to death
-                backup_filename = file_obj.name + ".original"
-                backup_filepath = os.path.join(file_obj.dir, backup_filename)
-                shutil.copy(ps_filepath, backup_filepath)
-
-                # Let's get rid of TIFF first
-                infile.seek(tiffoffset, 0)
-                offset = infile.tell()
-                # truncate TIFF
-                infile.truncate(offset)
-
-                # Seek to postscript
-                infile.seek(psoffset, 0)
-
-                # Look for start of Postscript
-                first_line = infile.readline()
-
-                if not re.search(b'^%!PS-', first_line):
-                    # Issue a warning.
-                    self.log(f"{file_obj.public_filepath}: Couldn't find "
-                             f"beginning of Postscript section")
-                    # remove backup file
-                    os.remove(backup_filepath)
-                    return ""
-
-                fixed_ps_filepath = os.path.join(file_obj.dir,
-                                                 file_obj.name + ".fixed")
-
-                with open(fixed_ps_filepath, 'wb', 0) as outfile:
-                    # write out first line
-                    outfile.write(first_line)
-
-                    # Read each line
-                    for line in infile:
-                        outfile.write(line)
-
-                    # Move repaired file into place
-                    shutil.copy(fixed_ps_filepath, ps_filepath)
-                    os.remove(fixed_ps_filepath)
-
-                    # Add warning about backup file we created
-                    backup_obj = File(backup_filepath, file_obj.dir)
-                    msg = (f"Modified file {file_obj.public_filepath}."
-                           f"Saving original to {backup_obj.public_filepath}."
-                           f"You may delete this file."
-                           )
-                    self.add_warning(backup_obj.public_filepath, msg)
-
-                    # Indicate we stripped header and trailing TIFF
-                    return (f"stripped trailing tiff at {tiffoffset} bytes "
-                            f"and {psoffset} leading bytes")
+    #
+    # def repair_dos_eps(self, file_obj: File) -> str:
+    #     """
+    #     Look for leading/trailing TIFF bitmaps and remove them.
+    #
+    #     ADD MORE HERE
+    #
+    #     Parameters
+    #     ----------
+    #     file_obj : File
+    #         File we are repairing.
+    #
+    #     Returns
+    #     -------
+    #         String message indicates that something was done and message details what was done.
+    #
+    #     Notes
+    #     -----
+    #         DOS EPS Binary File Header
+    #
+    #         0-3   Must be hex C5D0D3C6 (byte 0=C5).
+    #         4-7   Byte position in file for start of PostScript language code section.
+    #         8-11  Byte length of PostScript language section
+    #         12-15 Byte position in file for start of Metafile screen representation.
+    #         16-19 Byte length of Metafile section (PSize).
+    #         20-23 Byte position of TIFF representation.
+    #         24-27 Byte length of TIFF section.
+    #
+    #     """
+    #     ps_filepath = file_obj.filepath
+    #
+    #     if not os.path.exists(ps_filepath):
+    #         self.log(f"{file_obj.public_filepath}: File not found")
+    #         return ""
+    #
+    #     with open(ps_filepath, 'r+b', 0) as infile:
+    #
+    #         # Read past ESP file marker (C5D0D3C6)
+    #         infile.seek(4, 0)
+    #
+    #         # Read header bytes we are interested in
+    #         header = infile.read(24)
+    #         pb = struct.pack('24s', header)
+    #
+    #         # Extract offsets/lengths for Postscript and TIFF
+    #         (psoffset, pslength, _, _, tiffoffset,
+    #          tifflength) = struct.unpack('6i', pb)
+    #
+    #         #(f"psoffset:{psoffset} len:{pslength} tiffoffset:{tiffoffset}"
+    #         # f"len:{tifflength}")
+    #
+    #         if not (psoffset > 0 and pslength > 0 and tiffoffset > 0
+    #                 and tifflength > 0):
+    #             # Encapsulated Postscript does not contain embedded TIFF
+    #             return ""
+    #
+    #         # Extract Postscript
+    #
+    #         if psoffset > tiffoffset:
+    #             # Postscript follows TIFF so we will seek
+    #             # to Postscript and extract (eliminate header and TIFF)
+    #
+    #             # Seek to postscript
+    #             infile.seek(psoffset, 0)
+    #
+    #             # Look for start of Postscript
+    #             first_line = infile.readline()
+    #
+    #             if not re.search(b'^%!PS-', first_line):
+    #                 # Issue a warning.
+    #                 self.log(f"{file_obj.public_filepath}: Couldn't find "
+    #                          f"beginning of Postscript section")
+    #                 return ""
+    #
+    #             fixed_ps_filepath = os.path.join(file_obj.dir,
+    #                                              file_obj.name + ".fixed")
+    #             #print(f"Write fixed file:{fixed_ps_filepath}")
+    #             with open(fixed_ps_filepath, 'wb', 0) as outfile:
+    #                 # write out first line
+    #                 outfile.write(first_line)
+    #
+    #                 # Read each line
+    #                 for line in infile:
+    #                     outfile.write(line)
+    #
+    #                 # Move repaired file into place
+    #                 shutil.copy(fixed_ps_filepath, ps_filepath)
+    #                 os.remove(fixed_ps_filepath)
+    #
+    #                 # Indicate we stripped header and leading TIFF
+    #                 return f"stripped {psoffset} leading bytes"
+    #
+    #         elif psoffset < tiffoffset:
+    #             # truncate the trailing TIFF image
+    #             # strip off eps header leaving Postscript
+    #
+    #             # save a copy of original file before we hack it to death
+    #             backup_filename = file_obj.name + ".original"
+    #             backup_filepath = os.path.join(file_obj.dir, backup_filename)
+    #             shutil.copy(ps_filepath, backup_filepath)
+    #
+    #             # Let's get rid of TIFF first
+    #             infile.seek(tiffoffset, 0)
+    #             offset = infile.tell()
+    #             # truncate TIFF
+    #             infile.truncate(offset)
+    #
+    #             # Seek to postscript
+    #             infile.seek(psoffset, 0)
+    #
+    #             # Look for start of Postscript
+    #             first_line = infile.readline()
+    #
+    #             if not re.search(b'^%!PS-', first_line):
+    #                 # Issue a warning.
+    #                 self.log(f"{file_obj.public_filepath}: Couldn't find "
+    #                          f"beginning of Postscript section")
+    #                 # remove backup file
+    #                 os.remove(backup_filepath)
+    #                 return ""
+    #
+    #             fixed_ps_filepath = os.path.join(file_obj.dir,
+    #                                              file_obj.name + ".fixed")
+    #
+    #             with open(fixed_ps_filepath, 'wb', 0) as outfile:
+    #                 # write out first line
+    #                 outfile.write(first_line)
+    #
+    #                 # Read each line
+    #                 for line in infile:
+    #                     outfile.write(line)
+    #
+    #                 # Move repaired file into place
+    #                 shutil.copy(fixed_ps_filepath, ps_filepath)
+    #                 os.remove(fixed_ps_filepath)
+    #
+    #                 # Add warning about backup file we created
+    #                 backup_obj = File(backup_filepath, file_obj.dir)
+    #                 msg = (f"Modified file {file_obj.public_filepath}."
+    #                        f"Saving original to {backup_obj.public_filepath}."
+    #                        f"You may delete this file."
+    #                        )
+    #                 self.add_warning(backup_obj.public_filepath, msg)
+    #
+    #                 # Indicate we stripped header and trailing TIFF
+    #                 return (f"stripped trailing tiff at {tiffoffset} bytes "
+    #                         f"and {psoffset} leading bytes")
 
 
     # def repair_postscript(self, file_obj: File) -> str:
@@ -1976,7 +1976,7 @@ class Upload:
         formats, or removed files.
         """
         # Calculate total upload workspace source directory size.
-        source_directory = self.get_source_path()
+        source_directory = self.source_path
 
         total_upload_size = 0
 
@@ -2007,7 +2007,7 @@ class Upload:
         # receive a list of ALL files including those which are
         # removed or rejected (but only for upload files action).
 
-        source_directory = self.get_source_path()
+        source_directory = self.source_path
 
         self.__files = []
         self.log("File List:")
@@ -2089,7 +2089,7 @@ class Upload:
         directory.
         """
         # Start at directory containing source files
-        source_directory = self.get_source_path()
+        source_directory = self.source_path
 
         # Set permissions on all directories and files
         for root_directory, directories, files in os.walk(source_directory):
@@ -2107,7 +2107,7 @@ class Upload:
         Intended for case where submitter creates archive with all
         uploaded files in a subdirectory.
         """
-        source_directory = self.get_source_path()
+        source_directory = self.source_path
 
         entries = os.listdir(source_directory)
 
@@ -2122,7 +2122,7 @@ class Upload:
             single_directory = os.path.join(source_directory, entries[0])
 
             # Save copy in removed directory
-            save_filename = os.path.join(self.get_removed_path(),
+            save_filename = os.path.join(self.removed_path,
                                          'move_source.tar.gz')
             with tarfile.open(save_filename, "w:gz") as tar:
                 tar.add(single_directory, arcname=os.path.sep)
@@ -2259,14 +2259,14 @@ class Upload:
             raise FileNotFoundError('No content to pack')
         self.remove_content_package()
         with tarfile.open(self.get_content_path(), "w:gz") as tar:
-            tar.add(self.get_source_path(), arcname=os.path.sep)
+            tar.add(self.source_path, arcname=os.path.sep)
         return self.get_content_path()
 
     @property
     def last_modified(self) -> datetime:
         """Time of the most recent change to a file in the workspace."""
         most_recent = max(os.path.getmtime(root) for root, _, _
-                          in os.walk(self.get_source_path()))
+                          in os.walk(self.source_path))
         return datetime.fromtimestamp(most_recent, tz=UTC)
 
     def get_content(self) -> io.BufferedReader:
