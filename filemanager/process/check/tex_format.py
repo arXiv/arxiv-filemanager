@@ -22,11 +22,11 @@ class CheckTeXForm(BaseChecker):
                        " implemented.")
 
     def check_LATEX(self, workspace: UploadWorkspace,
-                    u_file: UploadedFile) -> None:):
+                    u_file: UploadedFile) -> None:
         """Check and warn if using preprint document style."""
         workspace.log(self.NOT_IMPLEMENTED % u_file.path)
 
     def check_LATEX2e(self, workspace: UploadWorkspace,
-                    u_file: UploadedFile) -> None:):
+                    u_file: UploadedFile) -> None:
         """Check and warn if using preprint document style."""
         workspace.log(self.NOT_IMPLEMENTED % u_file.path)

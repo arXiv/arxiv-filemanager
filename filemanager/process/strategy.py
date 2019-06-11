@@ -1,13 +1,13 @@
 """File checks."""
 
 from typing import Optional, Callable
-from ..domain import UploadWorkspace, Checker
+from ..domain import UploadWorkspace, IChecker
 
 
 class SynchronousCheckingStrategy:
     """Runs checks one file at a time."""
 
-    def check(self, workspace: 'UploadWorkspace', *checkers: Checker) -> None:
+    def check(self, workspace: 'UploadWorkspace', *checkers: IChecker) -> None:
         """Run checks one file at a time."""
         # This may take a few passes, as we may be unpacking compressed files.
         while workspace.has_unchecked_files:

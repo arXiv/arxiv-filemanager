@@ -3,7 +3,7 @@
 import os
 import re
 import struct
-from typing import Union
+from typing import Union, Tuple
 
 from arxiv.base import logging
 
@@ -32,7 +32,7 @@ PATTERN = re.compile(rb'Thumbnail:|BeginPreview|BeginPhotoshop|'
 """[ needs info ]"""
 
 # TODO: This needs more context. -- Erick 2019-06-07
-PS = re.compile(b'^%!PS-')
+PS_BEGIN = re.compile(b'^%!PS-')
 """[ needs info ]"""
 
 
@@ -45,21 +45,21 @@ class UnMacify(BaseChecker):
         unmacify(workspace, u_file)
 
     def check_PC(self, workspace: UploadWorkspace,
-                   u_file: UploadedFile) -> None:
+                 u_file: UploadedFile) -> None:
         """UnMac-ify PC files."""
         unmacify(workspace, u_file)
 
     def check_MAC(self, workspace: UploadWorkspace,
-                   u_file: UploadedFile) -> None:
+                  u_file: UploadedFile) -> None:
         """UnMac-ify mac files."""
         unmacify(workspace, u_file)
 
     def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
         """If file is identified as core TeX type then we need to unmacify."""
-        if u_file.is_tex_type:
+        if u_file.file_type.is_tex_type:
             unmacify(workspace, u_file)
             # TODO: Check if TeX source file contains raw Postscript
-            _extract_uu(file_name, file_type)
+            _extract_uu(workspace, u_file)
 
 
 # TODO: this needs more context -- Erick 2019-06-07
@@ -99,7 +99,7 @@ class CleanupPostScript(BaseChecker):
         Check postscript for unwanted inclusions and inspect unidentified files
         that appear to be Postscript.
         """
-        unmacify(workspace, uf_file)
+        unmacify(workspace, u_file)
         _check_postscript(workspace, u_file, "")
 
     def check_PS_PC(self, workspace: UploadWorkspace,
@@ -114,7 +114,7 @@ class CleanupPostScript(BaseChecker):
 
     def check_FAILED(self, workspace: UploadWorkspace,
                      u_file: UploadedFile) -> None:
-        if PS.search(u_file.name):
+        if self.PS.search(u_file.name):
             _check_postscript(workspace, u_file, "")
 
 
@@ -243,7 +243,7 @@ def _repair_postscript(workspace: UploadWorkspace,
         # Done with initial cleanup
         if HEADER_END.search(line):
             if stripped:    # Save stripped content
-                cleaned_filepath = f'{u_file.path}.cleaned')
+                cleaned_filepath = f'{u_file.path}.cleaned'
                 cleaned_file = workspace.create(cleaned_filepath,
                                                 file_type=u_file.file_type)
                 with workspace.open(cleaned_file, 'wb', buffering=0) \
@@ -482,7 +482,7 @@ def _repair_dos_eps(workspace: UploadWorkspace,
             infile.seek(psoffset, 0)    # Seek to postscript.
             first_line = infile.readline()  # Look for start of Postscript.
 
-            if not PS.search(first_line):
+            if not PS_BEGIN.search(first_line):
                 workspace.log(f"{u_file.path}: Couldn't find "
                               f"beginning of Postscript section")
                 return u_file, ""
@@ -516,7 +516,7 @@ def _repair_dos_eps(workspace: UploadWorkspace,
             infile.seek(psoffset, 0)    # Seek to postscript
             first_line = infile.readline()  # Look for start of Postscript.
 
-            if not PS.search(first_line):
+            if not PS_BEGIN.search(first_line):
                 workspace.log(f"{u_file.path}: Couldn't find beginning of"
                               " Postscript section")
 

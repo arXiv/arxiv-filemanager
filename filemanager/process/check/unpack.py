@@ -2,6 +2,7 @@
 
 import os
 import tarfile
+import zipfile
 from arxiv.base import logging
 
 from ...domain import FileType, UploadedFile, UploadWorkspace
@@ -29,56 +30,57 @@ class UnpackCompressedTarFiles(BaseChecker):
                     u_file: UploadedFile) -> None:
         self._unpack(workspace, u_file)
 
-    def _unpack_file(workspace: UploadWorkspace, u_file: UploadedFile,
-                     target_dir: str, tar: tarfile.TarFile,
-                     tarinfo: tarfile.TarInfo) -> None:
+    def _unpack_file(self, workspace: UploadWorkspace, u_file: UploadedFile,
+                     tar: tarfile.TarFile, tarinfo: tarfile.TarInfo) -> None:
         # Extract files and directories for now
-        dest = os.path.join(target_dir, tarinfo.name)
+        dest = os.path.join(u_file.dir, tarinfo.name).lstrip('/')
         # Tarfiles may contain relative paths! We must ensure that each file is
         # not going to escape the upload source directory _before_ we extract
         # it.
-        if target_dir not in os.path.normpath(dest):
-            upload.add_log_entry(f'Member of file {u_file.name} tried'
-                                 ' to escape workspace.')
+        if not workspace.is_safe(dest):
+            logger.error('Member of %s tried to escape workspace', u_file.path)
+            workspace.log(f'Member of file {u_file.name} tried to escape'
+                          ' workspace.')
             return
 
-        if tarinfo.isreg() or tarinfo.isdir():
-            tar.extract(tarinfo, target_dir)    # log this? ("Reg File")
-            os.utime(dest)  # Update access and modified times to now.
-        else:
-            # Warn about entities we don't want to see in upload archives. We
-            # did not check carefully in legacy system and hard links caused
-            # bad things to happen.
-            msg = '%s are not allowed. ' + f'Removing {tarinfo.name}'
-            if tarinfo.issym():  # sym link
-                workspace.add_warning(u_file, msg % 'Symbolic links')
-            elif tarinfo.islnk():  # hard link
-                workspace.add_warning(u_file, msg % 'Hard links')
-            elif tarinfo.ischr():
-                workspace.add_warning(u_file, msg % 'Character devices')
-            elif tarinfo.isblk():
-                workspace.add_warning(u_file, msg % 'Block devices')
-            elif tarinfo.isfifo():
-                workspace.add_warning(u_file, msg % 'FIFO devices')
-            elif tarinfo.isdev():
-                workspace.add_warning(u_file, msg % 'Character devices')
+        # Warn about entities we don't want to see in upload archives. We
+        # did not check carefully in legacy system and hard links caused
+        # bad things to happen.
+        msg = '%s are not allowed. ' + f'Removing {tarinfo.name}'
+        if tarinfo.issym():  # sym link
+            workspace.add_warning(u_file, msg % 'Symbolic links')
+        elif tarinfo.islnk():  # hard link
+            workspace.add_warning(u_file, msg % 'Hard links')
+        elif tarinfo.ischr():
+            workspace.add_warning(u_file, msg % 'Character devices')
+        elif tarinfo.isblk():
+            workspace.add_warning(u_file, msg % 'Block devices')
+        elif tarinfo.isfifo():
+            workspace.add_warning(u_file, msg % 'FIFO devices')
+        elif tarinfo.isdev():
+            workspace.add_warning(u_file, msg % 'Character devices')
+
+        # Extract a regular file or directory.
+        elif tarinfo.isreg() or tarinfo.isdir():
+            full_path = workspace.get_full_path(u_file.dir)
+            tar.extract(tarinfo, full_path)
+            os.utime(full_path)  # Update access and modified times to now.
+            workspace.create(dest, touch=False)
 
     def _unpack(self, workspace: UploadWorkspace,
                 u_file: UploadedFile) -> None:
-        if not tarfile.is_tarfile(workspace.get_full_path(u_file)):
+        if not workspace.is_tarfile(u_file):
             workspace.add_error(u_file, f'Unable to read tar {u_file.name}')
             return
 
-        parent_dir, _ = os.path.split(u_file.path)
-        target_dir = os.path.join(workspace.source_path, parent_dir)
-        workspace.add_log_entry(f"***** unpack {u_file.file_type.value}"
-                                f" {u_file.path} to dir: {target_dir}")
+        workspace.log(f"***** unpack {u_file.file_type.value} {u_file.path}"
+                      f" to dir: {os.path.split(u_file.path)[0]}")
 
         try:
-            with tarfile.open(u_file.path) as tar:
-                for tarinfo in tar:
-                    self._unpack_file(workspace, u_file, target_dir,
-                                      tar, tarinfo)
+            with workspace.open(u_file, 'rb') as f:
+                with tarfile.open(fileobj=f) as tar:
+                    for tarinfo in tar:
+                        self._unpack_file(workspace, u_file, tar, tarinfo)
 
         except tarfile.TarError as e:
             # Do something better with as error
@@ -87,7 +89,7 @@ class UnpackCompressedTarFiles(BaseChecker):
             return
 
         workspace.remove(u_file, f"Removed packed file '{u_file.name}'.")
-        workspace.add_log_entry(f'Removed packed file {u_file.name}')
+        workspace.log(f'Removed packed file {u_file.name}')
 
 
 class UnpackCompressedZIPFiles(BaseChecker):
@@ -97,17 +99,15 @@ class UnpackCompressedZIPFiles(BaseChecker):
 
     def check_ZIP(self, workspace: UploadWorkspace,
                   u_file: UploadedFile) -> None:
-        parent_dir, _ = os.path.split(u_file.path)
-        target_dir = os.path.join(workspace.source_path, parent_dir)
         logger.debug("*******Process zip archive: %s", u_file.path)
 
-        workspace.add_log_entry(f'***** unpack {u_file.file_type}'
-                                f' {u_file.name} to dir: {target_dir}')
+        workspace.log(f'***** unpack {u_file.file_type} {u_file.name}'
+                      f' to dir: {os.path.split(u_file.path)[0]}')
         try:
-            with zipfile.ZipFile(path, "r") as zip:
-                for zipinfo in zip.infolist():
-                    self._unpack_file(workspace, u_file, target_dir,
-                                      zip, zipinfo)
+            with workspace.open(u_file, 'rb') as f:
+                with zipfile.ZipFile(fileobj=f) as zip:
+                    for zipinfo in zip.infolist():
+                        self._unpack_file(workspace, u_file, zip, zipinfo)
         except zipfile.BadZipFile as e:
             # TODO: Think about warnings a bit. Tar/zip problems currently
             # reported as warnings. Upload warnings allow submitter to continue
@@ -118,21 +118,24 @@ class UnpackCompressedZIPFiles(BaseChecker):
 
         # Now move zip file out of way to removed directory
         workspace.remove(u_file, f"Removed packed file '{u_file.name}'.")
-        workspace.add_log_entry(f'Removed packed file {u_file.name}')
+        workspace.log(f'Removed packed file {u_file.name}')
 
-    def _unpack_file(workspace: UploadWorkspace, u_file: UploadedFile,
-                     target_dir: str, zip: zipfile.ZipFile,
-                     zipinfo: zipfile.ZipInfo) -> None:
-        dest = os.path.join(target_dir, tarinfo.name)
+    def _unpack_file(self, workspace: UploadWorkspace, u_file: UploadedFile,
+                     zip: zipfile.ZipFile, zipinfo: zipfile.ZipInfo) -> None:
+        dest = os.path.join(u_file.dir, zipinfo.name).lstrip('/')
         # Zip files may contain relative paths! We must ensure that each file
         # is not going to escape the upload source directory _before_ we
         # extract it.
-        if target_dir not in os.path.normpath(dest):
-            upload.add_log_entry(f'Member of file {u_file.name} tried'
-                                 ' to escape workspace.')
+        if not workspace.is_safe(dest):
+            logger.error('Member of %s tried to escape workspace', u_file.path)
+            workspace.log(f'Member of file {u_file.name} tried'
+                          ' to escape workspace.')
             return
-        zip.extract(zipinfo, target_dir)
 
+        full_path = workspace.get_full_path(u_file.dir)
+        zip.extract(zipinfo, full_path)
+        os.utime(full_path)  # Update access and modified times to now.
+        workspace.create(dest, touch=False)
 
 
 # TODO: Add support for compressed files.
@@ -141,8 +144,5 @@ class UnpackCompressedZFiles(BaseChecker):
 
     def check_COMPRESSED(self, workspace: UploadWorkspace,
                          u_file: UploadedFile) -> None:
-        logger.debug("We can't uncompress .Z files yet.")
-        workspace.add_log_entry(f'***** unpack {u_file.file_type}'
-                                f' {u_file.name} to dir: {target_dir}')
-        workspace.add_log_entry('Unable to uncompress .Z file. Not implemented'
-                                ' yet.')
+        logger.debug("We can't uncompress .Z files yet: %s", u_file.path)
+        workspace.log('Unable to uncompress .Z file. Not implemented yet.')

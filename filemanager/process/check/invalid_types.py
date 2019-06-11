@@ -32,38 +32,38 @@ class FlagInvalidSourceTypes(BaseChecker):
     )
 
     def check_DOCX(self, workspace: UploadWorkspace,
-                        u_file: UploadedFile) -> None:
+                   u_file: UploadedFile) -> None:
         """We no longer support DOCX."""
         if workspace.file_count == 1:
-            workspace.set_source_type(UploadWorkspace.SourceType.INVALID)
+            workspace.source_type = UploadWorkspace.SourceType.INVALID
             workspace.add_error(u_file, self.DOCX_ERROR_MESSAGE)
 
     def check_ODF(self, workspace: UploadWorkspace,
-                       u_file: UploadedFile) -> None:
+                  u_file: UploadedFile) -> None:
         """We no longer support ODF."""
         if workspace.file_count == 1:
-            workspace.set_source_type(UploadWorkspace.SourceType.INVALID)
+            workspace.source_type = UploadWorkspace.SourceType.INVALID
             workspace.add_error(u_file, self.DOCX_ERROR_MESSAGE)
 
     def check_EPS(self, workspace: UploadWorkspace,
-                       u_file: UploadedFile) -> None:
+                  u_file: UploadedFile) -> None:
         """Encapsulated postscript format is not supported."""
         if workspace.file_count == 1:
-            workspace.set_source_type(UploadWorkspace.SourceType.INVALID)
+            workspace.source_type = UploadWorkspace.SourceType.INVALID
             workspace.add_error(u_file, self.EPS_ERROR_MESSAGE)
 
     def check_TEXAUX(self, workspace: UploadWorkspace,
-                          u_file: UploadedFile) -> None:
+                     u_file: UploadedFile) -> None:
         """Auxiliary TeX files are not allowed."""
         if workspace.file_count == 1:
-            workspace.set_source_type(UploadWorkspace.INVALID)
+            workspace.source_type = UploadWorkspace.INVALID
             workspace.add_error(u_file, self.TEXAUX_ERROR_MESSAGE)
 
     def check_TEXAUX(self, workspace: UploadWorkspace,
-                          u_file: UploadedFile) -> None:
+                     u_file: UploadedFile) -> None:
         """Auxiliary TeX files are not allowed."""
         if workspace.file_count == 1:
-            workspace.set_source_type(UploadWorkspace.INVALID)
+            workspace.source_type = UploadWorkspace.INVALID
             workspace.add_error(u_file, self.TEXAUX_ERROR_MESSAGE)
 
 

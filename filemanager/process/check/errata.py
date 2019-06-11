@@ -239,7 +239,7 @@ class FixTGZFileName(BaseChecker):
         if self.PTN.search(u_file.name):
             base_path, prev_name = os.path.split(u_file.path)
             new_name = self.PTN.sub('', prev_name)
-            new_path = os.path.jion(base_path, new_name)
+            new_path = os.path.join(base_path, new_name)
             workspace.rename(u_file, new_path)
             workspace.add_warning(u_file,
                                   "Renaming '{prev_name}' to '{new_name}'.")

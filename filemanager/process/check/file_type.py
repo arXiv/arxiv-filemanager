@@ -111,7 +111,7 @@ PDF_OUTPUT = re.compile(rb'^[^%]*\\pdfoutput(?:\s+)?=(?:\s+)?1')
 def _check_exists(workspace: UploadWorkspace,
                   u_file: UploadedFile) -> Optional[FileType]:
     """Check whether file exists (new)."""
-    if not os.path.isfile(workspace.get_full_path(u_file)):
+    if not workspace.exists(u_file.path): # os.path.isfile(workspace.get_full_path(u_file)):
         return FileType.FAILED    # , '', ''
 
 
@@ -186,7 +186,7 @@ def _check_encrypted(workspace: UploadWorkspace,
 def _check_zero_size(workspace: UploadWorkspace,
                      u_file: UploadedFile) -> Optional[FileType]:
     """Check for zero size file size."""
-    if os.stat(workspace.get_full_path(u_file)).st_size == 0:
+    if workspace.getsize(u_file) == 0:
         return FileType.IGNORE    # , '', ''
 
 

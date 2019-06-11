@@ -1,13 +1,20 @@
 """On-disk storage for uploads."""
 
-from typing import Any
+from typing import Any, Union
 import io
 import os
+import tarfile
+import zipfile
 import shutil
 import filecmp
 from pathlib import Path
 
+from arxiv.base import logging
+
 from ..domain import UploadWorkspace, UploadedFile
+
+logger = logging.getLogger(__name__)
+logger.propagate = False
 
 
 class SimpleStorageAdapter:
@@ -18,12 +25,41 @@ class SimpleStorageAdapter:
         self._base_path = base_path
         if not os.path.exists(self._base_path):
             raise RuntimeError('Volume does not exist')
+        logger.debug('New SimpleStorageAdapter at %s', self._base_path)
+
+    def is_safe(self, workspace: UploadWorkspace, path: str,
+                is_ancillary: bool = False, is_removed: bool = False) -> bool:
+        path_in_workspace = workspace.get_path(path, is_ancillary, is_removed)
+        full_path = self._get_path_bare(path_in_workspace)
+        try:
+            self._check_safe(workspace, full_path, is_ancillary, is_removed)
+        except ValueError:
+            return False
+        return True
+
+    def _check_safe(self, workspace: UploadWorkspace, full_path: str,
+                    is_ancillary: bool = False, is_removed: bool = False,
+                    strict: bool = True) -> None:
+        if not strict:
+            workspace_full_path = self._get_path_bare(workspace.base_path)
+        elif is_ancillary:
+            workspace_full_path = self._get_path_bare(workspace.ancillary_path)
+        elif is_removed:
+            workspace_full_path = self._get_path_bare(workspace.removed_path)
+        else:
+            workspace_full_path = self._get_path_bare(workspace.source_path)
+        if workspace_full_path not in full_path:
+            raise ValueError(f'Not a valid path for workspace: {full_path}')
 
     def move(self, workspace: UploadWorkspace, u_file: UploadedFile,
              from_path: str, to_path: str) -> None:
         """Move a file from one path to another."""
         src_path = self._get_path_bare(from_path, u_file.is_persisted)
         dest_path = self._get_path_bare(to_path, u_file.is_persisted)
+        self._check_safe(workspace, src_path, u_file.is_ancillary,
+                         u_file.is_removed, strict=False)
+        self._check_safe(workspace, dest_path, u_file.is_ancillary,
+                         u_file.is_removed)
         parent, _ = os.path.split(dest_path)
         if not os.path.exists(parent):
             os.makedirs(parent)
@@ -32,32 +68,43 @@ class SimpleStorageAdapter:
     def open(self, workspace: UploadWorkspace, u_file: UploadedFile,
              flags: str = 'r', **kwargs: Any) -> io.IOBase:
         """Get an open file pointer to a file on disk."""
-        return open(self._get_path(workspace, u_file), flags, **kwargs)
+        return open(self.get_path(workspace, u_file), flags, **kwargs)
 
-    def _get_path(self, workspace: UploadWorkspace,
-                  u_file: UploadedFile) -> str:
-        return self._get_path_bare(workspace.get_path(u_file))
+    def is_tarfile(self, workspace: UploadWorkspace,
+                   u_file: UploadedFile) -> bool:
+        return tarfile.is_tarfile(self.get_path(workspace, u_file))
+
+    def get_path(self, workspace: UploadWorkspace,
+                 u_file_or_path: Union[str, UploadedFile],
+                 is_ancillary: bool = False,
+                 is_removed: bool = False) -> str:
+        path = self._get_path_bare(workspace.get_path(u_file_or_path))
+        if isinstance(u_file_or_path, UploadedFile):
+            is_ancillary = u_file_or_path.is_ancillary
+            is_removed = u_file_or_path.is_removed
+        self._check_safe(workspace, path, is_ancillary, is_removed)
+        return path
 
     def _get_path_bare(self, path: str, persisted: bool = True) -> str:
-        return os.path.join(self._base_path, path)
+        return os.path.normpath(os.path.join(self._base_path, path))
 
     def persist(self, workspace: UploadWorkspace,
                 u_file: UploadedFile) -> None:
         """Persist a file."""
-        if not os.path.exists(self._get_path(workspace, u_file)):
+        if not os.path.exists(self.get_path(workspace, u_file)):
             raise RuntimeError('File does not exist')
         u_file.is_persisted = True
 
     def cmp(self, workspace: UploadWorkspace, a_file: UploadedFile,
             b_file: UploadedFile, shallow: bool = True) -> bool:
         """Compare the contents of two files."""
-        return filecmp.cmp(self._get_path(workspace, a_file),
-                           self._get_path(workspace, b_file),
+        return filecmp.cmp(self.get_path(workspace, a_file),
+                           self.get_path(workspace, b_file),
                            shallow=shallow)
 
     def create(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
         """Create a file."""
-        full_path = self._get_path(workspace, u_file)
+        full_path = self.get_path(workspace, u_file)
         parent, _ = os.path.split(full_path)
         if not os.path.exists(parent):
             os.makedirs(parent)
@@ -66,19 +113,19 @@ class SimpleStorageAdapter:
     def copy(self, workspace: UploadWorkspace, u_file: UploadedFile,
              new_file: UploadedFile) -> None:
         """Copy the contents of ``u_file`` into ``new_file``."""
-        shutil.copy(self._get_path(workspace, u_file),
-                    self._get_path(workspace, new_file))
+        shutil.copy(self.get_path(workspace, u_file),
+                    self.get_path(workspace, new_file))
 
     def delete(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
         """Delete a file or directory."""
         if u_file.is_directory:
-            shutil.rmtree(self._get_path(workspace, u_file))
+            shutil.rmtree(self.get_path(workspace, u_file))
         else:
-            os.unlink(self._get_path(workspace, u_file))
+            os.unlink(self.get_path(workspace, u_file))
 
     def getsize(self, workspace: UploadWorkspace, u_file: UploadedFile) -> int:
         """Get the size in bytes of a file."""
-        return os.path.getsize(self._get_path(workspace, u_file))
+        return os.path.getsize(self.get_path(workspace, u_file))
 
 
 class QuarantineStorageAdapter(SimpleStorageAdapter):
@@ -99,11 +146,6 @@ class QuarantineStorageAdapter(SimpleStorageAdapter):
     def _get_quarantine_path(self, path: str) -> str:
         return os.path.join(self._quarantine_path, path)
 
-    def _get_path(self, workspace: UploadWorkspace,
-                  u_file: UploadedFile) -> str:
-        return self._get_path_bare(workspace.get_path(u_file),
-                                   u_file.is_persisted)
-
     def _get_path_bare(self, path: str, persisted: bool = True) -> str:
         if persisted:
             return self._get_permanent_path(path)
@@ -114,6 +156,10 @@ class QuarantineStorageAdapter(SimpleStorageAdapter):
         """Move a file or directory from quarantine to permanent storage."""
         src_path = self._get_quarantine_path(workspace.get_path(u_file))
         dst_path = self._get_permanent_path(workspace.get_path(u_file))
+        self._check_safe(workspace, src_path, u_file.is_ancillary,
+                         u_file.is_removed)
+        self._check_safe(workspace, dst_path, u_file.is_ancillary,
+                         u_file.is_removed)
         parent, _ = os.path.split(dst_path)
         if not os.path.exists(parent):
             os.makedirs(parent)

@@ -26,10 +26,9 @@ class RemoveTeXGeneratedFiles(BaseChecker):
             base_path, name = os.path.split(u_file.path)
             base, _ = os.path.splitext(name)
 
-
             tex_file = os.path.join(base_path, f'{base}.tex')
             ucase_tex_file = os.path.join(base_path, f'{base}.TEX')
-            if workspace.exists(tex_file, ucase_tex_file):
+            if workspace.exists(tex_file) or workspace.exists(ucase_tex_file):
                 # Potential conflict / corruption by including TeX generated
                 # files in submission.
                 workspace.remove(u_file,

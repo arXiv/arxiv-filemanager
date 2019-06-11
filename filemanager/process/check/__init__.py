@@ -1,3 +1,6 @@
+from typing import List
+
+from ...domain import IChecker
 from .file_extensions import FixFileExtensions
 from .file_type import InferFileType
 from .invalid_types import FlagInvalidSourceTypes, FlagInvalidFileTypes
@@ -10,59 +13,65 @@ from .file_names import FixWindowsFileNames, WarnAboutTeXBackupFiles, \
 from .errata import RemoveHyperlinkStyleFiles, RemoveDisallowedFiles, \
     RemoveMetaFiles, RemoveExtraneousRevTeXFiles, RemoveDiagramsPackage, \
     RemoveAADemoFile, RemoveMissingFontFile, RemoveSyncTeXFiles, \
-    FixTGZFileName, RemoveDOCFiles
+    FixTGZFileName, RemoveDOCFiles, CheckForBibFile
 from .tex_generated import RemoveTeXGeneratedFiles, DisallowDVIFiles
 from .cleanup import UnMacify, CleanupPostScript, RepairDOSEPSFiles
 from .tex_format import CheckTeXForm
 from .images import CheckForUnacceptableImages
 from .uuencoded import CheckForUUEncodedFiles
+from .ancillary import AncillaryFileChecker
+from .zero_length_files import ZeroLengthFileChecker
 
 
 CHECKS = [
     # These go first, since they remove files and directories.
-    RemoveMacOSXHiddenFiles(),
-    RemoveFilesWithLeadingDot(),
-    ZeroLengthFileChecker(),
+    RemoveMacOSXHiddenFiles,
+    RemoveFilesWithLeadingDot,
+    ZeroLengthFileChecker,
 
-    WarnAboutProcessedDirectory(),      # Just warns.
-
-    # Fix up malformed filenames.
-    FixWindowsFileNames(),
-    AncillaryFileChecker(),
-
-    WarnAboutTeXBackupFiles(),         # Just warns.
+    WarnAboutProcessedDirectory,      # Just warns.
 
     # Fix up malformed filenames.
-    ReplaceIllegalCharacters(),
-    ReplaceLeadingHyphen(),
-    RemoveHyperlinkStyleFiles(),
-    RemoveDisallowedFiles(),
-    RemoveMetaFiles(),
+    FixWindowsFileNames,
+    AncillaryFileChecker,
 
-    CheckForBibFile(),
-    RemoveExtraneousRevTeXFiles(),
-    RemoveDiagramsPackage(),
-    RemoveAADemoFile(),
-    RemoveMissingFontFile(),
-    RemoveSyncTeXFiles(),
-    PanicOnIllegalCharacters(),
-    RemoveTeXGeneratedFiles(),
-    FixTGZFileName(),
-    RemoveDOCFiles(),
+    WarnAboutTeXBackupFiles,         # Just warns.
 
-    InferFileType(),
-    DisallowDVIFiles(),
-    FixFileExtensions(),
-    UnMacify(),
-    CleanupPostScript(),
-    CheckTeXForm(),
-    CheckForUnacceptableImages(),
-    CheckForUUEncodedFiles(),
-    RepairDOSEPSFiles(),
-    FlagInvalidFileTypes(),
-    InferSourceType(),
-    FlagInvalidSourceTypes(),
+    # Fix up malformed filenames.
+    ReplaceIllegalCharacters,
+    ReplaceLeadingHyphen,
+    RemoveHyperlinkStyleFiles,
+    RemoveDisallowedFiles,
+    RemoveMetaFiles,
 
-    UnpackCompressedTarFiles(),
-    UnpackCompressedZIPFiles(),
+    CheckForBibFile,
+    RemoveExtraneousRevTeXFiles,
+    RemoveDiagramsPackage,
+    RemoveAADemoFile,
+    RemoveMissingFontFile,
+    RemoveSyncTeXFiles,
+    PanicOnIllegalCharacters,
+    RemoveTeXGeneratedFiles,
+    FixTGZFileName,
+    RemoveDOCFiles,
+
+    InferFileType,
+    DisallowDVIFiles,
+    FixFileExtensions,
+    UnMacify,
+    CleanupPostScript,
+    CheckTeXForm,
+    CheckForUnacceptableImages,
+    CheckForUUEncodedFiles,
+    RepairDOSEPSFiles,
+    FlagInvalidFileTypes,
+    InferSourceType,
+    FlagInvalidSourceTypes,
+
+    UnpackCompressedTarFiles,
+    UnpackCompressedZIPFiles,
 ]
+
+
+def get_default_checkers() -> List[IChecker]:
+    return [check() for check in CHECKS]

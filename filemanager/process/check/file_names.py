@@ -51,17 +51,16 @@ class WarnAboutTeXBackupFiles(BaseChecker):
 class ReplaceIllegalCharacters(BaseChecker):
     """Checks for illegal characters and replaces them with underscores."""
 
-    ILLEGAL = re.compile(r'[^\w\+\-\=\,]')
+    ILLEGAL = re.compile(r'[\+\-\=\,]')
     """Filename contains illegal characters ``+-/=,``."""
 
     def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
         """Check for illegal characters and replace them with underscores."""
 
-        if self.ILLEGAL.search(u_file.name):
-
+        if self.ILLEGAL.search(u_file.name):    # Translate bad characters.
             prev_name = u_file.name
-            new_name = ILLEGAL.sub('_', prev_name)  # Translate bad characters.
-            base_path, _ = os.path.split(us_file.path)
+            new_name = self.ILLEGAL.sub('_', prev_name)
+            base_path, _ = os.path.split(u_file.path)
             new_path = os.path.join(base_path, new_name)
             workspace.rename(u_file, new_path)
 
@@ -87,7 +86,6 @@ class PanicOnIllegalCharacters(BaseChecker):
             workspace.add_error(u_file, self.ILLEGAL_ERROR % u_file.name)
 
 
-
 class ReplaceLeadingHyphen(BaseChecker):
     """Checks for a leading hyphen, and replaces it with an underscore."""
 
@@ -97,7 +95,7 @@ class ReplaceLeadingHyphen(BaseChecker):
         if u_file.name.startswith('-'):
             prev_name = u_file.name
             new_name = re.sub('^-', '_', prev_name)
-            base_path, _ = os.path.split(us_file.path)
+            base_path, _ = os.path.split(u_file.path)
             new_path = os.path.join(base_path, new_name)
             workspace.rename(u_file, new_path)
 

@@ -1,8 +1,8 @@
 import mmap
-
+import re
 from arxiv.base import logging
 
-from ..domain import UploadedFile, UploadWorkspace
+from ...domain import UploadedFile, UploadWorkspace
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +29,6 @@ def unmacify(workspace: UploadWorkspace, uploaded_file: UploadedFile) -> None:
     """
     # Determine type of file we are dealing with PC or MAC
     file_type = MAC
-
-    # Get the absolute file path
-    filepath = file_obj.filepath
 
     # Check whether file contains '\r\n' sequence
     with workspace.open(uploaded_file, 'rb', buffering=0) as f, \
