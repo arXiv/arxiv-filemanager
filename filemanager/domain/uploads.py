@@ -415,10 +415,8 @@ class UploadWorkspace:
         if isinstance(u_file_or_path, str) and u_file_or_path in self.files:
             if not self.files['u_file_or_path'].is_directory:
                 raise ValueError('Not a directory')
-            if not self.files['u_file_or_path'].is_active:
-                raise ValueError('Nope')
         elif isinstance(u_file_or_path, UploadedFile):
-            if not u_file_or_path.is_directory or not u_file_or_path.is_active:
+            if not u_file_or_path.is_directory:
                 raise ValueError('Not a directory')
             path = u_file_or_path.path
         else:

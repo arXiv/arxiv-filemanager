@@ -132,4 +132,4 @@ def check_file_termination(workspace: UploadWorkspace,
         if last_byte != b'\n':
             workspace.add_warning(u_file,
                                   f"File '{u_file.path}' does not end with"
-                                  " newline (\\n), TRUNCATED?.")
+                                  " newline (\\n), TRUNCATED?")

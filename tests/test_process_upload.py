@@ -79,13 +79,13 @@ upload_tests = [
 
 upload_tests.append()
 
-upload_tests.append(['Upload9BadFileNames.tar.gz', '12345640', True,
-                     r'Attempting to rename 10-1-1\(63\)\.png to 10-1-1_63_\.png.',
-                     'Test for bad/illegal file names.'])
-
-upload_tests.append(['UploadNoNewlineTerm.tar.gz', '9903.10029', True,
-                     "File 'NoNewlineTermination.tex' does not end with newline",
-                     'File does not end with newline character.'])
+# upload_tests.append(['Upload9BadFileNames.tar.gz', '12345640', True,
+#                      r'Attempting to rename 10-1-1\(63\)\.png to 10-1-1_63_\.png.',
+#                      'Test for bad/illegal file names.'])
+#
+# upload_tests.append(['UploadNoNewlineTerm.tar.gz', '9903.10029', True,
+#                      "File 'NoNewlineTermination.tex' does not end with newline",
+#                      'File does not end with newline character.'])
 
 upload_tests.append(['source_with_dir.tar.gz', '9903.1009', True,
                      'Removing top level directory',

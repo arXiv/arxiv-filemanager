@@ -66,8 +66,8 @@ class TestTarGZUpload(TestCase):
         self.assertFalse(self.workspace.has_errors)
 
 
-class TestSingleFileSubmissions(TestCase):
-    """Test some basic single-file source packages."""
+class WorkspaceTestCase(TestCase):
+    """Tooling for testing upload workspace examples."""
 
     DATA_PATH = os.path.split(os.path.abspath(__file__))[0]
 
@@ -101,11 +101,18 @@ class TestSingleFileSubmissions(TestCase):
         We'll use a similar pattern when doing this in Flask.
         """
         filepath = os.path.join(self.DATA_PATH, relpath)
-        filename = relpath.split('/')[1]
+        if '/' in relpath:
+            filename = relpath.split('/')[1]
+        else:
+            filename = relpath
         new_file = self.workspace.create(filename)
         with self.workspace.open(new_file, 'wb') as dest:
             with open(filepath, 'rb') as source:
                 dest.write(source.read())
+
+
+class TestSingleFileSubmissions(WorkspaceTestCase):
+    """Test some basic single-file source packages."""
 
     def test_single_file_pdf_submission(self):
         """Test checking a normal single-file PDF submission."""
@@ -209,46 +216,8 @@ class TestSingleFileSubmissions(TestCase):
         self.assertEqual(counts[FileType.TEXAUX], 1)
 
 
-class TestMultiFileSubmissions(TestCase):
+class TestMultiFileSubmissions(WorkspaceTestCase):
     """Test some multi-file source packages."""
-
-    DATA_PATH = os.path.split(os.path.abspath(__file__))[0]
-
-    def setUp(self):
-        """We have a workspace."""
-        self.base_path = tempfile.mkdtemp()
-        self.upload_id = 5432
-        self.workspace_path = os.path.join(self.base_path, str(self.upload_id))
-        os.makedirs(self.workspace_path)
-
-        self.workspace = UploadWorkspace(
-            upload_id=self.upload_id,
-            submission_id=None,
-            owner_user_id='98765',
-            archive=None,
-            created_datetime=datetime.now(),
-            modified_datetime=datetime.now(),
-            strategy=SynchronousCheckingStrategy(),
-            storage=SimpleStorageAdapter(self.base_path),
-            checkers=get_default_checkers()
-        )
-
-    def tearDown(self):
-        """Remove the temporary directory for files."""
-        shutil.rmtree(self.base_path)
-
-    def write_upload(self, relpath):
-        """
-        Write the upload into the workspace.
-
-        We'll use a similar pattern when doing this in Flask.
-        """
-        filepath = os.path.join(self.DATA_PATH, relpath)
-        filename = relpath.split('/')[1]
-        new_file = self.workspace.create(filename)
-        with self.workspace.open(new_file, 'wb') as dest:
-            with open(filepath, 'rb') as source:
-                dest.write(source.read())
 
     def test_multi_file_html_submission(self):
         """Test a typical multi-file 'HTML' submission."""
@@ -320,46 +289,11 @@ class TestMultiFileSubmissions(TestCase):
         self.assertEqual(counts[FileType.PDFLATEX], 1)
 
 
-class TestUploadScenarios(TestCase):
+class TestUploadScenarios(WorkspaceTestCase):
     """Test series of uniform cases with specified outcomes."""
 
     DATA_PATH = os.path.join(os.path.split(os.path.abspath(__file__))[0],
                              'test_files_upload')
-
-    def setUp(self):
-        """We have a workspace."""
-        self.base_path = tempfile.mkdtemp()
-        self.upload_id = 5432
-        self.workspace_path = os.path.join(self.base_path, str(self.upload_id))
-        os.makedirs(self.workspace_path)
-
-        self.workspace = UploadWorkspace(
-            upload_id=self.upload_id,
-            submission_id=None,
-            owner_user_id='98765',
-            archive=None,
-            created_datetime=datetime.now(),
-            modified_datetime=datetime.now(),
-            strategy=SynchronousCheckingStrategy(),
-            storage=SimpleStorageAdapter(self.base_path),
-            checkers=get_default_checkers()
-        )
-
-    def tearDown(self):
-        """Remove the temporary directory for files."""
-        shutil.rmtree(self.base_path)
-
-    def write_upload(self, filename):
-        """
-        Write the upload into the workspace.
-
-        We'll use a similar pattern when doing this in Flask.
-        """
-        filepath = os.path.join(self.DATA_PATH, filename)
-        new_file = self.workspace.create(filename)
-        with self.workspace.open(new_file, 'wb') as dest:
-            with open(filepath, 'rb') as source:
-                dest.write(source.read())
 
     def test_warning_for_empty_file(self):
         """Upload contains an empty file."""
@@ -411,46 +345,11 @@ class TestUploadScenarios(TestCase):
         self.assertFalse(self.workspace.has_errors)
 
 
-class TestNestedArchives(TestCase):
+class TestNestedArchives(WorkspaceTestCase):
     """Tests for uploads with nested archives."""
 
     DATA_PATH = os.path.join(os.path.split(os.path.abspath(__file__))[0],
                              'test_files_upload')
-
-    def setUp(self):
-        """We have a workspace."""
-        self.base_path = tempfile.mkdtemp()
-        self.upload_id = 5432
-        self.workspace_path = os.path.join(self.base_path, str(self.upload_id))
-        os.makedirs(self.workspace_path)
-
-        self.workspace = UploadWorkspace(
-            upload_id=self.upload_id,
-            submission_id=None,
-            owner_user_id='98765',
-            archive=None,
-            created_datetime=datetime.now(),
-            modified_datetime=datetime.now(),
-            strategy=SynchronousCheckingStrategy(),
-            storage=SimpleStorageAdapter(self.base_path),
-            checkers=get_default_checkers()
-        )
-
-    def tearDown(self):
-        """Remove the temporary directory for files."""
-        shutil.rmtree(self.base_path)
-
-    def write_upload(self, filename):
-        """
-        Write the upload into the workspace.
-
-        We'll use a similar pattern when doing this in Flask.
-        """
-        filepath = os.path.join(self.DATA_PATH, filename)
-        new_file = self.workspace.create(filename)
-        with self.workspace.open(new_file, 'wb') as dest:
-            with open(filepath, 'rb') as source:
-                dest.write(source.read())
 
     def test_nested_zip_and_tar(self):
         """Nested archives including a corrupted zip file."""
@@ -477,6 +376,22 @@ class TestNestedArchives(TestCase):
         self.workspace.exists('heartcyc.gif')
         # Etc...
 
+    def test_another_contains_top_level_directory(self):
+        """Contains a top-level directory."""
+        self.write_upload('source_with_dir.tar.gz')
+        self.workspace.perform_checks()
+        self.assertTrue(self.workspace.has_warnings)
+        self.assertIn('Removing top level directory',
+                      self.workspace.warnings['source/'])
+        self.workspace.exists('draft.tex')
+
+
+class TestBadFilenames(WorkspaceTestCase):
+    """Tests for uploads with bad filenames."""
+
+    DATA_PATH = os.path.join(os.path.split(os.path.abspath(__file__))[0],
+                             'test_files_upload')
+
     def test_contains_windows_filenames(self):
         """Contains windows filenames."""
         self.write_upload('UploadTestWindowCDrive.tar.gz')
@@ -485,9 +400,29 @@ class TestNestedArchives(TestCase):
         self.assertIn('Renamed c:\\data\\windows.txt to windows.txt',
                       self.workspace.warnings['windows.txt'])
 
+    def test_contains_illegal_filenames(self):
+        """Contains really bad filenames."""
+        self.write_upload('Upload9BadFileNames.tar.gz')
+        self.workspace.perform_checks()
+        self.assertTrue(self.workspace.has_warnings)
+        self.assertIn('Renamed 10-1-1(63).png to 10_1_1(63).png',
+                      self.workspace.warnings['10_1_1(63).png'])
 
 
+class TestMalformedFiles(WorkspaceTestCase):
+    """Tests for uploads with malformed content."""
 
+    DATA_PATH = os.path.join(os.path.split(os.path.abspath(__file__))[0],
+                             'test_files_upload')
+
+    def test_no_newline(self):
+        """File does not end with newline character."""
+        self.write_upload('UploadNoNewlineTerm.tar.gz')
+        self.workspace.perform_checks()
+        self.assertTrue(self.workspace.has_warnings)
+        self.assertIn('File \'NoNewlineTermination.tex\' does not end with'
+                      ' newline (\\n), TRUNCATED?',
+                      self.workspace.warnings['NoNewlineTermination.tex'])
 
 
 # TODO: checks for pdfpages documents do not appear to be implemented yet.
