@@ -409,6 +409,28 @@ class TestBadFilenames(WorkspaceTestCase):
                       self.workspace.warnings['10_1_1(63).png'])
 
 
+class TestUnpack(WorkspaceTestCase):
+    """Tests related to unpacking uploads."""
+
+    def test_macosx_hidden_directory(self):
+        """Test detection and removal of __MACOSX directory."""
+        self.write_upload('test_files_unpack/with__MACOSX_hidden.tar.gz')
+        self.workspace.perform_checks()
+        self.assertTrue(self.workspace.has_warnings)
+        self.assertIn("Removed '__MACOSX' directory.",
+                      self.workspace.warnings['__MACOSX/'])
+
+    def test_processed_directory(self):
+        """Test detection and warning about 'processed' directory."""
+        self.write_upload('test_files_unpack/with__processed_directory.tar.gz')
+        self.workspace.perform_checks()
+        self.assertTrue(self.workspace.has_warnings)
+        self.assertIn("Detected 'processed' directory. Please check.",
+                      self.workspace.warnings['processed/'])
+
+
+
+
 class TestMalformedFiles(WorkspaceTestCase):
     """Tests for uploads with malformed content."""
 

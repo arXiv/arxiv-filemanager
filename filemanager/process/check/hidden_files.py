@@ -20,7 +20,7 @@ class RemoveMacOSXHiddenFiles(BaseChecker):
     def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """Remove ``__MACOSX`` directories."""
-        if u_file.is_directory and u_file.name == '__MACOSX':
+        if u_file.is_directory and u_file.name.strip('/') == '__MACOSX':
             workspace.add_warning(u_file, "Removed '__MACOSX' directory.")
             workspace.remove(u_file)
         return u_file

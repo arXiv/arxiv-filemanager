@@ -34,7 +34,7 @@ class WarnAboutProcessedDirectory(BaseChecker):
 
     def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
-        if u_file.name == 'processed':
+        if u_file.is_directory and u_file.name.strip('/') == 'processed':
             workspace.add_warning(u_file,
                                   "Detected 'processed' directory. Please"
                                   " check.")

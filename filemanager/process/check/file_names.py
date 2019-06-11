@@ -66,7 +66,7 @@ class ReplaceIllegalCharacters(BaseChecker):
         if self.ILLEGAL.search(u_file.name):    # Translate bad characters.
             prev_name = u_file.name
             new_name = self.ILLEGAL.sub('_', prev_name)
-            base_path, _ = os.path.split(u_file.path)
+            base_path, _ = os.path.split(u_file.path.strip('/'))
             new_path = os.path.join(base_path, new_name)
             workspace.rename(u_file, new_path)
 

@@ -93,7 +93,9 @@ class UploadedFile:
     @property
     def name(self) -> str:
         """File name without path/directory info."""
-        return os.path.basename(self.path)
+        if '/' in self.path.strip('/'):
+            return os.path.basename(self.path)
+        return self.path
 
     @property
     def name_sans_ext(self) -> str:
@@ -365,7 +367,7 @@ class UploadWorkspace:
     @property
     def has_unchecked_files(self) -> bool:
         """Determine whether there are unchecked files in this workspace."""
-        for u_file in self.iter_files():
+        for u_file in self.iter_files(allow_directories=True):
             if not u_file.is_checked:
                 return True
         return False

@@ -16,7 +16,7 @@ class SynchronousCheckingStrategy:
         """Run checks one file at a time."""
         # This may take a few passes, as we may be unpacking compressed files.
         while workspace.has_unchecked_files:
-            for u_file in workspace.iter_files():
+            for u_file in workspace.iter_files(allow_directories=True):
                 if u_file.is_checked:   # Don't run checks twice on the same
                     continue            # file.
                 for checker in checkers:
