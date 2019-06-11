@@ -410,17 +410,20 @@ class UploadWorkspace:
                       max_depth: int = None) \
             -> Iterable[Tuple[str, UploadedFile]]:
         """Get an iterator over path, :class:`.UploadedFile` tuples."""
+        # QUESTION: is it really so bad to use non-directories here? Can be
+        # like the key-prefix for S3. --Erick 2019-06-11.
         if isinstance(u_file_or_path, str) and u_file_or_path in self.files:
             if not self.files['u_file_or_path'].is_directory:
                 raise ValueError('Not a directory')
             if not self.files['u_file_or_path'].is_active:
                 raise ValueError('Nope')
         elif isinstance(u_file_or_path, UploadedFile):
-            if not u_file_or_path.is_directory:
+            if not u_file_or_path.is_directory or not u_file_or_path.is_active:
                 raise ValueError('Not a directory')
             path = u_file_or_path.path
         else:
             path = u_file_or_path
+
         for _path, _file in list(self.files.items()):
             if _path.startswith(path) and not _path == path:
                 if max_depth is not None:

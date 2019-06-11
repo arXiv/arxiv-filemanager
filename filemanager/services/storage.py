@@ -29,6 +29,7 @@ class SimpleStorageAdapter:
 
     def is_safe(self, workspace: UploadWorkspace, path: str,
                 is_ancillary: bool = False, is_removed: bool = False) -> bool:
+        """Determine whether or not a path in a workspace is safe to use."""
         path_in_workspace = workspace.get_path(path, is_ancillary, is_removed)
         full_path = self._get_path_bare(path_in_workspace)
         try:
@@ -50,6 +51,20 @@ class SimpleStorageAdapter:
             workspace_full_path = self._get_path_bare(workspace.source_path)
         if workspace_full_path not in full_path:
             raise ValueError(f'Not a valid path for workspace: {full_path}')
+
+    def set_permissions(self, workspace: UploadWorkspace,
+                        file_mode: int = 0o664, dir_mode: int = 0o775) -> None:
+        """
+        Set the file permissions for all uploaded files and directories.
+
+        Applies to files and directories in submitter's upload source
+        directory.
+        """
+        for u_file in workspace.iter_files(allow_directories=True):
+            if u_file.is_directory:
+                os.chmod(self.get_path(workspace, u_file), dir_mode)
+            else:
+                os.chmod(self.get_path(workspace, u_file), file_mode)
 
     def remove(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
         """Remove a file."""
@@ -89,12 +104,14 @@ class SimpleStorageAdapter:
 
     def is_tarfile(self, workspace: UploadWorkspace,
                    u_file: UploadedFile) -> bool:
+        """Determine whether or not a file can be opened with ``tarfile``."""
         return tarfile.is_tarfile(self.get_path(workspace, u_file))
 
     def get_path(self, workspace: UploadWorkspace,
                  u_file_or_path: Union[str, UploadedFile],
                  is_ancillary: bool = False,
                  is_removed: bool = False) -> str:
+        """Get the absolute path to an :class:`.UploadedFile`."""
         path = self._get_path_bare(workspace.get_path(u_file_or_path))
         if isinstance(u_file_or_path, UploadedFile):
             is_ancillary = u_file_or_path.is_ancillary
@@ -167,6 +184,22 @@ class QuarantineStorageAdapter(SimpleStorageAdapter):
         if persisted:
             return self._get_permanent_path(path)
         return self._get_quarantine_path(path)
+
+    def set_permissions(self, workspace: UploadWorkspace,
+                        file_mode: int = 0o664, dir_mode: int = 0o775) -> None:
+        """
+        Set the file permissions for all uploaded files and directories.
+
+        Applies to files and directories in submitter's upload source
+        directory.
+        """
+        for u_file in workspace.iter_files(allow_directories=True):
+            if u_file.is_persisted:     # Skip persisted content.
+                continue
+            if u_file.is_directory:
+                os.chmod(self.get_path(workspace, u_file), dir_mode)
+            else:
+                os.chmod(self.get_path(workspace, u_file), file_mode)
 
     def persist(self, workspace: UploadWorkspace,
                 u_file: UploadedFile) -> None:
