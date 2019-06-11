@@ -51,11 +51,28 @@ class SimpleStorageAdapter:
         if workspace_full_path not in full_path:
             raise ValueError(f'Not a valid path for workspace: {full_path}')
 
+    def remove(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+        """Remove a file."""
+        src_path = self._get_path_bare(workspace.get_path(u_file),
+                                       u_file.is_persisted)
+        dest_path = self._get_path_bare(workspace.get_path(u_file.path,
+                                                           is_removed=True),
+                                        u_file.is_persisted)
+        self._check_safe(workspace, src_path, is_ancillary=u_file.is_ancillary)
+        self._check_safe(workspace, dest_path, is_removed=True)
+        parent, _ = os.path.split(dest_path)
+        if not os.path.exists(parent):
+            os.makedirs(parent)
+        shutil.move(src_path, dest_path)
+        u_file.is_removed = True
+
     def move(self, workspace: UploadWorkspace, u_file: UploadedFile,
              from_path: str, to_path: str) -> None:
         """Move a file from one path to another."""
-        src_path = self._get_path_bare(from_path, u_file.is_persisted)
-        dest_path = self._get_path_bare(to_path, u_file.is_persisted)
+        src_path = self._get_path_bare(workspace.get_path(from_path),
+                                       u_file.is_persisted)
+        dest_path = self._get_path_bare(workspace.get_path(to_path),
+                                        u_file.is_persisted)
         self._check_safe(workspace, src_path, u_file.is_ancillary,
                          u_file.is_removed, strict=False)
         self._check_safe(workspace, dest_path, u_file.is_ancillary,

@@ -1,7 +1,12 @@
 """File checks."""
 
 from typing import Optional, Callable
+from arxiv.base import logging
+from .check.base import StopCheck
 from ..domain import UploadWorkspace, IChecker
+
+logger = logging.getLogger(__name__)
+logger.propagate = False
 
 
 class SynchronousCheckingStrategy:
@@ -15,7 +20,12 @@ class SynchronousCheckingStrategy:
                 if u_file.is_checked:   # Don't run checks twice on the same
                     continue            # file.
                 for checker in checkers:
-                    checker(workspace, u_file)
+                    try:
+                        u_file = checker(workspace, u_file)
+                    except StopCheck as e:
+                        logger.debug('Got StopCheck from %s on %s: %s',
+                                     checker.__class__.__name__, u_file.path,
+                                     str(e))
                     if u_file.is_removed:   # If a checker removes a file, no
                         break               # further action should be taken.
                 u_file.is_checked = True

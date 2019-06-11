@@ -21,12 +21,14 @@ class CheckTeXForm(BaseChecker):
     NOT_IMPLEMENTED = ("%s: NOT IMPLEMENTED: formcheck routine needs to be"
                        " implemented.")
 
-    def check_LATEX(self, workspace: UploadWorkspace,
-                    u_file: UploadedFile) -> None:
+    def check_LATEX(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Check and warn if using preprint document style."""
         workspace.log(self.NOT_IMPLEMENTED % u_file.path)
+        return u_file
 
-    def check_LATEX2e(self, workspace: UploadWorkspace,
-                    u_file: UploadedFile) -> None:
+    def check_LATEX2e(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Check and warn if using preprint document style."""
         workspace.log(self.NOT_IMPLEMENTED % u_file.path)
+        return u_file

@@ -136,6 +136,10 @@ class UploadedFile:
         """Indicate whether this file is an empty file."""
         return self.size_bytes == 0
 
+    @property
+    def is_active(self) -> bool:
+        return not self.is_ancillary and not self.is_removed
+
 
 @dataclass
 class UploadWorkspace:
@@ -217,6 +221,11 @@ class UploadWorkspace:
             """Indicate whether this is the :const:`.UNKNOWN` type."""
             return self is self.UNKNOWN
 
+        @property
+        def is_invalid(self) -> bool:
+            """Indicate whether this is the :const:`.INVALID` type."""
+            return self is self.INVALID
+
     SOURCE_PREFIX = 'src'
     """The name of the source directory within the upload workspace."""
 
@@ -267,9 +276,9 @@ class UploadWorkspace:
 
     source_type: SourceType = field(default=SourceType.UNKNOWN)
 
-    errors: Mapping[str, List[str]] \
+    _errors: Mapping[str, List[str]] \
         = field(default_factory=lambda: defaultdict(list))
-    warnings: Mapping[str, List[str]] \
+    _warnings: Mapping[str, List[str]] \
         = field(default_factory=lambda: defaultdict(list))
 
     files: Dict[str, UploadedFile] = field(default_factory=dict)
@@ -294,11 +303,12 @@ class UploadWorkspace:
 
     @property
     def base_path(self):
+        """Relative base path for this workspace."""
         return str(self.upload_id)
 
     @property
     def source_path(self) -> str:
-        """Get path where source files are deposited."""
+        """Get the path where source files are deposited."""
         return os.path.join(self.base_path, self.SOURCE_PREFIX)
 
     @property
@@ -308,12 +318,12 @@ class UploadWorkspace:
 
     @property
     def ancillary_path(self) -> str:
-        """Get path where ancillary files are stored."""
+        """Get the path where ancillary files are stored."""
         return os.path.join(self.source_path, self.ANCILLARY_PREFIX)
 
     def get_path(self, u_file_or_path: Union[str, UploadedFile],
                  is_ancillary: bool = False, is_removed: bool = False) -> str:
-        """Get path to an :class:`.UploadedFile` in this workspace."""
+        """Get the path to an :class:`.UploadedFile` in this workspace."""
         if isinstance(u_file_or_path, UploadedFile):
             return self._get_path_from_file(u_file_or_path)
         return self._get_path(u_file_or_path, is_ancillary=is_ancillary,
@@ -322,15 +332,22 @@ class UploadWorkspace:
     def get_full_path(self, u_file_or_path: Union[str, UploadedFile],
                       is_ancillary: bool = False,
                       is_removed: bool = False) -> str:
-        return self.storage.get_path(self.get_path(u_file_or_path))
+        """Get the absolute path to a :class:`.UploadedFile`."""
+        return self.storage.get_path(self, u_file_or_path,
+                                     is_ancillary=is_ancillary,
+                                     is_removed=is_removed)
 
     def is_tarfile(self, u_file: UploadedFile) -> bool:
+        """Determine whether or not a file is a tarfile."""
         return self.storage.is_tarfile(self, u_file)
 
     def is_safe(self, path: str) -> bool:
+        """Determine whether or not a path is safe to use in this workspace."""
         return self.storage.is_safe(self, path)
 
+    # TODO: implement this!
     def log(self, message: str) -> None:
+        """Add a workspace log entry."""
         pass
 
     def _get_path(self, path: str, is_ancillary: bool = False,
@@ -344,10 +361,6 @@ class UploadWorkspace:
     def _get_path_from_file(self, u_file: UploadedFile) -> str:
         return self._get_path(u_file.path, is_ancillary=u_file.is_ancillary,
                               is_removed=u_file.is_removed)
-
-    def get_full_path(self, u_file: UploadedFile) -> str:
-        """Get a full path to an :class:`.UploadedFile`."""
-        return self.storage.get_path(self, u_file)
 
     @property
     def has_unchecked_files(self) -> bool:
@@ -380,8 +393,7 @@ class UploadWorkspace:
         former_path = u_file.path
         u_file.path = new_path
 
-        self.storage.move(self, u_file, self.get_path(former_path),
-                          self.get_path(new_path))
+        self.storage.move(self, u_file, former_path, new_path)
         self._update_refs(u_file, former_path)
 
         # If the file is a directory, we are counting on storage to have moved
@@ -406,13 +418,18 @@ class UploadWorkspace:
     def _update_refs(self, u_file: UploadedFile, from_path: str) -> None:
         self.files.pop(from_path)   # Discard old ref.
         self.files[u_file.path] = u_file
-        self.errors[u_file.path] += self.errors.pop(from_path, [])
-        self.warnings[u_file.path] += self.warnings.pop(from_path, [])
+        self._errors[u_file.path] += self._errors.pop(from_path, [])
+        self._warnings[u_file.path] += self._warnings.pop(from_path, [])
 
     def _drop_refs(self, from_path: str) -> None:
         self.files.pop(from_path, None)
-        self.errors.pop(from_path, None)
-        self.warnings.pop(from_path, None)
+        self._errors.pop(from_path, None)
+        self._warnings.pop(from_path, None)
+
+    @property
+    def errors(self) -> Mapping[str, List[str]]:
+        return {path: errors for path, errors in self._errors.items()
+                if path in self.files and self.files[path].is_active}
 
     def remove(self, u_file: UploadedFile, reason: Optional[str] = None) \
             -> None:
@@ -424,12 +441,9 @@ class UploadWorkspace:
         if reason is None:
             reason = f"Removed file '{u_file.name}'."
         logger.debug('Remove file %s: %s', u_file.path, reason)
-
         previous_path = self.get_path(u_file)
-        u_file.is_removed = True
+        self.storage.remove(self, u_file)
         u_file.reason_for_removal = reason
-
-        self.storage.move(self, u_file, previous_path, self.get_path(u_file))
         if u_file.is_directory:
             for former_path, _file in self.iter_children(u_file):
                 _file.is_removed = True
@@ -452,27 +466,29 @@ class UploadWorkspace:
     def add_error(self, u_file: UploadedFile, message: str) -> None:
         """Add an error for a specific file."""
         u_file.errors.append(message)
-        self.errors[u_file.path].append(message)
+        self._errors[u_file.path].append(message)
 
     def add_non_file_error(self, message: str) -> None:
         """Add an error for the workspace that is not specific to a file."""
-        self.errors['__all__'].append(message)
+        self._errors['__all__'].append(message)
 
     def add_warning(self, u_file: UploadedFile, message: str) -> None:
         """Add a warning for a specific file."""
         u_file.warnings.append(message)
-        self.warnings[u_file.path].append(message)
+        self._warnings[u_file.path].append(message)
 
     def add_non_file_warning(self, message: str) -> None:
         """Add a warning for the workspace that is not specific to a file."""
-        self.warnings['__all__'].append(message)
+        self._warnings['__all__'].append(message)
 
     def iter_files(self, allow_ancillary: bool = True,
-                   allow_removed: bool = False) -> Iterable[UploadedFile]:
+                   allow_removed: bool = False,
+                   allow_directories: bool = False) -> Iterable[UploadedFile]:
         """Get an iterator over :class:`.UploadFile`s in this workspace."""
         return [f for f in self.files.values()
                 if (allow_ancillary or not f.is_ancillary)
-                and (allow_removed or not f.is_removed)]
+                and (allow_removed or not f.is_removed)
+                and (allow_directories or not f.is_directory)]
 
     @property
     def file_count(self) -> int:
@@ -511,7 +527,7 @@ class UploadWorkspace:
             raise ValueError('File does not belong to this workspace')
         with self.storage.open(self, u_file, flags, **kwargs) as f:
             yield f
-            self.getsize(u_file)
+        self.getsize(u_file)
 
     def create(self, path: str, file_type: FileType = FileType.UNKNOWN,
                replace: bool = False, is_directory: bool = False,
@@ -549,6 +565,7 @@ class UploadWorkspace:
 
         See also :func:`UploadWorkspace.remove`.
         """
+        logger.debug('Delete file %s', u_file.path)
         self.storage.delete(self, u_file)
         self._drop_refs(u_file.path)
         if u_file.is_directory:
@@ -562,7 +579,10 @@ class UploadWorkspace:
 
     def replace(self, to_replace: UploadedFile, replace_with: UploadedFile,
                 keep_refs: bool = True) -> UploadedFile:
-        self.storage.move(self, replace_with, to_replace.path)
+        """Replace a file with another file."""
+        self.storage.move(self, replace_with, replace_with.path,
+                          to_replace.path)
+
         if not keep_refs:
             self._drop_refs(to_replace.path)
         old_path = replace_with.path
@@ -592,12 +612,13 @@ class UploadWorkspace:
     @property
     def has_warnings(self):
         """Determine whether or not this workspace has warnings."""
-        return len(self.warnings) > 0
+        return len(self._warnings) > 0
 
     @property
     def has_errors(self):
         """Determine whether or not this workspace has errors."""
-        return len(self.errors) > 0
+        return len([e for errors in self.errors.values() for e in errors]) > 0
 
     def perform_checks(self) -> None:
+        """Perform all checks on this workspace using the assigned strategy."""
         self.strategy.check(self, *self.checkers)

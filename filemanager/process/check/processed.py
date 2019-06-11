@@ -32,8 +32,10 @@ logger = logging.getLogger(__name__)
 class WarnAboutProcessedDirectory(BaseChecker):
     """Check for and warn about processed directory."""
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         if u_file.name == 'processed':
             workspace.add_warning(u_file,
                                   "Detected 'processed' directory. Please"
                                   " check.")
+        return u_file

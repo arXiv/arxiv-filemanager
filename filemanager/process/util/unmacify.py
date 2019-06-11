@@ -53,16 +53,16 @@ def unmacify(workspace: UploadWorkspace, uploaded_file: UploadedFile) -> None:
 
     # Check if file was changed.
     if workspace.cmp(uploaded_file, new_file, shallow=False):
-        workspace.delete(new_file)
-    else:
-        workspace.delete(uploaded_file)
-        workspace.rename(new_file, uploaded_file.path)
+        with workspace.open(uploaded_file, 'wb') as outfile, \
+                workspace.open(new_file, 'rb') as infile:
+            outfile.write(infile.read())
 
         # Check for unwanted termination character
-        check_file_termination(new_file)
+        check_file_termination(workspace, uploaded_file)
+    workspace.delete(new_file)
 
 
-def check_file_termination(self, workspace: UploadWorkspace,
+def check_file_termination(workspace: UploadWorkspace,
                            u_file: UploadedFile) -> None:
     r"""
     Check for unwanted characters at end of file.
@@ -72,8 +72,8 @@ def check_file_termination(self, workspace: UploadWorkspace,
     For that reason I have refactored the code into a seperate routine for
     ease of testing. This also simplifies the unmacify routine.
 
-    This code basically seeks to the end of file and removes any end of file \377,
-    end of transmission ^D (\004), or  characters ^Z (\032).
+    This code basically seeks to the end of file and removes any end of file
+    \377, end of transmission ^D (\004), or  characters ^Z (\032).
 
     At the current time this routine will get called anytime unmacify routine
     is called.
@@ -93,7 +93,7 @@ def check_file_termination(self, workspace: UploadWorkspace,
 
         # Examine bytes for characters we want to strip.
         input_bytes = f.read(2)
-        logger.debug(f"\nRead '{input_bytes}' from {file_obj.name}\n")
+        logger.debug(f"Read '{input_bytes}' from {u_file.path}")
 
         byte_found = False
         if input_bytes[0] == 0x01A or input_bytes[0] == 0x4 \

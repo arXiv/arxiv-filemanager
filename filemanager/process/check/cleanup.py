@@ -2,6 +2,7 @@
 
 import os
 import re
+import mmap
 import struct
 from typing import Union, Tuple
 
@@ -39,20 +40,23 @@ PS_BEGIN = re.compile(b'^%!PS-')
 class UnMacify(BaseChecker):
     """UnMac-ifies files."""
 
-    def check_HTML(self, workspace: UploadWorkspace,
-                   u_file: UploadedFile) -> None:
+    def check_HTML(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """UnMac-ify HTML files."""
         unmacify(workspace, u_file)
+        return u_file
 
-    def check_PC(self, workspace: UploadWorkspace,
-                 u_file: UploadedFile) -> None:
+    def check_PC(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """UnMac-ify PC files."""
         unmacify(workspace, u_file)
+        return u_file
 
-    def check_MAC(self, workspace: UploadWorkspace,
-                  u_file: UploadedFile) -> None:
+    def check_MAC(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """UnMac-ify mac files."""
         unmacify(workspace, u_file)
+        return u_file
 
     def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
         """If file is identified as core TeX type then we need to unmacify."""
@@ -60,14 +64,15 @@ class UnMacify(BaseChecker):
             unmacify(workspace, u_file)
             # TODO: Check if TeX source file contains raw Postscript
             _extract_uu(workspace, u_file)
+        return u_file
 
 
 # TODO: this needs more context -- Erick 2019-06-07
 class RepairDOSEPSFiles(BaseChecker):
     """Repair DOS EPS files."""
 
-    def check_DOS_EPS(self, workspace: UploadWorkspace,
-                      u_file: UploadedFile) -> None:
+    def check_DOS_EPS(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """[ needs info ]"""
         u_file, fixed = _repair_dos_eps(workspace, u_file)
         if fixed:
@@ -78,7 +83,8 @@ class RepairDOSEPSFiles(BaseChecker):
                 workspace.add_warning(u_file, "trailing TIFF preview stripped")
         else:
             workspace.add_warning(u_file, "Failed to strip TIFF preview")
-            _repair_postscript(workspace, u_file)
+            u_file, _ = _repair_postscript(workspace, u_file)
+        return u_file
 
 
 # TODO: this needs more context -- Erick 2019-06-07
@@ -92,7 +98,7 @@ class CleanupPostScript(BaseChecker):
     PS = re.compile(r'\.e?psi?$', re.IGNORECASE)
 
     def check_POSTSCRIPT(self, workspace: UploadWorkspace,
-                         u_file: UploadedFile) -> None:
+                         u_file: UploadedFile) -> UploadedFile:
         """
         [ needs info ]
 
@@ -100,28 +106,30 @@ class CleanupPostScript(BaseChecker):
         that appear to be Postscript.
         """
         unmacify(workspace, u_file)
-        _check_postscript(workspace, u_file, "")
+        return _check_postscript(workspace, u_file, "")
 
-    def check_PS_PC(self, workspace: UploadWorkspace,
-                    u_file: UploadedFile) -> None:
+    def check_PS_PC(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """
         Repair poscript for PS PC files.
 
         Seeing very few of this type in recent submissions.
         leer.eps header repaired to: %!PS-Adobe-2.0 EPSF-2.0
         """
-        _repair_postscript(workspace, u_file)
+        u_file, _ = _repair_postscript(workspace, u_file)
+        return u_file
 
-    def check_FAILED(self, workspace: UploadWorkspace,
-                     u_file: UploadedFile) -> None:
+    def check_FAILED(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         if self.PS.search(u_file.name):
-            _check_postscript(workspace, u_file, "")
+            u_file = _check_postscript(workspace, u_file, "")
+        return u_file
 
 
 # TODO: looks like the strip_tiff case is not fully implemented here.
 # -- Erick 2019-06-07
 def _check_postscript(workspace: UploadWorkspace, u_file: UploadedFile,
-                      tiff_flag: Union[str, None]) -> str:
+                      tiff_flag: Union[str, None]) -> UploadedFile:
     """
     Check Postscript file for unwanted inclusions.
 
@@ -143,7 +151,7 @@ def _check_postscript(workspace: UploadWorkspace, u_file: UploadedFile,
     if u_file.file_type == FileType.FAILED:
         # This code has been not executing for many years. May have
         # resulted in more admin interventions to manually fix.
-        hdr = _repair_postscript(workspace, u_file)
+        u_file, hdr = _repair_postscript(workspace, u_file)
         workspace.add_warning(u_file,
                               f"File '{u_file.path}' did not have proper "
                               f"Postscript header, repaired to '{hdr}'.")
@@ -164,11 +172,11 @@ def _check_postscript(workspace: UploadWorkspace, u_file: UploadedFile,
         if results:
             for match in results:
                 if match == b'BeginPhotoshop':
-                    _strip_preview(workspace, u_file, PHOTOSHOP)
+                    u_file = _strip_preview(workspace, u_file, PHOTOSHOP)
                 elif match == b'BeginPreview':
-                    _strip_preview(workspace, u_file, PREVIEW)
+                    u_file = _strip_preview(workspace, u_file, PREVIEW)
                 elif match == b'Thumbnail:':
-                    _strip_preview(workspace, u_file, THUMBNAIL)
+                    u_file = _strip_preview(workspace, u_file, THUMBNAIL)
 
     # TODO: Scan Postscript file for embedded fonts - need seperate ticket
     # We warn when user includes standard system fonts in their
@@ -176,15 +184,18 @@ def _check_postscript(workspace: UploadWorkspace, u_file: UploadedFile,
     # TODO: Check for TIFF (need another ticket to tackle this task)
     tiff_found = 0  # Some search of file for TIFF markers
     if tiff_found:
-        _strip_tiff(workspace, u_file)
+        u_file = _strip_tiff(workspace, u_file)
+    return u_file
+
 
 CASE_1 = re.compile(rb'^\%*\004\%\!')
 CASE_2 = re.compile(rb'^\%\%\!')
 CASE_3 = re.compile(rb'.*(%!PS-Adobe-)')
 HEADER_END = re.compile(b'^%!')
 
-def _repair_postscript(workspace: UploadWorkspace,
-                       u_file: UploadedFile) -> str:
+
+def _repair_postscript(workspace: UploadWorkspace, u_file: UploadedFile) \
+        -> Tuple[UploadedFile, str]:
     """
     Repair simple corruptions at the beginning of Postscript file.
 
@@ -278,12 +289,14 @@ def _repair_postscript(workspace: UploadWorkspace,
                   f" '{new_file.name}': {message}'")
 
         workspace.add_warning(new_file, lm)   # Make note of the repair.
-    else:
-        workspace.delete(new_file)  # Cleanup.
-    return first_line[0:75]
+        return new_file, first_line[0:75]
+
+    workspace.delete(new_file)  # Cleanup.
+    return u_file, first_line[0:75]
+
 
 def _strip_preview(workspace: UploadWorkspace, u_file: UploadedFile,
-                   what_to_strip: str) -> None:
+                   what_to_strip: str) -> UploadedFile:
     """
     Remove embedded preview from Postscript file.
 
@@ -356,14 +369,16 @@ def _strip_preview(workspace: UploadWorkspace, u_file: UploadedFile,
             msg = (f"Reduced from {orig_size} bytes to {strip_size} bytes "
                    "(see http://arxiv.org/help/sizes)")
             strip_warning = ' '.join([strip_warning, msg])
-            workspace.add_warning(new_file.public_filepath, strip_warning)
-        else:
-            if strip_warning:
-                msg = f"{u_file.name} had unpaired $strip"
-                strip_warning = ' '.join([strip_warning, msg])
-            # Removed failed attempt to strip Postscript
-            workspace.delete(new_file)
-            workspace.add_warning(u_file.public_filepath, strip_warning)
+            workspace.add_warning(new_file, strip_warning)
+            return new_file
+
+        if strip_warning:
+            msg = f"{u_file.name} had unpaired $strip"
+            strip_warning = ' '.join([strip_warning, msg])
+        # Removed failed attempt to strip Postscript
+        workspace.delete(new_file)
+        workspace.add_warning(u_file, strip_warning)
+        return u_file
 
 
 def _strip_tiff(workspace: UploadWorkspace, u_file: UploadedFile) -> None:
@@ -417,8 +432,8 @@ def _strip_tiff(workspace: UploadWorkspace, u_file: UploadedFile) -> None:
         if end:     # Truncate file after EOF marker
             infile.truncate(end)
             workspace.add_warning(u_file.name,
-                                   f"Non-compliant attached TIFF removed"
-                                   f" from '{file_obj.name}'")
+                                  f"Non-compliant attached TIFF removed"
+                                  f" from '{file_obj.name}'")
 
 
 # TODO: this is a pretty big method; could use some refactoring.
@@ -470,7 +485,7 @@ def _repair_dos_eps(workspace: UploadWorkspace,
         #(f"psoffset:{psoffset} len:{pslength} tiffoffset:{tiffoffset}"
         # f"len:{tifflength}")
 
-        if posoffset <= 0 or pslength <= 0 or tiffoffset <= 0 \
+        if psoffset <= 0 or pslength <= 0 or tiffoffset <= 0 \
                 or tifflength <= 0:
             # Encapsulated Postscript does not contain embedded TIFF.
             return u_file, ""

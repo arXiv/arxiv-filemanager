@@ -30,9 +30,10 @@ class CheckForUnacceptableImages(BaseChecker):
         "any graphical web browser) -- for more information."
     )
 
-    def check_IMAGE(self, workspace: UploadWorkspace,
-                    u_file: UploadedFile) -> None:
+    def check_IMAGE(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Check and warn about image types that are not accepted."""
-        match = UNACCEPTABLE.search(u_file.name)
+        match = self.UNACCEPTABLE.search(u_file.name)
         if match:
             workspace.add_warning(u_file, self.ERROR_MSG % match.group(1))
+        return u_file

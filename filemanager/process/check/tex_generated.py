@@ -20,7 +20,8 @@ class RemoveTeXGeneratedFiles(BaseChecker):
     TEX_PRODUCED = re.compile(r'(.+)\.(log|aux|out|blg|dvi|ps|pdf)$',
                               re.IGNORECASE)
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Check for and remove TeX processing files."""
         if self.TEX_PRODUCED.search(u_file.name):
             base_path, name = os.path.split(u_file.path)
@@ -34,6 +35,7 @@ class RemoveTeXGeneratedFiles(BaseChecker):
                 workspace.remove(u_file,
                                  f"Removed file '{u_file.name}' due to name"
                                  " conflict.")
+        return u_file
 
 
 class DisallowDVIFiles(BaseChecker):
@@ -47,7 +49,8 @@ class DisallowDVIFiles(BaseChecker):
     ERROR_MSG = ('%s is a TeX-produced DVI file. Please submit the TeX source'
                  ' instead.')
 
-    def check_DVI(self, workspace: UploadWorkspace,
-                  u_file: UploadedFile) -> None:
+    def check_DVI(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         if not u_file.is_ancillary:
             workspace.add_error(u_file, self.ERROR_MSG % u_file.name)
+        return u_file

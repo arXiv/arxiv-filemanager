@@ -16,17 +16,19 @@ class FixWindowsFileNames(BaseChecker):
 
     WINDOWS_FILE_PREFIX = re.compile(r'^[A-Za-z]:\\(.*\\)?')
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Find Windows-style filenames and fix them."""
         if self.WINDOWS_FILE_PREFIX.search(u_file.path):
             # Rename using basename
             prev_name = u_file.name
-            new_name = WINDOWS_FILE_PREFIX.sub('', prev_name)
-            base_path, _ = os.path.split(us_file.path)
+            new_name = self.WINDOWS_FILE_PREFIX.sub('', prev_name)
+            base_path, _ = os.path.split(u_file.path)
             new_path = os.path.join(base_path, new_name)
             workspace.rename(u_file, new_path)
 
             workspace.add_warning(u_file, f'Renamed {prev_name} to {new_name}')
+        return u_file
 
 
 class WarnAboutTeXBackupFiles(BaseChecker):
@@ -42,10 +44,13 @@ class WarnAboutTeXBackupFiles(BaseChecker):
                    " extraneous backup files.")
     TEX_BACKUP_FILE = re.compile(r'(.+)\.(tex_|tex.bak|tex\~)$', re.IGNORECASE)
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Check for and warn about possible backup files."""
-        if not u_file.is_ancillary and self.TEX_BACKUP_FILE.search(u_file.name):
+        if not u_file.is_ancillary \
+                and self.TEX_BACKUP_FILE.search(u_file.name):
             workspace.add_warning(u_file, self.WARNING_MSG % u_file.name)
+        return u_file
 
 
 class ReplaceIllegalCharacters(BaseChecker):
@@ -54,7 +59,8 @@ class ReplaceIllegalCharacters(BaseChecker):
     ILLEGAL = re.compile(r'[\+\-\=\,]')
     """Filename contains illegal characters ``+-/=,``."""
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Check for illegal characters and replace them with underscores."""
 
         if self.ILLEGAL.search(u_file.name):    # Translate bad characters.
@@ -68,6 +74,7 @@ class ReplaceIllegalCharacters(BaseChecker):
                                   "We only accept file names containing the"
                                   " characters: a-z A-Z 0-9 _ + - . =")
             workspace.add_warning(u_file, f'Renamed {prev_name} to {new_name}')
+        return u_file
 
 
 # TODO: needs more context; why would this happen? -- Erick 2019-06-07
@@ -79,17 +86,20 @@ class PanicOnIllegalCharacters(BaseChecker):
         'a-z A-Z 0-9 _ + - . , ='
     )
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Check for illegal characters and generate error if found."""
 
         if ReplaceIllegalCharacters.ILLEGAL.search(u_file.name):
             workspace.add_error(u_file, self.ILLEGAL_ERROR % u_file.name)
+        return u_file
 
 
 class ReplaceLeadingHyphen(BaseChecker):
     """Checks for a leading hyphen, and replaces it with an underscore."""
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Check for a leading hyphen, and replace it with an underscore."""
 
         if u_file.name.startswith('-'):
@@ -103,3 +113,4 @@ class ReplaceLeadingHyphen(BaseChecker):
                                   'We do not accept files starting with a'
                                   f' hyphen. Renamed {prev_name} to'
                                   f' {new_name}.')
+        return u_file

@@ -18,8 +18,8 @@ logger.propagate = False
 class InferFileType(BaseChecker):
     """Attempt to check the :class:`.FileType` of an :class:`.UploadedFile`."""
 
-    def check_UNKNOWN(self, workspace: UploadWorkspace,
-                      u_file: UploadedFile) -> None:
+    def check_UNKNOWN(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Perform file type check."""
         logger.debug('Identify a type for %s', u_file.path)
         for check_type in _type_checkers:
@@ -27,7 +27,7 @@ class InferFileType(BaseChecker):
             logger.debug('Tried %s, got %s', check_type.__name__, file_type)
             if file_type is not None:
                 u_file.file_type = file_type
-                return
+                return u_file
 
         # We need up to the first kilobyte of the file.
         with workspace.open(u_file, 'rb') as f:
@@ -38,17 +38,18 @@ class InferFileType(BaseChecker):
             logger.debug('Tried %s, got %s', check_type.__name__, file_type)
             if file_type is not None:
                 u_file.file_type = file_type
-                return
+                return u_file
 
         file_type = _heavy_introspection(workspace, u_file)
         logger.debug('Tried %s, got %s', 'heavy_introspection', file_type)
         if file_type is not None:
             u_file.file_type = file_type
-            return
+            return u_file
 
         # Failed type identification
         logger.debug('Type identification failed for %s', u_file.path)
         u_file.file_type = FileType.FAILED    # , '', ''
+        return u_file
 
 
 # These are compiled ahead of time, since we may use them many many times in a
@@ -111,7 +112,7 @@ PDF_OUTPUT = re.compile(rb'^[^%]*\\pdfoutput(?:\s+)?=(?:\s+)?1')
 def _check_exists(workspace: UploadWorkspace,
                   u_file: UploadedFile) -> Optional[FileType]:
     """Check whether file exists (new)."""
-    if not workspace.exists(u_file.path): # os.path.isfile(workspace.get_full_path(u_file)):
+    if not workspace.exists(u_file.path):
         return FileType.FAILED    # , '', ''
 
 
@@ -497,7 +498,7 @@ def _type_of_latex2e(f: io.BytesIO, count: int) -> FileType:
 
 
 _type_checkers: Callable[[UploadWorkspace, UploadedFile],
-                        Optional[FileType]] = [
+                         Optional[FileType]] = [
     _check_exists,
     # Currently the following type identification relies on the extension
     # to identify the type without inspecting content of file.

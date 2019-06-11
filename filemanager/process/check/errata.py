@@ -22,7 +22,8 @@ class RemoveHyperlinkStyleFiles(BaseChecker):
     DOT_STY = re.compile(r'^(espcrc2|lamuphys)\.sty$')
     DOT_TEX = re.compile(r'^(espcrc2|lamuphys)\.tex$')
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Check for and remove hyperlink styles espcrc2 and lamuphys."""
         if self.DOT_STY.search(u_file.name):
             workspace.remove(u_file, self.WARNING_MSG % u_file.name)
@@ -31,7 +32,8 @@ class RemoveHyperlinkStyleFiles(BaseChecker):
             # I'm not sure why this is just a warning
             workspace.add_warning(u_file,
                                   "Possible submitter error. Unwanted"
-                                  f" '{file_name}'")
+                                  f" '{u_file.name}'")
+        return u_file
 
 
 # TODO: this needs more documentation/context. What are they? Why are they
@@ -41,12 +43,14 @@ class RemoveDisallowedFiles(BaseChecker):
 
     DISALLOWED = ['uufiles', 'core', 'splread.1st']
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Check for and removes disallowed files."""
         if u_file.name in self.DISALLOWED:
             workspace.remove(u_file,
-                             f"Removed the file '{file_name}' [File not"
+                             f"Removed the file '{u_file.name}' [File not"
                              " allowed].")
+        return u_file
 
 
 class RemoveMetaFiles(BaseChecker):
@@ -57,14 +61,15 @@ class RemoveMetaFiles(BaseChecker):
     DESC_FILE = re.compile(r'\.desc$')
     DISALLOWED_PATTERNS = [XXX_FILE, GF_FILE, DESC_FILE]
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Check for and remove disallowed meta files."""
         for pattern in self.DISALLOWED_PATTERNS:
             if pattern.search(u_file.name):
                 workspace.remove(u_file,
                                  f"Removed file '{obj.name}' [File not"
                                  " allowed].")
-                return
+        return u_file
 
 
 class CheckForBibFile(BaseChecker):
@@ -94,13 +99,14 @@ class CheckForBibFile(BaseChecker):
         "the.bbl file."
     )
 
-    BBL_MISSING_ERROR_MSG = (
+    BBL_MISSING_MSG = (
         "Your submission contained {base}.bib file, but no {base}.bbl"
         " file (include {base}.bbl, or submit without {base}.bib; and"
         " remember to verify references)."
     )
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Check for a .bib file, and remove if a .bbl file is present."""
         if self.BIB_FILE.search(u_file.name):
             # Create path to bbl file - assume uses same basename as .bib.
@@ -114,7 +120,7 @@ class CheckForBibFile(BaseChecker):
                 # submitter of this action.
                 workspace.add_warning(u_file, self.BIB_WITH_BBL_WARNING)
                 workspace.remove(u_file,
-                                 f"Removed the file '{file_name}'. Using"
+                                 f"Removed the file '{u_file.name}'. Using"
                                  f" '{bbl_file}' for references.")
             else:
                 # Missing .bbl (potential missing references). Generate an
@@ -122,7 +128,8 @@ class CheckForBibFile(BaseChecker):
                 # flag until .bbl exists.
                 workspace.add_warning(u_file, self.BIB_NO_BBL_WARNING)
                 workspace.add_error(u_file,
-                                    self.BBL_MISSING_ERROR_MSG.format(base=base))
+                                    self.BBL_MISSING_MSG.format(base=base))
+        return u_file
 
 
 class RemoveExtraneousRevTeXFiles(BaseChecker):
@@ -140,10 +147,12 @@ class RemoveExtraneousRevTeXFiles(BaseChecker):
     EXTRANEOUS = re.compile(r'^(10pt\.rtx|11pt\.rtx|12pt\.rtx|aps\.rtx|'
                             r'revsymb\.sty|revtex4\.cls|rmp\.rtx)$')
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Check for and remove files already included in TeX Live release."""
         if self.EXTRANEOUS.search(u_file.name):
             workspace.remove(u_file, self.REVTEX_WARNING_MSG)
+        return u_file
 
 
 class RemoveDiagramsPackage(BaseChecker):
@@ -164,10 +173,12 @@ class RemoveDiagramsPackage(BaseChecker):
 
     DIAGRAMS = re.compile(r'^diagrams\.(sty|tex)$')
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Check for and remove the diagrams package."""
         if self.DIAGRAMS.search(u_file.name):
             workspace.remove(u_file, self.DIAGRAMS_WARNING)
+        return u_file
 
 
 class RemoveAADemoFile(BaseChecker):
@@ -183,10 +194,12 @@ class RemoveAADemoFile(BaseChecker):
          'macro package aa.cls.'
     )
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Check for and remove the ``aa.dem`` file."""
         if u_file.name == 'aa.dem':
             workspace.remove(u_file, self.AA_DEM_MSG)
+        return u_file
 
 
 # TODO: add more context here. -- Erick 2019-06-07
@@ -201,10 +214,12 @@ class RemoveMissingFontFile(BaseChecker):
         " that our system generates."
     )
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Check for and remove the ``missfont.log`` file."""
         if u_file.name == 'missfont.log':
             workspace.remove(u_file, self.MISSFONT_WARNING)
+        return u_file
 
 
 class RemoveSyncTeXFiles(BaseChecker):
@@ -221,10 +236,12 @@ class RemoveSyncTeXFiles(BaseChecker):
     )
     SYNCTEX = re.compile(r'\.synctex$')
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """Check for and remove synctex files."""
         if u_file.name == 'missfont.log':
             workspace.remove(u_file, self.SYNCTEX_MSG % u_file.name)
+        return u_file
 
 
 # TODO: this needs some context/explanation. -- Erick 2019-06-07
@@ -234,7 +251,8 @@ class FixTGZFileName(BaseChecker):
     PTN = re.compile(r'([\.\-]t?[ga]?z)$', re.IGNORECASE)
     """[ needs info ]"""
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """[ needs info ]"""
         if self.PTN.search(u_file.name):
             base_path, prev_name = os.path.split(u_file.path)
@@ -243,6 +261,7 @@ class FixTGZFileName(BaseChecker):
             workspace.rename(u_file, new_path)
             workspace.add_warning(u_file,
                                   "Renaming '{prev_name}' to '{new_name}'.")
+        return u_file
 
 
 class RemoveDOCFiles(BaseChecker):
@@ -262,7 +281,9 @@ class RemoveDOCFiles(BaseChecker):
     )
     """DOC (MS Word) format not accepted warning message."""
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         if u_file.name.endswith('.doc'):
             workspace.remove(u_file)
             workspace.add_error(u_file, self.DOC_WARNING)
+        return u_file
