@@ -260,7 +260,7 @@ class FixTGZFileName(BaseChecker):
             new_path = os.path.join(base_path, new_name)
             workspace.rename(u_file, new_path)
             workspace.add_warning(u_file,
-                                  "Renaming '{prev_name}' to '{new_name}'.")
+                                  f"Renaming '{prev_name}' to '{new_name}'.")
         return u_file
 
 

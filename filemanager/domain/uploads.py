@@ -406,13 +406,30 @@ class UploadWorkspace:
                 _file.path = _new_path
                 self._update_refs(_file, _former_path)
 
-    def iter_children(self, u_file: UploadedFile) \
+    def iter_children(self, u_file_or_path: Union[str, UploadedFile],
+                      max_depth: int = None) \
             -> Iterable[Tuple[str, UploadedFile]]:
         """Get an iterator over path, :class:`.UploadedFile` tuples."""
-        if not u_file.is_directory:
-            raise ValueError('Not a directory')
+        if isinstance(u_file_or_path, str) and u_file_or_path in self.files:
+            if not self.files['u_file_or_path'].is_directory:
+                raise ValueError('Not a directory')
+            if not self.files['u_file_or_path'].is_active:
+                raise ValueError('Nope')
+        elif isinstance(u_file_or_path, UploadedFile):
+            if not u_file_or_path.is_directory:
+                raise ValueError('Not a directory')
+            path = u_file_or_path.path
+        else:
+            path = u_file_or_path
         for _path, _file in list(self.files.items()):
-            if _path.startswith(u_file.path):
+            if _path.startswith(path) and not _path == path:
+                if max_depth is not None:
+                    if path != '':
+                        remainder = _path.split(path, 1)[1]
+                    else:
+                        remainder = _path
+                    if len(remainder.strip('/').split('/')) > max_depth:
+                        continue
                 yield _path, _file
 
     def _update_refs(self, u_file: UploadedFile, from_path: str) -> None:
@@ -431,8 +448,13 @@ class UploadWorkspace:
         return {path: errors for path, errors in self._errors.items()
                 if path in self.files and self.files[path].is_active}
 
-    def remove(self, u_file: UploadedFile, reason: Optional[str] = None) \
-            -> None:
+    @property
+    def warnings(self) -> Mapping[str, List[str]]:
+        return {path: warnings for path, warnings in self._warnings.items()
+                if path in self.files}
+
+    def remove(self, u_file: UploadedFile, reason: Optional[str] = None,
+               keep_refs: bool = True) -> None:
         """
         Mark a file as removed, and quarantine.
 
@@ -448,6 +470,8 @@ class UploadWorkspace:
             for former_path, _file in self.iter_children(u_file):
                 _file.is_removed = True
         self.add_non_file_warning(reason)
+        if not keep_refs:
+            self._drop_refs(u_file.path)
 
     def persist(self, u_file: UploadedFile) -> None:
         self.storage.persist(self, u_file, self.get_path(u_file))
@@ -612,7 +636,8 @@ class UploadWorkspace:
     @property
     def has_warnings(self):
         """Determine whether or not this workspace has warnings."""
-        return len(self._warnings) > 0
+        return len([w for warnings in self.warnings.values()
+                    for w in warnings]) > 0
 
     @property
     def has_errors(self):

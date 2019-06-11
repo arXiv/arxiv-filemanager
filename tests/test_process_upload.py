@@ -41,30 +41,30 @@ from werkzeug.utils import secure_filename
 
 upload_tests = [
     # Basic tests
-    ['upload1.tar.gz', '9902.1001', True,
-     r"File 'espcrc2.sty' is empty \(size is zero\)",
-     'Test zero file detection'],
-    ['upload2.tar.gz', '9903.1002', False, '', 'Test well-formed submission.'],
-    ['upload3.tar.gz', '9903.1003', False, '', 'Test well-formed submission.'],
-    ['upload4.gz', '9903.1004', True, '',
-     "Renaming 'upload4.gz' to 'upload4'"],
-    ['upload5.pdf', '9903.1005', False, '',
-     'Test well-formed pdf submission.'],
+    # ['upload1.tar.gz', '9902.1001', True,
+    #  r"File 'espcrc2.sty' is empty \(size is zero\)",
+    #  'Test zero file detection'],
+    # ['upload2.tar.gz', '9903.1002', False, '', 'Test well-formed submission.'],
+    # ['upload3.tar.gz', '9903.1003', False, '', 'Test well-formed submission.'],
+    # ['upload4.gz', '9903.1004', True, '',
+    #  "Renaming 'upload4.gz' to 'upload4'"],
+    # ['upload5.pdf', '9903.1005', False, '',
+    #  'Test well-formed pdf submission.'],
 
     # .tgz file because of Archive::Extrat/gzip bug
-    ['upload6.tgz', '9903.1006', False, '', 'Test well-formed submission.'],
+    # ['upload6.tgz', '9903.1006', False, '', 'Test well-formed submission.'],
 
     # Nested archives
-    ['upload-nested-zip-and-tar.zip', '9903.1013', True,
-     'There were problems unpacking "jz2.zip" -- continuing. Please try again'
-     ' and confirm your files. Test upload with corrupt zip file'],
+    # ['upload-nested-zip-and-tar.zip', '9903.1013', True,
+    #  'There were problems unpacking "jz2.zip" -- continuing. Please try again'
+    #  ' and confirm your files. Test upload with corrupt zip file'],
 
     #  contains top-level directory
-    ['upload7.tar.gz', '9903.1007', True, 'Removing top level directory',
-     'Test removing top level directory.']
+    # ['upload7.tar.gz', '9903.1007', True, 'Removing top level directory',
+    #  'Test removing top level directory.']
 
-    ['UploadTestWindowCDrive.tar.gz', '12345639', True,
-     r'Renaming c:\\data\\windows\.txt', 'Test renaming of Windows filename'],
+    # ['UploadTestWindowCDrive.tar.gz', '12345639', True,
+    #  r'Renaming c:\\data\\windows\.txt', 'Test renaming of Windows filename'],
 
 ]
 
@@ -1277,69 +1277,69 @@ class TestUpload(TestCase):
     #
     #     test_file_directory = TEST_FILES_DIRECTORY
     #
-    #     for upload_test in upload_tests:
-    #
-    #         test_file, upload_id, warnings, warnings_match, *_ = \
-    #             upload_test + [None] * 2
-    #
-    #         self.assertIsNotNone(upload_id, "Test must have upload identifier.")
-    #
-    #         if not upload_id:
-    #             print("Test metadata is missing upload identifier. Skipping text.")
-    #             continue
-    #
-    #         # Create path to test upload archive
-    #         new_path = os.path.join(test_file_directory, test_file)
-    #
-    #         # Make sure test file exists
-    #         self.assertTrue(os.path.exists(new_path), 'Test upload ' + new_path
-    #                         + ' exists!')
-    #
-    #         # Create Uplaod object - this instance gets cleaned out
-    #         upload = Upload(upload_id)
-    #
-    #         # For testing purposes only, clean out existing workspace directory
-    #         workspace_dir = upload.get_upload_directory()
-    #         if os.path.exists(workspace_dir):
-    #             shutil.rmtree(workspace_dir)
-    #
-    #         print(f"Run test upload checks against test file: '{test_file}'")
-    #
-    #         # Recreate FileStroage object that flask will be passing in
-    #         file = None
-    #         with open(new_path, 'rb') as fp:
-    #             file = FileStorage(fp)
-    #             # Now create upload instance
-    #             upload = Upload(upload_id)
-    #             # Process upload
-    #             upload.process_upload(file)
-    #
-    #             # For the case where we are expecting warnings make sure upload has the right ones
-    #             if warnings:
-    #
-    #                 self.assertTrue(upload.has_warnings(),
-    #                                 "This test is expected to generate warnings!")
-    #
-    #                 # Look for specific warning we are attempting to generate
-    #                 if upload.has_warnings():
-    #                     # print ("Upload process had warnings as expected")
-    #                     # print("Search for warning: '" + warnings_match + "'")
-    #                     # Complain if we didn't find speocfied warning
-    #                     string = f'This test is expected to generate specific ' \
-    #                              f'warning: "{warnings_match}"'
-    #
-    #                     self.assertTrue(upload.search_warnings(warnings_match),
-    #                                     string)
-    #
-    #                     # if upload.search_warnings(warnings_match):
-    #                     # print("Found expected warning")
-    #                     # else:
-    #                     # print("Failed to find expected warning")
-    #                 else:
-    #                     print("Upload completed without warnings (not expected)")
-    #             else:
-    #                 self.assertFalse(upload.has_warnings(),
-    #                                  f'{test_file}: Not expecting warnings!')
-    #
-    #             # Clean up workspace
-    #             upload.remove_workspace()
+        for upload_test in upload_tests:
+
+            test_file, upload_id, warnings, warnings_match, *_ = \
+                upload_test + [None] * 2
+
+            self.assertIsNotNone(upload_id, "Test must have upload identifier.")
+
+            if not upload_id:
+                print("Test metadata is missing upload identifier. Skipping text.")
+                continue
+
+            # Create path to test upload archive
+            new_path = os.path.join(test_file_directory, test_file)
+
+            # Make sure test file exists
+            self.assertTrue(os.path.exists(new_path), 'Test upload ' + new_path
+                            + ' exists!')
+
+            # Create Uplaod object - this instance gets cleaned out
+            upload = Upload(upload_id)
+
+            # For testing purposes only, clean out existing workspace directory
+            workspace_dir = upload.get_upload_directory()
+            if os.path.exists(workspace_dir):
+                shutil.rmtree(workspace_dir)
+
+            print(f"Run test upload checks against test file: '{test_file}'")
+
+            # Recreate FileStroage object that flask will be passing in
+            file = None
+            with open(new_path, 'rb') as fp:
+                file = FileStorage(fp)
+                # Now create upload instance
+                upload = Upload(upload_id)
+                # Process upload
+                upload.process_upload(file)
+
+                # For the case where we are expecting warnings make sure upload has the right ones
+                if warnings:
+
+                    self.assertTrue(upload.has_warnings(),
+                                    "This test is expected to generate warnings!")
+
+                    # Look for specific warning we are attempting to generate
+                    if upload.has_warnings():
+                        # print ("Upload process had warnings as expected")
+                        # print("Search for warning: '" + warnings_match + "'")
+                        # Complain if we didn't find speocfied warning
+                        string = f'This test is expected to generate specific ' \
+                                 f'warning: "{warnings_match}"'
+
+                        self.assertTrue(upload.search_warnings(warnings_match),
+                                        string)
+
+                        # if upload.search_warnings(warnings_match):
+                        # print("Found expected warning")
+                        # else:
+                        # print("Failed to find expected warning")
+                    else:
+                        print("Upload completed without warnings (not expected)")
+                else:
+                    self.assertFalse(upload.has_warnings(),
+                                     f'{test_file}: Not expecting warnings!')
+
+                # Clean up workspace
+                upload.remove_workspace()

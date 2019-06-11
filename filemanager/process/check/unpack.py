@@ -94,7 +94,8 @@ class UnpackCompressedTarFiles(BaseChecker):
             workspace.add_warning(u_file, f'Tar error message: {e}')
             return u_file
 
-        workspace.remove(u_file, f"Removed packed file '{u_file.name}'.")
+        workspace.remove(u_file, f"Removed packed file '{u_file.name}'.",
+                         keep_refs=False)
         workspace.log(f'Removed packed file {u_file.name}')
         return u_file
 
@@ -112,7 +113,7 @@ class UnpackCompressedZIPFiles(BaseChecker):
                       f' to dir: {os.path.split(u_file.path)[0]}')
         try:
             with workspace.open(u_file, 'rb') as f:
-                with zipfile.ZipFile(fileobj=f) as zip:
+                with zipfile.ZipFile(f) as zip:
                     for zipinfo in zip.infolist():
                         self._unpack_file(workspace, u_file, zip, zipinfo)
         except zipfile.BadZipFile as e:
@@ -124,13 +125,14 @@ class UnpackCompressedZIPFiles(BaseChecker):
             return u_file
 
         # Now move zip file out of way to removed directory
-        workspace.remove(u_file, f"Removed packed file '{u_file.name}'.")
+        workspace.remove(u_file, f"Removed packed file '{u_file.name}'.",
+                         keep_refs=False)
         workspace.log(f'Removed packed file {u_file.name}')
         return u_file
 
     def _unpack_file(self, workspace: UploadWorkspace, u_file: UploadedFile,
                      zip: zipfile.ZipFile, zipinfo: zipfile.ZipInfo) -> None:
-        dest = os.path.join(u_file.dir, zipinfo.name).lstrip('/')
+        dest = os.path.join(u_file.dir, zipinfo.filename).lstrip('/')
         # Zip files may contain relative paths! We must ensure that each file
         # is not going to escape the upload source directory _before_ we
         # extract it.

@@ -320,7 +320,177 @@ class TestMultiFileSubmissions(TestCase):
         self.assertEqual(counts[FileType.PDFLATEX], 1)
 
 
-# TODO: checks for pdfpages documents do not seem to be implemented yet.
+class TestUploadScenarios(TestCase):
+    """Test series of uniform cases with specified outcomes."""
+
+    DATA_PATH = os.path.join(os.path.split(os.path.abspath(__file__))[0],
+                             'test_files_upload')
+
+    def setUp(self):
+        """We have a workspace."""
+        self.base_path = tempfile.mkdtemp()
+        self.upload_id = 5432
+        self.workspace_path = os.path.join(self.base_path, str(self.upload_id))
+        os.makedirs(self.workspace_path)
+
+        self.workspace = UploadWorkspace(
+            upload_id=self.upload_id,
+            submission_id=None,
+            owner_user_id='98765',
+            archive=None,
+            created_datetime=datetime.now(),
+            modified_datetime=datetime.now(),
+            strategy=SynchronousCheckingStrategy(),
+            storage=SimpleStorageAdapter(self.base_path),
+            checkers=get_default_checkers()
+        )
+
+    def tearDown(self):
+        """Remove the temporary directory for files."""
+        shutil.rmtree(self.base_path)
+
+    def write_upload(self, filename):
+        """
+        Write the upload into the workspace.
+
+        We'll use a similar pattern when doing this in Flask.
+        """
+        filepath = os.path.join(self.DATA_PATH, filename)
+        new_file = self.workspace.create(filename)
+        with self.workspace.open(new_file, 'wb') as dest:
+            with open(filepath, 'rb') as source:
+                dest.write(source.read())
+
+    def test_warning_for_empty_file(self):
+        """Upload contains an empty file."""
+        self.write_upload('upload1.tar.gz')
+        self.workspace.perform_checks()
+        self.assertTrue(self.workspace.has_warnings)
+        self.assertIn("File 'espcrc2.sty' is empty (size is zero).",
+                      self.workspace.warnings['espcrc2.sty'])
+
+    def test_well_formed_submission(self):
+        """Upload is a well-formed submission package."""
+        self.write_upload('upload2.tar.gz')
+        self.workspace.perform_checks()
+        self.assertFalse(self.workspace.has_warnings)
+        self.assertFalse(self.workspace.has_errors)
+
+    def test_another_well_formed_submission(self):
+        """Upload is a well-formed submission package."""
+        self.write_upload('upload3.tar.gz')
+        self.workspace.perform_checks()
+        self.assertFalse(self.workspace.has_warnings)
+        self.assertFalse(self.workspace.has_errors)
+
+    def test_submission_with_warnings(self):
+        """Upload is a well-formed submission package."""
+        self.write_upload('upload4.gz')
+        self.workspace.perform_checks()
+        self.assertTrue(self.workspace.has_warnings)
+        self.assertIn("Renaming 'upload4.gz' to 'upload4'.",
+                      self.workspace.warnings['upload4'])
+        self.assertTrue(self.workspace.has_errors)
+
+    def test_yet_another_well_formed_submission(self):
+        """Upload is a well-formed submission package."""
+        self.write_upload('upload5.tar.gz')
+        self.workspace.perform_checks()
+        self.assertFalse(self.workspace.has_warnings)
+        self.assertFalse(self.workspace.has_errors)
+
+    def test_a_tgz_file(self):
+        """
+        Upload is a well-formed submission package.
+
+        .tgz file because of Archive::Extrat/gzip bug
+        """
+        self.write_upload('upload6.tgz')
+        self.workspace.perform_checks()
+        self.assertFalse(self.workspace.has_warnings)
+        self.assertFalse(self.workspace.has_errors)
+
+
+class TestNestedArchives(TestCase):
+    """Tests for uploads with nested archives."""
+
+    DATA_PATH = os.path.join(os.path.split(os.path.abspath(__file__))[0],
+                             'test_files_upload')
+
+    def setUp(self):
+        """We have a workspace."""
+        self.base_path = tempfile.mkdtemp()
+        self.upload_id = 5432
+        self.workspace_path = os.path.join(self.base_path, str(self.upload_id))
+        os.makedirs(self.workspace_path)
+
+        self.workspace = UploadWorkspace(
+            upload_id=self.upload_id,
+            submission_id=None,
+            owner_user_id='98765',
+            archive=None,
+            created_datetime=datetime.now(),
+            modified_datetime=datetime.now(),
+            strategy=SynchronousCheckingStrategy(),
+            storage=SimpleStorageAdapter(self.base_path),
+            checkers=get_default_checkers()
+        )
+
+    def tearDown(self):
+        """Remove the temporary directory for files."""
+        shutil.rmtree(self.base_path)
+
+    def write_upload(self, filename):
+        """
+        Write the upload into the workspace.
+
+        We'll use a similar pattern when doing this in Flask.
+        """
+        filepath = os.path.join(self.DATA_PATH, filename)
+        new_file = self.workspace.create(filename)
+        with self.workspace.open(new_file, 'wb') as dest:
+            with open(filepath, 'rb') as source:
+                dest.write(source.read())
+
+    def test_nested_zip_and_tar(self):
+        """Nested archives including a corrupted zip file."""
+        self.write_upload('upload-nested-zip-and-tar.zip')
+        self.workspace.perform_checks()
+        self.assertTrue(self.workspace.has_warnings)
+        self.assertIn('There were problems unpacking \'jz2.zip\'. Please try'
+                      ' again and confirm your files.',
+                      self.workspace.warnings['jz2.zip'])
+
+    def test_contains_top_level_directory(self):
+        """Contains a top-level directory."""
+        self.write_upload('upload7.tar.gz')
+        self.workspace.perform_checks()
+        self.assertTrue(self.workspace.has_warnings)
+        self.assertIn('Removing top level directory',
+                      self.workspace.warnings['index_files/'])
+        self.workspace.exists('link.gif')
+        self.workspace.exists('larrow.gif')
+        self.workspace.exists('logo.gif')
+        self.workspace.exists('tourbik2.gif')
+        self.workspace.exists('bicycle.gif')
+        self.workspace.exists('commbike.gif')
+        self.workspace.exists('heartcyc.gif')
+        # Etc...
+
+    def test_contains_windows_filenames(self):
+        """Contains windows filenames."""
+        self.write_upload('UploadTestWindowCDrive.tar.gz')
+        self.workspace.perform_checks()
+        self.assertTrue(self.workspace.has_warnings)
+        self.assertIn('Renamed c:\\data\\windows.txt to windows.txt',
+                      self.workspace.warnings['windows.txt'])
+
+
+
+
+
+
+# TODO: checks for pdfpages documents do not appear to be implemented yet.
 # --Erick 2019-06-11.
 # class TestPDFPages(TestCase):
 #     """

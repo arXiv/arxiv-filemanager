@@ -21,6 +21,7 @@ from .images import CheckForUnacceptableImages
 from .uuencoded import CheckForUUEncodedFiles
 from .ancillary import AncillaryFileChecker
 from .zero_length_files import ZeroLengthFileChecker
+from .top_level_directory import RemoveTopLevelDirectory
 
 
 CHECKS = [
@@ -70,6 +71,7 @@ CHECKS = [
 
     UnpackCompressedTarFiles,
     UnpackCompressedZIPFiles,
+    RemoveTopLevelDirectory,
 ]
 
 

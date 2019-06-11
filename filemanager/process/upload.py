@@ -2100,51 +2100,51 @@ class Upload:
                 dir_path = os.path.join(root_directory, dir)
                 os.chmod(dir_path, 0o775)
 
-    def fix_top_level_directory(self) -> None:
-        """
-        Eliminate single top-level directory.
-
-        Intended for case where submitter creates archive with all
-        uploaded files in a subdirectory.
-        """
-        source_directory = self.source_path
-
-        entries = os.listdir(source_directory)
-
-        # If all of the upload content is within a single top-level directory,
-        # move everything up one level and remove the directory. But don't
-        # clobber the ancillary directory!
-        if (len(entries) == 1
-                and os.path.isdir(os.path.join(source_directory, entries[0]))
-                and entries[0] != self.ANCILLARY_PREFIX):
-
-            self.add_warning(entries[0], "Removing top level directory")
-            single_directory = os.path.join(source_directory, entries[0])
-
-            # Save copy in removed directory
-            save_filename = os.path.join(self.removed_path,
-                                         'move_source.tar.gz')
-            with tarfile.open(save_filename, "w:gz") as tar:
-                tar.add(single_directory, arcname=os.path.sep)
-
-            # Remove existing directory
-            if os.path.exists(single_directory):
-                shutil.rmtree(single_directory)
-
-            # Replace files
-            if os.path.exists(save_filename):
-                tar = tarfile.open(save_filename)
-                # untar file into source directory
-                tar.extractall(path=source_directory)
-                tar.close()
-            else:
-                self.add_error('', 'Failed to remove top level directory.')
-
-            # Set permissions
-            self.set_file_permissions()
-
-            # Rebuild file list
-            self.create_file_list()
+    # def fix_top_level_directory(self) -> None:
+    #     """
+    #     Eliminate single top-level directory.
+    #
+    #     Intended for case where submitter creates archive with all
+    #     uploaded files in a subdirectory.
+    #     """
+    #     source_directory = self.source_path
+    #
+    #     entries = os.listdir(source_directory)
+    #
+    #     # If all of the upload content is within a single top-level directory,
+    #     # move everything up one level and remove the directory. But don't
+    #     # clobber the ancillary directory!
+    #     if (len(entries) == 1
+    #             and os.path.isdir(os.path.join(source_directory, entries[0]))
+    #             and entries[0] != self.ANCILLARY_PREFIX):
+    #
+    #         self.add_warning(entries[0], "Removing top level directory")
+    #         single_directory = os.path.join(source_directory, entries[0])
+    #
+    #         # Save copy in removed directory
+    #         save_filename = os.path.join(self.removed_path,
+    #                                      'move_source.tar.gz')
+    #         with tarfile.open(save_filename, "w:gz") as tar:
+    #             tar.add(single_directory, arcname=os.path.sep)
+    #
+    #         # Remove existing directory
+    #         if os.path.exists(single_directory):
+    #             shutil.rmtree(single_directory)
+    #
+    #         # Replace files
+    #         if os.path.exists(save_filename):
+    #             tar = tarfile.open(save_filename)
+    #             # untar file into source directory
+    #             tar.extractall(path=source_directory)
+    #             tar.close()
+    #         else:
+    #             self.add_error('', 'Failed to remove top level directory.')
+    #
+    #         # Set permissions
+    #         self.set_file_permissions()
+    #
+    #         # Rebuild file list
+    #         self.create_file_list()
 
     def finalize_upload(self) -> None:
         """
