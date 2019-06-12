@@ -350,6 +350,7 @@ class UploadWorkspace:
     # TODO: implement this!
     def log(self, message: str) -> None:
         """Add a workspace log entry."""
+        logger.debug(message)
         pass
 
     def _get_path(self, path: str, is_ancillary: bool = False,

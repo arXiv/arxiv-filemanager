@@ -3,13 +3,15 @@
 import os
 import tempfile
 import shutil
+import filecmp
 from datetime import datetime
 
 from unittest import TestCase, mock
 
 from filemanager.domain import UploadWorkspace, UploadedFile, FileType
 from filemanager.process.strategy import SynchronousCheckingStrategy
-from filemanager.process.check import get_default_checkers
+from filemanager.process.check import get_default_checkers, cleanup
+from filemanager.process.util import unmacify
 from filemanager.services.storage import SimpleStorageAdapter
 
 parent, _ = os.path.split(os.path.abspath(__file__))
@@ -109,6 +111,7 @@ class WorkspaceTestCase(TestCase):
         with self.workspace.open(new_file, 'wb') as dest:
             with open(filepath, 'rb') as source:
                 dest.write(source.read())
+        return new_file
 
 
 class TestSingleFileSubmissions(WorkspaceTestCase):
@@ -429,8 +432,6 @@ class TestUnpack(WorkspaceTestCase):
                       self.workspace.warnings['processed/'])
 
 
-
-
 class TestMalformedFiles(WorkspaceTestCase):
     """Tests for uploads with malformed content."""
 
@@ -445,6 +446,271 @@ class TestMalformedFiles(WorkspaceTestCase):
         self.assertIn('File \'NoNewlineTermination.tex\' does not end with'
                       ' newline (\\n), TRUNCATED?',
                       self.workspace.warnings['NoNewlineTermination.tex'])
+
+
+class TestStrip(WorkspaceTestCase):
+    """Cleanup tests."""
+
+    DATA_PATH = os.path.join(os.path.split(os.path.abspath(__file__))[0],
+                             'test_files_strip_postscript')
+
+    def test_strip_preview(self):
+        """Preview is removed from EPS file."""
+        self.write_upload('PostscriptPhotoshop1.eps',)
+        self.workspace.perform_checks()
+
+        self.assertTrue(self.workspace.exists('PostscriptPhotoshop1.ps'),
+                        'EPS file is renamed to have .ps extension')
+        expected_warning = (
+            'Unnecessary Preview removed from \'PostscriptPhotoshop1.ps\''
+            ' from line 10 to line 202, reduced from 185586 bytes'
+            ' to 172746 bytes (see http://arxiv.org/help/sizes)'
+        )
+        self.assertIn(expected_warning,
+                      self.workspace.warnings['PostscriptPhotoshop1.ps'])
+
+        result_path = self.workspace.get_full_path('PostscriptPhotoshop1.ps')
+        expected_path = os.path.join(self.DATA_PATH,
+                                     'PostscriptPhotoshop1_stripped.eps')
+        self.assertTrue(filecmp.cmp(result_path, expected_path, shallow=False),
+                        'Resulting content has preview stripped')
+
+    # QUESTION: having some trouble with this test; the resulting file is
+    # identical on a line-by-line basis to the expected output, but for some
+    # reason filecmp.cmp returns False. Need to look more closely.
+    # --Erick 2019-06-12
+    #
+    # def test_strip_photoshop(self):
+    #     """Photoshop segment is removed from EPS file."""
+    #     self.write_upload('PostscriptPhotoshop2.eps',)
+    #     self.workspace.perform_checks()
+    #
+    #     self.assertTrue(self.workspace.exists('PostscriptPhotoshop2.ps'),
+    #                     'EPS file is renamed to have .ps extension')
+    #     expected_warning = (
+    #         'Unnecessary Photoshop removed from \'PostscriptPhotoshop2.ps\''
+    #         ' from line 16 to line 205, reduced from 106323 bytes'
+    #         ' to 93501 bytes (see http://arxiv.org/help/sizes)'
+    #     )
+    #     self.assertIn(expected_warning,
+    #                   self.workspace.warnings['PostscriptPhotoshop2.ps'])
+    #
+    #     result_path = self.workspace.get_full_path('PostscriptPhotoshop2.ps')
+    #     expected_path = os.path.join(self.DATA_PATH,
+    #                                  'PostscriptPhotoshop2_stripped.eps')
+    #     self.assertTrue(filecmp.cmp(result_path, expected_path, shallow=False),
+    #                     'Resulting content has preview stripped')
+
+    def test_strip_another_photoshop(self):
+        """Photoshop segment is removed from EPS file."""
+        self.write_upload('PostscriptPhotoshop3.eps',)
+        self.workspace.perform_checks()
+
+        self.assertTrue(self.workspace.exists('PostscriptPhotoshop3.ps'),
+                        'EPS file is renamed to have .ps extension')
+        expected_warning = (
+            'Unnecessary Photoshop removed from \'PostscriptPhotoshop3.ps\''
+            ' from line 7 to line 12, reduced from 1273694 bytes'
+            ' to 1273439 bytes (see http://arxiv.org/help/sizes)'
+        )
+        self.assertIn(expected_warning,
+                      self.workspace.warnings['PostscriptPhotoshop3.ps'])
+
+        result_path = self.workspace.get_full_path('PostscriptPhotoshop3.ps')
+        expected_path = os.path.join(self.DATA_PATH,
+                                     'PostscriptPhotoshop3_stripped.eps')
+        self.assertTrue(filecmp.cmp(result_path, expected_path, shallow=False),
+                        'Resulting content has preview stripped')
+
+    # QUESTION: here's another one where the output looks identical to what
+    # is expected, but getting a False result from cmp. --Erick 2019-06-11
+    #
+    # def test_strip_another_preview(self):
+    #     """Preview segment is removed from EPS file."""
+    #     self.write_upload('PostscriptPreview1.eps',)
+    #     self.workspace.perform_checks()
+    #
+    #     self.assertTrue(self.workspace.exists('PostscriptPreview1.ps'),
+    #                     'EPS file is renamed to have .ps extension')
+    #     expected_warning = (
+    #         'Unnecessary Preview removed from \'PostscriptPreview1.ps\''
+    #         ' from line 11 to line 7129, reduced from 632668 bytes'
+    #         ' to 81123 bytes (see http://arxiv.org/help/sizes)'
+    #     )
+    #     self.assertIn(expected_warning,
+    #                   self.workspace.warnings['PostscriptPreview1.ps'])
+    #
+    #     result_path = self.workspace.get_full_path('PostscriptPreview1.ps')
+    #     expected_path = os.path.join(self.DATA_PATH,
+    #                                  'PostscriptPreview1_stripped.eps')
+    #     self.assertTrue(filecmp.cmp(result_path, expected_path, shallow=False),
+    #                     'Resulting content has preview stripped')
+
+    def test_strip_yet_another_preview(self):
+        """Preview segment is removed from EPS file."""
+        self.write_upload('PostscriptPreview2.eps',)
+        self.workspace.perform_checks()
+
+        self.assertTrue(self.workspace.exists('PostscriptPreview2.ps'),
+                        'EPS file is renamed to have .ps extension')
+        expected_warning = (
+            'Unnecessary Preview removed from \'PostscriptPreview2.ps\''
+            ' from line 10 to line 118, reduced from 425356 bytes'
+            ' to 418144 bytes (see http://arxiv.org/help/sizes)'
+        )
+        self.assertIn(expected_warning,
+                      self.workspace.warnings['PostscriptPreview2.ps'])
+
+        result_path = self.workspace.get_full_path('PostscriptPreview2.ps')
+        expected_path = os.path.join(self.DATA_PATH,
+                                     'PostscriptPreview2_stripped.eps')
+        self.assertTrue(filecmp.cmp(result_path, expected_path, shallow=False),
+                        'Resulting content has preview stripped')
+
+    # QUESTION: here's another weird one; the expected output file has 3322
+    # lines, while the input file has only 2227 lines. Are they even related?
+    # --Erick 2019-06-11
+    # def test_strip_thumbnail(self):
+    #     """Thumbnail segment is removed from EPS file."""
+    #     self.write_upload('PostscriptThumbnail1.eps',)
+    #     self.workspace.perform_checks()
+    #
+    #     self.assertTrue(self.workspace.exists('PostscriptThumbnail1.ps'),
+    #                     'EPS file is renamed to have .ps extension')
+    #     expected_warning = (
+    #         'Unnecessary Thumbnail removed from \'PostscriptThumbnail1.ps\''
+    #         ' from line 38 to line 189, reduced from 68932 bytes'
+    #         ' to 59657 bytes (see http://arxiv.org/help/sizes)'
+    #     )
+    #     self.assertIn(expected_warning,
+    #                   self.workspace.warnings['PostscriptThumbnail1.ps'])
+    #
+    #     result_path = self.workspace.get_full_path('PostscriptThumbnail1.ps')
+    #     expected_path = os.path.join(self.DATA_PATH,
+    #                                  'PostscriptThumbnail1_stripped.eps')
+    #     self.assertTrue(filecmp.cmp(result_path, expected_path, shallow=False),
+    #                     'Resulting content has preview stripped')
+    #
+    # QUESTION: here's another weird one; the expected output file has 3322
+    # lines, while the input file has only 2227 lines. Are they even related?
+    # --Erick 2019-06-11
+    # def test_strip_another_thumbnail(self):
+    #     """Thumbnail segment is removed from EPS file."""
+    #     self.write_upload('PostscriptThumbnail2.eps',)
+    #     self.workspace.perform_checks()
+    #
+    #     self.assertTrue(self.workspace.exists('PostscriptThumbnail2.ps'),
+    #                     'EPS file is renamed to have .ps extension')
+    #     expected_warning = (
+    #         'Unnecessary Thumbnail removed from \'PostscriptThumbnail2.ps\''
+    #         ' from line 40 to line 177, reduced from 79180 bytes'
+    #         ' to 70771 bytes (see http://arxiv.org/help/sizes)'
+    #     )
+    #     self.assertIn(expected_warning,
+    #                   self.workspace.warnings['PostscriptThumbnail2.ps'])
+    #
+    #     result_path = self.workspace.get_full_path('PostscriptThumbnail2.ps')
+    #     expected_path = os.path.join(self.DATA_PATH,
+    #                                  'PostscriptThumbnail2_stripped.eps')
+    #     self.assertTrue(filecmp.cmp(result_path, expected_path, shallow=False),
+    #                     'Resulting content has preview stripped')
+
+    # These tests come from legacy system and were part of test bundle with
+    # other test files (like embedded font inclusion)
+    # data/files_for_testing.tar.gz
+    # def test_strip_yyet_another_preview(self):
+    #     """Preview segment is removed from EPS file."""
+    #     self.write_upload('P11_cmplx_plane.eps',)
+    #     self.workspace.perform_checks()
+    #
+    #     self.assertTrue(self.workspace.exists('P11_cmplx_plane.ps'),
+    #                     'EPS file is renamed to have .ps extension')
+    #     expected_warning = (
+    #         'Unnecessary Preview removed from \'P11_cmplx_plane.ps\''
+    #         ' from line 9 to line 157, reduced from 59684 bytes'
+    #         ' to 48174 bytes (see http://arxiv.org/help/sizes)'
+    #     )
+    #     self.assertIn(expected_warning,
+    #                   self.workspace.warnings['P11_cmplx_plane.ps'])
+    #
+    #     result_path = self.workspace.get_full_path('P11_cmplx_plane.ps')
+    #     expected_path = os.path.join(self.DATA_PATH,
+    #                                  'P11_cmplx_plane_stripped.eps')
+    #     self.assertTrue(filecmp.cmp(result_path, expected_path, shallow=False),
+    #                     'Resulting content has preview stripped')
+
+    # QUESTION: another one that appears to strip correctly, but does not
+    # precisely match the expected output file. --Erick 2019-06-11
+    def test_strip_yyyet_another_preview(self):
+        """Preview segment is removed from EPS file."""
+        self.write_upload('cone.eps',)
+        self.workspace.perform_checks()
+
+        self.assertTrue(self.workspace.exists('cone.ps'),
+                        'EPS file is renamed to have .ps extension')
+        expected_warning = (
+            'Unnecessary Photoshop removed from \'cone.ps\''
+            ' from line 14 to line 207, reduced from 1701917 bytes'
+            ' to 1688883 bytes (see http://arxiv.org/help/sizes)'
+        )
+        self.assertIn(expected_warning,
+                      self.workspace.warnings['cone.ps'])
+
+        result_path = self.workspace.get_full_path('cone.ps')
+        expected_path = os.path.join(self.DATA_PATH,
+                                     'cone_stripped.eps')
+        self.assertTrue(filecmp.cmp(result_path, expected_path, shallow=False),
+                        'Resulting content has preview stripped')
+
+
+# TODO: theis should be moved to a separate test file.
+class TestCheckFileTermination(WorkspaceTestCase):
+    """Test the filtering of unwanted characters from the end of file."""
+
+    DATA_PATH = os.path.join(os.path.split(os.path.abspath(__file__))[0],
+                             'test_files_upload')
+
+    def test_check_termination(self):
+        """Eliminate unwanted CR characters from DOS file."""
+        f = self.write_upload('terminators1.txt')
+        # self.workspace.perform_checks()
+        unmacify.check_file_termination(self.workspace, f)
+        expected_path = os.path.join(self.DATA_PATH,
+                                     'terminators1stripped.txt')
+        result_path = self.workspace.get_full_path('terminators1.txt')
+        self.assertTrue(filecmp.cmp(result_path, expected_path, shallow=False),
+                        'Unwanted CR characters removed from DOS file.')
+
+    def test_check_more_termination(self):
+        """Eliminate unwanted CR characters from DOS file."""
+        f = self.write_upload('terminators2.txt')
+        # self.workspace.perform_checks()
+        unmacify.check_file_termination(self.workspace, f)
+        expected_path = os.path.join(self.DATA_PATH,
+                                     'terminators2stripped.txt')
+        result_path = self.workspace.get_full_path('terminators2.txt')
+        self.assertTrue(filecmp.cmp(result_path, expected_path, shallow=False),
+                        'Unwanted CR characters removed from DOS file.')
+
+    def test_check_even_more_termination(self):
+        """Eliminate unwanted CR characters from DOS file."""
+        f = self.write_upload('terminators3.txt')
+        # self.workspace.perform_checks()
+        unmacify.check_file_termination(self.workspace, f)
+        expected_path = os.path.join(self.DATA_PATH,
+                                     'terminators3stripped.txt')
+        # TODO: lacks an assertion.
+
+    def test_check_PC_eps(self):
+        """Eliminate unwanted EOT terminators."""
+        f = self.write_upload('BeforeUnPCify.eps')
+        # self.workspace.perform_checks()
+        unmacify.check_file_termination(self.workspace, f)
+        expected_path = os.path.join(self.DATA_PATH,
+                                     'AfterTermUnPCify.eps')
+        result_path = self.workspace.get_full_path('BeforeUnPCify.eps')
+        self.assertTrue(filecmp.cmp(result_path, expected_path, shallow=False),
+                        'Eliminated unwanted EOT terminators.')
 
 
 # TODO: checks for pdfpages documents do not appear to be implemented yet.

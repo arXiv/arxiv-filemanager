@@ -160,7 +160,7 @@ def _check_postscript(workspace: UploadWorkspace, u_file: UploadedFile,
     # or resource.
 
     # Scan Postscript file
-    workspace.log(f"\nCheck Postscript: '{u_file.name}'")
+    workspace.log(f"Check Postscript: '{u_file.name}'")
 
     # Check whether file contains '\r\n' sequence
     with workspace.open(u_file, 'rb', buffering=0) as f, \
@@ -322,7 +322,9 @@ def _strip_preview(workspace: UploadWorkspace, u_file: UploadedFile,
         end_re = re.compile(b'^%%EndPreview')
     elif what_to_strip == THUMBNAIL:
         start_re = re.compile(b'Thumbnail')
-        end_re = re.compile(b'^%%EndData')
+        # Removed the ``^`` from ``^%%EndData``, since the examples have
+        # %%EndData inline.
+        end_re = re.compile(b'%%EndData')
 
     # Open a file to store stripped contents
     new_path = f'{u_file.path}.stripped'
@@ -330,13 +332,12 @@ def _strip_preview(workspace: UploadWorkspace, u_file: UploadedFile,
 
     workspace.log(f"File: {u_file.name} in dir {u_file.dir} save to "
                   f"{new_file.name} at {u_file.path}")
+    # Default is to retain all lines
+    retain = True
+    strip_warning = ''
 
     with workspace.open(u_file, 'rb', buffering=0) as infile, \
             workspace.open(new_file, 'wb', buffering=0) as outfile:
-
-        # Default is to retain all lines
-        retain = True
-        strip_warning = ''
 
         for line_no, line in enumerate(infile):
             # Check line for start pattern
@@ -353,32 +354,32 @@ def _strip_preview(workspace: UploadWorkspace, u_file: UploadedFile,
             # Check for end pattern
             if not retain and end_re.search(line):
                 strip_warning = " ".join([strip_warning,
-                                          f" to line {line_no + 1},"])
+                                          f"to line {line_no + 1},"])
                 retain = True
                 # Handle bug in certain files
                 # AI bug %%EndData^M%%EndComments
                 if re.search(b'.*\r%/%', line):
                     outfile.write(line)
 
-        # Generate some warnings
-        if retain and strip_warning:
-            orig_size = u_file.size_bytes  # os.path.getsize(original_filepath)
-            strip_size = workspace.getsize(new_file)
-            new_file = workspace.replace(u_file, new_file)
+    # Generate some warnings
+    if retain and strip_warning:
+        orig_size = u_file.size_bytes  # os.path.getsize(original_filepath)
+        strip_size = workspace.getsize(new_file)
+        new_file = workspace.replace(u_file, new_file)
 
-            msg = (f"Reduced from {orig_size} bytes to {strip_size} bytes "
-                   "(see http://arxiv.org/help/sizes)")
-            strip_warning = ' '.join([strip_warning, msg])
-            workspace.add_warning(new_file, strip_warning)
-            return new_file
+        msg = (f"reduced from {orig_size} bytes to {strip_size} bytes "
+               "(see http://arxiv.org/help/sizes)")
+        strip_warning = ' '.join([strip_warning, msg])
+        workspace.add_warning(new_file, strip_warning)
+        return new_file
 
-        if strip_warning:
-            msg = f"{u_file.name} had unpaired $strip"
-            strip_warning = ' '.join([strip_warning, msg])
-        # Removed failed attempt to strip Postscript
-        workspace.delete(new_file)
-        workspace.add_warning(u_file, strip_warning)
-        return u_file
+    if strip_warning:
+        msg = f"{u_file.name} had unpaired {end_re.pattern}"
+        strip_warning = ' '.join([strip_warning, msg])
+    # Removed failed attempt to strip Postscript
+    workspace.delete(new_file)
+    workspace.add_warning(u_file, strip_warning)
+    return u_file
 
 
 def _strip_tiff(workspace: UploadWorkspace, u_file: UploadedFile) -> None:
@@ -488,6 +489,8 @@ def _repair_dos_eps(workspace: UploadWorkspace,
         if psoffset <= 0 or pslength <= 0 or tiffoffset <= 0 \
                 or tifflength <= 0:
             # Encapsulated Postscript does not contain embedded TIFF.
+            logger.debug('Encapsulated Postscript does not contain embedded'
+                         ' TIFF.')
             return u_file, ""
 
         # Extract Postscript.

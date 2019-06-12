@@ -98,9 +98,9 @@ unpack_tests = []
 #                      r"Removed '__MACOSX' directory.",
 #                      'Test detection and removal of __MACOSX directory'])
 
-unpack_tests.append(['with__processed_directory.tar.gz', '9912.0002', True,
-                     r"Detected 'processed' directory. Please check.",
-                     "Test detection and warning about 'processed' directory"])
+# unpack_tests.append(['with__processed_directory.tar.gz', '9912.0002', True,
+#                      r"Detected 'processed' directory. Please check.",
+#                      "Test detection and warning about 'processed' directory"])
 
 # Source Format Tests
 
@@ -533,32 +533,32 @@ strip_tests.append(['cone.eps',
 #
 #         upload = Upload(1234999)
 #
-#         for strip_test in strip_tests:
-#             file_to_strip, reference_file, warning_match, preview_type = \
-#                 strip_test
-#
-#             # strip preview from Postscript
-#             test_filename = file_to_strip
-#             tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
-#             workspace_src_dir = upload.source_path
-#             destfilename = os.path.join(workspace_src_dir, test_filename)
-#             shutil.copy(tfilename, destfilename)
-#             file_obj = File(destfilename, workspace_src_dir)
-#
-#             upload.unmacify(file_obj)  # This file would have been unmacified
-#             upload.check_postscript(file_obj, None)
-#
-#             # compare to reference file
-#             reference = os.path.join(TEST_FILES_STRIP_PS, reference_file)
-#             # Compared stripped file to a reference stripped version of file.
-#             is_same = filecmp.cmp(destfilename, reference, shallow=False)
-#             self.assertTrue(is_same,
-#                             f"Stripped {preview_type} from file '{test_filename}'.")
-#
-#             # Check to make sure error is added to list of errors.
-#             warn_msg = warning_match
-#             self.assertTrue(upload.search_warnings(warn_msg),
-#                             f"Verify {preview_type} removed warning added to list.")
+        for strip_test in strip_tests:
+            file_to_strip, reference_file, warning_match, preview_type = \
+                strip_test
+
+            # strip preview from Postscript
+            test_filename = file_to_strip
+            tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
+            workspace_src_dir = upload.source_path
+            destfilename = os.path.join(workspace_src_dir, test_filename)
+            shutil.copy(tfilename, destfilename)
+            file_obj = File(destfilename, workspace_src_dir)
+
+            upload.unmacify(file_obj)  # This file would have been unmacified
+            upload.check_postscript(file_obj, None)
+
+            # compare to reference file
+            reference = os.path.join(TEST_FILES_STRIP_PS, reference_file)
+            # Compared stripped file to a reference stripped version of file.
+            is_same = filecmp.cmp(destfilename, reference, shallow=False)
+            self.assertTrue(is_same,
+                            f"Stripped {preview_type} from file '{test_filename}'.")
+
+            # Check to make sure error is added to list of errors.
+            warn_msg = warning_match
+            self.assertTrue(upload.search_warnings(warn_msg),
+                            f"Verify {preview_type} removed warning added to list.")
 #
 #         # cleanup workspace
 #         upload.remove_workspace()

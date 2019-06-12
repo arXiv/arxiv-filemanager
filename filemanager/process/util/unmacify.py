@@ -58,7 +58,7 @@ def unmacify(workspace: UploadWorkspace, uploaded_file: UploadedFile) -> None:
             outfile.write(infile.read())
 
         # Check for unwanted termination character
-        check_file_termination(workspace, uploaded_file)
+    check_file_termination(workspace, uploaded_file)
     workspace.delete(new_file)
 
 
