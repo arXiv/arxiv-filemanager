@@ -52,7 +52,7 @@ def unmacify(workspace: UploadWorkspace, uploaded_file: UploadedFile) -> None:
             outfile.write(re.sub(b"\r\n?", b"\n", s.read()))
 
     # Check if file was changed.
-    if workspace.cmp(uploaded_file, new_file, shallow=False):
+    if not workspace.cmp(uploaded_file, new_file, shallow=False):
         with workspace.open(uploaded_file, 'wb') as outfile, \
                 workspace.open(new_file, 'rb') as infile:
             outfile.write(infile.read())

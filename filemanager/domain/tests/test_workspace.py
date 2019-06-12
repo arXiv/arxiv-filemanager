@@ -86,8 +86,8 @@ class TestPaths(TestCase):
 
     def test_get_full_path(self):
         """Can get a full path to a file on disk, using a storage adapter."""
-        self.mock_storage.get_full_path.side_effect \
-            = lambda w, f: f'/foo/{w.get_path(f)}'
+        self.mock_storage.get_path.side_effect \
+            = lambda w, f, **k: f'/foo/{w.get_path(f)}'
         mock_file = mock.MagicMock(spec=UploadedFile,
                                    is_ancillary=False,
                                    is_removed=False,
@@ -96,9 +96,9 @@ class TestPaths(TestCase):
         self.assertEqual(self.wks.get_full_path(mock_file),
                          f'/foo/{self.wks.source_path}/path/to/file',
                          'File path is inside workspace.')
-        self.assertEqual(self.mock_storage.get_full_path.call_count, 1,
+        self.assertEqual(self.mock_storage.get_path.call_count, 1,
                          'Storage adapter get_full_path method is called')
-        self.assertEqual(self.mock_storage.get_full_path.call_args[0],
+        self.assertEqual(self.mock_storage.get_path.call_args[0],
                          (self.wks, mock_file),
                          'Workspace and uploaded file are passed')
 
@@ -173,10 +173,8 @@ class TestAddRemoveFiles(TestCase):
 
         self.assertTrue(mock_file.is_removed, 'File is marked as removed')
         self.assertEqual(mock_file.reason_for_removal, 'This is the reason')
-        self.assertEqual(self.mock_storage.move.call_count, 1,
+        self.assertEqual(self.mock_storage.remove.call_count, 1,
                          'Storage adapter move method is called')
-        self.assertTrue(self.wks.has_warnings,
-                        'Removal adds a warning to the workspace')
 
     def test_add_files(self):
         """Add multiple files."""
@@ -310,7 +308,8 @@ class TestOperations(TestCase):
 
     def test_open(self):
         """Get a file pointer for a file."""
-        self.wks.open(self.mock_file)
+        with self.wks.open(self.mock_file) as f:
+            f.read()
         self.assertEqual(self.mock_storage.open.call_count, 1,
                          'Calls the underlying storage adapter')
         self.assertEqual(self.mock_storage.open.call_args[0],
@@ -324,7 +323,8 @@ class TestOperations(TestCase):
                                          is_directory=False,
                                          path='path/to/other/file')
         with self.assertRaises(ValueError):
-            self.wks.open(mock_other_file)
+            with self.wks.open(mock_other_file) as f:
+                f.read()
 
     def test_compare_files(self):
         """Test comparing the contents of two files via workspace API."""

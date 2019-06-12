@@ -8,6 +8,7 @@ import zipfile
 import shutil
 import filecmp
 from pathlib import Path
+from contextlib import contextmanager
 
 from arxiv.base import logging
 
@@ -27,29 +28,46 @@ class SimpleStorageAdapter:
             raise RuntimeError('Volume does not exist')
         logger.debug('New SimpleStorageAdapter at %s', self._base_path)
 
+    def makedirs(self, workspace: UploadWorkspace, path: str) -> None:
+        """Make directories recursively for ``path``."""
+        abs_path = self._get_path_bare(os.path.join(workspace.base_path, path))
+        if not os.path.exists(abs_path):
+            os.makedirs(abs_path)
+
     def is_safe(self, workspace: UploadWorkspace, path: str,
-                is_ancillary: bool = False, is_removed: bool = False) -> bool:
+                is_ancillary: bool = False, is_removed: bool = False,
+                is_persisted: bool = False) -> bool:
         """Determine whether or not a path in a workspace is safe to use."""
         path_in_workspace = workspace.get_path(path, is_ancillary, is_removed)
         full_path = self._get_path_bare(path_in_workspace)
         try:
-            self._check_safe(workspace, full_path, is_ancillary, is_removed)
+            self._check_safe(workspace, full_path, is_ancillary=is_ancillary,
+                             is_removed=is_removed, is_persisted=is_persisted)
         except ValueError:
             return False
         return True
 
     def _check_safe(self, workspace: UploadWorkspace, full_path: str,
                     is_ancillary: bool = False, is_removed: bool = False,
-                    strict: bool = True) -> None:
+                    is_persisted: bool = False, strict: bool = True) -> None:
         if not strict:
-            workspace_full_path = self._get_path_bare(workspace.base_path)
+            logger.debug('evaluate liberally: %s', full_path)
+            wks_full_path = self._get_path_bare(workspace.base_path,
+                                                is_persisted=is_persisted)
         elif is_ancillary:
-            workspace_full_path = self._get_path_bare(workspace.ancillary_path)
+            logger.debug('evaluate as ancillary: %s', full_path)
+            wks_full_path = self._get_path_bare(workspace.ancillary_path,
+                                                is_persisted=is_persisted)
         elif is_removed:
-            workspace_full_path = self._get_path_bare(workspace.removed_path)
+            logger.debug('evaluate as removed: %s', full_path)
+            wks_full_path = self._get_path_bare(workspace.removed_path,
+                                                is_persisted=is_persisted)
         else:
-            workspace_full_path = self._get_path_bare(workspace.source_path)
-        if workspace_full_path not in full_path:
+            logger.debug('evaluate as active source file: %s', full_path)
+            wks_full_path = self._get_path_bare(workspace.source_path,
+                                                is_persisted=is_persisted)
+        logger.debug('Valid path (persisted=%s)? %s', is_persisted, full_path)
+        if wks_full_path not in full_path:
             raise ValueError(f'Not a valid path for workspace: {full_path}')
 
     def set_permissions(self, workspace: UploadWorkspace,
@@ -70,37 +88,50 @@ class SimpleStorageAdapter:
         """Remove a file."""
         src_path = self._get_path_bare(workspace.get_path(u_file),
                                        u_file.is_persisted)
-        dest_path = self._get_path_bare(workspace.get_path(u_file.path,
-                                                           is_removed=True),
-                                        u_file.is_persisted)
+        dest_path = self._get_path_bare(
+            workspace.get_path(u_file.path, is_removed=True),
+            is_persisted=u_file.is_persisted
+        )
         self._check_safe(workspace, src_path, is_ancillary=u_file.is_ancillary)
         self._check_safe(workspace, dest_path, is_removed=True)
         parent, _ = os.path.split(dest_path)
         if not os.path.exists(parent):
             os.makedirs(parent)
         shutil.move(src_path, dest_path)
-        u_file.is_removed = True
 
     def move(self, workspace: UploadWorkspace, u_file: UploadedFile,
              from_path: str, to_path: str) -> None:
         """Move a file from one path to another."""
-        src_path = self._get_path_bare(workspace.get_path(from_path),
-                                       u_file.is_persisted)
-        dest_path = self._get_path_bare(workspace.get_path(to_path),
-                                        u_file.is_persisted)
-        self._check_safe(workspace, src_path, u_file.is_ancillary,
-                         u_file.is_removed, strict=False)
-        self._check_safe(workspace, dest_path, u_file.is_ancillary,
-                         u_file.is_removed)
+        src_path_rel = workspace.get_path(from_path,
+                                          is_ancillary=u_file.is_ancillary,
+                                          is_removed=u_file.is_removed)
+        src_path = self._get_path_bare(src_path_rel, u_file.is_persisted)
+        dest_path_rel = workspace.get_path(to_path,
+                                           is_ancillary=u_file.is_ancillary,
+                                           is_removed=u_file.is_removed)
+        dest_path = self._get_path_bare(dest_path_rel, u_file.is_persisted)
+
+        logger.debug('Move %s from %s to %s', u_file.path, from_path, to_path)
+        logger.debug('%s -> %s', from_path, src_path)
+        logger.debug('%s -> %s', to_path, dest_path)
+        self._check_safe(workspace, src_path,
+                         is_ancillary=u_file.is_ancillary,
+                         is_removed=u_file.is_removed,
+                         strict=False)
+        self._check_safe(workspace, dest_path,
+                         is_ancillary=u_file.is_ancillary,
+                         is_removed=u_file.is_removed)
         parent, _ = os.path.split(dest_path)
         if not os.path.exists(parent):
             os.makedirs(parent)
         shutil.move(src_path, dest_path)
 
+    @contextmanager
     def open(self, workspace: UploadWorkspace, u_file: UploadedFile,
              flags: str = 'r', **kwargs: Any) -> io.IOBase:
         """Get an open file pointer to a file on disk."""
-        return open(self.get_path(workspace, u_file), flags, **kwargs)
+        with open(self.get_path(workspace, u_file), flags, **kwargs) as f:
+            yield f
 
     def is_tarfile(self, workspace: UploadWorkspace,
                    u_file: UploadedFile) -> bool:
@@ -110,16 +141,28 @@ class SimpleStorageAdapter:
     def get_path(self, workspace: UploadWorkspace,
                  u_file_or_path: Union[str, UploadedFile],
                  is_ancillary: bool = False,
-                 is_removed: bool = False) -> str:
+                 is_removed: bool = False,
+                 is_persisted: bool = False) -> str:
         """Get the absolute path to an :class:`.UploadedFile`."""
-        path = self._get_path_bare(workspace.get_path(u_file_or_path))
         if isinstance(u_file_or_path, UploadedFile):
             is_ancillary = u_file_or_path.is_ancillary
             is_removed = u_file_or_path.is_removed
-        self._check_safe(workspace, path, is_ancillary, is_removed)
+            is_persisted = u_file_or_path.is_persisted
+        logger.debug('Get path for %s', u_file_or_path)
+        path_in_workspace = workspace.get_path(u_file_or_path,
+                                               is_ancillary=is_ancillary,
+                                               is_removed=is_removed)
+        logger.debug('Path in workspace: %s', path_in_workspace)
+        path = self._get_path_bare(path_in_workspace,
+                                   is_persisted=is_persisted)
+        logger.debug('Got path %s', path)
+        self._check_safe(workspace, path,
+                         is_ancillary=is_ancillary,
+                         is_removed=is_removed,
+                         is_persisted=is_persisted)
         return path
 
-    def _get_path_bare(self, path: str, persisted: bool = True) -> str:
+    def _get_path_bare(self, path: str, is_persisted: bool = True) -> str:
         return os.path.normpath(os.path.join(self._base_path, path))
 
     def persist(self, workspace: UploadWorkspace,
@@ -180,8 +223,8 @@ class QuarantineStorageAdapter(SimpleStorageAdapter):
     def _get_quarantine_path(self, path: str) -> str:
         return os.path.join(self._quarantine_path, path)
 
-    def _get_path_bare(self, path: str, persisted: bool = True) -> str:
-        if persisted:
+    def _get_path_bare(self, path: str, is_persisted: bool = True) -> str:
+        if is_persisted:
             return self._get_permanent_path(path)
         return self._get_quarantine_path(path)
 
@@ -206,13 +249,18 @@ class QuarantineStorageAdapter(SimpleStorageAdapter):
         """Move a file or directory from quarantine to permanent storage."""
         src_path = self._get_quarantine_path(workspace.get_path(u_file))
         dst_path = self._get_permanent_path(workspace.get_path(u_file))
-        self._check_safe(workspace, src_path, u_file.is_ancillary,
-                         u_file.is_removed)
-        self._check_safe(workspace, dst_path, u_file.is_ancillary,
-                         u_file.is_removed)
+        self._check_safe(workspace, src_path,
+                         is_ancillary=u_file.is_ancillary,
+                         is_removed=u_file.is_removed,
+                         is_persisted=False)
+        self._check_safe(workspace, dst_path,
+                         is_ancillary=u_file.is_ancillary,
+                         is_removed=u_file.is_removed,
+                         is_persisted=True)
         parent, _ = os.path.split(dst_path)
         if not os.path.exists(parent):
             os.makedirs(parent)
+        logger.debug('Persist from %s to %s', src_path, dst_path)
         shutil.move(src_path, dst_path)
         u_file.is_persisted = True
 

@@ -303,6 +303,12 @@ class UploadWorkspace:
     lastupload_upload_status: str = field(default_factory=str)
     """Content readiness status after last upload event."""
 
+    def __post_init__(self) -> None:
+        """Make sure that we have all of the required directories."""
+        self.storage.makedirs(self, self.source_path)
+        self.storage.makedirs(self, self.ancillary_path)
+        self.storage.makedirs(self, self.removed_path)
+
     @property
     def base_path(self):
         """Relative base path for this workspace."""
@@ -327,17 +333,20 @@ class UploadWorkspace:
                  is_ancillary: bool = False, is_removed: bool = False) -> str:
         """Get the path to an :class:`.UploadedFile` in this workspace."""
         if isinstance(u_file_or_path, UploadedFile):
-            return self._get_path_from_file(u_file_or_path)
+            logger.debug('Get path for file: %s', u_file_or_path.path)
+            return self._get_path_from_file(u_file_or_path).lstrip('/')
         return self._get_path(u_file_or_path, is_ancillary=is_ancillary,
-                              is_removed=is_removed)
+                              is_removed=is_removed).lstrip('/')
 
     def get_full_path(self, u_file_or_path: Union[str, UploadedFile],
                       is_ancillary: bool = False,
-                      is_removed: bool = False) -> str:
+                      is_removed: bool = False,
+                      is_persisted: bool = False) -> str:
         """Get the absolute path to a :class:`.UploadedFile`."""
         return self.storage.get_path(self, u_file_or_path,
                                      is_ancillary=is_ancillary,
-                                     is_removed=is_removed)
+                                     is_removed=is_removed,
+                                     is_persisted=is_persisted)
 
     def is_tarfile(self, u_file: UploadedFile) -> bool:
         """Determine whether or not a file is a tarfile."""
@@ -356,12 +365,15 @@ class UploadWorkspace:
     def _get_path(self, path: str, is_ancillary: bool = False,
                   is_removed: bool = False) -> str:
         if is_ancillary:
-            return os.path.join(self.ancillary_path, path)
+            logger.debug('Get ancillary path for %s', path)
+            return os.path.join(self.ancillary_path, path.lstrip('/'))
         if is_removed:
-            return os.path.join(self.removed_path, path)
-        return os.path.join(self.source_path, path)
+            return os.path.join(self.removed_path, path.lstrip('/'))
+        return os.path.join(self.source_path, path.lstrip('/'))
 
     def _get_path_from_file(self, u_file: UploadedFile) -> str:
+        logger.debug('Get path from file %s, ancillary = %s, removed = %s',
+                     u_file.path, u_file.is_ancillary, u_file.is_removed)
         return self._get_path(u_file.path, is_ancillary=u_file.is_ancillary,
                               is_removed=u_file.is_removed)
 
@@ -393,10 +405,12 @@ class UploadWorkspace:
 
     def rename(self, u_file: UploadedFile, new_path: str) -> None:
         """Rename a file in this workspace."""
+        logger.debug('Rename %s to %s (ancillary = %s)',
+                     u_file.path, new_path, u_file.is_ancillary)
         former_path = u_file.path
         u_file.path = new_path
 
-        self.storage.move(self, u_file, former_path, new_path)
+        self.storage.move(self, u_file, former_path, u_file.path)
         self._update_refs(u_file, former_path)
 
         # If the file is a directory, we are counting on storage to have moved
@@ -469,6 +483,7 @@ class UploadWorkspace:
         logger.debug('Remove file %s: %s', u_file.path, reason)
         previous_path = self.get_path(u_file)
         self.storage.remove(self, u_file)
+        u_file.is_removed = True
         u_file.reason_for_removal = reason
         if u_file.is_directory:
             for former_path, _file in self.iter_children(u_file):
@@ -559,7 +574,8 @@ class UploadWorkspace:
 
     def create(self, path: str, file_type: FileType = FileType.UNKNOWN,
                replace: bool = False, is_directory: bool = False,
-               is_ancillary: bool = False, touch: bool = True) -> UploadedFile:
+               is_ancillary: Optional[bool] = None,
+               touch: bool = True) -> UploadedFile:
         """Create a new :class:`.UploadedFile` at ``path``."""
         logger.debug('Create a file at %s with type %s', path, file_type.value)
         if path in self.files:
@@ -567,6 +583,15 @@ class UploadWorkspace:
                 raise ValueError('Directory exists at that path')
             if not replace:
                 raise ValueError('File at that path already exists')
+
+        if is_ancillary is None:    # Infer whether this is an ancillary file.
+            if path.startswith(self.ANCILLARY_PREFIX):
+                logger.debug('Path indicates an ancillary file')
+                is_ancillary = True
+                _, path = path.split(self.ANCILLARY_PREFIX, 1)
+                path = path.strip('/')
+                logger.debug('Path indicates ancillary file; trimmed to `%s`',
+                             path)
 
         u_file = UploadedFile(
             path=path,

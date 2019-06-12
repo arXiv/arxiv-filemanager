@@ -145,82 +145,82 @@ test_submissions = []
 #                          UploadWorkspace.SourceType.HTML,
 #                          "Typical multi-file 'HTML' submission."])
 
-strip_tests = []
-
-# file, reference file, warnings_match, type of preview
-strip_tests.append(['PostscriptPhotoshop1.eps',
-                    'PostscriptPhotoshop1_stripped.eps',
-                    "Unnecessary Preview removed from 'PostscriptPhotoshop1.eps'" \
-                    + " from line 10 to line 202, reduced from 185586 bytes " \
-                    + r"to 172746 bytes \(see http://arxiv.org/help/sizes\)",
-                    "Photoshop1"
-                    ])
-strip_tests.append(['PostscriptPhotoshop2.eps',
-                    'PostscriptPhotoshop2_stripped.eps',
-                    "Unnecessary Photoshop removed from 'PostscriptPhotoshop2.eps'" \
-                    + " from line 16 to line 205, reduced from 106009 bytes " \
-                    + r"to 93377 bytes \(see http://arxiv.org/help/sizes\)",
-                    "Photoshop2"
-                    ])
-strip_tests.append(['PostscriptPhotoshop3.eps',
-                    'PostscriptPhotoshop3_stripped.eps',
-                    "Unnecessary Photoshop removed from 'PostscriptPhotoshop3.eps'" \
-                    + " from line 7 to line 12, reduced from 1273694 bytes " \
-                    + r"to 1273439 bytes \(see http://arxiv.org/help/sizes\)",
-                    "Photoshop3"
-                    ])
-strip_tests.append(['PostscriptPreview1.eps',
-                    'PostscriptPreview1_stripped.eps',
-                    ("Unnecessary Preview removed from 'PostscriptPreview1.eps' "
-                     "from line 13 to line 7131, reduced "
-                     "from 632668 bytes to 81123 bytes "
-                     r"\(see http://arxiv.org/help/sizes\)"),
-                    "Preview1"
-                    ])
-strip_tests.append(['PostscriptPreview2.eps',
-                    'PostscriptPreview2_stripped.eps',
-                    ("Unnecessary Preview removed from 'PostscriptPreview2.eps' "
-                     "from line 10 to line 118, reduced "
-                     "from 425356 bytes to 418144 "
-                     r"bytes \(see http://arxiv.org/help/sizes\)"),
-                    "Preview2"
-                    ])
-strip_tests.append(['PostscriptThumbnail1.eps',
-                    'PostscriptThumbnail1_stripped.eps',
-                    ("Unnecessary Thumbnail removed from "
-                     "'PostscriptThumbnail1.eps' from line 38 to line 189, "
-                     "reduced from 68932 bytes to 59657 bytes "
-                     r"\(see http://arxiv.org/help/sizes\)"),
-                    'Thumbnail1'
-                    ])
-strip_tests.append(['PostscriptThumbnail2.eps',
-                    'PostscriptThumbnail2_stripped.eps',
-                    ("Unnecessary Thumbnail removed from "
-                     "'PostscriptThumbnail2.eps' from line 40 to line 177, "
-                     "reduced from 79180 bytes to 70771 bytes "
-                     r"\(see http://arxiv.org/help/sizes\)"),
-                    'Thumbnail2'
-                    ])
-
-# These tests come from legacy system and were part of test bundle with
-# other test files (like embedded font inclusion) data/files_for_testing.tar.gz
-
-strip_tests.append(['P11_cmplx_plane.eps',
-                    'P11_cmplx_plane_stripped.eps',
-                    ("Unnecessary Preview removed from 'P11_cmplx_plane.eps' "
-                     "from line 9 to line 157, reduced from 59684 bytes to "
-                     r"48174 bytes \(see http://arxiv.org/help/sizes\)"),
-                    'Legacy Photoshop'
-                    ])
-
-# Right now these filter operations
-strip_tests.append(['cone.eps',
-                    'cone_stripped.eps',
-                    ("Unnecessary Photoshop removed from 'cone.eps' from line "
-                     "14 to line 207, reduced from 1701570 bytes to 1688730 "
-                     r"bytes \(see http://arxiv.org/help/sizes\)"),
-                    'Legacy Preview'
-                    ])
+# strip_tests = []
+#
+# # file, reference file, warnings_match, type of preview
+# strip_tests.append(['PostscriptPhotoshop1.eps',
+#                     'PostscriptPhotoshop1_stripped.eps',
+#                     "Unnecessary Preview removed from 'PostscriptPhotoshop1.eps'" \
+#                     + " from line 10 to line 202, reduced from 185586 bytes " \
+#                     + r"to 172746 bytes \(see http://arxiv.org/help/sizes\)",
+#                     "Photoshop1"
+#                     ])
+# strip_tests.append(['PostscriptPhotoshop2.eps',
+#                     'PostscriptPhotoshop2_stripped.eps',
+#                     "Unnecessary Photoshop removed from 'PostscriptPhotoshop2.eps'" \
+#                     + " from line 16 to line 205, reduced from 106009 bytes " \
+#                     + r"to 93377 bytes \(see http://arxiv.org/help/sizes\)",
+#                     "Photoshop2"
+#                     ])
+# strip_tests.append(['PostscriptPhotoshop3.eps',
+#                     'PostscriptPhotoshop3_stripped.eps',
+#                     "Unnecessary Photoshop removed from 'PostscriptPhotoshop3.eps'" \
+#                     + " from line 7 to line 12, reduced from 1273694 bytes " \
+#                     + r"to 1273439 bytes \(see http://arxiv.org/help/sizes\)",
+#                     "Photoshop3"
+#                     ])
+# strip_tests.append(['PostscriptPreview1.eps',
+#                     'PostscriptPreview1_stripped.eps',
+#                     ("Unnecessary Preview removed from 'PostscriptPreview1.eps' "
+#                      "from line 13 to line 7131, reduced "
+#                      "from 632668 bytes to 81123 bytes "
+#                      r"\(see http://arxiv.org/help/sizes\)"),
+#                     "Preview1"
+#                     ])
+# strip_tests.append(['PostscriptPreview2.eps',
+#                     'PostscriptPreview2_stripped.eps',
+#                     ("Unnecessary Preview removed from 'PostscriptPreview2.eps' "
+#                      "from line 10 to line 118, reduced "
+#                      "from 425356 bytes to 418144 "
+#                      r"bytes \(see http://arxiv.org/help/sizes\)"),
+#                     "Preview2"
+#                     ])
+# strip_tests.append(['PostscriptThumbnail1.eps',
+#                     'PostscriptThumbnail1_stripped.eps',
+#                     ("Unnecessary Thumbnail removed from "
+#                      "'PostscriptThumbnail1.eps' from line 38 to line 189, "
+#                      "reduced from 68932 bytes to 59657 bytes "
+#                      r"\(see http://arxiv.org/help/sizes\)"),
+#                     'Thumbnail1'
+#                     ])
+# strip_tests.append(['PostscriptThumbnail2.eps',
+#                     'PostscriptThumbnail2_stripped.eps',
+#                     ("Unnecessary Thumbnail removed from "
+#                      "'PostscriptThumbnail2.eps' from line 40 to line 177, "
+#                      "reduced from 79180 bytes to 70771 bytes "
+#                      r"\(see http://arxiv.org/help/sizes\)"),
+#                     'Thumbnail2'
+#                     ])
+#
+# # These tests come from legacy system and were part of test bundle with
+# # other test files (like embedded font inclusion) data/files_for_testing.tar.gz
+#
+# strip_tests.append(['P11_cmplx_plane.eps',
+#                     'P11_cmplx_plane_stripped.eps',
+#                     ("Unnecessary Preview removed from 'P11_cmplx_plane.eps' "
+#                      "from line 9 to line 157, reduced from 59684 bytes to "
+#                      r"48174 bytes \(see http://arxiv.org/help/sizes\)"),
+#                     'Legacy Photoshop'
+#                     ])
+#
+# # Right now these filter operations
+# strip_tests.append(['cone.eps',
+#                     'cone_stripped.eps',
+#                     ("Unnecessary Photoshop removed from 'cone.eps' from line "
+#                      "14 to line 207, reduced from 1701570 bytes to 1688730 "
+#                      r"bytes \(see http://arxiv.org/help/sizes\)"),
+#                     'Legacy Preview'
+#                     ])
 
 
 
@@ -311,139 +311,139 @@ strip_tests.append(['cone.eps',
 #         # cleanup workspace
 #         upload.remove_workspace()
 #
-#     def test_check_file_termination(self) -> None:
-#         """
-#         Test the filtering of unwanted characters from the end of file.
-#         :return:
-#         """
+    def test_check_file_termination(self) -> None:
+        """
+        Test the filtering of unwanted characters from the end of file.
+        :return:
+        """
+
+        # Copy the files that will be modified to temporary location
+        tmp_dir = tempfile.mkdtemp()
+
+
+        upload = Upload(1234566)
+
+        #upload.set_debug(True)
+
+        # 1
+        tfilename = os.path.join(TEST_FILES_DIRECTORY, 'terminators1.txt')
+        destfilename = os.path.join(tmp_dir, 'terminators1.txt')
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, tmp_dir)
+
+        upload.check_file_termination(file_obj)
+
+        # Check that file generated is what we expected
+        reference = os.path.join(TEST_FILES_DIRECTORY, 'terminators1stripped.txt')
+        is_same = filecmp.cmp(destfilename, reference)
+        self.assertTrue(is_same, 'Eliminated unwanted CR characters from DOS file.')
+
+        # 2
+        tfilename = os.path.join(TEST_FILES_DIRECTORY, 'terminators2.txt')
+        destfilename = os.path.join(tmp_dir, 'terminators2.txt')
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, tmp_dir)
+
+        upload.check_file_termination(file_obj)
+
+        # Check that file generated is what we expected
+        reference = os.path.join(TEST_FILES_DIRECTORY, 'terminators2stripped.txt')
+        is_same = filecmp.cmp(destfilename, reference)
+        self.assertTrue(is_same, 'Eliminated unwanted CR characters from DOS file.')
+
+        # 3
+        # TODO: Having trouble creating example with \377 and non in production system.
+        tfilename = os.path.join(TEST_FILES_DIRECTORY, 'terminators3.txt')
+        destfilename = os.path.join(tmp_dir, 'terminators3.txt')
+        shutil.copy(tfilename, destfilename)
+        file_obj = File(destfilename, tmp_dir)
+        upload.check_file_termination(file_obj)
+
+        # Check that file generated is what we expected
+        #reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterUnPCify.eps')
+        #is_same = filecmp.cmp(destfilename, reference)
+        #self.assertTrue(is_same, 'Eliminated unwanted CR characters from DOS file.')
+
+        # # 4
+        # tfilename = os.path.join(TEST_FILES_DIRECTORY, 'BeforeUnPCify.eps')
+        # destfilename = os.path.join(tmp_dir, 'BeforeUnPCify.eps')
+        # shutil.copy(tfilename, destfilename)
+        # file_obj = File(destfilename, tmp_dir)
+        #
+        # upload.check_file_termination(file_obj)
+        #
+        # # Check that file generated is what we expected
+        # reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterTermUnPCify.eps')
+        # is_same = filecmp.cmp(destfilename, reference)
+        # self.assertTrue(is_same, 'Eliminated unwanted EOT terminators.')
+
+        # # 5
+        # tfilename = os.path.join(TEST_FILES_DIRECTORY, 'BeforeUnPCify2.eps')
+        # destfilename = os.path.join(tmp_dir, 'BeforeUnPCify2.eps')
+        # shutil.copy(tfilename, destfilename)
+        # file_obj = File(destfilename, tmp_dir)
+        #
+        # upload.check_file_termination(file_obj)
+        #
+        # # Check that file generated is what we expected
+        # reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterTermUnPCify2.eps')
+        #
+        # is_same = filecmp.cmp(destfilename, reference)
+        # self.assertTrue(is_same, 'Eliminated unwanted EOT terminators.')
 #
-#         # Copy the files that will be modified to temporary location
-#         tmp_dir = tempfile.mkdtemp()
-#
-#
-#         upload = Upload(1234566)
-#
-#         #upload.set_debug(True)
-#
-#         # 1
-#         tfilename = os.path.join(TEST_FILES_DIRECTORY, 'terminators1.txt')
-#         destfilename = os.path.join(tmp_dir, 'terminators1.txt')
-#         shutil.copy(tfilename, destfilename)
-#         file_obj = File(destfilename, tmp_dir)
-#
-#         upload.check_file_termination(file_obj)
-#
-#         # Check that file generated is what we expected
-#         reference = os.path.join(TEST_FILES_DIRECTORY, 'terminators1stripped.txt')
-#         is_same = filecmp.cmp(destfilename, reference)
-#         self.assertTrue(is_same, 'Eliminated unwanted CR characters from DOS file.')
-#
-#         # 2
-#         tfilename = os.path.join(TEST_FILES_DIRECTORY, 'terminators2.txt')
-#         destfilename = os.path.join(tmp_dir, 'terminators2.txt')
-#         shutil.copy(tfilename, destfilename)
-#         file_obj = File(destfilename, tmp_dir)
-#
-#         upload.check_file_termination(file_obj)
-#
-#         # Check that file generated is what we expected
-#         reference = os.path.join(TEST_FILES_DIRECTORY, 'terminators2stripped.txt')
-#         is_same = filecmp.cmp(destfilename, reference)
-#         self.assertTrue(is_same, 'Eliminated unwanted CR characters from DOS file.')
-#
-#         # 3
-#         # TODO: Having trouble creating example with \377 and non in production system.
-#         tfilename = os.path.join(TEST_FILES_DIRECTORY, 'terminators3.txt')
-#         destfilename = os.path.join(tmp_dir, 'terminators3.txt')
-#         shutil.copy(tfilename, destfilename)
-#         file_obj = File(destfilename, tmp_dir)
-#         upload.check_file_termination(file_obj)
-#
-#         # Check that file generated is what we expected
-#         #reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterUnPCify.eps')
-#         #is_same = filecmp.cmp(destfilename, reference)
-#         #self.assertTrue(is_same, 'Eliminated unwanted CR characters from DOS file.')
-#
-#         # 4
-#         tfilename = os.path.join(TEST_FILES_DIRECTORY, 'BeforeUnPCify.eps')
-#         destfilename = os.path.join(tmp_dir, 'BeforeUnPCify.eps')
-#         shutil.copy(tfilename, destfilename)
-#         file_obj = File(destfilename, tmp_dir)
-#
-#         upload.check_file_termination(file_obj)
-#
-#         # Check that file generated is what we expected
-#         reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterTermUnPCify.eps')
-#         is_same = filecmp.cmp(destfilename, reference)
-#         self.assertTrue(is_same, 'Eliminated unwanted EOT terminators.')
-#
-#         # 5
-#         tfilename = os.path.join(TEST_FILES_DIRECTORY, 'BeforeUnPCify2.eps')
-#         destfilename = os.path.join(tmp_dir, 'BeforeUnPCify2.eps')
-#         shutil.copy(tfilename, destfilename)
-#         file_obj = File(destfilename, tmp_dir)
-#
-#         upload.check_file_termination(file_obj)
-#
-#         # Check that file generated is what we expected
-#         reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterTermUnPCify2.eps')
-#
-#         is_same = filecmp.cmp(destfilename, reference)
-#         self.assertTrue(is_same, 'Eliminated unwanted EOT terminators.')
-#
-#     def test_check_file_unmacify(self) -> None:
-#         """
-#         Test the filtering of unwanted CR characters from specified file.
-#         :return:
-#         """
-#         def has_cr(path: str) -> bool:
-#             with open(path, 'rb') as f:
-#                 for line in f:
-#                     if re.search(b'\r\n?', line) is not None:
-#                         return True
-#             return False
-#
-#         # Copy the files that will be modified to temporary location
-#         tmp_dir = tempfile.mkdtemp()
-#
-#         upload = Upload(1234566)
-#
-#         # UnPCify
-#
-#         tfilename = os.path.join(TEST_FILES_DIRECTORY, 'BeforeUnPCify.eps')
-#         destfilename = os.path.join(tmp_dir, 'BeforeUnPCify.eps')
-#         shutil.copy(tfilename, destfilename)
-#         file_obj = File(destfilename, tmp_dir)
-#
-#         upload.unmacify(file_obj)
-#
-#         # Check that file generated is what we expected
-#         self.assertTrue(has_cr(tfilename))
-#         self.assertFalse(has_cr(destfilename))
-#         reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterUnPCify.eps')
-#         is_same = filecmp.cmp(destfilename, reference, shallow=False)
-#         self.assertTrue(is_same,
-#                         'Eliminated unwanted CR characters from DOS file.')
-#
-#         # UnMACify
-#
-#         tfilename = os.path.join(TEST_FILES_DIRECTORY, 'BeforeUnMACify.eps')
-#         destfilename = os.path.join(tmp_dir, 'BeforeUnMACify.eps')
-#         shutil.copy(tfilename, destfilename)
-#         file_obj = File(destfilename, tmp_dir)
-#
-#         upload.unmacify(file_obj)
-#
-#         # Check that file generated is what we expected
-#         self.assertTrue(has_cr(tfilename))
-#         self.assertFalse(has_cr(destfilename))
-#         reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterUnMACify.eps')
-#         is_same = filecmp.cmp(destfilename, reference, shallow=False)
-#         self.assertTrue(is_same,
-#                         'Eliminated unwanted CR characters from MAC file.')
-#
-#         # cleanup workspace
-#         upload.remove_workspace()
+    def test_check_file_unmacify(self) -> None:
+        """
+        Test the filtering of unwanted CR characters from specified file.
+        :return:
+        """
+        def has_cr(path: str) -> bool:
+            with open(path, 'rb') as f:
+                for line in f:
+                    if re.search(b'\r\n?', line) is not None:
+                        return True
+            return False
+
+        # Copy the files that will be modified to temporary location
+        tmp_dir = tempfile.mkdtemp()
+
+        upload = Upload(1234566)
+
+        # UnPCify
+        #
+        # tfilename = os.path.join(TEST_FILES_DIRECTORY, 'BeforeUnPCify.eps')
+        # destfilename = os.path.join(tmp_dir, 'BeforeUnPCify.eps')
+        # shutil.copy(tfilename, destfilename)
+        # file_obj = File(destfilename, tmp_dir)
+        #
+        # upload.unmacify(file_obj)
+        #
+        # # Check that file generated is what we expected
+        # self.assertTrue(has_cr(tfilename))
+        # self.assertFalse(has_cr(destfilename))
+        # reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterUnPCify.eps')
+        # is_same = filecmp.cmp(destfilename, reference, shallow=False)
+        # self.assertTrue(is_same,
+        #                 'Eliminated unwanted CR characters from DOS file.')
+
+        # UnMACify
+
+        # tfilename = os.path.join(TEST_FILES_DIRECTORY, 'BeforeUnMACify.eps')
+        # destfilename = os.path.join(tmp_dir, 'BeforeUnMACify.eps')
+        # shutil.copy(tfilename, destfilename)
+        # file_obj = File(destfilename, tmp_dir)
+        #
+        # upload.unmacify(file_obj)
+        #
+        # # Check that file generated is what we expected
+        # self.assertTrue(has_cr(tfilename))
+        # self.assertFalse(has_cr(destfilename))
+        # reference = os.path.join(TEST_FILES_DIRECTORY, 'AfterUnMACify.eps')
+        # is_same = filecmp.cmp(destfilename, reference, shallow=False)
+        # self.assertTrue(is_same,
+        #                 'Eliminated unwanted CR characters from MAC file.')
+        #
+        # # cleanup workspace
+        # upload.remove_workspace()
 #
 #     def test_fix_file_extension(self) -> None:
 #         """
@@ -523,7 +523,7 @@ strip_tests.append(['cone.eps',
 #
 #         # cleanup workspace
 #         upload.remove_workspace()
-#
+# #
 #
 #     def test_check_postscript(self) -> None:
 #         """
@@ -533,32 +533,32 @@ strip_tests.append(['cone.eps',
 #
 #         upload = Upload(1234999)
 #
-        for strip_test in strip_tests:
-            file_to_strip, reference_file, warning_match, preview_type = \
-                strip_test
-
-            # strip preview from Postscript
-            test_filename = file_to_strip
-            tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
-            workspace_src_dir = upload.source_path
-            destfilename = os.path.join(workspace_src_dir, test_filename)
-            shutil.copy(tfilename, destfilename)
-            file_obj = File(destfilename, workspace_src_dir)
-
-            upload.unmacify(file_obj)  # This file would have been unmacified
-            upload.check_postscript(file_obj, None)
-
-            # compare to reference file
-            reference = os.path.join(TEST_FILES_STRIP_PS, reference_file)
-            # Compared stripped file to a reference stripped version of file.
-            is_same = filecmp.cmp(destfilename, reference, shallow=False)
-            self.assertTrue(is_same,
-                            f"Stripped {preview_type} from file '{test_filename}'.")
-
-            # Check to make sure error is added to list of errors.
-            warn_msg = warning_match
-            self.assertTrue(upload.search_warnings(warn_msg),
-                            f"Verify {preview_type} removed warning added to list.")
+        # for strip_test in strip_tests:
+        #     file_to_strip, reference_file, warning_match, preview_type = \
+        #         strip_test
+        #
+        #     # strip preview from Postscript
+        #     test_filename = file_to_strip
+        #     tfilename = os.path.join(TEST_FILES_STRIP_PS, test_filename)
+        #     workspace_src_dir = upload.source_path
+        #     destfilename = os.path.join(workspace_src_dir, test_filename)
+        #     shutil.copy(tfilename, destfilename)
+        #     file_obj = File(destfilename, workspace_src_dir)
+        #
+        #     upload.unmacify(file_obj)  # This file would have been unmacified
+        #     upload.check_postscript(file_obj, None)
+        #
+        #     # compare to reference file
+        #     reference = os.path.join(TEST_FILES_STRIP_PS, reference_file)
+        #     # Compared stripped file to a reference stripped version of file.
+        #     is_same = filecmp.cmp(destfilename, reference, shallow=False)
+        #     self.assertTrue(is_same,
+        #                     f"Stripped {preview_type} from file '{test_filename}'.")
+        #
+        #     # Check to make sure error is added to list of errors.
+        #     warn_msg = warning_match
+        #     self.assertTrue(upload.search_warnings(warn_msg),
+        #                     f"Verify {preview_type} removed warning added to list.")
 #
 #         # cleanup workspace
 #         upload.remove_workspace()

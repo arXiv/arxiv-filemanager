@@ -336,8 +336,8 @@ def _strip_preview(workspace: UploadWorkspace, u_file: UploadedFile,
     retain = True
     strip_warning = ''
 
-    with workspace.open(u_file, 'rb', buffering=0) as infile, \
-            workspace.open(new_file, 'wb', buffering=0) as outfile:
+    with workspace.open(u_file, 'rb') as infile, \
+            workspace.open(new_file, 'wb') as outfile:
 
         for line_no, line in enumerate(infile):
             # Check line for start pattern
@@ -360,7 +360,7 @@ def _strip_preview(workspace: UploadWorkspace, u_file: UploadedFile,
                 # AI bug %%EndData^M%%EndComments
                 if re.search(b'.*\r%/%', line):
                     outfile.write(line)
-
+    logger.debug('Finished stripping %s from %s', what_to_strip, u_file.name)
     # Generate some warnings
     if retain and strip_warning:
         orig_size = u_file.size_bytes  # os.path.getsize(original_filepath)
