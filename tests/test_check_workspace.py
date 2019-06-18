@@ -818,12 +818,9 @@ class TestProcessUploadWithSubdirectories(WorkspaceTestCase):
 class TestProcessCountFileTypes(WorkspaceTestCase):
     """Test routine that counts file type occurrences."""
 
-    DATA_PATH = os.path.join(os.path.split(os.path.abspath(__file__))[0],
-                             'test_files_upload')
-
     def test_normal_submission_with_lots_of_files(self):
         """Upload normal submission with lots of files."""
-        self.write_upload('UploadWithANCDirectory.tar.gz')
+        self.write_upload('test_files_upload/UploadWithANCDirectory.tar.gz')
         self.workspace.perform_checks()
         counts = self.workspace.get_file_type_counts()
         self.assertEqual(counts['all_files'], 21,
@@ -836,6 +833,66 @@ class TestProcessCountFileTypes(WorkspaceTestCase):
                          "Total number of files matches.")
         self.assertEqual(counts[FileType.TEXAUX], 3,
                          "Total number of files matches.")
+        self.assertFalse(self.workspace.is_single_file_submission)
+        self.assertIsNone(self.workspace.get_single_file())
+
+    def test_single_invalid_sub_file(self):
+        """Upload single invalid sub file."""
+        self.write_upload('test_files_sub_type/sampleA.docx')
+        self.workspace.perform_checks()
+        counts = self.workspace.get_file_type_counts()
+        self.assertEqual(counts['all_files'], 1,
+                         "Total number of files matches.")
+        self.assertEqual(counts['files'], 1,
+                         "Total number of files matches.")
+        self.assertEqual(counts[FileType.DOCX], 1,
+                         "Number of docx files matches.")
+        self.assertTrue(self.workspace.is_single_file_submission)
+        self.assertIsNotNone(self.workspace.get_single_file())
+
+    def test_single_invalid_file(self):
+        """Upload single invalid file."""
+        self.write_upload('test_files_sub_type/head.tmp')
+        self.workspace.perform_checks()
+        counts = self.workspace.get_file_type_counts()
+        self.assertEqual(counts['all_files'], 1,
+                         "Total number of files matches.")
+        self.assertEqual(counts['files'], 1,
+                         "Total number of files matches.")
+        self.assertEqual(counts['ignore'], 1,
+                         "Number of ignore files matches.")
+        self.assertFalse(self.workspace.is_single_file_submission)
+        self.assertIsNone(self.workspace.get_single_file())
+
+    def test_only_ancillary_files(self):
+        """Upload no source files - ancillary files only."""
+        self.write_upload('test_files_sub_type/onlyANCfiles.tar.gz')
+        self.workspace.perform_checks()
+        counts = self.workspace.get_file_type_counts()
+        self.assertEqual(counts['all_files'], 15,
+                         "Total number of files matches.")
+        self.assertEqual(counts['files'], 0,
+                         "Total number of files matches.")
+        self.assertEqual(counts['ancillary'], 15,
+                         "Total number of ancillary files matches.")
+        self.assertFalse(self.workspace.is_single_file_submission)
+        self.assertIsNone(self.workspace.get_single_file())
+
+    def test_good_single_file_submission(self):
+        """Upload an acceptable single file submission."""
+        self.write_upload('test_files_upload/upload5.pdf')
+        self.workspace.perform_checks()
+        counts = self.workspace.get_file_type_counts()
+        self.assertEqual(counts['all_files'], 1,
+                         "Total number of files matches.")
+        self.assertEqual(counts['files'], 1,
+                         "Total number of files matches.")
+        self.assertEqual(counts['ancillary'], 0,
+                         "Total number of ancillary files matches.")
+        self.assertEqual(counts[FileType.PDF], 1,
+                         "Number of PDF files matches.")
+        self.assertTrue(self.workspace.is_single_file_submission)
+        self.assertIsNotNone(self.workspace.get_single_file())
 
 
 # TODO: checks for pdfpages documents do not appear to be implemented yet.

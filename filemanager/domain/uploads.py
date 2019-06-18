@@ -482,7 +482,6 @@ class UploadWorkspace:
         if reason is None:
             reason = f"Removed file '{u_file.name}'."
         logger.debug('Remove file %s: %s', u_file.path, reason)
-        previous_path = self.get_path(u_file)
         self.storage.remove(self, u_file)
         u_file.is_removed = True
         u_file.reason_for_removal = reason
@@ -681,3 +680,32 @@ class UploadWorkspace:
     def perform_checks(self) -> None:
         """Perform all checks on this workspace using the assigned strategy."""
         self.strategy.check(self, *self.checkers)
+
+    @property
+    def is_single_file_submission(self):
+        if self.file_count != 1:
+            return False
+        counts = self.get_file_type_counts()
+        if counts['ignore'] == 1:
+            return False
+        return True
+
+    def get_single_file(self) -> Optional[UploadedFile]:
+        """
+        Return File object for single-file submission.
+
+        This routine is intended for submission that are composed of a single
+        content file.
+
+        Single file can't be type 'ancillary'. Single ancillary file is invalid
+        submission and generates an error.
+
+        Returns
+        -------
+        :class:`.UploadedFile` or ``None``
+            Single file. Returns None when submission has more than one file.
+
+        """
+        if self.is_single_file_submission:
+            for u_file in self.iter_files(allow_ancillary=False):
+                return u_file    # Return the first file.
