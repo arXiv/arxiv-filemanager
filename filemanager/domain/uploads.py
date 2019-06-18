@@ -1,6 +1,7 @@
 """Describes the data that will be passed around inside of the service."""
 
 import os
+import re
 import io
 from itertools import accumulate
 from typing import List, Callable, Optional, Any, Type, Dict, Mapping, Union, \
@@ -572,11 +573,15 @@ class UploadWorkspace:
             yield f
         self.getsize(u_file)
 
+    LEADING_DOTSLASH = re.compile(r'^\./')
+    """Pattern to match leading ``./`` in relative paths."""
+
     def create(self, path: str, file_type: FileType = FileType.UNKNOWN,
                replace: bool = False, is_directory: bool = False,
                is_ancillary: Optional[bool] = None,
                touch: bool = True) -> UploadedFile:
         """Create a new :class:`.UploadedFile` at ``path``."""
+        path = self.LEADING_DOTSLASH.sub('', path)
         logger.debug('Create a file at %s with type %s', path, file_type.value)
         if path in self.files:
             if self.files[path].is_directory:

@@ -30,7 +30,8 @@ class SimpleStorageAdapter:
 
     def makedirs(self, workspace: UploadWorkspace, path: str) -> None:
         """Make directories recursively for ``path``."""
-        abs_path = self._get_path_bare(os.path.join(workspace.base_path, path))
+        logger.debug('Make dirs to %s', path)
+        abs_path = self._get_path_bare(path)
         if not os.path.exists(abs_path):
             os.makedirs(abs_path)
 
@@ -185,7 +186,9 @@ class SimpleStorageAdapter:
         parent, _ = os.path.split(full_path)
         if not os.path.exists(parent):
             os.makedirs(parent)
+            logger.debug('Made dirs to %s', parent)
         Path(full_path).touch()
+        logger.debug('Touched %s', full_path)
 
     def copy(self, workspace: UploadWorkspace, u_file: UploadedFile,
              new_file: UploadedFile) -> None:

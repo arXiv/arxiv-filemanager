@@ -290,11 +290,11 @@ class TestMultiFileSubmissions(WorkspaceTestCase):
         self.assertFalse(self.workspace.has_errors,
                          'TEX submissions are OK')
         counts = self.workspace.get_file_type_counts()
-        self.assertEqual(counts[FileType.LATEX2e], 2)
-        self.assertEqual(counts[FileType.IMAGE], 9)
-        self.assertEqual(counts[FileType.TEXAUX], 5)
-        self.assertEqual(counts[FileType.PDF], 4)
-        self.assertEqual(counts[FileType.PDFLATEX], 1)
+        self.assertEqual(counts[FileType.TEXAUX], 3)
+        self.assertEqual(counts[FileType.PDF], 2)
+        self.assertEqual(counts['ancillary'], 15)
+        # self.assertEqual(counts[FileType.LATEX2e], 1)
+        # self.assertEqual(counts[FileType.PDFLATEX], 1)
 
 
 class TestUploadScenarios(WorkspaceTestCase):
@@ -820,17 +820,12 @@ class TestProcessCountFileTypes(WorkspaceTestCase):
 
     DATA_PATH = os.path.join(os.path.split(os.path.abspath(__file__))[0],
                              'test_files_upload')
-    def tearDown(self):
-        pass
 
     def test_normal_submission_with_lots_of_files(self):
         """Upload normal submission with lots of files."""
         self.write_upload('UploadWithANCDirectory.tar.gz')
         self.workspace.perform_checks()
         counts = self.workspace.get_file_type_counts()
-        print(counts)
-        print(self.base_path)
-        print(self.workspace.source_path)
         self.assertEqual(counts['all_files'], 21,
                          "Total number of files matches.")
         self.assertEqual(counts['files'], 6,

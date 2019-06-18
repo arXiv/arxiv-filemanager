@@ -10,6 +10,7 @@ from .base import BaseChecker
 
 
 logger = logging.getLogger(__name__)
+logger.propagate = False
 
 
 class UnpackCompressedTarFiles(BaseChecker):
@@ -34,6 +35,7 @@ class UnpackCompressedTarFiles(BaseChecker):
                      tar: tarfile.TarFile, tarinfo: tarfile.TarInfo) -> None:
         # Extract files and directories for now
         dest = os.path.join(u_file.dir, tarinfo.name).lstrip('/')
+
         # Tarfiles may contain relative paths! We must ensure that each file is
         # not going to escape the upload source directory _before_ we extract
         # it.
@@ -62,16 +64,21 @@ class UnpackCompressedTarFiles(BaseChecker):
 
         # Extract a regular file or directory.
         elif tarinfo.isreg() or tarinfo.isdir():
-            full_path = workspace.get_full_path(u_file.dir)
-            tar.extract(tarinfo, full_path)
-            os.utime(full_path)  # Update access and modified times to now.
+            parent = workspace.get_full_path(u_file.dir,
+                                             is_ancillary=u_file.is_ancillary)
+            tar.extract(tarinfo, parent)
+            logger.debug('Unpacked to %s', parent)
+
+            os.utime(parent)  # Update access and modified times to now.
             if tarinfo.isdir():
                 if not dest.endswith('/'):
-                    dest = f'{dest}/'
+                    dest += '/'
                 workspace.create(dest, touch=False, is_directory=True,
+                                 is_ancillary=u_file.is_ancillary,
                                  file_type=FileType.DIRECTORY)
             else:
-                workspace.create(dest, touch=False)
+                workspace.create(dest, touch=False,
+                                 is_ancillary=u_file.is_ancillary)
 
     def _unpack(self, workspace: UploadWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
