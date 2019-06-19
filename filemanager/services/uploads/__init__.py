@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 from pytz import UTC
 
+from flask import Flask, current_app
 from werkzeug.local import LocalProxy
 from sqlalchemy.exc import OperationalError
 from retry import retry
@@ -12,8 +13,9 @@ from retry import retry
 from arxiv.base.globals import get_application_global
 from arxiv.base import logging
 
-from filemanager.domain import Upload
+from filemanager.domain import UploadWorkspace
 from .models import db, DBUpload
+from ..storage import create_adapter
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +38,8 @@ def is_available() -> bool:
         return False
 
 
-def retrieve(upload_id: int, skip_cache: bool = False) -> Optional[Upload]:
+def retrieve(upload_id: int, skip_cache: bool = False) \
+        -> Optional[UploadWorkspace]:
     """
     Get data about a upload.
 
@@ -46,12 +49,12 @@ def retrieve(upload_id: int, skip_cache: bool = False) -> Optional[Upload]:
         Unique identifier for the upload.
     skip_cache : bool
         If `True`, will load fresh data regardless of what might already be
-        around. Otherwise, will only load the same :class:`Upload` instance
-        once.
+        around. Otherwise, will only load the same :class:`UploadWorkspace`
+        instance once.
 
     Returns
     -------
-    :class:`.Upload`
+    :class:`.UploadWorkspace`
         Data about the upload.
 
     Raises
@@ -88,7 +91,6 @@ def retrieve(upload_id: int, skip_cache: bool = False) -> Optional[Upload]:
     args = {}
     args['upload_id'] = upload_data.upload_id
     args['owner_user_id'] = upload_data.owner_user_id
-    args['archive'] = upload_data.archive
     args['created_datetime'] = upload_data.created_datetime.replace(tzinfo=UTC)
     args['modified_datetime'] = upload_data.modified_datetime.replace(tzinfo=UTC)
     args['state'] = upload_data.state
@@ -108,19 +110,19 @@ def retrieve(upload_id: int, skip_cache: bool = False) -> Optional[Upload]:
     if upload_data.lastupload_file_summary is not None:
         args['lastupload_file_summary'] = upload_data.lastupload_file_summary
 
-    if upload_data.lastupload_upload_status is not None:
-        args['lastupload_upload_status'] = upload_data.lastupload_upload_status
+    if upload_data.lastupload_readiness is not None:
+        args['lastupload_readiness'] = upload_data.lastupload_readiness
+    args['storage'] = create_adapter(current_app)
+    return UploadWorkspace(**args)
 
-    return Upload(**args)
 
-
-def store(new_upload_data: Upload) -> Upload:
+def store(new_upload_data: UploadWorkspace) -> UploadWorkspace:
     """
-    Create a new record for a :class:`.Upload` in the database.
+    Create a new record for a :class:`.UploadWorkspace` in the database.
 
     Parameters
     ----------
-    upload_data : :class:`.Upload`
+    upload_data : :class:`.UploadWorkspace`
 
     Raises
     ------
@@ -130,10 +132,9 @@ def store(new_upload_data: Upload) -> Upload:
         When there is some other problem.
     """
     upload_data = DBUpload(owner_user_id=new_upload_data.owner_user_id,
-                           archive=new_upload_data.archive,
                            created_datetime=new_upload_data.created_datetime,
                            modified_datetime=new_upload_data.modified_datetime,
-                           state=new_upload_data.state)
+                           state=new_upload_data.state.value)
     try:
         db.session.add(upload_data)
         db.session.commit()
@@ -144,13 +145,34 @@ def store(new_upload_data: Upload) -> Upload:
     return new_upload_data
 
 
-def update(upload_update_data: Upload) -> None:
+def create(owner_user_id: str,
+           state: UploadWorkspace.Status = UploadWorkspace.Status.ACTIVE) \
+        -> UploadWorkspace:
+    current_datetime = datetime.now(UTC)
+    upload_data = DBUpload(owner_user_id=owner_user_id,
+                           created_datetime=current_datetime,
+                           modified_datetime=current_datetime,
+                           state=state.value)
+    try:
+        db.session.add(upload_data)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        raise RuntimeError('Ack! %s' % e) from e
+    return UploadWorkspace(upload_id=upload_data.upload_id,
+                           owner_user_id=owner_user_id,
+                           created_datetime=current_datetime,
+                           modified_datetime=current_datetime,
+                           storage=create_adapter(current_app))
+
+
+def update(upload_update_data: UploadWorkspace) -> None:
     """
-    Update the database with the latest :class:`.Upload`.
+    Update the database with the latest :class:`.UploadWorkspace`.
 
     Parameters
     ----------
-    the_thing : :class:`.Upload`
+    the_thing : :class:`.UploadWorkspace`
 
     Raises
     ------
@@ -170,7 +192,6 @@ def update(upload_update_data: Upload) -> None:
 
     # owner_user_id, archive
     upload_data.owner_user_id = upload_update_data.owner_user_id
-    upload_data.archive = upload_update_data.archive
 
     # We won't let client update created_datetime
 
@@ -178,9 +199,9 @@ def update(upload_update_data: Upload) -> None:
     upload_data.lastupload_completion_datetime = upload_update_data.lastupload_completion_datetime
     upload_data.lastupload_logs = upload_update_data.lastupload_logs
     upload_data.lastupload_file_summary = upload_update_data.lastupload_file_summary
-    upload_data.lastupload_upload_status = upload_update_data.lastupload_upload_status
-    upload_data.state = upload_update_data.state
-    upload_data.lock = upload_update_data.lock
+    upload_data.lastupload_readiness = upload_update_data.lastupload_readiness.value
+    upload_data.state = upload_update_data.state.value
+    upload_data.lock_state = upload_update_data.lock_state.value
 
     # Always set this when workspace DB entry is updated
     upload_data.modified_datetime = datetime.now(UTC)

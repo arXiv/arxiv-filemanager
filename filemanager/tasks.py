@@ -94,7 +94,7 @@ def check_sanitize_status(task_id: str) -> Tuple[str, Any]:
         result = None
     return task.status, result
 
-def check_upload_status(task_id: str) -> Tuple[str, Any]:
+def check_readiness(task_id: str) -> Tuple[str, Any]:
     """
     Check the status of a upload task.
 

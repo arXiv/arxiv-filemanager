@@ -1,9 +1,10 @@
 """File checks."""
 
 from typing import Optional, Callable
+from flask import Flask
 from arxiv.base import logging
 from .check.base import StopCheck
-from ..domain import UploadWorkspace, IChecker
+from ..domain import UploadWorkspace, IChecker, ICheckingStrategy
 
 logger = logging.getLogger(__name__)
 logger.propagate = False
@@ -34,3 +35,7 @@ class SynchronousCheckingStrategy:
             for checker in checkers:
                 if hasattr(checker, 'check_workspace'):
                     checker.check_workspace(workspace)
+
+
+def create_strategy(app: Flask) -> ICheckingStrategy:
+    return SynchronousCheckingStrategy()

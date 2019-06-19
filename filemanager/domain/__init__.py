@@ -2,4 +2,4 @@
 
 from .uploads import UploadedFile, UploadWorkspace, IChecker, IStorageAdapter
 from .file_type import FileType
-# from .strategy import SynchronousCheckingStrategy
+from .checks import ICheckingStrategy

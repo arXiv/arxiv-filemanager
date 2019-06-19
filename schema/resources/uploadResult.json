@@ -5,8 +5,8 @@
   "required": [
     "upload_id",
     "upload_total_size",
-    "upload_status",
-    "workspace_state",
+    "readiness",
+    "state",
     "created_datetime",
     "modified_datetime"
   ],
@@ -32,7 +32,7 @@
       "description": "Total compressed size of uploaded content.",
       "type": "integer"
     },
-    "workspace_state": {
+    "state": {
       "description": "State of the upload workspace.",
       "type": "string",
       "enum": [
@@ -49,7 +49,7 @@
         "UNLOCKED"
       ]
     },
-    "upload_status": {
+    "readiness": {
       "description": "Status of the upload content. READY means content passed checks and did not raise any warnings/errors. Workspace content in READY or READY_WITH_WARNINGS state may be submitted. ERRORS indicate content has problems and will not be accepted.",
       "type": "string",
       "enum": [

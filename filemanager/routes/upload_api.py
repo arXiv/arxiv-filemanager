@@ -2,19 +2,18 @@
 
 from typing import Optional, Union, Any, Dict
 import json
+from http import HTTPStatus
 
 from flask.json import jsonify
 from flask import Blueprint, render_template, redirect, request, url_for, \
     Response, make_response, send_file
 from werkzeug.exceptions import NotFound, Forbidden, Unauthorized, \
     InternalServerError, HTTPException, BadRequest
+
 from arxiv.base import routes as base_routes
 from arxiv.base import logging
-from http import HTTPStatus
-
 from arxiv.users import domain as auth_domain
 from arxiv.users.auth import scopes
-
 from arxiv.users.auth.decorators import scoped
 
 from ..services import uploads

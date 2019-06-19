@@ -11,12 +11,14 @@ from base64 import urlsafe_b64encode
 import io
 from pytz import UTC
 
+from flask import current_app
+from flask.json import jsonify
 
 from werkzeug.exceptions import NotFound, BadRequest, InternalServerError, \
     NotImplemented, SecurityError, Forbidden
 
 from werkzeug.datastructures import FileStorage
-from flask.json import jsonify
+
 
 from http import HTTPStatus as status
 from arxiv.users import domain as auth_domain
@@ -25,10 +27,9 @@ from arxiv.base.globals import get_application_config
 import filemanager
 from filemanager.shared import url_for
 
-from filemanager.domain import Upload
-from filemanager.services import uploads
-from filemanager.process.upload import Upload as UploadWorkspace
-from filemanager.arxiv.file import File
+from filemanager.domain import UploadWorkspace
+from filemanager.services import uploads, storage
+from filemanager.process import strategy, check
 
 # Temporary logging at service level - just to get something in place to build on
 
@@ -70,7 +71,7 @@ logger.propagate = True
 # exceptions
 UPLOAD_MISSING_FILE = 'missing file/archive payload'
 UPLOAD_MISSING_FILENAME = 'file argument missing filename or file not selected'
-# UPLOAD_FILE_EMPTY = {'file payload is zero length'}
+UPLOAD_FILE_EMPTY = 'file payload is zero length'
 
 UPLOAD_NOT_FOUND = 'upload workspace not found'
 UPLOAD_DB_ERROR = 'unable to create/insert new upload workspace into database'
@@ -382,13 +383,14 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         Some extra headers to add to the response.
     """
     start = time.time()
+    workspace: Optional[UploadWorkspace] = None
     # TODO: Hook up async processing (celery/redis) - doesn't work now
     # TODO: Will likely delete this code if processing time is reasonable
     # print(f'Controller: Schedule upload_db_data task for {upload_id}')
     #
     # result = sanitize_upload.delay(upload_id, file)
     #
-    # headers = {'Location': url_for('upload_api.upload_status',
+    # headers = {'Location': url_for('upload_api.readiness',
     #                              task_id=result.task_id)}
     # return ACCEPTED, status.ACCEPTED, headers
     # End delete
@@ -410,49 +412,22 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
                      ' be selected.')
         raise BadRequest(UPLOAD_MISSING_FILENAME)
 
-    # TODO: remove this -- out of scope for file manager service; policies like
-    # size limits are enforced by submission agent. --Erick
-    #
-    # What about archive argument.
-    if archive is None:
-        # TODO: Discussion about how to treat omission of archive argument. Is
-        # this an HTTP exception? Oversize limits are configured per archive.
-        # Or is this a warning/error returned in upload summary?
-        #
-        # Most submissions can get by with default size limitations so we'll
-        # add a warning message for the upload (this will appear on upload page
-        # and get logged). This warning will get generated in process/upload.py
-        # and not here.
-        logger.error("Upload 'archive' not specified. Oversize calculation "
-                     "will use default values.")
-
     # If this is a new upload then we need to create a workspace and add to
     # database.
     if upload_id is None:
         logger.debug('This is a new upload workspace.')
         try:
-            logger.info("Create new workspace: Upload request: "
-                        "file='%s' archive='%s'", file.filename, archive)
+            logger.info("Create new workspace: Upload request: file='%s'",
+                        file.filename)
             # TODO: we need better handling for client-only requests here.
             if isinstance(user, auth_domain.User):
                 user_id = str(user.user_id)
             elif isinstance(user, auth_domain.Client):
                 user_id = str(user.owner_id)   # User ID of the client owner.
 
-            if archive is None:
-                arch = ''
-            else:
-                arch = archive
-
             current_time = datetime.now(UTC)
-            new_upload = Upload(owner_user_id=user_id, archive=arch,
-                                created_datetime=current_time,
-                                modified_datetime=current_time,
-                                state=Upload.ACTIVE)
-            # Store in DB
-            uploads.store(new_upload)
-
-            upload_id = new_upload.upload_id
+            workspace = uploads.create(user_id)
+            upload_id = workspace.upload_id
 
         except IOError as e:
             logger.info("Error creating new workspace: %s", e)
@@ -468,17 +443,21 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
     print('upload workspace exists at', time.time() - start)
     # At this point we expect upload to exist in system
     try:
+        if workspace is None:
+            workspace = uploads.retrieve(upload_id)
 
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        workspace.strategy = strategy.create_strategy(current_app)
+        workspace.checkers = check.get_default_checkers()
 
-        if upload_db_data is None:
-            # Invalid workspace identifier
+        if workspace is None:   # Invalid workspace identifier
             raise NotFound(UPLOAD_NOT_FOUND)
-        if upload_db_data.state != Upload.ACTIVE:
+
+        if workspace.state != UploadWorkspace.Status.ACTIVE:
             # Do we log anything for these requests
             logger.debug('Forbidden, workspace not active')
             raise Forbidden(UPLOAD_NOT_ACTIVE)
-        if upload_db_data.lock == Upload.LOCKED:
+
+        if workspace.is_locked:
             logger.debug('Forbidden, workspace locked')
             raise Forbidden(UPLOAD_WORKSPACE_LOCKED)
 
@@ -488,43 +467,41 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         #       some point in future. Depends in time it takes to process
         #       uploads.retrieve
         logger.info("%s: Upload files to existing workspace: file='%s'",
-                    upload_db_data.upload_id, file.filename)
+                    workspace.upload_id, file.filename)
         print('upload workspace retrieved at', time.time() - start)
 
-        # Keep track of how long processing upload_db_data takes
+        # Keep track of how long processing workspace takes.
         start_datetime = datetime.now(UTC)
 
         # Create Upload object
-        upload_workspace = UploadWorkspace(upload_id)
-        print('upload managaer intantiated at', time.time() - start)
+        # upload_workspace = UploadWorkspace(upload_id)
+        u_file = workspace.create(file.filename, is_ancillary=ancillary)
+        with workspace.open(u_file, 'wb') as f:
+            file.save(f)
+        if u_file.size_bytes == 0:
+            raise BadRequest(UPLOAD_FILE_EMPTY)
 
-        # Process upload_db_data
-        upload_workspace.process_upload(file, ancillary=ancillary)
+        workspace.perform_checks()
         print('workspace finished processing upload at', time.time() - start)
 
         completion_datetime = datetime.now(UTC)
 
         # Keep track of files processed (this included deleted files)
-        file_list = upload_workspace.create_file_upload_summary()
-        print('workspace summary at', time.time() - start)
+        # file_list = upload_workspace.create_file_upload_summary()
+        # print('workspace summary at', time.time() - start)
 
         # Determine readiness state of upload content
-        upload_status = Upload.READY
-
-        if upload_workspace.has_errors():
-            upload_status = Upload.ERRORS
-        elif upload_workspace.has_warnings():
-            upload_status = Upload.READY_WITH_WARNINGS
+        readiness = workspace.readiness
 
         # Create combine list of errors and warnings
         # TODO: Should I do this in Upload package?? Likely...
         all_errors_and_warnings = []
 
-        for warn in upload_workspace.get_warnings():
+        for warn in workspace.warnings.items():
             public_filepath, warning_message = warn
             all_errors_and_warnings.append(['warn', public_filepath, warning_message])
 
-        for error in upload_workspace.get_errors():
+        for error in workspace.errors.items():
             public_filepath, warning_message = error
             # TODO: errors renamed fatal. Need to review 'errors' as to whether they are 'fatal'
             all_errors_and_warnings.append(['fatal', public_filepath, warning_message])
@@ -533,19 +510,20 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         # is not sufficient for results that may be needed in the distant future.
         # errors_and_warnings = upload_workspace.get_errors() + upload_workspace.get_warnings()
         errors_and_warnings = all_errors_and_warnings
-        upload_db_data.lastupload_logs = json.dumps(errors_and_warnings)
-        upload_db_data.lastupload_start_datetime = start_datetime
-        upload_db_data.lastupload_completion_datetime = completion_datetime
-        upload_db_data.lastupload_file_summary = json.dumps(file_list)
-        upload_db_data.lastupload_upload_status = upload_status
-        upload_db_data.state = Upload.ACTIVE
+        workspace.lastupload_logs = json.dumps(errors_and_warnings)
+        workspace.lastupload_start_datetime = start_datetime
+        workspace.lastupload_completion_datetime = completion_datetime
+        # workspace.lastupload_file_summary = json.dumps(file_list)
+        workspace.lastupload_readiness = readiness
+
+        workspace.state = UploadWorkspace.Status.ACTIVE
 
         # Store in DB
-        uploads.update(upload_db_data)
+        uploads.update(workspace)
         print('db updated at', time.time() - start)
 
         logger.info("%s: Processed upload. Saved to DB. Preparing upload "
-                    "summary.", upload_db_data.upload_id)
+                    "summary.", workspace.upload_id)
 
         # Do we want affirmative log messages after processing each request
         # or maybe just report errors like:
@@ -553,15 +531,14 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
 
         # Upload action itself has very simple response
         headers = {'Location': url_for('upload_api.upload_files',
-                                       upload_id=upload_db_data.upload_id)}
+                                       upload_id=workspace.upload_id)}
 
         status_code = status.CREATED
 
-        response_data = _status_data(upload_db_data, upload_workspace)
-        logger.info("%s: Generating upload summary.",
-                    upload_db_data.upload_id)
+        response_data = {}#_status_data(upload_db_data, upload_workspace)
+        logger.info("%s: Generating upload summary.", workspace.upload_id)
         logger.debug('Response data: %s', response_data)
-        headers.update({'ARXIV-OWNER': upload_db_data.owner_user_id})
+        headers.update({'ARXIV-OWNER': workspace.owner_user_id})
         print('done at', time.time() - start)
         return response_data, status_code, headers
 
@@ -1356,21 +1333,20 @@ def get_upload_service_log() -> Response:
     return filepointer, status.OK, headers
 
 
-def _status_data(upload_db_data: Upload,
-                 upload_workspace: UploadWorkspace) -> dict:
+def _status_data(workspace: UploadWorkspace) -> dict:
     return {
-        'upload_id': upload_db_data.upload_id,
-        'upload_total_size': upload_workspace.total_upload_size,
-        'upload_compressed_size': upload_workspace.content_package_size,
-        'created_datetime': upload_db_data.created_datetime,
-        'modified_datetime': upload_db_data.modified_datetime,
-        'start_datetime': upload_db_data.lastupload_start_datetime,
-        'completion_datetime': upload_db_data.lastupload_completion_datetime,
-        'files': json.loads(upload_db_data.lastupload_file_summary),
-        'errors': json.loads(upload_db_data.lastupload_logs),
-        'upload_status': upload_db_data.lastupload_upload_status,
-        'workspace_state': upload_db_data.state,
-        'lock_state': upload_db_data.lock,
-        'source_format': upload_workspace.source_format,
-        'checksum': upload_workspace.content_checksum()
+        'upload_id': workspace.upload_id,
+        'upload_total_size': workspace.total_upload_size,
+        'upload_compressed_size': workspace.source_package.size_bytes,
+        'created_datetime': workspace.created_datetime,
+        'modified_datetime': workspace.modified_datetime,
+        'start_datetime': workspace.lastupload_start_datetime,
+        'completion_datetime': workspace.lastupload_completion_datetime,
+        'files': workspace.files,
+        'errors': workspace.errors,
+        'readiness': workspace.readiness.value,
+        'state': workspace.workspace_status.value,
+        'lock_state': workspace.lock_state.value,
+        'source_format': workspace.source_format.value,
+        'checksum': workspace.content_checksum()
     }

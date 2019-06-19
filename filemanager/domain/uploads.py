@@ -54,6 +54,14 @@ class UploadWorkspace:
         database is set to deleted. Database entry is retained indefinitely.
         """
 
+    class Readiness(Enum):
+        """
+        Upload workspace readiness states.
+
+        Provides an indication (but not the final word) on whether the
+        workspace is suitable for incorporating into a submission to arXiv.
+        """
+
         READY = 'READY'
         """Overall state of workspace is good; no warnings/errors reported."""
 
@@ -123,19 +131,8 @@ class UploadWorkspace:
     upload_id: int
     """Unique ID for the upload workspace."""
 
-    submission_id: Optional[str]
-    """
-    Optionally associate upload workspace with submission_id.
-
-    File Management Service 'upload_id' is independent and not directly
-    tied to any external service.
-    """
-
     owner_user_id: str
     """User id for owner of workspace."""
-
-    archive: Optional[str]
-    """Target archive for this submission."."""
 
     created_datetime: datetime
     """When workspace was created"""
@@ -144,8 +141,6 @@ class UploadWorkspace:
     """When workspace was last modified"""
 
     # General state of upload
-    strategy: ICheckingStrategy
-    """Strategy for performing file checks."""
 
     storage: IStorageAdapter
     """Adapter for persistence."""
@@ -153,11 +148,14 @@ class UploadWorkspace:
     state: Status = field(default=Status.ACTIVE)
     """Status of upload workspace."""
 
-    lock: LockState = field(default=LockState.UNLOCKED)
+    lock_state: LockState = field(default=LockState.UNLOCKED)
     """Lock state of upload workspace."""
 
     checkers: List[IChecker] = field(default_factory=list)
     """File checkers that should be applied to all files in the workspace."""
+
+    strategy: Optional[ICheckingStrategy] = field(default=None)
+    """Strategy for performing file checks."""
 
     source_type: SourceType = field(default=SourceType.UNKNOWN)
 
@@ -183,7 +181,7 @@ class UploadWorkspace:
     lastupload_file_summary: str = field(default_factory=str)
     """Logs associated with last upload event."""
 
-    lastupload_upload_status: str = field(default_factory=str)
+    lastupload_readiness: str = field(default_factory=str)
     """Content readiness status after last upload event."""
 
     def __post_init__(self) -> None:
@@ -359,6 +357,15 @@ class UploadWorkspace:
     def warnings(self) -> Mapping[str, List[str]]:
         return {path: warnings for path, warnings in self._warnings.items()
                 if path in self.files}
+
+    @property
+    def readiness(self) -> Readiness:
+        """Readiness state of the upload workspace."""
+        if self.has_errors:
+            return UploadWorkspace.Readiness.ERRORS
+        elif self.has_warnings:
+            return UploadWorkspace.Readiness.READY_WITH_WARNINGS
+        return UploadWorkspace.Readiness.READY
 
     def remove(self, u_file: UploadedFile, reason: Optional[str] = None,
                keep_refs: bool = True) -> None:
@@ -602,6 +609,10 @@ class UploadWorkspace:
         if counts['ignore'] == 1:
             return False
         return True
+
+    @property
+    def is_locked(self) -> bool:
+        return bool(self.lock_state == UploadWorkspace.LockState.LOCKED)
 
     def get_single_file(self) -> Optional[UploadedFile]:
         """

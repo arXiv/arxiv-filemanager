@@ -10,9 +10,10 @@ import filecmp
 from pathlib import Path
 from contextlib import contextmanager
 
-from arxiv.base import logging
+from flask import Flask
 
-from ..domain import UploadWorkspace, UploadedFile
+from arxiv.base import logging
+from ..domain import UploadWorkspace, UploadedFile, IStorageAdapter
 
 logger = logging.getLogger(__name__)
 logger.propagate = False
@@ -20,6 +21,8 @@ logger.propagate = False
 
 class SimpleStorageAdapter:
     """Simple storage adapter for a workspace."""
+
+    PARAMS = ('base_path', )
 
     def __init__(self, base_path: str) -> None:
         """Initialize with a base path."""
@@ -225,6 +228,8 @@ class SimpleStorageAdapter:
 class QuarantineStorageAdapter(SimpleStorageAdapter):
     """Storage adapter that keeps un/persisted files in separate locations."""
 
+    PARAMS = ('base_path', 'quarantine_path')
+
     def __init__(self, base_path: str, quarantine_path: str) -> None:
         """Initialize with two distinct base paths."""
         self._base_path = base_path
@@ -289,3 +294,20 @@ class QuarantineStorageAdapter(SimpleStorageAdapter):
             for _path, _file in workspace.iter_children(u_file):
                 if _path.startswith(u_file.path) and not _file.is_persisted:
                     _file.is_persisted = True
+
+
+ADAPTERS = {
+    'simple': SimpleStorageAdapter,
+    'quarantine': QuarantineStorageAdapter,
+}
+
+
+def init_app(app: Flask) -> None:
+    app.config.setdefault('STORAGE_BACKEND', 'simple')
+
+
+def create_adapter(app: Flask) -> IStorageAdapter:
+    adapter_class = ADAPTERS[app.config['STORAGE_BACKEND']]
+    values = [app.config[f'STORAGE_{param.upper()}']
+              for param in adapter_class.PARAMS]
+    return adapter_class(*values)
