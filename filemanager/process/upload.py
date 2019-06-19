@@ -2239,20 +2239,20 @@ class Upload:
 
     # Content package routines
 
-    def get_content_path(self) -> str:
-        """
-        Get the path for the packed content tarball.
-
-        Note that the tarball itself may or may not exist yet.
-        """
-        return os.path.join(self.get_upload_directory(),
-                            f'{self.upload_id}.tar.gz')
-
+    # def get_content_path(self) -> str:
+    #     """
+    #     Get the path for the packed content tarball.
+    #
+    #     Note that the tarball itself may or may not exist yet.
+    #     """
+    #     return os.path.join(self.get_upload_directory(),
+    #                         f'{self.upload_id}.tar.gz')
+    #
     def remove_content_package(self) -> None:
         """Delete the content package tarball."""
         if os.path.exists(self.get_content_path()):
             os.unlink(self.get_content_path())
-
+    #
     def pack_content(self) -> str:
         """Pack the entire source directory into a tarball."""
         if not self.has_files_on_disk():
@@ -2261,13 +2261,13 @@ class Upload:
         with tarfile.open(self.get_content_path(), "w:gz") as tar:
             tar.add(self.source_path, arcname=os.path.sep)
         return self.get_content_path()
-
-    @property
-    def last_modified(self) -> datetime:
-        """Time of the most recent change to a file in the workspace."""
-        most_recent = max(os.path.getmtime(root) for root, _, _
-                          in os.walk(self.source_path))
-        return datetime.fromtimestamp(most_recent, tz=UTC)
+    #
+    # @property
+    # def last_modified(self) -> datetime:
+    #     """Time of the most recent change to a file in the workspace."""
+    #     most_recent = max(os.path.getmtime(root) for root, _, _
+    #                       in os.walk(self.source_path))
+    #     return datetime.fromtimestamp(most_recent, tz=UTC)
 
     def get_content(self) -> io.BufferedReader:
         """Get a file-pointer for the packed content tarball."""
@@ -2278,73 +2278,73 @@ class Upload:
             self.pack_content()
         return open(self.get_content_path(), 'rb')
 
-    @property
-    def content_package_exists(self) -> bool:
-        """Return True if content package exists."""
-        return os.path.exists(self.get_content_path())
+    # @property
+    # def content_package_exists(self) -> bool:
+    #     """Return True if content package exists."""
+    #     return os.path.exists(self.get_content_path())
+    #
+    # @property
+    # def content_package_modified(self) -> datetime:
+    #     """Return modify datetime of content package."""
+    #     return datetime.fromtimestamp(
+    #         os.path.getmtime(self.get_content_path()),
+    #         tz=UTC
+    #     )
+    #
+    # @property
+    # def content_package_size(self) -> int:
+    #     """
+    #     Get the size of the compressed source package.
+    #
+    #     Will build the package if it does not already exist.
+    #
+    #     Returns
+    #     -------
+    #     int
+    #         Total size in bytes of the compressed source package.
+    #
+    #     """
+    #     try:
+    #         if not self.content_package_exists or self.content_package_stale:
+    #             self.pack_content()
+    #     except FileNotFoundError:
+    #         return 0
+    #     return os.path.getsize(self.get_content_path())
 
-    @property
-    def content_package_modified(self) -> datetime:
-        """Return modify datetime of content package."""
-        return datetime.fromtimestamp(
-            os.path.getmtime(self.get_content_path()),
-            tz=UTC
-        )
+    # @property
+    # def content_package_stale(self) -> bool:
+    #     """
+    #     Check whether source has been modified since content package creation.
+    #
+    #     Returns
+    #     -------
+    #     bool
+    #         True if content package is stale and needs to be regenerated.
+    #
+    #     """
+    #     if not os.path.exists(self.get_content_path()):
+    #         return True
+    #     return self.last_modified > self.content_package_modified
+    #
+    # def content_checksum(self) -> Optional[str]:
+    #     """
+    #     Return b64-encoded MD5 hash of the packed content tarball.
+    #
+    #     Triggers building content package when pre-existing package is not
+    #     found or stale relative to source files.
+    #     """
+    #     if not self.has_files_on_disk():
+    #         return None
+    #     if not self.content_package_exists or self.content_package_stale:
+    #         self.pack_content()
+    #     return self._get_checksum(self.get_content_path())
 
-    @property
-    def content_package_size(self) -> int:
-        """
-        Get the size of the compressed source package.
-
-        Will build the package if it does not already exist.
-
-        Returns
-        -------
-        int
-            Total size in bytes of the compressed source package.
-
-        """
-        try:
-            if not self.content_package_exists or self.content_package_stale:
-                self.pack_content()
-        except FileNotFoundError:
-            return 0
-        return os.path.getsize(self.get_content_path())
-
-    @property
-    def content_package_stale(self) -> bool:
-        """
-        Check whether source has been modified since content package creation.
-
-        Returns
-        -------
-        bool
-            True if content package is stale and needs to be regenerated.
-
-        """
-        if not os.path.exists(self.get_content_path()):
-            return True
-        return self.last_modified > self.content_package_modified
-
-    def content_checksum(self) -> Optional[str]:
-        """
-        Return b64-encoded MD5 hash of the packed content tarball.
-
-        Triggers building content package when pre-existing package is not
-        found or stale relative to source files.
-        """
-        if not self.has_files_on_disk():
-            return None
-        if not self.content_package_exists or self.content_package_stale:
-            self.pack_content()
-        return self._get_checksum(self.get_content_path())
-
-    def _get_checksum(self, path: str) -> str:
-        hash_md5 = md5()
-        with open(path, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                hash_md5.update(chunk)
-        return urlsafe_b64encode(hash_md5.digest()).decode('utf-8')
+    # def _get_checksum(self, path: str) -> str:
+    #     hash_md5 = md5()
+    #     with open(path, "rb") as f:
+    #         for chunk in iter(lambda: f.read(4096), b""):
+    #             hash_md5.update(chunk)
+    #     return urlsafe_b64encode(hash_md5.digest()).decode('utf-8')
 
 
     # Content file routines
@@ -2474,75 +2474,75 @@ class Upload:
 
     # Source log methods
 
-    @property
-    def source_log_exists(self) -> bool:
-        """
-        Indicate whether source log exists.
-
-        Returns
-        -------
-        True if source log file exists, otherwise returns False.
-
-        """
-        source_log_path = self.get_upload_source_log_path()
-
-        return os.path.exists(source_log_path)
-
-    @property
-    def source_log_size(self) -> int:
-        """
-        Return size of source log.
-
-        Returns
-        -------
-        Size in bytes.
-
-        """
-        source_log_path = self.get_upload_source_log_path()
-        return os.path.getsize(source_log_path)
-
-    @property
-    def source_log_last_modified(self) -> str:
-        """
-        Last modified date of source log (UTC).
-
-        Returns
-        -------
-        Last modified date string.
-        """
-        source_log_path = self.get_upload_source_log_path()
-        return datetime.utcfromtimestamp(os.path.getmtime(source_log_path))
-
-    @property
-    def source_log_checksum(self) -> str:
-        """
-        Return checksum for source log.
-
-        Returns
-        -------
-        Returns Null string if file does not exist otherwise
-        return b64-encoded MD5 hash of the specified file.
-
-        """
-        source_log_path = self.get_upload_source_log_path()
-
-        if os.path.exists(source_log_path):
-            hash_md5 = md5()
-            with open(source_log_path, "rb") as f:
-                for chunk in iter(lambda: f.read(4096), b""):
-                    hash_md5.update(chunk)
-            return urlsafe_b64encode(hash_md5.digest()).decode('utf-8')
-
-        return ""
-
-    def source_log_file_pointer(self) -> io.BytesIO:
-        """Get a file-pointer for source log."""
-        source_log_path = self.get_upload_source_log_path()
-
-        if os.path.exists(source_log_path):
-            return open(source_log_path, 'rb')
-
-        return ""
+    # @property
+    # def source_log_exists(self) -> bool:
+    #     """
+    #     Indicate whether source log exists.
+    #
+    #     Returns
+    #     -------
+    #     True if source log file exists, otherwise returns False.
+    #
+    #     """
+    #     source_log_path = self.get_upload_source_log_path()
+    #
+    #     return os.path.exists(source_log_path)
+    #
+    # @property
+    # def source_log_size(self) -> int:
+    #     """
+    #     Return size of source log.
+    #
+    #     Returns
+    #     -------
+    #     Size in bytes.
+    #
+    #     """
+    #     source_log_path = self.get_upload_source_log_path()
+    #     return os.path.getsize(source_log_path)
+    #
+    # @property
+    # def source_log_last_modified(self) -> str:
+    #     """
+    #     Last modified date of source log (UTC).
+    #
+    #     Returns
+    #     -------
+    #     Last modified date string.
+    #     """
+    #     source_log_path = self.get_upload_source_log_path()
+    #     return datetime.utcfromtimestamp(os.path.getmtime(source_log_path))
+    #
+    # @property
+    # def source_log_checksum(self) -> str:
+    #     """
+    #     Return checksum for source log.
+    #
+    #     Returns
+    #     -------
+    #     Returns Null string if file does not exist otherwise
+    #     return b64-encoded MD5 hash of the specified file.
+    #
+    #     """
+    #     source_log_path = self.get_upload_source_log_path()
+    #
+    #     if os.path.exists(source_log_path):
+    #         hash_md5 = md5()
+    #         with open(source_log_path, "rb") as f:
+    #             for chunk in iter(lambda: f.read(4096), b""):
+    #                 hash_md5.update(chunk)
+    #         return urlsafe_b64encode(hash_md5.digest()).decode('utf-8')
+    #
+    #     return ""
+    #
+    # def source_log_file_pointer(self) -> io.BytesIO:
+    #     """Get a file-pointer for source log."""
+    #     source_log_path = self.get_upload_source_log_path()
+    #
+    #     if os.path.exists(source_log_path):
+    #         return open(source_log_path, 'rb')
+    #
+    #     return ""
 
     # def count_file_types(self) -> dict:
     #     """
@@ -2585,40 +2585,40 @@ class Upload:
     #
     #     return format_list
 
-    # def get_single_file(self) -> Optional[File]:
-    #     """
-    #     Return File object for single-file submission.
-    #
-    #     This routine is intended for submission that are composed
-    #     of a single content file.
-    #
-    #     Single file can't be type 'ancillary'. Single ancillary file
-    #     is invalid submission and generates an error.
-    #
-    #     Returns
-    #     -------
-    #         Single File object. Returns None when submission has more than
-    #         one file.
-    #     """
-    #     if self.__files and len(self.__files) == 1:
-    #         if self.__files[0].type != 'ancillary' and \
-    #                 self.__files[0].type != 'always_ignore':
-    #             return self.__files[0]
-    #
-    #         # This is an error, can't have submission that is composed
-    #         # of ancillary single file
-    #         obj = self.__files[0]
-    #         msg = f"Found single ancillary file. Invalid submissiomn."
-    #         self.add_error(obj.public_filepath, msg)
-    #     elif self.__files and len(self.__files) > 1:
-    #         # This should never happen
-    #         msg = "Found more than 1 file in single file context"
-    #         self.add_error("", msg)
-    #     else:
-    #         msg = "No file found."
-    #         self.add_error("", msg)
-    #
-    #     return None
+    def get_single_file(self) -> Optional[File]:
+        """
+        Return File object for single-file submission.
+
+        This routine is intended for submission that are composed
+        of a single content file.
+
+        Single file can't be type 'ancillary'. Single ancillary file
+        is invalid submission and generates an error.
+
+        Returns
+        -------
+            Single File object. Returns None when submission has more than
+            one file.
+        """
+        if self.__files and len(self.__files) == 1:
+            if self.__files[0].type != 'ancillary' and \
+                    self.__files[0].type != 'always_ignore':
+                return self.__files[0]
+
+            # This is an error, can't have submission that is composed
+            # of ancillary single file
+            obj = self.__files[0]
+            msg = f"Found single ancillary file. Invalid submissiomn."
+            self.add_error(obj.public_filepath, msg)
+        elif self.__files and len(self.__files) > 1:
+            # This should never happen
+            msg = "Found more than 1 file in single file context"
+            self.add_error("", msg)
+        else:
+            msg = "No file found."
+            self.add_error("", msg)
+
+        return None
 
 
     # def fix_file_ext(self, file_obj: File, new_extension: str) -> Optional[File]:

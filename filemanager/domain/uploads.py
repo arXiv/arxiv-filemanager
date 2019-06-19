@@ -1,67 +1,29 @@
-"""Describes the data that will be passed around inside of the service."""
+"""Describes the core concepts and domain rules for uploaded content."""
 
 import os
 import re
 import io
+from hashlib import md5
+from base64 import urlsafe_b64encode
 from itertools import accumulate
 from typing import List, Callable, Optional, Any, Type, Dict, Mapping, Union, \
-    Iterable, Tuple
+    Iterable, Tuple, Iterator
 from collections import defaultdict, Counter
 from contextlib import contextmanager
 from datetime import datetime
 from enum import Enum
 
 from dataclasses import dataclass, field
-from typing_extensions import Protocol
 
 from arxiv.base import logging
 from .file_type import FileType
+from .storage import IStorageAdapter
+from .checks import IChecker, ICheckingStrategy
+from .log import SourceLog
+from .package import SourcePackage
 
 logger = logging.getLogger(__name__)
 logger.propagate = False
-
-
-class IChecker(Protocol):
-    """A visitor that performs a check on an :class:`.UploadedFile`."""
-
-    def __call__(self, workspace: 'UploadWorkspace',
-                 u_file: 'UploadedFile') -> None:
-        """Check an :class:`.UploadedFile`."""
-        ...
-
-
-class ICheckingStrategy(Protocol):
-    """Strategy for checking files in an :class:`.UploadWorkspace`."""
-
-    def check(self, workspace: 'UploadWorkspace', *checkers: IChecker) -> None:
-        """Perform checks on all files in the workspace."""
-        ...
-
-
-class IStorageAdapter(Protocol):
-    """Responsible for providing a data access interface."""
-
-    def move(self, workspace: 'UploadWorkspace', u_file: 'UploadedFile',
-             from_path: str, to_path: str) -> None:
-        """Move a file from one path to another."""
-        ...
-
-    def persist(self, workspace: 'UploadWorkspace',
-                u_file: 'UploadedFile') -> None:
-        ...
-
-    def get_full_path(self, workspace: 'UploadWorkspace',
-                      u_file: 'UploadedFile') -> str:
-        ...
-
-    def open(self, workspace: 'UploadWorkspace', u_file: 'UploadedFile',
-             flags: str = 'r', **kwargs: Any) -> io.IOBase:
-        """
-        Get a file pointer for an :class:`.UploadedFile`.
-
-        ``kwargs`` must be passed along to the builtin :func:`open`.
-        """
-        ...
 
 
 # TODO: support for directories.
@@ -73,16 +35,48 @@ class UploadedFile:
     """Path relative to the workspace in which the file resides."""
 
     size_bytes: int
+    """Size of the file in bytes."""
+
     file_type: FileType = field(default=FileType.UNKNOWN)
+    """The content type of the file."""
+
     is_removed: bool = field(default=False)
+    """
+    Indicates whether or not this file has been removed.
+
+    Removed files are retained, but moved outside of the source package and
+    are therefore generally not mutable by clients.
+    """
+
     is_ancillary: bool = field(default=False)
+    """Indicates whether or not this file is an ancillary file."""
+
     is_directory: bool = field(default=False)
+    """Indicates whether or not this file is a directory."""
+
     is_checked: bool = field(default=False)
+    """Indicates whether or not this file has been subjected to all checks."""
+
     is_persisted: bool = field(default=False)
+    """
+    Indicates whether or not this file has been persisted.
+
+    Non-persisted files will generally not live beyond a single request
+    context.
+    """
+
+    is_system: bool = field(default=False)
+    """
+    Indicates whether or not this is a system file.
+
+    System files are not part of the source package, and usually not directly
+    mutable by clients.
+    """
+
     reason_for_removal: Optional[str] = field(default=None)
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
-    actions: List[str] = field(default_factory=list)
+
     meta: Dict[str, Any] = field(default_factory=dict)
     """A register for checkers/strategies to store state between runs."""
 
@@ -309,6 +303,8 @@ class UploadWorkspace:
         self.storage.makedirs(self, self.source_path)
         self.storage.makedirs(self, self.ancillary_path)
         self.storage.makedirs(self, self.removed_path)
+        self._log = SourceLog(self)
+        self.source_package = SourcePackage(self)
 
     @property
     def base_path(self):
@@ -331,23 +327,44 @@ class UploadWorkspace:
         return os.path.join(self.source_path, self.ANCILLARY_PREFIX)
 
     def get_path(self, u_file_or_path: Union[str, UploadedFile],
-                 is_ancillary: bool = False, is_removed: bool = False) -> str:
+                 is_ancillary: bool = False, is_removed: bool = False,
+                 is_system: bool = False, **kwargs) -> str:
         """Get the path to an :class:`.UploadedFile` in this workspace."""
         if isinstance(u_file_or_path, UploadedFile):
             logger.debug('Get path for file: %s', u_file_or_path.path)
-            return self._get_path_from_file(u_file_or_path).lstrip('/')
-        return self._get_path(u_file_or_path, is_ancillary=is_ancillary,
-                              is_removed=is_removed).lstrip('/')
+            path = self._get_path_from_file(u_file_or_path)
+        else:
+            path = self._get_path(u_file_or_path, is_ancillary=is_ancillary,
+                                  is_removed=is_removed, is_system=is_system)
+        return path.lstrip('/')
 
     def get_full_path(self, u_file_or_path: Union[str, UploadedFile],
                       is_ancillary: bool = False,
                       is_removed: bool = False,
-                      is_persisted: bool = False) -> str:
+                      is_persisted: bool = False,
+                      is_system: bool = False) -> str:
         """Get the absolute path to a :class:`.UploadedFile`."""
         return self.storage.get_path(self, u_file_or_path,
                                      is_ancillary=is_ancillary,
                                      is_removed=is_removed,
-                                     is_persisted=is_persisted)
+                                     is_persisted=is_persisted,
+                                     is_system=is_system)
+
+    def _get_path(self, path: str, is_ancillary: bool = False,
+                  is_removed: bool = False, is_system: bool = False) -> str:
+        path = path.lstrip('/')
+        if is_system:
+            return os.path.join(self.base_path, path)
+        if is_ancillary:
+            return os.path.join(self.ancillary_path, path)
+        if is_removed:
+            return os.path.join(self.removed_path, path)
+        return os.path.join(self.source_path, path)
+
+    def _get_path_from_file(self, u_file: UploadedFile) -> str:
+        return self._get_path(u_file.path, is_ancillary=u_file.is_ancillary,
+                              is_removed=u_file.is_removed,
+                              is_system=u_file.is_system)
 
     def is_tarfile(self, u_file: UploadedFile) -> bool:
         """Determine whether or not a file is a tarfile."""
@@ -357,26 +374,9 @@ class UploadWorkspace:
         """Determine whether or not a path is safe to use in this workspace."""
         return self.storage.is_safe(self, path)
 
-    # TODO: implement this!
     def log(self, message: str) -> None:
         """Add a workspace log entry."""
-        logger.debug(message)
-        pass
-
-    def _get_path(self, path: str, is_ancillary: bool = False,
-                  is_removed: bool = False) -> str:
-        if is_ancillary:
-            logger.debug('Get ancillary path for %s', path)
-            return os.path.join(self.ancillary_path, path.lstrip('/'))
-        if is_removed:
-            return os.path.join(self.removed_path, path.lstrip('/'))
-        return os.path.join(self.source_path, path.lstrip('/'))
-
-    def _get_path_from_file(self, u_file: UploadedFile) -> str:
-        logger.debug('Get path from file %s, ancillary = %s, removed = %s',
-                     u_file.path, u_file.is_ancillary, u_file.is_removed)
-        return self._get_path(u_file.path, is_ancillary=u_file.is_ancillary,
-                              is_removed=u_file.is_removed)
+        self._log.info(message)
 
     @property
     def has_unchecked_files(self) -> bool:
@@ -542,6 +542,13 @@ class UploadWorkspace:
                     and not f.is_directory])
 
     @property
+    def last_modified(self) -> datetime:
+        """Time of the most recent change to a file in the workspace."""
+        most_recent = max(os.path.getmtime(root) for root, _, _
+                          in os.walk(self.source_path))
+        return datetime.fromtimestamp(most_recent, tz=UTC)
+
+    @property
     def ancillary_file_count(self) -> int:
         """Get the total number of ancillary files in this workspace."""
         return len([f for f in self.iter_files()
@@ -563,21 +570,23 @@ class UploadWorkspace:
         return counts
 
     @contextmanager
-    def open(self, u_file: UploadedFile, flags: str = 'r',
-             **kwargs: Any) -> io.IOBase:
+    def open(self, u_file: UploadedFile, flags: str = 'r', **kwargs: Any) \
+            -> Iterator[io.IOBase]:
         """Get a file pointer for a :class:`.UploadFile`."""
-        if u_file.path not in self.files:
+        if u_file.path not in self.files and not u_file.is_system:
             raise ValueError('File does not belong to this workspace')
         with self.storage.open(self, u_file, flags, **kwargs) as f:
             yield f
-        self.getsize(u_file)
+        self.get_size(u_file)
 
     LEADING_DOTSLASH = re.compile(r'^\./')
     """Pattern to match leading ``./`` in relative paths."""
 
     def create(self, path: str, file_type: FileType = FileType.UNKNOWN,
-               replace: bool = False, is_directory: bool = False,
+               replace: bool = False,
+               is_directory: bool = False,
                is_ancillary: Optional[bool] = None,
+               is_system: bool = False,
                touch: bool = True) -> UploadedFile:
         """Create a new :class:`.UploadedFile` at ``path``."""
         path = self.LEADING_DOTSLASH.sub('', path)
@@ -597,18 +606,18 @@ class UploadWorkspace:
                 logger.debug('Path indicates ancillary file; trimmed to `%s`',
                              path)
 
-        u_file = UploadedFile(
-            path=path,
-            size_bytes=0,
-            file_type=file_type,
-            is_directory=is_directory,
-            is_ancillary=is_ancillary
-        )
-        self.files[u_file.path] = u_file
+        u_file = UploadedFile(path=path, size_bytes=0, file_type=file_type,
+                              is_directory=is_directory,
+                              is_ancillary=is_ancillary,
+                              is_system=is_system)
+
+        if not is_system:   # System files are not part of the source package.
+            self.files[u_file.path] = u_file
+
         if touch:
             self.storage.create(self, u_file)
         else:
-            self.getsize(u_file)
+            self.get_size(u_file)
         return u_file
 
     def cmp(self, a_file: UploadedFile, b_file: UploadedFile,
@@ -629,10 +638,20 @@ class UploadWorkspace:
             for child_path, child_file in self.iter_children(u_file):
                 self._drop_refs(child_path)
 
-    def getsize(self, u_file: UploadedFile) -> int:
-        """Get (and update) the size in bytes of a :class:`.UploadedFile`."""
-        u_file.size_bytes = self.storage.getsize(self, u_file)
+    def get_size(self, u_file: UploadedFile) -> int:
+        """Get (and update) the size in bytes of a file."""
+        u_file.size_bytes = self.storage.get_size(self, u_file)
         return u_file.size_bytes
+
+    def get_last_modified(self, u_file: UploadedFile) -> datetime:
+        return self.storage.get_last_modified(self, u_file)
+
+    def get_checksum(self, u_file: UploadedFile) -> str:
+        hash_md5 = md5()
+        with self.open(u_file, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+        return urlsafe_b64encode(hash_md5.digest()).decode('utf-8')
 
     def replace(self, to_replace: UploadedFile, replace_with: UploadedFile,
                 keep_refs: bool = True) -> UploadedFile:
@@ -662,8 +681,12 @@ class UploadWorkspace:
         # TODO: update info for target children if target was a directory.
         return replace_with
 
-    def get(self, path: str) -> UploadedFile:
+    def get(self, path: str, is_system: bool = False) -> UploadedFile:
         """Get a file at ``path``."""
+        if is_system:
+            # Create a description of the file, since system files are not part
+            # of the source package.
+            return self.create(path, is_system=is_system, touch=True)
         return self.files[path]
 
     @property
@@ -683,6 +706,7 @@ class UploadWorkspace:
 
     @property
     def is_single_file_submission(self):
+        """Indicate whether or not this is a valid single-file submission."""
         if self.file_count != 1:
             return False
         counts = self.get_file_type_counts()

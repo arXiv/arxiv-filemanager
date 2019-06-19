@@ -187,7 +187,7 @@ def _check_encrypted(workspace: UploadWorkspace,
 def _check_zero_size(workspace: UploadWorkspace,
                      u_file: UploadedFile) -> Optional[FileType]:
     """Check for zero size file size."""
-    if workspace.getsize(u_file) == 0:
+    if workspace.get_size(u_file) == 0:
         return FileType.IGNORE    # , '', ''
 
 

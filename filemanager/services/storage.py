@@ -1,6 +1,6 @@
 """On-disk storage for uploads."""
 
-from typing import Any, Union
+from typing import Any, Union, Iterator
 import io
 import os
 import tarfile
@@ -31,16 +31,16 @@ class SimpleStorageAdapter:
     def makedirs(self, workspace: UploadWorkspace, path: str) -> None:
         """Make directories recursively for ``path``."""
         logger.debug('Make dirs to %s', path)
-        abs_path = self._get_path_bare(path)
+        abs_path = self.get_path_bare(path)
         if not os.path.exists(abs_path):
             os.makedirs(abs_path)
 
     def is_safe(self, workspace: UploadWorkspace, path: str,
                 is_ancillary: bool = False, is_removed: bool = False,
                 is_persisted: bool = False) -> bool:
-        """Determine whether or not a path in a workspace is safe to use."""
+        """Determine whether or not a path is safe to use."""
         path_in_workspace = workspace.get_path(path, is_ancillary, is_removed)
-        full_path = self._get_path_bare(path_in_workspace)
+        full_path = self.get_path_bare(path_in_workspace)
         try:
             self._check_safe(workspace, full_path, is_ancillary=is_ancillary,
                              is_removed=is_removed, is_persisted=is_persisted)
@@ -50,22 +50,23 @@ class SimpleStorageAdapter:
 
     def _check_safe(self, workspace: UploadWorkspace, full_path: str,
                     is_ancillary: bool = False, is_removed: bool = False,
-                    is_persisted: bool = False, strict: bool = True) -> None:
-        if not strict:
+                    is_persisted: bool = False, is_system: bool = False,
+                    strict: bool = True) -> None:
+        if not strict or is_system:
             logger.debug('evaluate liberally: %s', full_path)
-            wks_full_path = self._get_path_bare(workspace.base_path,
+            wks_full_path = self.get_path_bare(workspace.base_path,
                                                 is_persisted=is_persisted)
         elif is_ancillary:
             logger.debug('evaluate as ancillary: %s', full_path)
-            wks_full_path = self._get_path_bare(workspace.ancillary_path,
+            wks_full_path = self.get_path_bare(workspace.ancillary_path,
                                                 is_persisted=is_persisted)
         elif is_removed:
             logger.debug('evaluate as removed: %s', full_path)
-            wks_full_path = self._get_path_bare(workspace.removed_path,
+            wks_full_path = self.get_path_bare(workspace.removed_path,
                                                 is_persisted=is_persisted)
         else:
             logger.debug('evaluate as active source file: %s', full_path)
-            wks_full_path = self._get_path_bare(workspace.source_path,
+            wks_full_path = self.get_path_bare(workspace.source_path,
                                                 is_persisted=is_persisted)
         logger.debug('Valid path (persisted=%s)? %s', is_persisted, full_path)
         if wks_full_path not in full_path:
@@ -87,9 +88,9 @@ class SimpleStorageAdapter:
 
     def remove(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
         """Remove a file."""
-        src_path = self._get_path_bare(workspace.get_path(u_file),
+        src_path = self.get_path_bare(workspace.get_path(u_file),
                                        u_file.is_persisted)
-        dest_path = self._get_path_bare(
+        dest_path = self.get_path_bare(
             workspace.get_path(u_file.path, is_removed=True),
             is_persisted=u_file.is_persisted
         )
@@ -106,11 +107,11 @@ class SimpleStorageAdapter:
         src_path_rel = workspace.get_path(from_path,
                                           is_ancillary=u_file.is_ancillary,
                                           is_removed=u_file.is_removed)
-        src_path = self._get_path_bare(src_path_rel, u_file.is_persisted)
+        src_path = self.get_path_bare(src_path_rel, u_file.is_persisted)
         dest_path_rel = workspace.get_path(to_path,
                                            is_ancillary=u_file.is_ancillary,
                                            is_removed=u_file.is_removed)
-        dest_path = self._get_path_bare(dest_path_rel, u_file.is_persisted)
+        dest_path = self.get_path_bare(dest_path_rel, u_file.is_persisted)
 
         logger.debug('Move %s from %s to %s', u_file.path, from_path, to_path)
         logger.debug('%s -> %s', from_path, src_path)
@@ -129,7 +130,7 @@ class SimpleStorageAdapter:
 
     @contextmanager
     def open(self, workspace: UploadWorkspace, u_file: UploadedFile,
-             flags: str = 'r', **kwargs: Any) -> io.IOBase:
+             flags: str = 'r', **kwargs: Any) -> Iterator[io.IOBase]:
         """Get an open file pointer to a file on disk."""
         with open(self.get_path(workspace, u_file), flags, **kwargs) as f:
             yield f
@@ -143,27 +144,26 @@ class SimpleStorageAdapter:
                  u_file_or_path: Union[str, UploadedFile],
                  is_ancillary: bool = False,
                  is_removed: bool = False,
-                 is_persisted: bool = False) -> str:
+                 is_persisted: bool = False,
+                 is_system: bool = False) -> str:
         """Get the absolute path to an :class:`.UploadedFile`."""
         if isinstance(u_file_or_path, UploadedFile):
             is_ancillary = u_file_or_path.is_ancillary
             is_removed = u_file_or_path.is_removed
             is_persisted = u_file_or_path.is_persisted
-        logger.debug('Get path for %s', u_file_or_path)
-        path_in_workspace = workspace.get_path(u_file_or_path,
-                                               is_ancillary=is_ancillary,
-                                               is_removed=is_removed)
-        logger.debug('Path in workspace: %s', path_in_workspace)
-        path = self._get_path_bare(path_in_workspace,
-                                   is_persisted=is_persisted)
-        logger.debug('Got path %s', path)
-        self._check_safe(workspace, path,
-                         is_ancillary=is_ancillary,
-                         is_removed=is_removed,
-                         is_persisted=is_persisted)
+            is_system = u_file_or_path.is_system
+        path = self.get_path_bare(
+            workspace.get_path(u_file_or_path, is_ancillary=is_ancillary,
+                               is_removed=is_removed,
+                               is_persisted=is_persisted,
+                               is_system=is_system)
+        )
+        self._check_safe(workspace, path, is_ancillary=is_ancillary,
+                         is_removed=is_removed, is_persisted=is_persisted,
+                         is_system=is_system)
         return path
 
-    def _get_path_bare(self, path: str, is_persisted: bool = True) -> str:
+    def get_path_bare(self, path: str, is_persisted: bool = True) -> str:
         return os.path.normpath(os.path.join(self._base_path, path))
 
     def persist(self, workspace: UploadWorkspace,
@@ -203,9 +203,23 @@ class SimpleStorageAdapter:
         else:
             os.unlink(self.get_path(workspace, u_file))
 
-    def getsize(self, workspace: UploadWorkspace, u_file: UploadedFile) -> int:
+    def get_size(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+            -> int:
         """Get the size in bytes of a file."""
         return os.path.getsize(self.get_path(workspace, u_file))
+
+    def get_last_modified(self, workspace: UploadWorkspace,
+                          u_file: UploadedFile) -> str:
+        _path = self.get_path(workspace, u_file)
+        return datetime.utcfromtimestamp(os.path.getmtime(_path))
+
+    def pack_source(self, workspace: UploadWorkspace,
+                    u_file: UploadedFile) -> UploadedFile:
+        with tarfile.open(self.get_path(workspace, u_file), 'w:gz') as tar:
+            tar.add(self.get_path_bare(workspace.source_path),
+                    arcname=os.path.sep)
+        u_file.size_bytes = self.get_size(workspace, u_file)
+        return u_file
 
 
 class QuarantineStorageAdapter(SimpleStorageAdapter):
@@ -226,7 +240,7 @@ class QuarantineStorageAdapter(SimpleStorageAdapter):
     def _get_quarantine_path(self, path: str) -> str:
         return os.path.join(self._quarantine_path, path)
 
-    def _get_path_bare(self, path: str, is_persisted: bool = True) -> str:
+    def get_path_bare(self, path: str, is_persisted: bool = True) -> str:
         if is_persisted:
             return self._get_permanent_path(path)
         return self._get_quarantine_path(path)
