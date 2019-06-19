@@ -203,7 +203,7 @@ class SimpleStorageAdapter:
         else:
             os.unlink(self.get_path(workspace, u_file))
 
-    def get_size(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def get_size_bytes(self, workspace: UploadWorkspace, u_file: UploadedFile) \
             -> int:
         """Get the size in bytes of a file."""
         return os.path.getsize(self.get_path(workspace, u_file))
@@ -218,7 +218,7 @@ class SimpleStorageAdapter:
         with tarfile.open(self.get_path(workspace, u_file), 'w:gz') as tar:
             tar.add(self.get_path_bare(workspace.source_path),
                     arcname=os.path.sep)
-        u_file.size_bytes = self.get_size(workspace, u_file)
+        u_file.size_bytes = self.get_size_bytes(workspace, u_file)
         return u_file
 
 

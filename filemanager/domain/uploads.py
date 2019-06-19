@@ -21,121 +21,9 @@ from .storage import IStorageAdapter
 from .checks import IChecker, ICheckingStrategy
 from .log import SourceLog
 from .package import SourcePackage
-
+from .uploaded_file import UploadedFile
 logger = logging.getLogger(__name__)
 logger.propagate = False
-
-
-# TODO: support for directories.
-@dataclass
-class UploadedFile:
-    """Represents a single file in an upload workspace."""
-
-    path: str
-    """Path relative to the workspace in which the file resides."""
-
-    size_bytes: int
-    """Size of the file in bytes."""
-
-    file_type: FileType = field(default=FileType.UNKNOWN)
-    """The content type of the file."""
-
-    is_removed: bool = field(default=False)
-    """
-    Indicates whether or not this file has been removed.
-
-    Removed files are retained, but moved outside of the source package and
-    are therefore generally not mutable by clients.
-    """
-
-    is_ancillary: bool = field(default=False)
-    """Indicates whether or not this file is an ancillary file."""
-
-    is_directory: bool = field(default=False)
-    """Indicates whether or not this file is a directory."""
-
-    is_checked: bool = field(default=False)
-    """Indicates whether or not this file has been subjected to all checks."""
-
-    is_persisted: bool = field(default=False)
-    """
-    Indicates whether or not this file has been persisted.
-
-    Non-persisted files will generally not live beyond a single request
-    context.
-    """
-
-    is_system: bool = field(default=False)
-    """
-    Indicates whether or not this is a system file.
-
-    System files are not part of the source package, and usually not directly
-    mutable by clients.
-    """
-
-    reason_for_removal: Optional[str] = field(default=None)
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-
-    meta: Dict[str, Any] = field(default_factory=dict)
-    """A register for checkers/strategies to store state between runs."""
-
-    def __post_init__(self) -> None:
-        """Make sure that directory paths end with '/'."""
-        if self.is_directory and not self.path.endswith('/'):
-            self.path += '/'
-
-    @property
-    def name(self) -> str:
-        """File name without path/directory info."""
-        if '/' in self.path.strip('/'):
-            return os.path.basename(self.path)
-        return self.path
-
-    @property
-    def name_sans_ext(self) -> str:
-        """File name without extension."""
-        return os.path.splitext(self.path)[0]
-
-    @property
-    def ext(self) -> str:
-        """Return file extension."""
-        _, ext = os.path.splitext(self.path)
-        return ext.lstrip('.')
-
-    @property
-    def dir(self) -> str:
-        """
-        Directory which contains the file.
-
-        Should end with ``/`` but not begin with ``/``.
-        """
-        return f'{os.path.dirname(self.path)}/'.lstrip('/')
-
-    @property
-    def type_string(self) -> str:
-        """Human-readable type name."""
-        if self.is_removed:
-            return "Invalid File"
-        if self.is_directory:
-            if self.path == 'anc/':
-                return 'Ancillary files directory'
-            return 'Directory'
-        return self.file_type.name
-
-    @property
-    def is_always_ignore(self) -> bool:
-        """Determine whether or not this file should be ignored."""
-        return self.file_type is FileType.ALWAYS_IGNORE
-
-    @property
-    def is_empty(self) -> bool:
-        """Indicate whether this file is an empty file."""
-        return self.size_bytes == 0
-
-    @property
-    def is_active(self) -> bool:
-        return not self.is_ancillary and not self.is_removed
 
 
 @dataclass
@@ -398,7 +286,7 @@ class UploadWorkspace:
                 raise ValueError('Directory exists at that path')
             if not replace:
                 raise ValueError('File at that path already exists')
-        new_file = UploadedFile(path=new_path,
+        new_file = UploadedFile(self, path=new_path,
                                 size_bytes=u_file.size_bytes,
                                 file_type=u_file.file_type)
         self.storage.copy(self, u_file, new_file)
@@ -577,7 +465,7 @@ class UploadWorkspace:
             raise ValueError('File does not belong to this workspace')
         with self.storage.open(self, u_file, flags, **kwargs) as f:
             yield f
-        self.get_size(u_file)
+        self.get_size_bytes(u_file)
 
     LEADING_DOTSLASH = re.compile(r'^\./')
     """Pattern to match leading ``./`` in relative paths."""
@@ -606,7 +494,8 @@ class UploadWorkspace:
                 logger.debug('Path indicates ancillary file; trimmed to `%s`',
                              path)
 
-        u_file = UploadedFile(path=path, size_bytes=0, file_type=file_type,
+        u_file = UploadedFile(self, path=path, size_bytes=0,
+                              file_type=file_type,
                               is_directory=is_directory,
                               is_ancillary=is_ancillary,
                               is_system=is_system)
@@ -617,7 +506,7 @@ class UploadWorkspace:
         if touch:
             self.storage.create(self, u_file)
         else:
-            self.get_size(u_file)
+            self.get_size_bytes(u_file)
         return u_file
 
     def cmp(self, a_file: UploadedFile, b_file: UploadedFile,
@@ -638,9 +527,9 @@ class UploadWorkspace:
             for child_path, child_file in self.iter_children(u_file):
                 self._drop_refs(child_path)
 
-    def get_size(self, u_file: UploadedFile) -> int:
+    def get_size_bytes(self, u_file: UploadedFile) -> int:
         """Get (and update) the size in bytes of a file."""
-        u_file.size_bytes = self.storage.get_size(self, u_file)
+        u_file.size_bytes = self.storage.get_size_bytes(self, u_file)
         return u_file.size_bytes
 
     def get_last_modified(self, u_file: UploadedFile) -> datetime:

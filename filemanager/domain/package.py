@@ -26,7 +26,7 @@ class SourcePackage:
     @property
     def size_bytes(self) -> int:
         """Get the size of the source package in bytes."""
-        return self.workspace.get_size(self._file)
+        return self.workspace.get_size_bytes(self._file)
 
     @property
     def last_modified(self) -> datetime:

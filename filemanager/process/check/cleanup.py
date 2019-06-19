@@ -364,7 +364,7 @@ def _strip_preview(workspace: UploadWorkspace, u_file: UploadedFile,
     # Generate some warnings
     if retain and strip_warning:
         orig_size = u_file.size_bytes  # os.path.getsize(original_filepath)
-        strip_size = workspace.get_size(new_file)
+        strip_size = workspace.get_size_bytes(new_file)
         new_file = workspace.replace(u_file, new_file)
 
         msg = (f"reduced from {orig_size} bytes to {strip_size} bytes "

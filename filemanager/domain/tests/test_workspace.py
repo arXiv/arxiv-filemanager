@@ -13,6 +13,7 @@ class TestPaths(TestCase):
         """We have a vanilla workspace."""
         self.mock_strategy = mock.MagicMock()
         self.mock_storage = mock.MagicMock()
+        self.mock_storage.get_path.return_value = '/tmp/foo'
         self.wks = UploadWorkspace(
             upload_id=1234,
             submission_id=None,
@@ -51,6 +52,8 @@ class TestPaths(TestCase):
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
+                                   is_system=False,
+                                   is_active=True,
                                    path='path/to/file')
         self.assertEqual(self.wks.get_path(mock_file),
                          f'{self.wks.source_path}/path/to/file',
@@ -64,6 +67,8 @@ class TestPaths(TestCase):
                                    is_ancillary=True,
                                    is_removed=False,
                                    is_directory=False,
+                                   is_system=False,
+                                   is_active=True,
                                    path='path/to/file')
         self.assertEqual(self.wks.get_path(mock_file),
                          f'{self.wks.ancillary_path}/path/to/file',
@@ -77,7 +82,12 @@ class TestPaths(TestCase):
                                    is_ancillary=False,
                                    is_removed=True,
                                    is_directory=False,
-                                   path='path/to/file')
+                                   is_system=False,
+                                   is_active=True,
+                                   path='path/to/file',
+                                   workspace=mock.MagicMock())
+        mock_file.workspace.get_full_path.return_value = '/tmp/foo'
+
         self.assertEqual(self.wks.get_path(mock_file),
                          f'{self.wks.removed_path}/path/to/file',
                          'File path is inside workspace.')
@@ -92,12 +102,14 @@ class TestPaths(TestCase):
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
+                                   is_system=False,
+                                   is_active=True,
                                    path='path/to/file')
         self.assertEqual(self.wks.get_full_path(mock_file),
                          f'/foo/{self.wks.source_path}/path/to/file',
                          'File path is inside workspace.')
-        self.assertEqual(self.mock_storage.get_path.call_count, 1,
-                         'Storage adapter get_full_path method is called')
+        self.assertGreater(self.mock_storage.get_path.call_count, 0,
+                           'Storage adapter get_full_path method is called')
         self.assertEqual(self.mock_storage.get_path.call_args[0],
                          (self.wks, mock_file),
                          'Workspace and uploaded file are passed')
@@ -110,6 +122,7 @@ class TestAddRemoveFiles(TestCase):
         """We have a vanilla workspace."""
         self.mock_strategy = mock.MagicMock()
         self.mock_storage = mock.MagicMock()
+        self.mock_storage.get_path.return_value = '/tmp/foo'
         self.wks = UploadWorkspace(
             upload_id=1234,
             submission_id=None,
@@ -289,6 +302,7 @@ class TestOperations(TestCase):
         """We have a vanilla workspace."""
         self.mock_strategy = mock.MagicMock()
         self.mock_storage = mock.MagicMock()
+        self.mock_storage.get_path.return_value = '/tmp/foo'
         self.wks = UploadWorkspace(
             upload_id=1234,
             submission_id=None,
@@ -321,6 +335,8 @@ class TestOperations(TestCase):
                                          is_ancillary=False,
                                          is_removed=False,
                                          is_directory=False,
+                                         is_system=False,
+                                         is_active=True,
                                          path='path/to/other/file')
         with self.assertRaises(ValueError):
             with self.wks.open(mock_other_file) as f:
@@ -332,6 +348,8 @@ class TestOperations(TestCase):
                                          is_ancillary=False,
                                          is_removed=False,
                                          is_directory=False,
+                                         is_system=False,
+                                         is_active=True,
                                          path='path/to/other/file')
         self.wks.add_files(mock_other_file)
         self.wks.cmp(self.mock_file, mock_other_file)
@@ -340,12 +358,12 @@ class TestOperations(TestCase):
         self.assertEqual(self.mock_storage.cmp.call_args[0],
                          (self.wks, self.mock_file, mock_other_file))
 
-    def test_getsize(self):
+    def test_get_size_bytes(self):
         """Test getting the size in bytes of a file."""
-        self.mock_storage.getsize.return_value = 42
-        self.assertEqual(self.wks.getsize(self.mock_file), 42,
+        self.mock_storage.get_size_bytes.return_value = 42
+        self.assertEqual(self.wks.get_size_bytes(self.mock_file), 42,
                          'Returns the size in bytes of the file')
-        self.assertEqual(self.mock_storage.getsize.call_count, 1,
+        self.assertEqual(self.mock_storage.get_size_bytes.call_count, 1,
                          'Calls the underlying storage adapter')
         self.assertEqual(self.mock_file.size_bytes, 42,
                          'Updates the size on the UploadedFile itself')
@@ -358,6 +376,7 @@ class TestMoveFiles(TestCase):
         """We have a vanilla workspace."""
         self.mock_strategy = mock.MagicMock()
         self.mock_storage = mock.MagicMock()
+        self.mock_storage.get_path.return_value = '/tmp/foo'
         self.wks = UploadWorkspace(
             upload_id=1234,
             submission_id=None,
@@ -374,11 +393,15 @@ class TestMoveFiles(TestCase):
                                         is_ancillary=False,
                                         is_removed=False,
                                         is_directory=False,
+                                        is_system=False,
+                                        is_active=True,
                                         path=self.path)
         self.mock_file2 = mock.MagicMock(spec=UploadedFile,
                                          is_ancillary=False,
                                          is_removed=False,
                                          is_directory=False,
+                                         is_system=False,
+                                         is_active=True,
                                          path=self.path2)
         self.wks.add_files(self.mock_file, self.mock_file2)
 
@@ -411,7 +434,8 @@ class TestUploadedFile(TestCase):
 
     def setUp(self):
         """We have a file."""
-        self.u_file = UploadedFile(path='foo/path/afile.txt',
+        self.u_file = UploadedFile(mock.MagicMock(),
+                                   path='foo/path/afile.txt',
                                    size_bytes=42,
                                    file_type=FileType.TEX,)
 
