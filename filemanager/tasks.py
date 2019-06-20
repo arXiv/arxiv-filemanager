@@ -59,7 +59,7 @@ def sanitize_upload(upload_id: int, file: FileStorage, with_sleep: int = 15) -> 
     upload.lastupload_start_datetime = start_datetime
     upload.lastupload_completion_datetime = completion_datetime
     # Don't forget about storing file list
-    upload.state = 'Active'
+    upload.status = 'Active'
 
     # Save to DB
     uploads.update(upload)

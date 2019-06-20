@@ -32,7 +32,7 @@ class DBUpload(db.Model):
     """Upload details useful for display in UI"""
     lastupload_readiness = Column(Text, nullable=True)
     """Upload content readiness status."""
-    state = Column(String(30), default='ACTIVE')
+    status = Column(String(30), default='ACTIVE')
     """State of upload. ACTIVE, RELEASED, DELETED"""
     lock_state = Column(String(30), default='UNLOCKED')
     """Lock state of upload workspace. UNLOCKED or LOCKED."""

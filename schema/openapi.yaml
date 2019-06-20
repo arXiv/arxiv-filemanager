@@ -70,7 +70,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/Result.json'
+                $ref: 'resources/Workspace.json'
         '400':
           description: |
             There was an unrecoverable problem when processing the upload. For
@@ -117,7 +117,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/Result.json'
+                $ref: 'resources/Workspace.json'
         '401':
           description: Unauthorized. Missing valid authentication information.
         '403':
@@ -152,7 +152,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/Result.json'
+                $ref: 'resources/Workspace.json'
         '400':
           description: |
             There was an unrecoverable problem when processing the upload. For
@@ -205,7 +205,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/Result.json'
+                $ref: 'resources/Workspace.json'
         '401':
           description: Unauthorized. Missing valid authentication information.
         '403':
@@ -237,7 +237,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/Result.json'
+                $ref: 'resources/Workspace.json'
         '401':
           description: Unauthorized. Missing valid authentication information.
         '403':
@@ -337,7 +337,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/Result.json'
+                $ref: 'resources/Workspace.json'
         '400':
           description: |
             There was an unrecoverable problem when handling the request.
@@ -368,7 +368,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/Result.json'
+                $ref: 'resources/Workspace.json'
         '400':
           description: |
             There was an unrecoverable problem when handling the request.
@@ -403,7 +403,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/Result.json'
+                $ref: 'resources/Workspace.json'
         '400':
           description: |
             There was an unrecoverable problem when handling the request.

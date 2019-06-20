@@ -13,6 +13,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from enum import Enum
 
+from typing_extensions import Literal
 from dataclasses import dataclass, field
 
 from arxiv.base import logging
@@ -145,7 +146,7 @@ class UploadWorkspace:
     storage: IStorageAdapter
     """Adapter for persistence."""
 
-    state: Status = field(default=Status.ACTIVE)
+    status: Status = field(default=Status.ACTIVE)
     """Status of upload workspace."""
 
     lock_state: LockState = field(default=LockState.UNLOCKED)
@@ -349,14 +350,16 @@ class UploadWorkspace:
         self._warnings.pop(from_path, None)
 
     @property
-    def errors(self) -> Mapping[str, List[str]]:
-        return {path: errors for path, errors in self._errors.items()
-                if path in self.files and self.files[path].is_active}
+    def errors(self) -> List[Tuple[Literal['fatal'], str, str]]:
+        return [{'level': 'fatal', 'path': path, 'message': error}
+                for path, errors in self._errors.items() for error in errors
+                if path in self.files and self.files[path].is_active]
 
     @property
     def warnings(self) -> Mapping[str, List[str]]:
-        return {path: warnings for path, warnings in self._warnings.items()
-                if path in self.files}
+        return [{'level': 'warn', 'path': path, 'message': error}
+                for path, errors in self._warnings.items() for error in errors
+                if path in self.files and self.files[path].is_active]
 
     @property
     def readiness(self) -> Readiness:
@@ -435,13 +438,15 @@ class UploadWorkspace:
                     if not f.is_ancillary
                     and not f.is_removed
                     and not f.is_directory])
+    @property
+    def size_bytes(self) -> int:
+        """Total size of the source content (including ancillary files)."""
+        return sum([f.size_bytes for f in self.iter_files()])
 
     @property
     def last_modified(self) -> datetime:
         """Time of the most recent change to a file in the workspace."""
-        most_recent = max(os.path.getmtime(root) for root, _, _
-                          in os.walk(self.source_path))
-        return datetime.fromtimestamp(most_recent, tz=UTC)
+        return max([f.last_modified for f in self.iter_files()])
 
     @property
     def ancillary_file_count(self) -> int:
@@ -473,6 +478,7 @@ class UploadWorkspace:
         with self.storage.open(self, u_file, flags, **kwargs) as f:
             yield f
         self.get_size_bytes(u_file)
+        self.get_last_modified(u_file)
 
     LEADING_DOTSLASH = re.compile(r'^\./')
     """Pattern to match leading ``./`` in relative paths."""
@@ -514,6 +520,7 @@ class UploadWorkspace:
             self.storage.create(self, u_file)
         else:
             self.get_size_bytes(u_file)
+            self.get_last_modified(u_file)
         return u_file
 
     def cmp(self, a_file: UploadedFile, b_file: UploadedFile,
@@ -540,7 +547,8 @@ class UploadWorkspace:
         return u_file.size_bytes
 
     def get_last_modified(self, u_file: UploadedFile) -> datetime:
-        return self.storage.get_last_modified(self, u_file)
+        u_file.last_modified = self.storage.get_last_modified(self, u_file)
+        return u_file.last_modified
 
     def get_checksum(self, u_file: UploadedFile) -> str:
         hash_md5 = md5()
@@ -588,17 +596,18 @@ class UploadWorkspace:
     @property
     def has_warnings(self):
         """Determine whether or not this workspace has warnings."""
-        return len([w for warnings in self.warnings.values()
-                    for w in warnings]) > 0
+        return len(self.warnings) > 0
 
     @property
     def has_errors(self):
         """Determine whether or not this workspace has errors."""
-        return len([e for errors in self.errors.values() for e in errors]) > 0
+        return len(self.errors) > 0
 
     def perform_checks(self) -> None:
         """Perform all checks on this workspace using the assigned strategy."""
         self.strategy.check(self, *self.checkers)
+        if self.source_package.is_stale:
+            self.source_package.pack()
 
     @property
     def is_single_file_submission(self):

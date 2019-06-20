@@ -93,7 +93,7 @@ def retrieve(upload_id: int, skip_cache: bool = False) \
     args['owner_user_id'] = upload_data.owner_user_id
     args['created_datetime'] = upload_data.created_datetime.replace(tzinfo=UTC)
     args['modified_datetime'] = upload_data.modified_datetime.replace(tzinfo=UTC)
-    args['state'] = upload_data.state
+    args['status'] = upload_data.status
     args['lock'] = upload_data.lock
 
     if upload_data.lastupload_start_datetime is not None:
@@ -134,7 +134,7 @@ def store(new_upload_data: UploadWorkspace) -> UploadWorkspace:
     upload_data = DBUpload(owner_user_id=new_upload_data.owner_user_id,
                            created_datetime=new_upload_data.created_datetime,
                            modified_datetime=new_upload_data.modified_datetime,
-                           state=new_upload_data.state.value)
+                           status=new_upload_data.status.value)
     try:
         db.session.add(upload_data)
         db.session.commit()
@@ -146,13 +146,13 @@ def store(new_upload_data: UploadWorkspace) -> UploadWorkspace:
 
 
 def create(owner_user_id: str,
-           state: UploadWorkspace.Status = UploadWorkspace.Status.ACTIVE) \
+           status: UploadWorkspace.Status = UploadWorkspace.Status.ACTIVE) \
         -> UploadWorkspace:
     current_datetime = datetime.now(UTC)
     upload_data = DBUpload(owner_user_id=owner_user_id,
                            created_datetime=current_datetime,
                            modified_datetime=current_datetime,
-                           state=state.value)
+                           status=status.value)
     try:
         db.session.add(upload_data)
         db.session.commit()
@@ -180,6 +180,7 @@ def update(upload_update_data: UploadWorkspace) -> None:
         When there is a problem querying the database.
     RuntimeError
         When there is some other problem.
+
     """
     if not upload_update_data.upload_id:
         raise RuntimeError('The upload data has no id!')
@@ -200,7 +201,7 @@ def update(upload_update_data: UploadWorkspace) -> None:
     upload_data.lastupload_logs = upload_update_data.lastupload_logs
     upload_data.lastupload_file_summary = upload_update_data.lastupload_file_summary
     upload_data.lastupload_readiness = upload_update_data.lastupload_readiness.value
-    upload_data.state = upload_update_data.state.value
+    upload_data.status = upload_update_data.status.value
     upload_data.lock_state = upload_update_data.lock_state.value
 
     # Always set this when workspace DB entry is updated

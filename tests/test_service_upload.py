@@ -178,7 +178,7 @@ class TestUploadUpdater(TestCase):
             .get(self.dbupload.upload_id)  # type: ignore
 
         # TODO: more assertions here.
-        self.assertEqual(dbupload.state, an_upload.state.value)
+        self.assertEqual(dbupload.status, an_upload.status.value)
 
     @mock.patch('filemanager.services.uploads.db.session.query')
     def test_operationalerror_is_handled(self, mock_query: Any) -> None:

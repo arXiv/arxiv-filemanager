@@ -2,7 +2,10 @@
 
 import os
 from typing import Optional, List, Dict, Any
+from datetime import datetime
+from functools import partial
 
+from pytz import UTC
 from dataclasses import dataclass, field
 
 from .file_type import FileType
@@ -56,6 +59,8 @@ class UploadedFile:
     System files are not part of the source package, and usually not directly
     mutable by clients.
     """
+
+    last_modified: datetime = field(default_factory=partial(datetime.now, UTC))
 
     reason_for_removal: Optional[str] = field(default=None)
     errors: List[str] = field(default_factory=list)

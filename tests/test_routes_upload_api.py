@@ -220,15 +220,14 @@ class TestNewUpload(TestCase):
 
     # Upload a submission package and perform normal operations on upload
     def test_upload_files_normal(self) -> None:
-        """Test normal well-behaved upload requests.
+        """
+        Test normal well-behaved upload requests.
 
         This series of tests uploads files with the expectation of success.
 
         The appropriate tokens are provided to various requests.
-
-        Note: Delete workspace still needs to be implemented.
         """
-        with open('schema/resources/uploadResponse.json') as f:
+        with open('schema/resources/Workspace.json') as f:
             schema = json.load(f)
 
         # Create a token for writing to upload workspace
@@ -268,6 +267,10 @@ class TestNewUpload(TestCase):
 
         self.assertEqual(response.status_code, 201,
                          "Accepted and processed uploaded Submission Contents")
+        try:
+            jsonschema.validate(json.loads(response.data), schema)
+        except jsonschema.exceptions.SchemaError as e:
+            self.fail(e)
 
 
 # class TestUploadAPIRoutes(TestCase):
@@ -328,7 +331,7 @@ class TestNewUpload(TestCase):
 #         The same function handles new upload request so we will not repeat
 #         basic argument failures that have been covered already"""
 #
-#         with open('schema/resources/uploadResult.json') as f:
+#         with open('schema/resources/Workspace.json') as f:
 #             schema = json.load(f)
 #
 #         # Create a token for writing to upload workspace
@@ -676,7 +679,7 @@ class TestNewUpload(TestCase):
 #         self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
 #
 #         # This upload should work but we'll check the response anyway
-#         with open('schema/resources/uploadResult.json') as f:
+#         with open('schema/resources/Workspace.json') as f:
 #             schema = json.load(f)
 #
 #         try:
@@ -847,7 +850,7 @@ class TestNewUpload(TestCase):
 #         self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
 #
 #         # This upload should work but we'll check the response anyway
-#         with open('schema/resources/uploadResult.json') as f:
+#         with open('schema/resources/Workspace.json') as f:
 #             schema = json.load(f)
 #
 #         try:
@@ -942,7 +945,7 @@ class TestNewUpload(TestCase):
 #         self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
 #
 #         # This upload should work but we'll check the response anyway
-#         with open('schema/resources/uploadResult.json') as f:
+#         with open('schema/resources/Workspace.json') as f:
 #             schema = json.load(f)
 #
 #         try:
@@ -1263,7 +1266,7 @@ class TestNewUpload(TestCase):
 #         self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
 #         self.maxDiff = None
 #
-#         with open('schema/resources/uploadResult.json') as f:
+#         with open('schema/resources/Workspace.json') as f:
 #             result_schema = json.load(f)
 #
 #         try:
@@ -1394,7 +1397,7 @@ class TestNewUpload(TestCase):
 #         self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
 #         self.maxDiff = None
 #
-#         with open('schema/resources/uploadResult.json') as f:
+#         with open('schema/resources/Workspace.json') as f:
 #             result_schema = json.load(f)
 #
 #         try:
@@ -1606,7 +1609,7 @@ class TestNewUpload(TestCase):
 #         self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
 #         self.maxDiff = None
 #
-#         with open('schema/resources/uploadResult.json') as f:
+#         with open('schema/resources/Workspace.json') as f:
 #             result_schema = json.load(f)
 #
 #         try:
@@ -1683,7 +1686,7 @@ class TestNewUpload(TestCase):
 #         self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
 #         self.maxDiff = None
 #
-#         with open('schema/resources/uploadResult.json') as f:
+#         with open('schema/resources/Workspace.json') as f:
 #             result_schema = json.load(f)
 #
 #         try:
@@ -1782,7 +1785,7 @@ class TestNewUpload(TestCase):
 #         print("Upload Response:\n")
 #         print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
 #
-#         with open('schema/resources/uploadResult.json') as f:
+#         with open('schema/resources/Workspace.json') as f:
 #             result_schema = json.load(f)
 #
 #         try:
@@ -1862,7 +1865,7 @@ class TestNewUpload(TestCase):
 #
 #         self.maxDiff = None
 #
-#         with open('schema/resources/uploadResult.json') as f:
+#         with open('schema/resources/Workspace.json') as f:
 #             result_schema = json.load(f)
 #
 #         try:
@@ -1892,7 +1895,7 @@ class TestNewUpload(TestCase):
 #
 #         # Get summary of upload
 #
-#         # with open('schema/resources/uploadResult.json') as f:
+#         # with open('schema/resources/Workspace.json') as f:
 #         #   status_schema = json.load(f)
 #
 #         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}",
@@ -2072,7 +2075,7 @@ class TestNewUpload(TestCase):
 #
 #         self.maxDiff = None
 #
-#         with open('schema/resources/uploadResult.json') as f:
+#         with open('schema/resources/Workspace.json') as f:
 #             result_schema = json.load(f)
 #
 #         try:

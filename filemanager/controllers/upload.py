@@ -1,35 +1,32 @@
 """Handles all upload-related requests."""
 
 import time
-from typing import Tuple, Optional, Union
-from datetime import datetime
+import io
 import json
 import logging
 import os.path
+from typing import Tuple, Optional, Union
+from datetime import datetime
 from hashlib import md5
 from base64 import urlsafe_b64encode
-import io
+from http import HTTPStatus as status
+
 from pytz import UTC
 
 from flask import current_app
 from flask.json import jsonify
-
 from werkzeug.exceptions import NotFound, BadRequest, InternalServerError, \
     NotImplemented, SecurityError, Forbidden
-
 from werkzeug.datastructures import FileStorage
 
-
-from http import HTTPStatus as status
 from arxiv.users import domain as auth_domain
 from arxiv.base.globals import get_application_config
 
-import filemanager
-from filemanager.shared import url_for
-
-from filemanager.domain import UploadWorkspace
-from filemanager.services import uploads, storage
-from filemanager.process import strategy, check
+from ..shared import url_for
+from ..domain import UploadWorkspace
+from ..services import uploads, storage
+from ..process import strategy, check
+from ..serialize import serialize_workspace
 
 # Temporary logging at service level - just to get something in place to build on
 
@@ -172,9 +169,9 @@ def delete_workspace(upload_id: int) -> Response:
         # Update database (but keep around) for historical reference. Does not
         # consume very much space. What about source log?
         # Create Upload object
-        if upload_db_data.state == Upload.DELETED:
+        if upload_db_data.status == Upload.DELETED:
             logger.info("%s: Workspace has already been deleted:"
-                        "current state is '%s'", upload_id, upload_db_data.state)
+                        "current state is '%s'", upload_id, upload_db_data.status)
             raise NotFound(UPLOAD_WORKSPACE_NOT_FOUND)
 
         upload_workspace = UploadWorkspace(upload_id)
@@ -183,11 +180,11 @@ def delete_workspace(upload_id: int) -> Response:
         upload_workspace.remove_workspace()
 
         # update database
-        if upload_db_data.state != Upload.RELEASED:
+        if upload_db_data.status != Upload.RELEASED:
             logger.info("%s: Workspace currently in '%s' state.",
-                        upload_id, upload_db_data.state)
+                        upload_id, upload_db_data.status)
 
-        upload_db_data.state = Upload.DELETED
+        upload_db_data.status = Upload.DELETED
 
         # Store in DB
         uploads.update(upload_db_data)
@@ -243,7 +240,7 @@ def client_delete_file(upload_id: int, public_file_path: str) -> Response:
         if upload_db_data is None:
             # Invalid workspace identifier
             raise NotFound(UPLOAD_NOT_FOUND)
-        if upload_db_data.state != Upload.ACTIVE:
+        if upload_db_data.status != Upload.ACTIVE:
             # Do we log anything for these requests
             raise Forbidden(UPLOAD_NOT_ACTIVE)
         if upload_db_data.lock == Upload.LOCKED:
@@ -316,7 +313,7 @@ def client_delete_all_files(upload_id: int) -> Response:
         if upload_db_data is None:
             # Invalid workspace identifier
             raise NotFound(UPLOAD_NOT_FOUND)
-        if upload_db_data.state != Upload.ACTIVE:
+        if upload_db_data.status != Upload.ACTIVE:
             # Do we log anything for these requests
             raise Forbidden(UPLOAD_NOT_ACTIVE)
         if upload_db_data.lock == Upload.LOCKED:
@@ -452,7 +449,7 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         if workspace is None:   # Invalid workspace identifier
             raise NotFound(UPLOAD_NOT_FOUND)
 
-        if workspace.state != UploadWorkspace.Status.ACTIVE:
+        if workspace.status != UploadWorkspace.Status.ACTIVE:
             # Do we log anything for these requests
             logger.debug('Forbidden, workspace not active')
             raise Forbidden(UPLOAD_NOT_ACTIVE)
@@ -497,14 +494,14 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         # TODO: Should I do this in Upload package?? Likely...
         all_errors_and_warnings = []
 
-        for warn in workspace.warnings.items():
-            public_filepath, warning_message = warn
-            all_errors_and_warnings.append(['warn', public_filepath, warning_message])
+        # for warn in workspace.warnings.items():
+        #     public_filepath, warning_message = warn
+        #     all_errors_and_warnings.append(['warn', public_filepath, warning_message])
 
-        for error in workspace.errors.items():
-            public_filepath, warning_message = error
-            # TODO: errors renamed fatal. Need to review 'errors' as to whether they are 'fatal'
-            all_errors_and_warnings.append(['fatal', public_filepath, warning_message])
+        # for error in workspace.errors.items():
+        #     public_filepath, warning_message = error
+        #     # TODO: errors renamed fatal. Need to review 'errors' as to whether they are 'fatal'
+        #     all_errors_and_warnings.append(['fatal', public_filepath, warning_message])
 
         # Prepare upload_db_data details (DB). I'm assuming that in memory Redis
         # is not sufficient for results that may be needed in the distant future.
@@ -516,7 +513,7 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         # workspace.lastupload_file_summary = json.dumps(file_list)
         workspace.lastupload_readiness = readiness
 
-        workspace.state = UploadWorkspace.Status.ACTIVE
+        workspace.status = UploadWorkspace.Status.ACTIVE
 
         # Store in DB
         uploads.update(workspace)
@@ -535,7 +532,7 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
 
         status_code = status.CREATED
 
-        response_data = {}#_status_data(upload_db_data, upload_workspace)
+        response_data = serialize_workspace(workspace)
         logger.info("%s: Generating upload summary.", workspace.upload_id)
         logger.debug('Response data: %s', response_data)
         headers.update({'ARXIV-OWNER': workspace.owner_user_id})
@@ -802,19 +799,19 @@ def upload_release(upload_id: int) -> Response:
         # Release upload workspace
         # update database
 
-        if upload_db_data.state == Upload.RELEASED:
+        if upload_db_data.status == Upload.RELEASED:
             logger.info("%s: Release: Workspace has already been released.", upload_id)
             response_data = {'reason': UPLOAD_RELEASED_WORKSPACE}  # Should this be an error?
             status_code = status.OK
-        elif upload_db_data.state == Upload.DELETED:
+        elif upload_db_data.status == Upload.DELETED:
             logger.info("%s: Release failed: Workspace has been deleted.", upload_id)
             # response_data = {'reason': UPLOAD_WORKSPACE_ALREADY_DELETED}
             # status_code = status.OK
             raise NotFound(UPLOAD_WORKSPACE_ALREADY_DELETED)
-        elif upload_db_data.state == Upload.ACTIVE:
+        elif upload_db_data.status == Upload.ACTIVE:
             logger.info("%s: Release upload workspace.", upload_id)
 
-            upload_db_data.state = Upload.RELEASED
+            upload_db_data.status = Upload.RELEASED
 
             # Store in DB
             uploads.update(upload_db_data)
@@ -883,20 +880,20 @@ def upload_unrelease(upload_id: int) -> Response:
 
         # Unrelease upload workspace
         # update database
-        if upload_db_data.state == Upload.DELETED:
+        if upload_db_data.status == Upload.DELETED:
             # logger.info(f"{upload_id}: Unrelease Failed: Workspace has been deleted.")
             # response_data = {'reason': UPLOAD_WORKSPACE_ALREADY_DELETED}
             # tatus_code = status.OK
             raise NotFound(UPLOAD_WORKSPACE_ALREADY_DELETED)
 
-        if upload_db_data.state == Upload.ACTIVE:
+        if upload_db_data.status == Upload.ACTIVE:
             logger.info("%s: Unrelease: Workspace is already active.", upload_id)
             response_data = {'reason': UPLOAD_UNRELEASED_WORKSPACE}  # Should this be an error?
             status_code = status.OK
-        elif upload_db_data.state == Upload.RELEASED:
+        elif upload_db_data.status == Upload.RELEASED:
             logger.info("%s: Unrelease upload workspace.", upload_id)
 
-            upload_db_data.state = Upload.ACTIVE
+            upload_db_data.status = Upload.ACTIVE
 
             # Store in DB
             uploads.update(upload_db_data)
@@ -1332,21 +1329,21 @@ def get_upload_service_log() -> Response:
     }
     return filepointer, status.OK, headers
 
-
-def _status_data(workspace: UploadWorkspace) -> dict:
-    return {
-        'upload_id': workspace.upload_id,
-        'upload_total_size': workspace.total_upload_size,
-        'upload_compressed_size': workspace.source_package.size_bytes,
-        'created_datetime': workspace.created_datetime,
-        'modified_datetime': workspace.modified_datetime,
-        'start_datetime': workspace.lastupload_start_datetime,
-        'completion_datetime': workspace.lastupload_completion_datetime,
-        'files': workspace.files,
-        'errors': workspace.errors,
-        'readiness': workspace.readiness.value,
-        'state': workspace.workspace_status.value,
-        'lock_state': workspace.lock_state.value,
-        'source_format': workspace.source_format.value,
-        'checksum': workspace.content_checksum()
-    }
+#
+# def _status_data(workspace: UploadWorkspace) -> dict:
+#     return {
+#         'upload_id': workspace.upload_id,
+#         'upload_total_size': workspace.size_bytes,
+#         'upload_compressed_size': workspace.source_package.size_bytes,
+#         'created_datetime': workspace.created_datetime,
+#         'modified_datetime': workspace.modified_datetime,
+#         'start_datetime': workspace.lastupload_start_datetime,
+#         'completion_datetime': workspace.lastupload_completion_datetime,
+#         # 'files': workspace.files,
+#         'errors': workspace.errors + workspace.warnings,
+#         'readiness': workspace.readiness.value,
+#         'status': workspace.status.value,
+#         'lock_state': workspace.lock_state.value,
+#         'source_format': workspace.source_type.value,
+#         'checksum': workspace.source_package.checksum
+#     }
