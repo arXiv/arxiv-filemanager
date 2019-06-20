@@ -41,7 +41,7 @@ class UnpackCompressedTarFiles(BaseChecker):
         # it.
         if not workspace.is_safe(dest):
             logger.error('Member of %s tried to escape workspace', u_file.path)
-            workspace.log(f'Member of file {u_file.name} tried to escape'
+            workspace.log.info(f'Member of file {u_file.name} tried to escape'
                           ' workspace.')
             return u_file
 
@@ -86,8 +86,10 @@ class UnpackCompressedTarFiles(BaseChecker):
             workspace.add_error(u_file, f'Unable to read tar {u_file.name}')
             return u_file
 
-        workspace.log(f"***** unpack {u_file.file_type.value} {u_file.path}"
-                      f" to dir: {os.path.split(u_file.path)[0]}")
+        workspace.log.info(
+            f"***** unpack {u_file.file_type.value.lower()} {u_file.path}"
+            f" to dir: {os.path.split(u_file.path)[0]}"
+        )
 
         try:
             with workspace.open(u_file, 'rb') as f:
@@ -102,7 +104,7 @@ class UnpackCompressedTarFiles(BaseChecker):
             return u_file
 
         workspace.remove(u_file, f"Removed packed file '{u_file.name}'.")
-        workspace.log(f'Removed packed file {u_file.name}')
+        workspace.log.info(f'Removed packed file {u_file.name}')
         return u_file
 
 
@@ -115,8 +117,10 @@ class UnpackCompressedZIPFiles(BaseChecker):
             -> UploadedFile:
         logger.debug("*******Process zip archive: %s", u_file.path)
 
-        workspace.log(f'***** unpack {u_file.file_type} {u_file.name}'
-                      f' to dir: {os.path.split(u_file.path)[0]}')
+        workspace.log.info(
+            f'***** unpack {u_file.file_type.value.lower()} {u_file.name}'
+            f' to dir: {os.path.split(u_file.path)[0]}'
+        )
         try:
             with workspace.open(u_file, 'rb') as f:
                 with zipfile.ZipFile(f) as zip:
@@ -132,7 +136,7 @@ class UnpackCompressedZIPFiles(BaseChecker):
 
         # Now move zip file out of way to removed directory
         workspace.remove(u_file, f"Removed packed file '{u_file.name}'.")
-        workspace.log(f'Removed packed file {u_file.name}')
+        workspace.log.info(f'Removed packed file {u_file.name}')
         return u_file
 
     def _unpack_file(self, workspace: UploadWorkspace, u_file: UploadedFile,
@@ -143,7 +147,7 @@ class UnpackCompressedZIPFiles(BaseChecker):
         # extract it.
         if not workspace.is_safe(dest):
             logger.error('Member of %s tried to escape workspace', u_file.path)
-            workspace.log(f'Member of file {u_file.name} tried'
+            workspace.log.info(f'Member of file {u_file.name} tried'
                           ' to escape workspace.')
             return
 
@@ -160,5 +164,5 @@ class UnpackCompressedZFiles(BaseChecker):
     def check_COMPRESSED(self, workspace: UploadWorkspace,
                          u_file: UploadedFile) -> UploadedFile:
         logger.debug("We can't uncompress .Z files yet: %s", u_file.path)
-        workspace.log('Unable to uncompress .Z file. Not implemented yet.')
+        workspace.log.info('Unable to uncompress .Z file. Not implemented yet.')
         return u_file

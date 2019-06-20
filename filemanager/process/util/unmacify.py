@@ -37,7 +37,7 @@ def unmacify(workspace: UploadWorkspace, uploaded_file: UploadedFile) -> None:
             file_type = PC
 
     # Fix up carriage returns and newlines.
-    workspace.log(f'Un{file_type}ify file {uploaded_file.path}')
+    workspace.log.info(f'Un{file_type}ify file {uploaded_file.path}')
 
     # Open file and look for carriage return.
     new_path = f'{uploaded_file.path}.new'
@@ -85,7 +85,7 @@ def check_file_termination(workspace: UploadWorkspace,
     """
     # Check for special characters at end of file.
     # Remove EOT/EOF
-    workspace.log(f"Checking file termination for {u_file.path}.")
+    workspace.log.info(f"Checking file termination for {u_file.path}.")
 
     with workspace.open(u_file, "rb+") as f:
         # Seek to last two bytes of file
@@ -120,7 +120,7 @@ def check_file_termination(workspace: UploadWorkspace,
             if input_bytes[0] == 0xFF or input_bytes[1] == 0xFF:
                 msg += "trailing =FF "
             if input_bytes[1] == 0x0A:
-                workspace.log(f"{u_file.path} [stripped newline] ")
+                workspace.log.info(f"{u_file.path} [stripped newline] ")
 
             workspace.add_warning(u_file,
                                   f"{msg} stripped from {u_file.path}.")

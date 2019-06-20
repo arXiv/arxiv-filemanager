@@ -138,7 +138,8 @@ def retrieve(upload_id: int, skip_cache: bool = False) \
         args['lastupload_file_summary'] = upload_data.lastupload_file_summary
 
     if upload_data.lastupload_readiness is not None:
-        args['lastupload_readiness'] = upload_data.lastupload_readiness
+        args['lastupload_readiness'] \
+            = UploadWorkspace.Readiness(upload_data.lastupload_readiness)
     args['storage'] = create_adapter(current_app)
     workspace = UploadWorkspace(**args)
 

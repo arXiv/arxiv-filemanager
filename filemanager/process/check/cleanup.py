@@ -160,7 +160,7 @@ def _check_postscript(workspace: UploadWorkspace, u_file: UploadedFile,
     # or resource.
 
     # Scan Postscript file
-    workspace.log(f"Check Postscript: '{u_file.name}'")
+    workspace.log.info(f"Check Postscript: '{u_file.name}'")
 
     # Check whether file contains '\r\n' sequence
     with workspace.open(u_file, 'rb', buffering=0) as f, \
@@ -309,7 +309,7 @@ def _strip_preview(workspace: UploadWorkspace, u_file: UploadedFile,
         Preview, Photoshop]
 
     """
-    workspace.log(f"Strip embedded '{what_to_strip}' from file"
+    workspace.log.info(f"Strip embedded '{what_to_strip}' from file"
                   f" '{u_file.name}'.")
 
     # Set start and end delimiters of preview.
@@ -330,7 +330,7 @@ def _strip_preview(workspace: UploadWorkspace, u_file: UploadedFile,
     new_path = f'{u_file.path}.stripped'
     new_file = workspace.create(new_path, file_type=u_file.file_type)
 
-    workspace.log(f"File: {u_file.name} in dir {u_file.dir} save to "
+    workspace.log.info(f"File: {u_file.name} in dir {u_file.dir} save to "
                   f"{new_file.name} at {u_file.path}")
     # Default is to retain all lines
     retain = True
@@ -395,7 +395,7 @@ def _strip_tiff(workspace: UploadWorkspace, u_file: UploadedFile) -> None:
 
 
     """
-    workspace.log(f"checking '{u_file.path}' for TIFF")
+    workspace.log.info(f"checking '{u_file.path}' for TIFF")
     # Check for embedded TIFF and truncate file if we find one.
     # Adobe_level2_AI5 / terminate get exec
     # %%EOF
@@ -420,7 +420,7 @@ def _strip_tiff(workspace: UploadWorkspace, u_file: UploadedFile) -> None:
                 end = infile.tell() - offset
                 infile.seek(end, 1)
 
-                workspace.log(f"No %%EOF, but truncate at {end} bytes, "
+                workspace.log.info(f"No %%EOF, but truncate at {end} bytes, "
                               f"lastnonwhitespace was {lastnw} untruncated"
                               f" version moved to $scratch_file")
 
@@ -501,7 +501,7 @@ def _repair_dos_eps(workspace: UploadWorkspace,
             first_line = infile.readline()  # Look for start of Postscript.
 
             if not PS_BEGIN.search(first_line):
-                workspace.log(f"{u_file.path}: Couldn't find "
+                workspace.log.info(f"{u_file.path}: Couldn't find "
                               f"beginning of Postscript section")
                 return u_file, ""
 
@@ -535,7 +535,7 @@ def _repair_dos_eps(workspace: UploadWorkspace,
             first_line = infile.readline()  # Look for start of Postscript.
 
             if not PS_BEGIN.search(first_line):
-                workspace.log(f"{u_file.path}: Couldn't find beginning of"
+                workspace.log.info(f"{u_file.path}: Couldn't find beginning of"
                               " Postscript section")
 
                 workspace.delete(backup_file)  # Delete backup file.
@@ -567,7 +567,7 @@ def _repair_dos_eps(workspace: UploadWorkspace,
 # TODO: implement this!
 def _extract_uu(workspace: UploadWorkspace, u_file: UploadedFile) -> None:
     """Extract uuencode content from file."""
-    workspace.log(f'Looking for uu attachment in {u_file.name} of type'
+    workspace.log.info(f'Looking for uu attachment in {u_file.name} of type'
                   f' {u_file.file_type.value}.')
-    workspace.log("I'm sorry Dave I'm afraid I can't do that. uu extract not"
+    workspace.log.info("I'm sorry Dave I'm afraid I can't do that. uu extract not"
                   " implemented YET.")

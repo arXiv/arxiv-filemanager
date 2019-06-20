@@ -190,7 +190,7 @@ class UploadWorkspace:
         self.storage.makedirs(self, self.source_path)
         self.storage.makedirs(self, self.ancillary_path)
         self.storage.makedirs(self, self.removed_path)
-        self._log = SourceLog(self)
+        self.log = SourceLog(self)
         self.source_package = SourcePackage(self)
 
     @property
@@ -260,10 +260,6 @@ class UploadWorkspace:
     def is_safe(self, path: str) -> bool:
         """Determine whether or not a path is safe to use in this workspace."""
         return self.storage.is_safe(self, path)
-
-    def log(self, message: str) -> None:
-        """Add a workspace log entry."""
-        self._log.info(message)
 
     @property
     def has_unchecked_files(self) -> bool:
@@ -546,6 +542,10 @@ class UploadWorkspace:
         self.get_size_bytes(u_file)
         self.get_last_modified(u_file)
 
+    def open_pointer(self, u_file: UploadedFile, flags: str = 'r',
+                     **kwargs: Any) -> io.IOBase:
+        return self.storage.open_pointer(self, u_file, flags, **kwargs)
+
     LEADING_DOTSLASH = re.compile(r'^\./')
     """Pattern to match leading ``./`` in relative paths."""
 
@@ -702,6 +702,14 @@ class UploadWorkspace:
     def is_locked(self) -> bool:
         return bool(self.lock_state == UploadWorkspace.LockState.LOCKED)
 
+    @property
+    def is_deleted(self) -> bool:
+        return bool(self.status == UploadWorkspace.Status.DELETED)
+
+    @property
+    def is_released(self) -> bool:
+        return bool(self.status == UploadWorkspace.Status.RELEASED)
+
     def get_single_file(self) -> Optional[UploadedFile]:
         """
         Return File object for single-file submission.
@@ -721,3 +729,27 @@ class UploadWorkspace:
         if self.is_single_file_submission:
             for u_file in self.iter_files(allow_ancillary=False):
                 return u_file    # Return the first file.
+
+    def delete_workspace(self) -> bool:
+        """
+        Complete delete the upload workspace.
+
+        This completely removes the upload workspace directory. No backup is
+        made here (system backups may have files for period of time).
+
+        Returns
+        -------
+        bool
+            True if source log was saved and workspace deleted.
+
+        """
+        self.log.info('********** Delete Workspace ************\n')
+
+        # Think about stashing source.log, otherwise any logging is fruitless
+        # since we are deleting all files under workspace.
+        # Let's stash a copy of the source.log file (if it exists)
+        self.storage.stash_log(self)
+
+        # Now blow away the workspace
+        self.storage.delete_workspace(self)
+        return True

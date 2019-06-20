@@ -6,6 +6,7 @@ from typing import Any, Optional, Dict, List
 from io import BytesIO
 from http import HTTPStatus as status
 from pprint import pprint
+import shutil
 
 from pytz import UTC
 import json
@@ -83,10 +84,12 @@ class TestNewUpload(TestCase):
 
     def setUp(self) -> None:
         """Initialize the Flask application, and get a client for testing."""
-        self.server_name = 'fooserver'
+        self.workdir = tempfile.mkdtemp()
+        self.server_name = 'fooserver.localdomain'
         self.app = create_web_app()
         self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'
         self.app.config['SERVER_NAME'] = self.server_name
+        self.app.config['STORAGE_BASE_PATH'] = self.workdir
 
         # There is a bug in arxiv.base where it doesn't pick up app config
         # parameters. Until then, we pass it to os.environ.
@@ -95,6 +98,15 @@ class TestNewUpload(TestCase):
         # self.app.app_context().push()
         with self.app.app_context():
             database.db.create_all()
+
+    def tearDown(self):
+        """
+        Clean up!
+
+        This cleans out the workspace. Comment out if you want to inspect files
+        in workspace. Source log is saved to 'deleted_workspace_logs' directory.
+        """
+        shutil.rmtree(self.workdir)
 
     def test_no_auth_token(self):
         """No auth token is included in the request."""
@@ -307,6 +319,426 @@ class TestNewUpload(TestCase):
         #                  'Readiness is consistent between requests')
 
 
+class TestUploadToExistingWorkspace(TestCase):
+    """
+    Test various failure conditions on existing workspaces.
+
+    The same function handles new upload request so we will not repeat
+    basic argument failures that have been covered already.
+
+    TODO: Add tests for locked/released workspaces on upload requests.
+    TODO: Lock/unlock, release/unrelease. (when implements)
+    TODO: Add size checks (when implemented)
+    """
+
+    DATA_PATH = os.path.split(os.path.abspath(__file__))[0]
+
+    def setUp(self) -> None:
+        """Initialize the Flask application, and get a client for testing."""
+        self.server_name = 'fooserver.localdomain'
+        self.app = create_web_app()
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'
+        self.app.config['SERVER_NAME'] = self.server_name
+
+        # There is a bug in arxiv.base where it doesn't pick up app config
+        # parameters. Until then, we pass it to os.environ.
+        os.environ['JWT_SECRET'] = self.app.config.get('JWT_SECRET')
+        self.client = self.app.test_client()
+        # self.app.app_context().push()
+        with self.app.app_context():
+            database.db.create_all()
+
+        with open('schema/resources/Workspace.json') as f:
+            self.schema = json.load(f)
+
+        # Create a token for writing to upload workspace
+        self.token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                               auth.scopes.WRITE_UPLOAD])
+
+    def test_upload_to_nonexistant_workspace(self) -> None:
+        """Upload file to non existent workspace!! Yikes!"""
+
+
+        created = datetime.now(UTC)
+        modified = datetime.now(UTC)
+        expected_data = {'upload_id': 5,
+                         'status': "SUCCEEDED",
+                         'create_datetime': created.isoformat(),
+                         'modify_datetime': modified.isoformat()}
+
+        # Prepare gzipped tar submission for upload.
+        filepath = os.path.join(self.DATA_PATH,
+                                'test_files_upload/1801.03879-1.tar.gz')
+        fname = os.path.basename(filepath)
+
+        # Post a test submission to upload API
+        bad_upload_id = '9999'
+        response = self.client.post(f'/filemanager/api/{bad_upload_id}',
+                                    data={
+                                        'file': (open(filepath, 'rb'), fname),
+                                    },
+                                    headers={'Authorization': self.token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, status.NOT_FOUND,
+                         "Accepted uploaded Submission Contents")
+        expected_data = {'reason': 'upload workspace not found'}
+        self.maxDiff = None
+        self.assertDictEqual(json.loads(response.data), expected_data)
+
+    def test_get_nonexistant_workspace(self) -> None:
+        """Attempt to get a workspace that does not exist."""
+        bad_upload_id = '9999'
+        response = self.client.get(f"/filemanager/api/{bad_upload_id}",
+                                   headers={'Authorization': self.token})
+
+        self.assertEqual(response.status_code, status.NOT_FOUND,
+                         "Accepted uploaded Submission Contents")
+        expected_data = {'reason': 'upload workspace not found'}
+        self.maxDiff = None
+        self.assertDictEqual(json.loads(response.data), expected_data)
+
+
+class TestDownloadLogs(TestCase):
+    """Test service and source log download requests."""
+
+    DATA_PATH = os.path.split(os.path.abspath(__file__))[0]
+
+    def setUp(self) -> None:
+        """Initialize the Flask application, and get a client for testing."""
+        self.workdir = tempfile.mkdtemp()
+        self.server_name = 'fooserver.localdomain'
+        self.app = create_web_app()
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'
+        self.app.config['SERVER_NAME'] = self.server_name
+        self.app.config['STORAGE_BASE_PATH'] = self.workdir
+
+        # There is a bug in arxiv.base where it doesn't pick up app config
+        # parameters. Until then, we pass it to os.environ.
+        os.environ['JWT_SECRET'] = self.app.config.get('JWT_SECRET')
+        self.client = self.app.test_client()
+        # self.app.app_context().push()
+        with self.app.app_context():
+            database.db.create_all()
+
+        with open('schema/resources/Workspace.json') as f:
+            self.schema = json.load(f)
+
+        # Create a token for writing to upload workspace
+        self.token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                               auth.scopes.WRITE_UPLOAD,
+                                               auth.scopes.DELETE_UPLOAD_FILE])
+
+        # Upload a gzipped tar archive package containing files to delete.
+        filepath = os.path.join(self.DATA_PATH,
+                                'test_files_upload/upload2.tar.gz')
+        fname = os.path.basename(filepath)
+
+        # Upload some files so we can delete them
+        response = self.client.post('/filemanager/api/',
+                                    data={
+                                        'file': (open(filepath, 'rb'), fname),
+                                    },
+                                    headers={'Authorization': self.token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, status.CREATED,
+                         "Accepted and processed uploaded Submission Contents")
+
+        self.original_upload_data = json.loads(response.data)
+        self.upload_id = self.original_upload_data['upload_id']
+
+    def tearDown(self):
+        """
+        Clean up!
+
+        This cleans out the workspace. Comment out if you want to inspect files
+        in workspace. Source log is saved to 'deleted_workspace_logs' directory.
+        """
+        shutil.rmtree(self.workdir)
+
+    def test_with_insufficient_privileges(self):
+        """Make HEAD request for log with underprivileged auth token."""
+        admin_token = generate_token(self.app, [
+            auth.scopes.READ_UPLOAD,
+            auth.scopes.WRITE_UPLOAD,
+            auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()
+        ])
+
+        # Attempt to check if source log exists
+        response = self.client.head(f"/filemanager/api/{self.upload_id}/log",
+                                    headers={'Authorization': admin_token})
+        self.assertEqual(response.status_code, status.FORBIDDEN)
+
+    def test_get_with_insufficient_privileges(self):
+        """Make GET request for log with underprivileged auth token."""
+        admin_token = generate_token(self.app, [
+            auth.scopes.READ_UPLOAD,
+            auth.scopes.WRITE_UPLOAD,
+            auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()
+        ])
+        response = self.client.get(f"/filemanager/api/{self.upload_id}/log",
+                                   headers={'Authorization': admin_token})
+        self.assertEqual(response.status_code, status.FORBIDDEN)
+
+    def test_head_with_sufficient_privileges(self):
+        """Make HEAD request for log with ``READ_UPLOAD_LOGS`` scope."""
+        # Add READ_UPLOAD_LOGS authorization to admin token
+        admin_token = generate_token(self.app, [
+            auth.scopes.READ_UPLOAD,
+            auth.scopes.WRITE_UPLOAD,
+            auth.scopes.READ_UPLOAD_LOGS,
+            auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()
+        ])
+
+        # Attempt to check if source log exists
+        response = self.client.head(f"/filemanager/api/{self.upload_id}/log",
+                                    headers={'Authorization': admin_token})
+        self.assertEqual(response.status_code, status.OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+    def test_get_with_sufficient_privileges(self):
+        """Make GET request for log with ``READ_UPLOAD_LOGS`` scope."""
+        # Add READ_UPLOAD_LOGS authorization to admin token
+        admin_token = generate_token(self.app, [
+            auth.scopes.READ_UPLOAD,
+            auth.scopes.WRITE_UPLOAD,
+            auth.scopes.READ_UPLOAD_LOGS,
+            auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()
+        ])
+        response = self.client.get(
+            f"/filemanager/api/{self.upload_id}/log",
+            headers={'Authorization': admin_token}
+        )
+        self.assertEqual(response.status_code, status.OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+        # Look for something in upload source log
+        self.assertIn(rb'unpack gzipped upload2.tar to dir', response.data,
+                      'Test that upload file is in log.')
+
+        # TODO: do we need this in tests? -- Erick 2019-06-20
+        #
+        # Write service log to file
+        upload_log_filename = "upload_log_" + str(self.upload_id)
+        log_path = os.path.join(self.workdir, upload_log_filename)
+        with open(log_path, 'wb') as fileH:
+            fileH.write(response.data)
+        # Highlight log download. Remove at some point.
+        print(f"FYI: SAVED UPLOAD SOURCE LOG FILE TO DISK: {log_path}\n")
+
+
+class TestAccessServiceLog(TestCase):
+    """Test accessing the service log."""
+
+    DATA_PATH = os.path.split(os.path.abspath(__file__))[0]
+
+    def setUp(self) -> None:
+        """Initialize the Flask application, and get a client for testing."""
+        self.workdir = tempfile.mkdtemp()
+        self.server_name = 'fooserver.localdomain'
+        self.app = create_web_app()
+        self.app.config['STORAGE_BASE_PATH'] = self.workdir
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'
+        self.app.config['SERVER_NAME'] = self.server_name
+
+        # There is a bug in arxiv.base where it doesn't pick up app config
+        # parameters. Until then, we pass it to os.environ.
+        os.environ['JWT_SECRET'] = self.app.config.get('JWT_SECRET')
+        self.client = self.app.test_client()
+        # self.app.app_context().push()
+        with self.app.app_context():
+            database.db.create_all()
+
+        with open('schema/resources/Workspace.json') as f:
+            self.schema = json.load(f)
+
+        # Create a token for writing to upload workspace
+        self.token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                               auth.scopes.WRITE_UPLOAD,
+                                               auth.scopes.DELETE_UPLOAD_FILE])
+
+        # Upload a gzipped tar archive package containing files to delete.
+        filepath = os.path.join(self.DATA_PATH,
+                                'test_files_upload/upload2.tar.gz')
+        fname = os.path.basename(filepath)
+
+        # Upload some files so we can delete them
+        response = self.client.post('/filemanager/api/',
+                                    data={
+                                        'file': (open(filepath, 'rb'), fname),
+                                    },
+                                    headers={'Authorization': self.token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, status.CREATED,
+                         "Accepted and processed uploaded Submission Contents")
+
+        self.original_upload_data = json.loads(response.data)
+        self.upload_id = self.original_upload_data['upload_id']
+
+    def tearDown(self):
+        """
+        Clean up!
+
+        This cleans out the workspace. Comment out if you want to inspect files
+        in workspace. Source log is saved to 'deleted_workspace_logs' directory.
+        """
+        shutil.rmtree(self.workdir)
+
+    def test_head_log_with_insufficient_authorization(self):
+        """Make HEAD request for log with insufficient authorization."""
+        admin_token = generate_token(self.app, [
+            auth.scopes.READ_UPLOAD,
+            auth.scopes.WRITE_UPLOAD,
+            auth.scopes.READ_UPLOAD_LOGS,
+            auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()
+        ])
+
+        response = self.client.head(f"/filemanager/api/log",
+                                    headers={'Authorization': admin_token})
+        self.assertEqual(response.status_code, status.FORBIDDEN)
+
+    def test_get_log_with_insufficient_authorization(self):
+        """Make GET request for service log with insufficient authorization."""
+        admin_token = generate_token(self.app, [
+            auth.scopes.READ_UPLOAD,
+            auth.scopes.WRITE_UPLOAD,
+            auth.scopes.READ_UPLOAD_LOGS,
+            auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()
+        ])
+
+        response = self.client.get(f"/filemanager/api/log",
+                                   headers={'Authorization': admin_token})
+        self.assertEqual(response.status_code, status.FORBIDDEN)
+
+    def test_head_log_with_sufficient_authorization(self):
+        """Make HEAD request for log with ``READ_UPLOAD_SERVICE_LOGS`` auth."""
+        admin_token = generate_token(self.app, [
+            auth.scopes.READ_UPLOAD,
+            auth.scopes.WRITE_UPLOAD,
+            auth.scopes.READ_UPLOAD_SERVICE_LOGS,
+            auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()
+        ])
+        response = self.client.head(f"/filemanager/api/log",
+                                    headers={'Authorization': admin_token})
+        self.assertEqual(response.status_code, status.OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+    def test_get_log_with_sufficient_authorization(self):
+        """Make GET request for log with ``READ_UPLOAD_SERVICE_LOGS`` auth."""
+        admin_token = generate_token(self.app, [
+            auth.scopes.READ_UPLOAD,
+            auth.scopes.WRITE_UPLOAD,
+            auth.scopes.READ_UPLOAD_SERVICE_LOGS,
+            auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()
+        ])
+        response = self.client.get(f"/filemanager/api/log",
+                                   headers={'Authorization': admin_token})
+        self.assertEqual(response.status_code, status.OK)
+        self.assertIn('ETag', response.headers, "Returns an ETag header")
+
+        # TODO: do we need this in tests? -- Erick 2019-06-20
+        #
+        # Write service log to file (to save temporary directory where we saved
+        # source_log)
+        log_path = os.path.join(self.workdir, "service_log")
+        with open(log_path, 'wb') as fileH:
+            fileH.write(response.data)
+        # Highlight log download. Remove at some point.
+        print(f"FYI: SAVED SERVICE LOG FILE TO DISK AT: {log_path}\n")
+
+
+class TestDeleteWorkspace(TestCase):
+    """Test deletion of the workspace."""
+
+    DATA_PATH = os.path.split(os.path.abspath(__file__))[0]
+
+    def setUp(self) -> None:
+        """Initialize the Flask application, and get a client for testing."""
+        self.workdir = tempfile.mkdtemp()
+        self.server_name = 'fooserver.localdomain'
+        self.app = create_web_app()
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'
+        self.app.config['SERVER_NAME'] = self.server_name
+        self.app.config['STORAGE_BASE_PATH'] = self.workdir
+
+        # There is a bug in arxiv.base where it doesn't pick up app config
+        # parameters. Until then, we pass it to os.environ.
+        os.environ['JWT_SECRET'] = self.app.config.get('JWT_SECRET')
+        self.client = self.app.test_client()
+        # self.app.app_context().push()
+        with self.app.app_context():
+            database.db.create_all()
+
+        with open('schema/resources/Workspace.json') as f:
+            self.schema = json.load(f)
+
+        # Create a token for writing to upload workspace
+        self.token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
+                                               auth.scopes.WRITE_UPLOAD,
+                                               auth.scopes.DELETE_UPLOAD_FILE])
+
+        # Upload a gzipped tar archive package containing files to delete.
+        filepath = os.path.join(self.DATA_PATH,
+                                'test_files_upload/upload2.tar.gz')
+        fname = os.path.basename(filepath)
+
+        # Upload some files so we can delete them
+        response = self.client.post('/filemanager/api/',
+                                    data={
+                                        'file': (open(filepath, 'rb'), fname),
+                                    },
+                                    headers={'Authorization': self.token},
+                                    #        content_type='application/gzip')
+                                    content_type='multipart/form-data')
+
+        self.assertEqual(response.status_code, status.CREATED,
+                         "Accepted and processed uploaded Submission Contents")
+
+        self.original_upload_data = json.loads(response.data)
+        self.upload_id = self.original_upload_data['upload_id']
+
+    def tearDown(self):
+        """
+        Clean up!
+
+        This cleans out the workspace. Comment out if you want to inspect files
+        in workspace. Source log is saved to 'deleted_workspace_logs' directory.
+        """
+        shutil.rmtree(self.workdir)
+
+    def test_delete_workspace(self):
+        """Make a DELETE request with sufficient privileges."""
+        admin_token = generate_token(self.app, [
+            auth.scopes.READ_UPLOAD,
+            auth.scopes.WRITE_UPLOAD,
+            auth.scopes.READ_UPLOAD_SERVICE_LOGS,
+            auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()
+        ])
+
+        response = self.client.delete(f"/filemanager/api/{self.upload_id}",
+                                      headers={'Authorization': admin_token})
+
+        self.assertEqual(response.status_code, status.OK,
+                         "Accepted request to delete workspace.")
+
+    def test_delete_workspace_underprivileged(self):
+        """Make a DELETE request without sufficient privileges."""
+        admin_token = generate_token(self.app, [
+            auth.scopes.READ_UPLOAD,
+            auth.scopes.WRITE_UPLOAD,
+            auth.scopes.READ_UPLOAD_SERVICE_LOGS
+        ])
+
+        response = self.client.delete(f"/filemanager/api/{self.upload_id}",
+                                      headers={'Authorization': admin_token})
+
+        self.assertEqual(response.status_code, status.FORBIDDEN,
+                         "Accepted request to delete workspace.")
 
 # class TestUploadAPIRoutes(TestCase):
 #     """Sample tests for upload external API routes."""
@@ -359,217 +791,9 @@ class TestNewUpload(TestCase):
 #
 #         # TODO: Think of other potential create upload errors.
 #
-#     # Upload a submission package
-#     def test_existing_upload_failures(self) -> None:
-#         """Test various failure conditions on existing workspaces.
-#
-#         The same function handles new upload request so we will not repeat
-#         basic argument failures that have been covered already"""
-#
-#         with open('schema/resources/Workspace.json') as f:
-#             schema = json.load(f)
-#
-#         # Create a token for writing to upload workspace
-#         token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
-#                                           auth.scopes.WRITE_UPLOAD])
-#
-#         created = datetime.now(UTC)
-#         modified = datetime.now(UTC)
-#         expected_data = {'upload_id': 5,
-#                          'status': "SUCCEEDED",
-#                          'create_datetime': created.isoformat(),
-#                          'modify_datetime': modified.isoformat()
-#                          }
-#
-#         cwd = os.getcwd()
-#         testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
-#         filepath = os.path.join(testfiles_dir, '1801.03879-1.tar.gz')
-#
-#         # Prepare gzipped tar submission for upload
-#         filename = os.path.basename(filepath)
-#
-#         # Post a test submission to upload API
-#
-#         bad_upload_id = '9999'
-#
-#         # Upload file to non existent workspace!! Yikes!
-#         response = self.client.post(f'/filemanager/api/{bad_upload_id}',
-#                                     data={
-#                                         'file': (open(filepath, 'rb'), filename),
-#                                     },
-#                                     headers={'Authorization': token},
-#                                     #        content_type='application/gzip')
-#                                     content_type='multipart/form-data')
-#
-#         self.assertEqual(response.status_code, 404, "Accepted uploaded Submission Contents")
-#
-#         expected_data = {'reason': 'upload workspace not found'}
-#
-#         self.maxDiff = None
-#         self.assertDictEqual(json.loads(response.data), expected_data)
-#
-#         response = self.client.get(f"/filemanager/api/{bad_upload_id}",
-#                                    headers={'Authorization': token})
-#
-#         self.assertEqual(response.status_code, 404, "Accepted uploaded Submission Contents")
-#
-#         expected_data = {'reason': 'upload workspace not found'}
-#
-#         self.maxDiff = None
-#         self.assertDictEqual(json.loads(response.data), expected_data)
-#
-#         # TODO: Add tests for locked/released workspaces on upload requests.
-#         # TODO: Lock/unlock, release/unrelease. (when implements)
-#
-#         # TODO: Add size checks (when implemented)
-#
-#     def test_various_log_download_requests(self) -> None:
-#         """
-#         Test service and source log download requests.
-#
-#         Returns
-#         -------
-#         Requested log file.
-#
-#         """
-#         # Create a token for writing to upload workspace
-#         token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
-#                                           auth.scopes.WRITE_UPLOAD,
-#                                           auth.scopes.DELETE_UPLOAD_FILE])
-#
-#         # Upload a gzipped tar archive package containing files to delete.
-#         cwd = os.getcwd()
-#         testfiles_dir = os.path.join(cwd, 'tests/test_files_upload')
-#         upload_package_name = 'upload2.tar.gz'
-#         filepath = os.path.join(testfiles_dir, upload_package_name)
-#         # Prepare gzipped tar submission for upload
-#         filename = os.path.basename(filepath)
-#
-#         # Upload some files so we can delete them
-#         # response = self.client.post('/filemanager/api/',
-#         response = self.client.post('/filemanager/api/',
-#                                     data={
-#                                         'file': (open(filepath, 'rb'), filename),
-#                                     },
-#                                     headers={'Authorization': token},
-#                                     #        content_type='application/gzip')
-#                                     content_type='multipart/form-data')
-#
-#         self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
-#
-#         upload_data: Dict[str, Any] = json.loads(response.data)
-#
-#         # Create unauthorized admin token (can't read logs)
-#         admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
-#                                                 auth.scopes.WRITE_UPLOAD,
-#                                                 auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
-#
-#         # Source logs
-#
-#         # Attempt to check if source log exists
-#         response = self.client.head(
-#             f"/filemanager/api/{upload_data['upload_id']}/log",
-#             headers={'Authorization': admin_token}
-#         )
-#         self.assertEqual(response.status_code, status.FORBIDDEN)
-#
-#         response = self.client.get(
-#             f"/filemanager/api/{upload_data['upload_id']}/log",
-#             headers={'Authorization': admin_token}
-#         )
-#         self.assertEqual(response.status_code, status.FORBIDDEN)
-#
-#         # Add READ_UPLOAD_LOGS authorization to admin token
-#         admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
-#                                                 auth.scopes.WRITE_UPLOAD,
-#                                                 auth.scopes.READ_UPLOAD_LOGS,
-#                                                 auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
-#
-#         # Attempt to check if source log exists
-#         response = self.client.head(
-#             f"/filemanager/api/{upload_data['upload_id']}/log",
-#             headers={'Authorization': admin_token}
-#         )
-#         self.assertEqual(response.status_code, status.OK)
-#         self.assertIn('ETag', response.headers, "Returns an ETag header")
-#
-#         response = self.client.get(
-#             f"/filemanager/api/{upload_data['upload_id']}/log",
-#             headers={'Authorization': admin_token}
-#         )
-#         self.assertEqual(response.status_code, status.OK)
-#         self.assertIn('ETag', response.headers, "Returns an ETag header")
-#
-#         # Look for something in upload source log
-#         self.assertIn(rb'unpack gzipped upload2.tar.gz to dir', response.data,
-#                       'Test that upload file is in log.')
-#
-#         # Write service log to file
-#         workdir = tempfile.mkdtemp()
-#         upload_log_filename = "upload_log_" + str(upload_data['upload_id'])
-#         log_path = os.path.join(workdir, upload_log_filename)
-#         fileH = open(log_path, 'wb')
-#         fileH.write(response.data)
-#         fileH.close()
-#
-#         # Highlight log download. Remove at some point.
-#         print(f"FYI: SAVED UPLOAD SOURCE LOG FILE TO DISK: {log_path}\n")
-#
-#         # Service logs
-#
-#         # Try to check whether log exits without appropriate authorization
-#         response = self.client.head(
-#             f"/filemanager/api/log",
-#             headers={'Authorization': admin_token}
-#         )
-#         self.assertEqual(response.status_code, status.FORBIDDEN)
-#
-#         response = self.client.get(
-#             f"/filemanager/api/log",
-#             headers={'Authorization': admin_token}
-#         )
-#         self.assertEqual(response.status_code, status.FORBIDDEN)
-#
-#         # Create admin token for deleting upload workspace
-#         admin_token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
-#                                                 auth.scopes.WRITE_UPLOAD,
-#                                                 auth.scopes.READ_UPLOAD_SERVICE_LOGS,
-#                                                 auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
-#
-#         # Try to check whether log exits with correct authorization
-#         response = self.client.head(
-#             f"/filemanager/api/log",
-#             headers={'Authorization': admin_token}
-#         )
-#         self.assertEqual(response.status_code, status.OK)
-#         self.assertIn('ETag', response.headers, "Returns an ETag header")
-#
-#         # Try to download service log
-#         response = self.client.get(
-#             f"/filemanager/api/log",
-#             headers={'Authorization': admin_token}
-#         )
-#         self.assertEqual(response.status_code, status.OK)
-#         self.assertIn('ETag', response.headers, "Returns an ETag header")
-#
-#         # Write service log to file (to save temporary directory where we saved source_log)
-#         log_path = os.path.join(workdir, "service_log")
-#         fileH = open(log_path, 'wb')
-#         fileH.write(response.data)
-#         fileH.close()
-#
-#         # Highlight log download. Remove at some point.
-#         print(f"FYI: SAVED SERVICE LOG FILE TO DISK AT: {log_path}\n")
-#
-#         # Delete the workspace
-#
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
-#                                       headers={'Authorization': admin_token}
-#                                       )
-#
-#         # This cleans out the workspace. Comment out if you want to inspect files
-#         # in workspace. Source log is saved to 'deleted_workspace_logs' directory.
-#         self.assertEqual(response.status_code, 200, "Accepted request to delete workspace.")
+
+#......
+
 #
 #     def test_individual_file_content_download(self) -> None:
 #         """
@@ -608,7 +832,7 @@ class TestNewUpload(TestCase):
 #
 #         # Check if content file exists
 #         response = self.client.head(
-#             f"/filemanager/api/{upload_data['upload_id']}/main_a.tex/content",
+#             f"/filemanager/api/{self.upload_id}/main_a.tex/content",
 #             headers={'Authorization': token}
 #         )
 #         self.assertEqual(response.status_code, status.OK)
@@ -616,7 +840,7 @@ class TestNewUpload(TestCase):
 #
 #         # Download content file
 #         response = self.client.get(
-#             f"/filemanager/api/{upload_data['upload_id']}/main_a.tex/content",
+#             f"/filemanager/api/{self.upload_id}/main_a.tex/content",
 #             headers={'Authorization': token}
 #         )
 #         self.assertEqual(response.status_code, status.OK)
@@ -636,7 +860,7 @@ class TestNewUpload(TestCase):
 #
 #         # Test for file that doesn't exist
 #         response = self.client.head(
-#             f"/filemanager/api/{upload_data['upload_id']}/doesntexist.tex/content",
+#             f"/filemanager/api/{self.upload_id}/doesntexist.tex/content",
 #             headers={'Authorization': token}
 #         )
 #         self.assertEqual(response.status_code, status.NOT_FOUND,
@@ -645,7 +869,7 @@ class TestNewUpload(TestCase):
 #
 #         # Try to download non-existent file anyways
 #         response = self.client.get(
-#             f"/filemanager/api/{upload_data['upload_id']}/doesntexist.tex/content",
+#             f"/filemanager/api/{self.upload_id}/doesntexist.tex/content",
 #             headers={'Authorization': token}
 #         )
 #         self.assertEqual(response.status_code, status.NOT_FOUND)
@@ -658,7 +882,7 @@ class TestNewUpload(TestCase):
 #         crazy_path = "../../../etc/passwd"
 #         quote_crazy_path = quote(crazy_path, safe='')
 #         response = self.client.head(
-#             f"/filemanager/api/{upload_data['upload_id']}/{quote_crazy_path}/content",
+#             f"/filemanager/api/{self.upload_id}/{quote_crazy_path}/content",
 #             headers={'Authorization': token}
 #         )
 #
@@ -671,7 +895,7 @@ class TestNewUpload(TestCase):
 #                                                 auth.scopes.WRITE_UPLOAD,
 #                                                 auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
 #
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}",
 #                                       headers={'Authorization': admin_token}
 #                                       )
 #
@@ -733,7 +957,7 @@ class TestNewUpload(TestCase):
 #         public_file_path = encoded_file_path
 #         print(f"ENCODED:{public_file_path}\n")
 #
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}/{public_file_path}",
 #                                       headers={'Authorization': token})
 #         print(f"Delete File Response:'{public_file_path}'\n" + str(response.data) + '\n')
 #         self.assertEqual(response.status_code, 200,
@@ -748,7 +972,7 @@ class TestNewUpload(TestCase):
 #         # file deletions without alerting the client.
 #         public_file_path = "../../subdir/this_file"
 #         public_file_path = quote(public_file_path, safe='')
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}/{public_file_path}",
 #                                       headers={'Authorization': token})
 #         print(f"Delete hacker file path Response:'{public_file_path}'\n" + str(response.data) + '\n')
 #         self.assertEqual(response.status_code, 404,
@@ -760,7 +984,7 @@ class TestNewUpload(TestCase):
 #         # file deletions without alerting the client.
 #         public_file_path = "anc/../../etc/passwd"
 #         public_file_path = quote(public_file_path, safe='')
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}/{public_file_path}",
 #                                       headers={'Authorization': token})
 #         print(f"Delete hacker file path Response:'{public_file_path}'\n" + str(response.data) + '\n')
 #         self.assertEqual(response.status_code, 404,
@@ -771,7 +995,7 @@ class TestNewUpload(TestCase):
 #         # This generates an illegal URL so this doesn't make it to our code.
 #         public_file_path = "/etc/passwd"
 #         public_file_path = quote(public_file_path, safe='')
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}/{public_file_path}",
 #                                       headers={'Authorization': token})
 #         print(f"Delete system password file Response:'{public_file_path}'\n")
 #         self.assertEqual(response.status_code, 404,
@@ -780,7 +1004,7 @@ class TestNewUpload(TestCase):
 #         # Try to delete non-existent file
 #         public_file_path = "somedirectory/lipics-logo-bw.pdf"
 #         public_file_path = quote(public_file_path, safe='')
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}/{public_file_path}",
 #                                       headers={'Authorization': token})
 #         print(f"Delete non-existent file Response:'{public_file_path}'\n" + str(response.data) + '\n')
 #         self.assertEqual(response.status_code, 404,
@@ -789,7 +1013,7 @@ class TestNewUpload(TestCase):
 #         # Try to delete file in subdirectory - valid file deletion
 #         public_file_path = "anc/manuscript_Na2.7Ru4O9.tex"
 #         public_file_path = quote(public_file_path, safe='')
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}/{public_file_path}",
 #                                       headers={'Authorization': token})
 #         print(f"Delete file in subdirectory anc Response:'{public_file_path}'\n" + str(response.data) + '\n')
 #         self.assertEqual(response.status_code, 200,
@@ -798,7 +1022,7 @@ class TestNewUpload(TestCase):
 #         # Try to delete file in subdirectory - valid file deletion
 #         public_file_path = "anc/fig8.PNG"
 #         public_file_path = quote(public_file_path, safe='')
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}/{public_file_path}",
 #                                       headers={'Authorization': token})
 #         print(f"Delete file in subdirectory anc Response:'{public_file_path}'\n" + str(response.data) + '\n')
 #         self.assertEqual(response.status_code, 200,
@@ -807,7 +1031,7 @@ class TestNewUpload(TestCase):
 #         # Try an delete file a second time...we'll know if first delete really worked.
 #         public_file_path = "anc/manuscript_Na2.7Ru4O9.tex"
 #         public_file_path = quote(public_file_path, safe='')
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}/{public_file_path}",
 #                                       headers={'Authorization': token})
 #         print(f"Delete file in subdirectory anc Response:'{public_file_path}'\n" + str(response.data) + '\n')
 #         self.assertEqual(response.status_code, 404,
@@ -822,7 +1046,7 @@ class TestNewUpload(TestCase):
 #         #
 #         public_file_path = "~/anc/manuscript_Na2.7Ru4O9.tex"
 #         public_file_path = quote(public_file_path, safe='')
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}/{public_file_path}",
 #                                       headers={'Authorization': token})
 #         print(f"Delete invalid file in subdirectory anc Response:'{public_file_path}'\n" + str(response.data) + '\n')
 #         self.assertEqual(response.status_code, 404,
@@ -831,7 +1055,7 @@ class TestNewUpload(TestCase):
 #         # Technically a legal file path, but where is client coming up with this path? Manually?
 #         public_file_path = "./anc/manuscript_Na2.7Ru4O9.tex"
 #         public_file_path = quote(public_file_path, safe='')
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}/{public_file_path}",
 #                                       headers={'Authorization': token})
 #         print(f"Delete invalid file in subdirectory anc Response:'{public_file_path}'\n" + str(response.data) + '\n')
 #         self.assertEqual(response.status_code, 404,
@@ -843,7 +1067,7 @@ class TestNewUpload(TestCase):
 #                                                 auth.scopes.WRITE_UPLOAD,
 #                                                 auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
 #
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}",
 #                                       headers={'Authorization': admin_token}
 #                                       )
 #
@@ -896,7 +1120,7 @@ class TestNewUpload(TestCase):
 #         upload_data: Dict[str, Any] = json.loads(response.data)
 #
 #         # Delete all files in my workspace (normal)
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}/delete_all",
 #                                     headers={'Authorization': token},
 #                                     content_type='multipart/form-data')
 #
@@ -921,7 +1145,7 @@ class TestNewUpload(TestCase):
 #         # Try an delete an individual file ...we'll know if delete all files really worked.
 #         public_file_path = "anc/manuscript_Na2.7Ru4O9.tex"
 #         public_file_path = quote(public_file_path, safe='')
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}/{public_file_path}",
 #                                       headers={'Authorization': token})
 #         print(f"Delete already deleted file in subdirectory anc Response:'{public_file_path}'\n" + str(
 #             response.data) + '\n')
@@ -937,7 +1161,7 @@ class TestNewUpload(TestCase):
 #                                                 auth.scopes.WRITE_UPLOAD,
 #                                                 auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
 #
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}",
 #                                       headers={'Authorization': admin_token}
 #                                       )
 #
@@ -1001,7 +1225,7 @@ class TestNewUpload(TestCase):
 #              auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()]
 #         )
 #
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}",
 #                                       headers={'Authorization': admin_token}
 #                                       )
 #
@@ -1011,7 +1235,7 @@ class TestNewUpload(TestCase):
 #
 #         # Let's try to delete the same workspace again
 #
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}",
 #                                       headers={'Authorization': admin_token}
 #                                       )
 #         print("Delete Response:\n" + str(response.data) + '\n')
@@ -1076,15 +1300,15 @@ class TestNewUpload(TestCase):
 #                                                 auth.scopes.WRITE_UPLOAD,
 #                                                 auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
 #         # Now test lock
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/lock",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}/lock",
 #                                     headers={'Authorization': admin_token}
 #                                     )
-#         self.assertEqual(response.status_code, 200, f"Lock workspace '{upload_data['upload_id']}'.")
+#         self.assertEqual(response.status_code, 200, f"Lock workspace '{self.upload_id}'.")
 #
 #         print("Lock:\n" + str(response.data) + '\n')
 #
 #         # Try to perform actions on locked upload workspace
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}",
 #                                     data={
 #                                         'file': (open(filepath, 'rb'), filename),
 #                                     },
@@ -1096,21 +1320,21 @@ class TestNewUpload(TestCase):
 #         print("Upload files to locked workspace:\n" + str(response.data) + '\n')
 #
 #         # Try to perform actions on locked upload workspace
-#         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.get(f"/filemanager/api/{self.upload_id}",
 #                                    headers={'Authorization': token}
 #                                    )
 #
 #         self.assertEqual(response.status_code, 200, "Request upload summary on locked workspace (OK)")
 #
 #         public_file_path = 'somefile'
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}/{public_file_path}",
 #                                       headers={'Authorization': token})
 #         print(f"Delete File Response(locked):'{public_file_path}'\n" + str(response.data) + '\n')
 #         self.assertEqual(response.status_code, 403,
 #                          "Delete an individual file: '{public_file_path}' from locked workspace.")
 #
 #         # Delete all files in my workspace (normal)
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}/delete_all",
 #                                     headers={'Authorization': token},
 #                                     content_type='multipart/form-data')
 #         print("Delete All Files Response(locked):\n" + str(response.data) + '\n')
@@ -1118,15 +1342,15 @@ class TestNewUpload(TestCase):
 #                                                     "files from locked workspace.")
 #
 #         # Now test unlock
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/unlock",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}/unlock",
 #                                     headers={'Authorization': admin_token}
 #                                     )
-#         self.assertEqual(response.status_code, 200, f"Unlock workspace '{upload_data['upload_id']}'.")
+#         self.assertEqual(response.status_code, 200, f"Unlock workspace '{self.upload_id}'.")
 #
 #         print("Unlock:\n" + str(response.data) + '\n')
 #
 #         # Try request that failed while upload workspace was locked
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}/delete_all",
 #                                     headers={'Authorization': token},
 #                                     content_type='multipart/form-data')
 #
@@ -1135,7 +1359,7 @@ class TestNewUpload(TestCase):
 #
 #         # Clean up after ourselves
 #
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}",
 #                                       headers={'Authorization': admin_token}
 #                                       )
 #
@@ -1182,17 +1406,17 @@ class TestNewUpload(TestCase):
 #                                                 auth.scopes.WRITE_UPLOAD,
 #                                                 auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
 #         # Now test release
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/release",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}/release",
 #                                     headers={'Authorization': admin_token}
 #                                     )
-#         self.assertEqual(response.status_code, 200, f"Release workspace '{upload_data['upload_id']}'.")
+#         self.assertEqual(response.status_code, 200, f"Release workspace '{self.upload_id}'.")
 #
 #         print("Release:\n" + str(response.data) + '\n')
 #
 #         # Repeat tests
 #
 #         # Try to perform actions on released upload workspace
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}",
 #                                     data={
 #                                         'file': (open(filepath, 'rb'), filename),
 #                                     },
@@ -1205,7 +1429,7 @@ class TestNewUpload(TestCase):
 #         #
 #
 #         # Try to perform actions on locked upload workspace
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}",
 #                                     data={
 #                                         'file': (open(filepath, 'rb'), filename),
 #                                     },
@@ -1217,21 +1441,21 @@ class TestNewUpload(TestCase):
 #         print("Upload files to released workspace:\n" + str(response.data) + '\n')
 #
 #         # Try to perform actions on locked upload workspace
-#         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.get(f"/filemanager/api/{self.upload_id}",
 #                                    headers={'Authorization': token}
 #                                    )
 #
 #         self.assertEqual(response.status_code, 200, "Request upload summary from released workspace (OK)")
 #
 #         public_file_path = 'somefile'
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}/{public_file_path}",
 #                                       headers={'Authorization': token})
 #         print(f"Delete File from released workspace Response:'{public_file_path}'\n" + str(response.data) + '\n')
 #         self.assertEqual(response.status_code, 403,
 #                          "Delete an individual file: '{public_file_path}' from released workspace.")
 #
 #         # Delete all files in my workspace (normal)
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}/delete_all",
 #                                     headers={'Authorization': token},
 #                                     content_type='multipart/form-data')
 #         print("Delete All Files Response(released):\n" + str(response.data) + '\n')
@@ -1241,15 +1465,15 @@ class TestNewUpload(TestCase):
 #         #
 #
 #         # Now test unrelease
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/unrelease",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}/unrelease",
 #                                     headers={'Authorization': admin_token}
 #                                     )
-#         self.assertEqual(response.status_code, 200, f"Unrelease workspace '{upload_data['upload_id']}'.")
+#         self.assertEqual(response.status_code, 200, f"Unrelease workspace '{self.upload_id}'.")
 #
 #         print("Unrelease:\n" + str(response.data) + '\n')
 #
 #         # Try request that failed while upload workspace was released
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}/delete_all",
 #                                     headers={'Authorization': token},
 #                                     content_type='multipart/form-data')
 #
@@ -1258,7 +1482,7 @@ class TestNewUpload(TestCase):
 #
 #         # Clean up after ourselves
 #
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}",
 #                                       headers={'Authorization': admin_token}
 #                                       )
 #
@@ -1316,14 +1540,14 @@ class TestNewUpload(TestCase):
 #         self.assertIn('readiness', upload_data, "Returns total upload status.")
 #         self.assertEqual(upload_data['readiness'], "ERRORS",
 #                          ("Expected total upload size matches "
-#                          f"(ID: {upload_data['upload_id']})"))
+#                          f"(ID: {self.upload_id})"))
 #
 #         # Get upload_id from previous file upload
-#         test_id = upload_data['upload_id']
+#         test_id = self.upload_id
 #         # Upload missing .bbl
 #         filepath = os.path.join(testfiles_dir, 'final.bbl')
 #         filename = os.path.basename(filepath)
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}",
 #                                     data={
 #                                         # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
 #                                         'file': (open(filepath, 'rb'), filename),
@@ -1527,7 +1751,7 @@ class TestNewUpload(TestCase):
 #         filepath2 = os.path.join(testfiles_dir, 'README.md')
 #         filename2 = os.path.basename(filepath2)
 #         filename2 = '00README.XXX'
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}",
 #                                     data={
 #                                         # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
 #                                         'file': (open(filepath2, 'rb'), filename2),
@@ -1547,14 +1771,14 @@ class TestNewUpload(TestCase):
 #
 #         amsg = ("Status returned to 'READY'."
 #                 " Removed file causing fatal error."
-#                 f" (ID:{upload_data['upload_id']})")
+#                 f" (ID:{self.upload_id})")
 #         self.assertEqual(upload_data['readiness'], "READY", amsg)
 #
 #         # Upload files that we will warn about - but not remove.
 #
 #         filepath2 = os.path.join(testfiles_dir, 'FilesToWarnAbout.tar')
 #         filename2 = os.path.basename(filepath2)
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}",
 #                                     data={
 #                                         # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
 #                                         'file': (open(filepath2, 'rb'), filename2),
@@ -1597,7 +1821,7 @@ class TestNewUpload(TestCase):
 #                                                 auth.scopes.WRITE_UPLOAD,
 #                                                 auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
 #
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}",
 #                                       headers={'Authorization': admin_token}
 #                                       )
 #
@@ -1669,7 +1893,7 @@ class TestNewUpload(TestCase):
 #
 #         # Check if content file exists
 #         response = self.client.head(
-#             f"/filemanager/api/{upload_data['upload_id']}/{test_filename}/content",
+#             f"/filemanager/api/{self.upload_id}/{test_filename}/content",
 #             headers={'Authorization': token}
 #         )
 #         self.assertEqual(response.status_code, status.OK)
@@ -1677,7 +1901,7 @@ class TestNewUpload(TestCase):
 #
 #         # Download content file
 #         response = self.client.get(
-#             f"/filemanager/api/{upload_data['upload_id']}/{test_filename}/content",
+#             f"/filemanager/api/{self.upload_id}/{test_filename}/content",
 #             headers={'Authorization': token}
 #         )
 #         self.assertEqual(response.status_code, status.OK)
@@ -1706,7 +1930,7 @@ class TestNewUpload(TestCase):
 #         test_filename = 'dos_eps_2.eps'
 #         filepath1 = os.path.join(testfiles_dir, test_filename)
 #         filename1 = os.path.basename(filepath1)
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}",
 #                                     data={
 #                                         # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
 #                                         'file': (open(filepath1, 'rb'), filename1),
@@ -1743,7 +1967,7 @@ class TestNewUpload(TestCase):
 #
 #         # Check if content file exists
 #         response = self.client.head(
-#             f"/filemanager/api/{upload_data['upload_id']}/{test_filename}/content",
+#             f"/filemanager/api/{self.upload_id}/{test_filename}/content",
 #             headers={'Authorization': token}
 #         )
 #         self.assertEqual(response.status_code, status.OK)
@@ -1751,7 +1975,7 @@ class TestNewUpload(TestCase):
 #
 #         # Download content file
 #         response = self.client.get(
-#             f"/filemanager/api/{upload_data['upload_id']}/{test_filename}/content",
+#             f"/filemanager/api/{self.upload_id}/{test_filename}/content",
 #             headers={'Authorization': token}
 #         )
 #         self.assertEqual(response.status_code, status.OK)
@@ -1779,7 +2003,7 @@ class TestNewUpload(TestCase):
 #                                                 auth.scopes.WRITE_UPLOAD,
 #                                                 auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
 #
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}",
 #                                       headers={'Authorization': admin_token}
 #                                       )
 #
@@ -1836,7 +2060,7 @@ class TestNewUpload(TestCase):
 #                                                 auth.scopes.WRITE_UPLOAD,
 #                                                 auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
 #
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}",
 #                                       headers={'Authorization': admin_token}
 #                                       )
 #
@@ -1915,25 +2139,25 @@ class TestNewUpload(TestCase):
 #                       "Returns total upload size.")
 #         self.assertEqual(upload_data["upload_total_size"], 275_781,
 #                          "Expected total upload size to match"
-#                          f" (ID:{upload_data['upload_id']}).")
+#                          f" (ID:{self.upload_id}).")
 #
 #         # Check that upload_compressed_size is in summary response
 #         self.assertIn("upload_compressed_size", upload_data,
 #                       "Returns compressed upload size.")
 #         self.assertLess(upload_data["upload_compressed_size"], 116_000,
 #                          "Expected total upload size to match"
-#                          f" (ID:{upload_data['upload_id']}).")
+#                          f" (ID:{self.upload_id}).")
 #
 #         self.assertEqual(upload_data["source_format"], "tex",
 #                          "Check source format of TeX submission."
-#                          f" [ID={upload_data['upload_id']}]")
+#                          f" [ID={self.upload_id}]")
 #
 #         # Get summary of upload
 #
 #         # with open('schema/resources/Workspace.json') as f:
 #         #   status_schema = json.load(f)
 #
-#         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.get(f"/filemanager/api/{self.upload_id}",
 #                                    headers={'Authorization': token})
 #
 #         self.assertEqual(response.status_code, 200, "File summary.")
@@ -1961,7 +2185,7 @@ class TestNewUpload(TestCase):
 #
 #         # Check if content exists
 #         response = self.client.head(
-#             f"/filemanager/api/{upload_data['upload_id']}/content",
+#             f"/filemanager/api/{self.upload_id}/content",
 #             headers={'Authorization': admin_token}
 #         )
 #         self.assertEqual(response.status_code, status.OK)
@@ -1969,7 +2193,7 @@ class TestNewUpload(TestCase):
 #
 #         # Download content
 #         response = self.client.get(
-#             f"/filemanager/api/{upload_data['upload_id']}/content",
+#             f"/filemanager/api/{self.upload_id}/content",
 #             headers={'Authorization': admin_token}
 #         )
 #         self.assertEqual(response.status_code, status.OK)
@@ -1989,8 +2213,8 @@ class TestNewUpload(TestCase):
 #         from requests.utils import quote
 #         encoded_file_path = quote(public_file_path, safe='')
 #
-#         # response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{encoded_file_path}",
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+#         # response = self.client.delete(f"/filemanager/api/{self.upload_id}/{encoded_file_path}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}/{public_file_path}",
 #                                       headers={'Authorization': token})
 #
 #         self.assertEqual(response.status_code, 200, "Delete an individual file.")
@@ -1999,13 +2223,13 @@ class TestNewUpload(TestCase):
 #         public_file_path = "lipics-v2016.cls"
 #         encoded_file_path = quote(public_file_path, safe='')
 #
-#         # response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{encoded_file_path}",
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}/{public_file_path}",
+#         # response = self.client.delete(f"/filemanager/api/{self.upload_id}/{encoded_file_path}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}/{public_file_path}",
 #                                       headers={'Authorization': token})
 #         self.assertEqual(response.status_code, 200, "Delete an individual file.")
 #
 #         # Get summary after deletions
-#         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.get(f"/filemanager/api/{self.upload_id}",
 #                                    headers={'Authorization': token})
 #
 #         self.assertEqual(response.status_code, 200, "File summary after deletions.")
@@ -2028,7 +2252,7 @@ class TestNewUpload(TestCase):
 #
 #         # Now check to see if size total upload size decreased
 #         # Get summary and check upload_total_size
-#         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.get(f"/filemanager/api/{self.upload_id}",
 #                                    headers={'Authorization': token})
 #
 #         self.assertEqual(response.status_code, 200, "File summary.")
@@ -2051,7 +2275,7 @@ class TestNewUpload(TestCase):
 #                         "Expected smaller compressed upload size.")
 #
 #         # Delete all files in my workspace (normal)
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}/delete_all",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}/delete_all",
 #                                     headers={'Authorization': token},
 #                                     content_type='multipart/form-data')
 #
@@ -2060,7 +2284,7 @@ class TestNewUpload(TestCase):
 #         # Finally, after deleting all files, check the total upload size
 #
 #         # Get summary and check upload_total_size
-#         response = self.client.get(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.get(f"/filemanager/api/{self.upload_id}",
 #                                    headers={'Authorization': token})
 #
 #         self.assertEqual(response.status_code, 200, "File summary.")
@@ -2096,7 +2320,7 @@ class TestNewUpload(TestCase):
 #
 #         # Post a test submission to upload API
 #
-#         response = self.client.post(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.post(f"/filemanager/api/{self.upload_id}",
 #                                     data={
 #                                         # 'file': (io.BytesIO(b"abcdef"), 'test.jpg'),
 #                                         'file': (open(filepath, 'rb'), filename),
@@ -2122,7 +2346,7 @@ class TestNewUpload(TestCase):
 #
 #         self.assertEqual(upload_data['source_format'], "html",
 #                          ("Check source format of HTML submission."
-#                           f" [ID={upload_data['upload_id']}]"))
+#                           f" [ID={self.upload_id}]"))
 #
 #         # DONE TESTS, NOW CLEANUP
 #
@@ -2133,7 +2357,7 @@ class TestNewUpload(TestCase):
 #                                                 auth.scopes.WRITE_UPLOAD,
 #                                                 auth.scopes.DELETE_UPLOAD_WORKSPACE.as_global()])
 #
-#         response = self.client.delete(f"/filemanager/api/{upload_data['upload_id']}",
+#         response = self.client.delete(f"/filemanager/api/{self.upload_id}",
 #                                       headers={'Authorization': admin_token}
 #                                       )
 #

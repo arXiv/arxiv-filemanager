@@ -52,6 +52,11 @@ class SourceLog:
         return self.workspace.get_size_bytes(self._file)
 
     @property
+    def checksum(self) -> str:
+        """Get the base64 md5 hash of the log file."""
+        return self.workspace.get_checksum(self)
+
+    @property
     def last_modified(self) -> datetime:
         """Get the datetime when the log was last modified."""
         return self.workspace.get_last_modified(self._file)
@@ -71,6 +76,9 @@ class SourceLog:
         with self.workspace.open(self._file, flags, **kwargs) as f:
             yield f
 
+    def open_pointer(self, flags: str = 'r', **kwargs: Any) -> io.IOBase:
+        return self.workspace.open_pointer(self._file, flags, **kwargs)
+
     def debug(self, message: str) -> None:
         self._logger.debug(message)
 
@@ -80,3 +88,7 @@ class SourceLog:
 
     def error(self, message: str) -> None:
         self._logger.error(message)
+
+    @property
+    def full_path(self) -> str:
+        return self.workspace.get_full_path(self._file)

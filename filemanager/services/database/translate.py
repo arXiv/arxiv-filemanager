@@ -27,7 +27,7 @@ def dict_to_error(data: dict) -> Error:
     return Error(
         severity=Error.Severity(data['severity']),
         message=data['message'],
-        code=data.get('code', Error.Code.UNKNOWN),
+        code=Error.Code(data.get('code', Error.Code.UNKNOWN.value)),
         path=data.get('path', None),
         is_persistant=data.get('is_persistant', True)
     )

@@ -28,8 +28,12 @@ class SimpleStorageAdapter:
     def __init__(self, base_path: str) -> None:
         """Initialize with a base path."""
         self._base_path = base_path
+        self._deleted_logs_path = os.path.join(self._base_path,
+                                               'deleted_workspace_logs')
         if not os.path.exists(self._base_path):
             raise RuntimeError('Volume does not exist')
+        if not os.path.exists(self._deleted_logs_path):
+            os.makedirs(self._deleted_logs_path)
         logger.debug('New SimpleStorageAdapter at %s', self._base_path)
 
     def makedirs(self, workspace: UploadWorkspace, path: str) -> None:
@@ -139,6 +143,10 @@ class SimpleStorageAdapter:
         with open(self.get_path(workspace, u_file), flags, **kwargs) as f:
             yield f
 
+    def open_pointer(self, workspace: UploadWorkspace, u_file: UploadedFile,
+                     flags: str = 'r', **kwargs: Any) -> io.IOBase:
+        return open(self.get_path(workspace, u_file), flags, **kwargs)
+
     def is_tarfile(self, workspace: UploadWorkspace,
                    u_file: UploadedFile) -> bool:
         """Determine whether or not a file can be opened with ``tarfile``."""
@@ -227,6 +235,24 @@ class SimpleStorageAdapter:
         u_file.last_modified = self.get_last_modified(workspace, u_file)
         return u_file
 
+    def stash_log(self, workspace: UploadWorkspace) -> None:
+        """Copy the workspace log to the deleted logs directory."""
+        # Since every source log has the same filename we will prefix
+        # upload identifier to log.
+        padded_id = '{0:07d}'.format(workspace.upload_id)
+        new_filename = padded_id + "_source.log"
+        deleted_log_path = os.path.join(self._deleted_logs_path, new_filename)
+        workspace.log.info(f"Move source log for {workspace.upload_id} to"
+                           f" '{deleted_log_path}'.")
+        workspace.log.info(f"Delete workspace '{workspace.upload_id}'.")
+        if not shutil.move(workspace.log.full_path, deleted_log_path):
+            workspace.log.info('Saving source.log failed.')
+
+    def delete_workspace(self, workspace: UploadWorkspace) -> None:
+        """Completely delete a workspace and all of its contents."""
+        shutil.rmtree(self.get_path_bare(workspace.base_path,
+                                         is_persisted=True))
+
 
 class QuarantineStorageAdapter(SimpleStorageAdapter):
     """Storage adapter that keeps un/persisted files in separate locations."""
@@ -237,10 +263,14 @@ class QuarantineStorageAdapter(SimpleStorageAdapter):
         """Initialize with two distinct base paths."""
         self._base_path = base_path
         self._quarantine_path = quarantine_path
+        self._deleted_logs_path = os.path.join(self._base_path,
+                                               'deleted_workspace_logs')
         if not os.path.exists(self._base_path):
             raise RuntimeError(f'Volume does not exist: {base_path}')
         if not os.path.exists(self._quarantine_path):
             raise RuntimeError(f'Volume does not exist: {quarantine_path}')
+        if not os.path.exists(self._deleted_logs_path):
+            os.makedirs(self._deleted_logs_path)
 
     def _get_permanent_path(self, path: str) -> str:
         return os.path.join(self._base_path, path)

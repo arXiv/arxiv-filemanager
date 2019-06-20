@@ -145,49 +145,48 @@ def delete_workspace(upload_id: int) -> Response:
     # At this point I believe we know that caller is authorized to delete the
     # workspace. This is checked at the routes level.
 
-    # Does workspace exist? Has it already been deleted? Generate 400:NotFound error.
-    # Do we care is workspace is ACTIVE state? And not released? NO. But log it...
+    # Does workspace exist? Has it already been deleted? Generate 400:NotFound
+    # error.
+    # Do we care is workspace is ACTIVE state? And not released? NO. But log
+    # it...
     # Do we want to stash source.log somewhere?
     # Do we care if workspace was modified recently...NO. Log it
 
     try:
         # Make sure we have an existing upload workspace to work with
-        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
+        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
 
-        if upload_db_data is None:
+        if workspace is None:
             # invalid workspace identifier
             # Note: DB entry will exist for workspace that has already been
             #       deleted
             raise NotFound(UPLOAD_NOT_FOUND)
 
-
-        # Actually remove entire workspace directory structure. Log
-        # everything to global log since source log is being removed!
+        # Actually remove entire workspace directory structure. Log everything
+        # to global log since source log is being removed!
 
         # Initiate workspace deletion
 
         # Update database (but keep around) for historical reference. Does not
         # consume very much space. What about source log?
-        # Create Upload object
-        if upload_db_data.status == Upload.DELETED:
+
+        if workspace.is_deleted:
             logger.info("%s: Workspace has already been deleted:"
-                        "current state is '%s'", upload_id, upload_db_data.status)
+                        "current state is '%s'", upload_id, workspace.status)
             raise NotFound(UPLOAD_WORKSPACE_NOT_FOUND)
 
-        upload_workspace = UploadWorkspace(upload_id)
-
         # Call routine that will do the actual work
-        upload_workspace.remove_workspace()
+        workspace.delete_workspace()
 
         # update database
-        if upload_db_data.status != Upload.RELEASED:
+        if not workspace.is_released:
             logger.info("%s: Workspace currently in '%s' state.",
-                        upload_id, upload_db_data.status)
+                        upload_id, workspace.status)
 
-        upload_db_data.status = Upload.DELETED
+        workspace.status = UploadWorkspace.Status.DELETED
 
         # Store in DB
-        database.update(upload_db_data)
+        database.update(workspace)
 
     except IOError:
         logger.error("%s: Delete workspace request failed ", upload_id)
@@ -196,17 +195,15 @@ def delete_workspace(upload_id: int) -> Response:
         logger.info("%s: Delete Workspace: '%s'", upload_id, nf)
         raise
     except Exception as ue:
-        logger.info("Unknown error in delete workspace. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
-        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+        raise
+        # logger.info("Unknown error in delete workspace. "
+        #             " Add except clauses for '%s'. DO IT NOW!", ue)
+        # raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     # API doesn't provide for returning errors resulting from delete.
     # 401-unautorized and 403-forbidden are handled at routes level.
     # Add 400 response to openapi.yaml
-
-    response_data = {'reason': UPLOAD_DELETED_WORKSPACE}  # Get rid of pylint error
-    status_code = status.OK
-    return response_data, status_code, {}
+    return {'reason': UPLOAD_DELETED_WORKSPACE}, status.OK, {}
 
 
 def client_delete_file(upload_id: int, public_file_path: str) -> Response:
@@ -437,11 +434,11 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         if workspace is None:
             workspace = database.retrieve(upload_id)
 
-        workspace.strategy = strategy.create_strategy(current_app)
-        workspace.checkers = check.get_default_checkers()
-
         if workspace is None:   # Invalid workspace identifier
             raise NotFound(UPLOAD_NOT_FOUND)
+
+        workspace.strategy = strategy.create_strategy(current_app)
+        workspace.checkers = check.get_default_checkers()
 
         if workspace.status != UploadWorkspace.Status.ACTIVE:
             # Do we log anything for these requests
@@ -1109,6 +1106,13 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
     """
     Determine if source log associated with upload workspace exists.
 
+    Note: This routine currently retrieves the source log for active upload
+    workspaces. Technically, the upload source log is available for a 'deleted'
+    workspace, since we stash this away before we actually delete the
+    workspace. The justification to save is because the upload source log
+    contains useful information that the admins sometime desire after a
+    submission has been published and the associated workspace deleted.
+
     Parameters
     ----------
     upload_id : int
@@ -1116,35 +1120,24 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
 
     Returns
     -------
-    Note: This routine currently retrieves the source log for active upload
-    workspaces. Technically, the upload source log is available for a 'deleted'
-    workspace, since we stash this away before we actually delete the workspace.
-    The justification to save is because the upload source log contains useful
-    information that the admins sometime desire after a submission has been
-    published and the associated workspace deleted.
+
     """
     try:
-        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
+        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
     except IOError:
-        logger.error("%s: SourceLogExistCheck: There was a problem connecting to database.",
-                     upload_db_data.upload_id)
+        logger.error("%s: SourceLogExistCheck: There was a problem connecting"
+                     " to database.", upload_db_data.upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
 
-    if upload_db_data is None:
+    if workspace is None:
         raise NotFound(UPLOAD_NOT_FOUND)
 
     logger.info("%s: Test for source log.", upload_id)
-    upload_workspace = UploadWorkspace(upload_id)
-
-    checksum = upload_workspace.source_log_checksum
-    size = upload_workspace.source_log_size
-    modified = upload_workspace.source_log_last_modified
-
     headers = {
-        'ETag': checksum,
-        'Content-Length': size,
-        'Last-Modified': modified,
-        'ARXIV-OWNER': upload_db_data.owner_user_id
+        'ETag': workspace.log.checksum,
+        'Content-Length': workspace.log.size_bytes,
+        'Last-Modified': workspace.log.last_modified,
+        'ARXIV-OWNER': workspace.owner_user_id
     }
     return {}, status.OK, headers
 
@@ -1166,22 +1159,17 @@ def get_upload_source_log(upload_id: int) -> Response:
     Standard Response tuple containing content, HTTP status, and HTTP headers.
     """
     try:
-        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
+        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
     except IOError:
-        logger.error("%s: GetSourceLog: There was a problem connecting to database.",
-                     upload_db_data.upload_id)
+        logger.error("%s: GetSourceLog: There was a problem connecting to"
+                     " database.", upload_db_data.upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
 
-    if upload_db_data is None:
+    if workspace is None:
         raise NotFound(UPLOAD_NOT_FOUND)
 
-    upload_workspace = UploadWorkspace(upload_id)
 
-    checksum = upload_workspace.source_log_checksum
-    size = upload_workspace.source_log_size
-    modified = upload_workspace.source_log_last_modified
-
-    filepointer = upload_workspace.source_log_file_pointer()
+    filepointer = workspace.log.open_pointer()
     if filepointer:
         name = filepointer.name
     else:
@@ -1189,10 +1177,10 @@ def get_upload_source_log(upload_id: int) -> Response:
 
     headers = {
         "Content-disposition": f"filename={name}",
-        'ETag': checksum,
-        'Content-Length': size,
-        'Last-Modified': modified,
-        'ARXIV-OWNER': upload_db_data.owner_user_id
+        'ETag': workspace.log.checksum,
+        'Content-Length': workspace.log.size_bytes,
+        'Last-Modified': workspace.log.last_modified,
+        'ARXIV-OWNER': workspace.owner_user_id
     }
     return filepointer, status.OK, headers
 
