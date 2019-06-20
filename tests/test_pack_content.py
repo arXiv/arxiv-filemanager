@@ -87,7 +87,6 @@ class TestPackContent(TestCase):
     def test_content_checksum(self):
         """Generate a checksum based on the tarball content."""
         self.workspace.source_package.pack()
-        print(self.workspace.source_package.full_path)
         self.assertEqual(self.workspace.source_package.checksum,
                          self.workspace.source_package.checksum,
                          'The checksum should remain the same.')
@@ -96,6 +95,5 @@ class TestPackContent(TestCase):
     def test_get_content(self):
         """Generate a pointer to the content tarball."""
         self.workspace.source_package.pack()
-        print('-------')
         with self.workspace.source_package.open() as pointer:
             self.assertTrue(hasattr(pointer, 'read'), "Yields an IO")
