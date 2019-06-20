@@ -24,7 +24,7 @@ from arxiv.base.globals import get_application_config
 
 from ..shared import url_for
 from ..domain import UploadWorkspace
-from ..services import uploads, storage
+from ..services import database, storage
 from ..process import strategy, check
 from ..serialize import serialize_workspace
 
@@ -152,7 +152,7 @@ def delete_workspace(upload_id: int) -> Response:
 
     try:
         # Make sure we have an existing upload workspace to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
 
         if upload_db_data is None:
             # invalid workspace identifier
@@ -187,7 +187,7 @@ def delete_workspace(upload_id: int) -> Response:
         upload_db_data.status = Upload.DELETED
 
         # Store in DB
-        uploads.update(upload_db_data)
+        database.update(upload_db_data)
 
     except IOError:
         logger.error("%s: Delete workspace request failed ", upload_id)
@@ -235,7 +235,7 @@ def client_delete_file(upload_id: int, public_file_path: str) -> Response:
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
 
         if upload_db_data is None:
             # Invalid workspace identifier
@@ -308,7 +308,7 @@ def client_delete_all_files(upload_id: int) -> Response:
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
 
         if upload_db_data is None:
             # Invalid workspace identifier
@@ -348,6 +348,26 @@ def client_delete_all_files(upload_id: int) -> Response:
     return response_data, status.OK, headers
 
 
+def _create_workspace(file: FileStorage, user_id: str) -> UploadWorkspace:
+    try:
+        logger.info("Create new workspace: Upload request: file='%s'",
+                    file.filename)
+        current_time = datetime.now(UTC)
+        workspace = database.create(user_id)
+    except IOError as e:
+        logger.info("Error creating new workspace: %s", e)
+        raise InternalServerError(f'{UPLOAD_IO_ERROR}: {e}')
+    except (TypeError, ValueError) as dbe:
+        logger.info("Error adding new workspace to database: '%s'.", dbe)
+        raise InternalServerError(UPLOAD_DB_ERROR)
+    except Exception as ue:
+        logger.info("Unknown error in upload for new workspace. "
+                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+    return workspace
+
+
+@database.atomic
 def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
            user: Union[auth_domain.User, auth_domain.Client],
            ancillary: bool = False) -> Response:
@@ -381,17 +401,12 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
     """
     start = time.time()
     workspace: Optional[UploadWorkspace] = None
-    # TODO: Hook up async processing (celery/redis) - doesn't work now
-    # TODO: Will likely delete this code if processing time is reasonable
-    # print(f'Controller: Schedule upload_db_data task for {upload_id}')
-    #
-    # result = sanitize_upload.delay(upload_id, file)
-    #
-    # headers = {'Location': url_for('upload_api.readiness',
-    #                              task_id=result.task_id)}
-    # return ACCEPTED, status.ACCEPTED, headers
-    # End delete
 
+    # TODO: we need better handling for client-only requests here.
+    if isinstance(user, auth_domain.User):
+        user_id = str(user.user_id)
+    elif isinstance(user, auth_domain.Client):
+        user_id = str(user.owner_id)   # User ID of the client owner.
     # Check arguments for basic qualities like existing and such.
 
     # File argument is required to exist and have a name associated with it. It
@@ -404,44 +419,23 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         raise BadRequest(UPLOAD_MISSING_FILE)
 
     if file.filename == '':
-        # Client needs to select file, or provide name to upload payload
+        # Client needs to select file, or provide name to upload payload.
         logger.error('Upload file is missing filename. File to upload may not'
                      ' be selected.')
         raise BadRequest(UPLOAD_MISSING_FILENAME)
 
-    # If this is a new upload then we need to create a workspace and add to
-    # database.
+    # If this is a new upload then we need to create a workspace.
     if upload_id is None:
         logger.debug('This is a new upload workspace.')
-        try:
-            logger.info("Create new workspace: Upload request: file='%s'",
-                        file.filename)
-            # TODO: we need better handling for client-only requests here.
-            if isinstance(user, auth_domain.User):
-                user_id = str(user.user_id)
-            elif isinstance(user, auth_domain.Client):
-                user_id = str(user.owner_id)   # User ID of the client owner.
-
-            current_time = datetime.now(UTC)
-            workspace = uploads.create(user_id)
-            upload_id = workspace.upload_id
-
-        except IOError as e:
-            logger.info("Error creating new workspace: %s", e)
-            raise InternalServerError(f'{UPLOAD_IO_ERROR}: {e}')
-        except (TypeError, ValueError) as dbe:
-            logger.info("Error adding new workspace to database: '%s'.", dbe)
-            raise InternalServerError(UPLOAD_DB_ERROR)
-        except Exception as ue:
-            logger.info("Unknown error in upload for new workspace. "
-                        " Add except clauses for '%s'. DO IT NOW!", ue)
-            raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+        # Split this out for clarity. --Erick 2019-06-10
+        workspace = _create_workspace(file, user_id)
+        upload_id = workspace.upload_id
 
     print('upload workspace exists at', time.time() - start)
     # At this point we expect upload to exist in system
     try:
         if workspace is None:
-            workspace = uploads.retrieve(upload_id)
+            workspace = database.retrieve(upload_id)
 
         workspace.strategy = strategy.create_strategy(current_app)
         workspace.checkers = check.get_default_checkers()
@@ -462,7 +456,7 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
 
         # NOTE: This will need to be migrated to task.py using Celery at
         #       some point in future. Depends in time it takes to process
-        #       uploads.retrieve
+        #       database.retrieve
         logger.info("%s: Upload files to existing workspace: file='%s'",
                     workspace.upload_id, file.filename)
         print('upload workspace retrieved at', time.time() - start)
@@ -470,74 +464,47 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         # Keep track of how long processing workspace takes.
         start_datetime = datetime.now(UTC)
 
-        # Create Upload object
-        # upload_workspace = UploadWorkspace(upload_id)
+        # Add the uploaded file to the workspace.
         u_file = workspace.create(file.filename, is_ancillary=ancillary)
         with workspace.open(u_file, 'wb') as f:
             file.save(f)
-        if u_file.size_bytes == 0:
+
+        if u_file.size_bytes == 0:      # Empty uploads are disallowed.
             raise BadRequest(UPLOAD_FILE_EMPTY)
 
-        workspace.perform_checks()
+        workspace.perform_checks()      # Runs sanitization, fixes, etc.
         print('workspace finished processing upload at', time.time() - start)
 
         completion_datetime = datetime.now(UTC)
 
-        # Keep track of files processed (this included deleted files)
-        # file_list = upload_workspace.create_file_upload_summary()
-        # print('workspace summary at', time.time() - start)
-
-        # Determine readiness state of upload content
-        readiness = workspace.readiness
-
-        # Create combine list of errors and warnings
-        # TODO: Should I do this in Upload package?? Likely...
-        all_errors_and_warnings = []
-
-        # for warn in workspace.warnings.items():
-        #     public_filepath, warning_message = warn
-        #     all_errors_and_warnings.append(['warn', public_filepath, warning_message])
-
-        # for error in workspace.errors.items():
-        #     public_filepath, warning_message = error
-        #     # TODO: errors renamed fatal. Need to review 'errors' as to whether they are 'fatal'
-        #     all_errors_and_warnings.append(['fatal', public_filepath, warning_message])
-
-        # Prepare upload_db_data details (DB). I'm assuming that in memory Redis
-        # is not sufficient for results that may be needed in the distant future.
-        # errors_and_warnings = upload_workspace.get_errors() + upload_workspace.get_warnings()
-        errors_and_warnings = all_errors_and_warnings
-        workspace.lastupload_logs = json.dumps(errors_and_warnings)
+        # Disabling these for now, as it doesn't look like we're using them.
+        # --Erick 2019-06-20
+        #
+        # workspace.lastupload_logs = json.dumps(response_data['errors'])
+        # workspace.lastupload_file_summary = json.dumps(response_data['files'])
         workspace.lastupload_start_datetime = start_datetime
         workspace.lastupload_completion_datetime = completion_datetime
-        # workspace.lastupload_file_summary = json.dumps(file_list)
-        workspace.lastupload_readiness = readiness
-
+        workspace.lastupload_readiness = workspace.readiness
         workspace.status = UploadWorkspace.Status.ACTIVE
 
-        # Store in DB
-        uploads.update(workspace)
+        # workspace.
+        database.update(workspace)    # Store in DB
         print('db updated at', time.time() - start)
 
         logger.info("%s: Processed upload. Saved to DB. Preparing upload "
                     "summary.", workspace.upload_id)
-
+        response_data = serialize_workspace(workspace)
         # Do we want affirmative log messages after processing each request
         # or maybe just report errors like:
-        #    logger.info(f"{upload_db_data.upload_id}: Finished processing ...")
+        #  logger.info(f"{upload_db_data.upload_id}: Finished processing ...")
 
-        # Upload action itself has very simple response
         headers = {'Location': url_for('upload_api.upload_files',
                                        upload_id=workspace.upload_id)}
 
-        status_code = status.CREATED
-
-        response_data = serialize_workspace(workspace)
         logger.info("%s: Generating upload summary.", workspace.upload_id)
-        logger.debug('Response data: %s', response_data)
         headers.update({'ARXIV-OWNER': workspace.owner_user_id})
         print('done at', time.time() - start)
-        return response_data, status_code, headers
+        return response_data, status.CREATED, headers
 
     except IOError as e:
         logger.error("%s: File upload_db_data request failed "
@@ -556,9 +523,10 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         logger.info("%s: Upload failed: '{forb}'.", upload_id)
         raise forb
     except Exception as ue:
-        logger.info("Unknown error with existing workspace."
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
-        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+        raise
+        # logger.info("Unknown error with existing workspace."
+        #             " Add except clauses for '%s'. DO IT NOW!", ue)
+        # raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return None
 
@@ -588,42 +556,39 @@ def upload_summary(upload_id: int) -> Response:
     """
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
-
-        if upload_db_data is None:
-            status_code = status.NOT_FOUND
-            response_data = UPLOAD_NOT_FOUND
+        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
+        if workspace is None:
             raise NotFound(UPLOAD_NOT_FOUND)
 
-        logger.info("%s: Upload summary request.", upload_db_data.upload_id)
+        logger.info("%s: Upload summary request.", workspace.upload_id)
 
         # Create Upload object
-        upload_workspace = UploadWorkspace(upload_id)
-        file_list = upload_workspace.create_file_list()
+        # upload_workspace = UploadWorkspace(upload_id)
+        # file_list = upload_workspace.create_file_list()
 
-        details_list = []
-        for fileObj in file_list:
-            file_details = {
-                'name': fileObj.name,
-                'public_filepath': fileObj.public_filepath,
-                'size': fileObj.size,
-                'type': fileObj.type_string,
-                'modified_datetime': fileObj.modified_datetime
-            }
-            if not fileObj.removed:
-                details_list.append(file_details)
+        # details_list = []
+        # for fileObj in file_list:
+        #     file_details = {
+        #         'name': fileObj.name,
+        #         'public_filepath': fileObj.public_filepath,
+        #         'size': fileObj.size,
+        #         'type': fileObj.type_string,
+        #         'modified_datetime': fileObj.modified_datetime
+        #     }
+        #     if not fileObj.removed:
+        #         details_list.append(file_details)
 
         status_code = status.OK
-        response_data = _status_data(upload_db_data, upload_workspace)
-        response_data.update({'files': details_list, 'errors': []})
-        logger.info("%s: Upload summary request.",
-                    upload_db_data.upload_id)
+        # response_data = _status_data(upload_db_data, upload_workspace)
+        # response_data.update({'files': details_list, 'errors': []})
+        response_data = serialize_workspace(workspace)
+        logger.info("%s: Upload summary request.", workspace.upload_id)
 
     except IOError:
         # response_data = ERROR_RETRIEVING_UPLOAD
         # status_code = status.INTERNAL_SERVER_ERROR
         raise InternalServerError(ERROR_RETRIEVING_UPLOAD)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError) as e:
         logger.info("Error updating database.")
         raise InternalServerError(UPLOAD_DB_ERROR)
     except NotFound as nf:
@@ -634,7 +599,7 @@ def upload_summary(upload_id: int) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    headers = {'ARXIV-OWNER': upload_db_data.owner_user_id}
+    headers = {'ARXIV-OWNER': workspace.owner_user_id}
     return response_data, status_code, headers
 
 
@@ -669,7 +634,7 @@ def upload_lock(upload_id: int) -> Response:
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
 
         if upload_db_data is None:
             # Invalid workspace identifier
@@ -683,7 +648,7 @@ def upload_lock(upload_id: int) -> Response:
             upload_db_data.lock = Upload.LOCKED
 
             # Store in DB
-            uploads.update(upload_db_data)
+            database.update(upload_db_data)
 
         response_data = {'reason': UPLOAD_LOCKED_WORKSPACE}  # Get rid of pylint error
         status_code = status.OK
@@ -723,7 +688,7 @@ def upload_unlock(upload_id: int) -> Response:
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
 
         if upload_db_data is None:
             # Invalid workspace identifier
@@ -737,7 +702,7 @@ def upload_unlock(upload_id: int) -> Response:
             upload_db_data.lock = Upload.UNLOCKED
 
             # Store in DB
-            uploads.update(upload_db_data)
+            database.update(upload_db_data)
 
         response_data = {'reason': UPLOAD_UNLOCKED_WORKSPACE}  # Get rid of pylint error
         status_code = status.OK
@@ -790,7 +755,7 @@ def upload_release(upload_id: int) -> Response:
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
 
         if upload_db_data is None:
             # Invalid workspace identifier
@@ -814,7 +779,7 @@ def upload_release(upload_id: int) -> Response:
             upload_db_data.status = Upload.RELEASED
 
             # Store in DB
-            uploads.update(upload_db_data)
+            database.update(upload_db_data)
 
             response_data = {'reason': UPLOAD_RELEASED_WORKSPACE}  # Get rid of pylint error
             status_code = status.OK
@@ -872,7 +837,7 @@ def upload_unrelease(upload_id: int) -> Response:
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
 
         if upload_db_data is None:
             # Invalid workspace identifier
@@ -896,7 +861,7 @@ def upload_unrelease(upload_id: int) -> Response:
             upload_db_data.status = Upload.ACTIVE
 
             # Store in DB
-            uploads.update(upload_db_data)
+            database.update(upload_db_data)
 
             response_data = {'reason': UPLOAD_UNRELEASED_WORKSPACE}
             status_code = status.OK
@@ -933,7 +898,7 @@ def check_upload_content_exists(upload_id: int) -> Response:
 
     """
     try:
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
     except IOError:
         logger.error("%s: ContentExistsCheck: There was a problem connecting "
                      "to database.", upload_id)
@@ -976,7 +941,7 @@ def get_upload_content(upload_id: int) -> Response:
 
     """
     try:
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
     except IOError:
         logger.error("%s: ContentDownload: There was a problem connecting "
                      "to database.", upload_id)
@@ -1015,7 +980,7 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
 
     """
     try:
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
     except IOError:
         logger.error("%s: ContentFileExistsCheck: There was a problem "
                      "connecting to database.", upload_id)
@@ -1087,7 +1052,7 @@ def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
 
     """
     try:
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
     except IOError:
         logger.error("%s: ContentFileDownload: There was a problem connecting to database.",
                      upload_db_data.upload_id)
@@ -1159,7 +1124,7 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
     published and the associated workspace deleted.
     """
     try:
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
     except IOError:
         logger.error("%s: SourceLogExistCheck: There was a problem connecting to database.",
                      upload_db_data.upload_id)
@@ -1201,7 +1166,7 @@ def get_upload_source_log(upload_id: int) -> Response:
     Standard Response tuple containing content, HTTP status, and HTTP headers.
     """
     try:
-        upload_db_data: Optional[Upload] = uploads.retrieve(upload_id)
+        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
     except IOError:
         logger.error("%s: GetSourceLog: There was a problem connecting to database.",
                      upload_db_data.upload_id)

@@ -7,7 +7,7 @@ from datetime import datetime
 from pytz import UTC
 from typing import Any
 import sqlalchemy
-from filemanager.services import uploads
+from filemanager.services import database
 from filemanager.domain import UploadWorkspace
 from filemanager.services.storage import SimpleStorageAdapter
 
@@ -26,33 +26,33 @@ class TestUploadGetter(TestCase):
                 'SQLALCHEMY_TRACK_MODIFICATIONS': False
             }, extensions={}, root_path=''
         )
-        uploads.db.init_app(app)
-        uploads.db.app = app
-        uploads.db.create_all()
+        database.db.init_app(app)
+        database.db.app = app
+        database.db.create_all()
 
         self.data = dict(owner_user_id='dlf2',
                          created_datetime=datetime.now(UTC),
                          modified_datetime=datetime.now(UTC),
                          state=UploadWorkspace.Status.ACTIVE)
-        self.dbupload = self.uploads.DBUpload(**self.data)  # type: ignore
-        self.uploads.db.session.add(self.dbupload)  # type: ignore
-        self.uploads.db.session.commit()  # type: ignore
+        self.dbupload = self.database.DBUpload(**self.data)  # type: ignore
+        self.database.db.session.add(self.dbupload)  # type: ignore
+        self.database.db.session.commit()  # type: ignore
         self.base_path = tempfile.mkdtemp()
 
     def tearDown(self) -> None:
         """Clear the database and tear down all tables."""
-        uploads.db.session.remove()
-        uploads.db.drop_all()
+        database.db.session.remove()
+        database.db.drop_all()
         shutil.rmtree(self.base_path)
 
-    @mock.patch(f'{uploads.__name__}.current_app',
+    @mock.patch(f'{database.__name__}.current_app',
                 mock.MagicMock(config={
                     'STORAGE_BACKEND': 'simple',
                     'STORAGE_BASE_PATH': tempfile.mkdtemp()
                 }))
     def test_get_an_upload_that_exists(self) -> None:
         """When the uploads exists, returns a :class:`.Upload`."""
-        upload = self.uploads.retrieve(1)  # type: ignore
+        upload = self.database.retrieve(1)  # type: ignore
         self.assertIsInstance(upload, UploadWorkspace)
         self.assertEqual(upload.upload_id, 1)
         self.assertEqual(upload.owner_user_id, self.data['owner_user_id'])
@@ -61,9 +61,9 @@ class TestUploadGetter(TestCase):
 
     def test_get_an_upload_that_doesnt_exist(self) -> None:
         """When the upload doesn't exist, returns None."""
-        self.assertIsNone(uploads.retrieve(666))
+        self.assertIsNone(database.retrieve(666))
 #
-    @mock.patch('filemanager.services.uploads.db.session.query')
+    @mock.patch('filemanager.services.database.db.session.query')
     def test_get_upload_when_db_is_unavailable(self, mock_query: Any) -> None:
         """When the database squawks, raises an IOError."""
 
@@ -72,7 +72,7 @@ class TestUploadGetter(TestCase):
 
         mock_query.side_effect = raise_op_error
         with self.assertRaises(IOError):
-            self.uploads.retrieve(1, skip_cache=True)  # type: ignore
+            self.database.retrieve(1, skip_cache=True)  # type: ignore
 
 
 class TestUploadCreator(TestCase):
@@ -88,23 +88,23 @@ class TestUploadCreator(TestCase):
                 'SQLALCHEMY_TRACK_MODIFICATIONS': False
             }, extensions={}, root_path=''
         )
-        self.uploads.db.init_app(app)  # type: ignore
-        self.uploads.db.app = app  # type: ignore
-        self.uploads.db.create_all()  # type: ignore
+        self.database.db.init_app(app)  # type: ignore
+        self.database.db.app = app  # type: ignore
+        self.database.db.create_all()  # type: ignore
 
         self.data = {'owner_user_id': 'dlf2',
                      'created_datetime': datetime.now(UTC),
                      'modified_datetime': datetime.now(UTC),
                      'state': UploadWorkspace.Status.ACTIVE}
-        self.dbupload = self.uploads.DBUpload(**self.data)  # type: ignore
-        self.uploads.db.session.add(self.dbupload)  # type: ignore
-        self.uploads.db.session.commit()  # type: ignore
+        self.dbupload = self.database.DBUpload(**self.data)  # type: ignore
+        self.database.db.session.add(self.dbupload)  # type: ignore
+        self.database.db.session.commit()  # type: ignore
         self.base_path = tempfile.mkdtemp()
 
     def tearDown(self) -> None:
         """Clear the database and tear down all tables."""
-        self.uploads.db.session.remove()  # type: ignore
-        self.uploads.db.drop_all()  # type: ignore
+        self.database.db.session.remove()  # type: ignore
+        self.database.db.drop_all()  # type: ignore
         shutil.rmtree(self.base_path)
 
     def test_store_an_upload(self) -> None:
@@ -118,12 +118,12 @@ class TestUploadCreator(TestCase):
             storage=SimpleStorageAdapter(self.base_path)
         )
 
-        self.uploads.store(existing_upload)  # type: ignore
+        self.database.store(existing_upload)  # type: ignore
         self.assertGreater(existing_upload.upload_id, 0,
                            "Upload.id is updated with pk id")
 
-        dbupload = self.uploads.db.session \
-            .query(self.uploads.DBUpload) \
+        dbupload = self.database.db.session \
+            .query(self.database.DBUpload) \
             .get(existing_upload.upload_id)  # type: ignore
 
         self.assertEqual(dbupload.owner_user_id, existing_upload.owner_user_id)
@@ -143,22 +143,22 @@ class TestUploadUpdater(TestCase):
                 'SQLALCHEMY_TRACK_MODIFICATIONS': False
             }, extensions={}, root_path=''
         )
-        self.uploads.db.init_app(app)  # type: ignore
-        self.uploads.db.app = app  # type: ignore
-        self.uploads.db.create_all()  # type: ignore
+        self.database.db.init_app(app)  # type: ignore
+        self.database.db.app = app  # type: ignore
+        self.database.db.create_all()  # type: ignore
 
         self.data = dict(owner_user_id='dlf2',
                          created_datetime=datetime.now(UTC))
-        self.dbupload = self.uploads.DBUpload(**self.data)  # type: ignore
-        self.uploads.db.session.add(self.dbupload)  # type: ignore
-        self.uploads.db.session.commit()  # type: ignore
+        self.dbupload = self.database.DBUpload(**self.data)  # type: ignore
+        self.database.db.session.add(self.dbupload)  # type: ignore
+        self.database.db.session.commit()  # type: ignore
 
         self.base_path = tempfile.mkdtemp()
 
     def tearDown(self) -> None:
         """Clear the database and tear down all tables."""
-        self.uploads.db.session.remove()  # type: ignore
-        self.uploads.db.drop_all()  # type: ignore
+        self.database.db.session.remove()  # type: ignore
+        self.database.db.drop_all()  # type: ignore
         shutil.rmtree(self.base_path)
     #
     def test_update_an_upload(self) -> None:
@@ -171,16 +171,16 @@ class TestUploadUpdater(TestCase):
             strategy=mock.MagicMock(),
             storage=SimpleStorageAdapter(self.base_path)
         )
-        self.uploads.update(an_upload)  # type: ignore
+        self.database.update(an_upload)  # type: ignore
 
-        dbupload = self.uploads.db.session \
-            .query(self.uploads.DBUpload) \
+        dbupload = self.database.db.session \
+            .query(self.database.DBUpload) \
             .get(self.dbupload.upload_id)  # type: ignore
 
         # TODO: more assertions here.
         self.assertEqual(dbupload.status, an_upload.status.value)
 
-    @mock.patch('filemanager.services.uploads.db.session.query')
+    @mock.patch('filemanager.services.database.db.session.query')
     def test_operationalerror_is_handled(self, mock_query: Any) -> None:
         """When the db raises an OperationalError, an IOError is raised."""
         an_upload = UploadWorkspace(
@@ -199,7 +199,7 @@ class TestUploadUpdater(TestCase):
         mock_query.side_effect = raise_op_error
 
         with self.assertRaises(IOError):
-            self.uploads.update(an_upload)  # type: ignore
+            self.database.update(an_upload)  # type: ignore
 
     def test_upload_really_does_not_exist(self) -> None:
         """If the :class:`.Upload` doesn't exist, a RuntimeError is raised."""
@@ -212,9 +212,9 @@ class TestUploadUpdater(TestCase):
             storage=SimpleStorageAdapter(self.base_path)
         )  # Unlikely to exist.
         with self.assertRaises(RuntimeError):
-            self.uploads.update(an_update)  # type: ignore
+            self.database.update(an_update)  # type: ignore
 
-    @mock.patch('filemanager.services.uploads.db.session.query')
+    @mock.patch('filemanager.services.database.db.session.query')
     def test_thing_does_not_exist(self, mock_query: Any) -> None:
         """If the :class:`.Upload` doesn't exist, a RuntimeError is raised."""
         an_update = UploadWorkspace(
@@ -229,4 +229,4 @@ class TestUploadUpdater(TestCase):
             get=mock.MagicMock(return_value=None)
         )
         with self.assertRaises(RuntimeError):
-            self.uploads.update(an_update)  # type: ignore
+            self.database.update(an_update)  # type: ignore

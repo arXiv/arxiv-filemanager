@@ -1,6 +1,7 @@
 """Transform domain objects to JSON-friendly structs."""
 
-from .domain import UploadWorkspace, UploadedFile
+from typing import Tuple
+from .domain import UploadWorkspace, UploadedFile, Error, FileType
 
 
 def serialize_workspace(workspace: UploadWorkspace) -> dict:
@@ -14,8 +15,7 @@ def serialize_workspace(workspace: UploadWorkspace) -> dict:
         'start_datetime': workspace.lastupload_start_datetime,
         'completion_datetime': workspace.lastupload_completion_datetime,
         'files': [serialize_file(f) for f in workspace.iter_files()],
-        'errors': [(e['level'], e['path'], e['message'])
-                   for e in workspace.errors + workspace.warnings],
+        'errors': [serialize_error(e) for e in workspace.errors],
         'readiness': workspace.readiness.value,
         'status': workspace.status.value,
         'lock_state': workspace.lock_state.value,
@@ -33,3 +33,7 @@ def serialize_file(u_file: UploadedFile) -> dict:
         'type': u_file.file_type.value,
         'modified_datetime': u_file.last_modified
     }
+    
+
+def serialize_error(error: Error) -> Tuple[str, str, str]:
+    return (error.severity.value, error.path, error.message)

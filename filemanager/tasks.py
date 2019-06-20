@@ -14,7 +14,7 @@ from werkzeug.datastructures import FileStorage
 
 # Upload tasks
 
-from filemanager.services import uploads
+from filemanager.services import database
 from filemanager.domain   import Upload
 from filemanager.process  import upload
 import filemanager
@@ -37,7 +37,7 @@ def sanitize_upload(upload_id: int, file: FileStorage, with_sleep: int = 15) -> 
 
     """
     print(f'Task: Upload task for {upload_id}')
-    upload: Optional[Upload] = uploads.retrieve(upload_id)
+    upload: Optional[Upload] = database.retrieve(upload_id)
     if upload is None:
         # Revisit how to handle error
         raise RuntimeError('No such thing! %s' % upload_id)
@@ -62,7 +62,7 @@ def sanitize_upload(upload_id: int, file: FileStorage, with_sleep: int = 15) -> 
     upload.status = 'Active'
 
     # Save to DB
-    uploads.update(upload)
+    database.update(upload)
 
     print(f'Task: Completed upload task for {upload_id}')
 

@@ -8,7 +8,8 @@
     "readiness",
     "status",
     "created_datetime",
-    "modified_datetime"
+    "modified_datetime",
+    "files"
   ],
   "type": "object",
   "properties": {

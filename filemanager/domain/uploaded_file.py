@@ -64,10 +64,6 @@ class UploadedFile:
 
     reason_for_removal: Optional[str] = field(default=None)
     errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-
-    meta: Dict[str, Any] = field(default_factory=dict)
-    """A register for checkers/strategies to store state between runs."""
 
     def __post_init__(self) -> None:
         """Make sure that directory paths end with '/'."""

@@ -12,6 +12,7 @@ from collections import defaultdict, Counter
 from contextlib import contextmanager
 from datetime import datetime
 from enum import Enum
+from itertools import chain
 
 from typing_extensions import Literal
 from dataclasses import dataclass, field
@@ -23,6 +24,8 @@ from .checks import IChecker, ICheckingStrategy
 from .log import SourceLog
 from .package import SourcePackage
 from .uploaded_file import UploadedFile
+from .error import Error
+from .index import FileIndex
 logger = logging.getLogger(__name__)
 logger.propagate = False
 
@@ -160,13 +163,10 @@ class UploadWorkspace:
 
     source_type: SourceType = field(default=SourceType.UNKNOWN)
 
-    _errors: Mapping[str, List[str]] \
-        = field(default_factory=lambda: defaultdict(list))
-    _warnings: Mapping[str, List[str]] \
-        = field(default_factory=lambda: defaultdict(list))
+    _errors: List[Error] = field(default_factory=list)
 
-    files: Dict[str, UploadedFile] = field(default_factory=dict)
-    """All of the files in this workspace. Keys are path-like."""
+    files: FileIndex = field(default_factory=FileIndex)
+    """Index of all of the files in this workspace."""
 
     # Data about last upload
 
@@ -273,22 +273,35 @@ class UploadWorkspace:
                 return True
         return False
 
-    def exists(self, path: str) -> bool:
+    def exists(self, path: str, is_ancillary: bool = False,
+               is_removed: bool = False, is_system: bool = False) -> bool:
         """Determine whether or not a file exists in this workspace."""
-        return bool(path in self.files and not self.files[path].is_removed)
+        return self.files.contains(path, is_ancillary=is_ancillary,
+                                   is_removed=is_removed, is_system=is_system)
 
     def copy(self, u_file: UploadedFile, new_path: str,
              replace: bool = False) -> UploadedFile:
         """Make a copy of a file."""
-        if new_path in self.files:
-            if self.files[new_path].is_directory:
+        if self.files.contains(new_path, is_ancillary=u_file.is_ancillary,
+                               is_removed=u_file.is_removed,
+                               is_system=u_file.is_system):
+            existing_file = self.files.get(new_path,
+                                           is_ancillary=u_file.is_ancillary,
+                                           is_removed=u_file.is_removed,
+                                           is_system=u_file.is_system)
+            if existing_file.is_directory:
                 raise ValueError('Directory exists at that path')
             if not replace:
                 raise ValueError('File at that path already exists')
         new_file = UploadedFile(self, path=new_path,
                                 size_bytes=u_file.size_bytes,
-                                file_type=u_file.file_type)
+                                file_type=u_file.file_type,
+                                is_ancillary=u_file.is_ancillary,
+                                is_removed=u_file.is_removed,
+                                is_checked=u_file.is_checked,
+                                is_system=u_file.is_system)
         self.storage.copy(self, u_file, new_file)
+        self.files.set(new_path, new_file)
         return new_file
 
     def rename(self, u_file: UploadedFile, new_path: str) -> None:
@@ -312,22 +325,32 @@ class UploadWorkspace:
                 self._update_refs(_file, _former_path)
 
     def iter_children(self, u_file_or_path: Union[str, UploadedFile],
-                      max_depth: int = None) \
+                      max_depth: int = None, is_ancillary: bool = False,
+                      is_removed: bool = False, is_system: bool = False) \
             -> Iterable[Tuple[str, UploadedFile]]:
         """Get an iterator over path, :class:`.UploadedFile` tuples."""
         # QUESTION: is it really so bad to use non-directories here? Can be
         # like the key-prefix for S3. --Erick 2019-06-11.
-        if isinstance(u_file_or_path, str) and u_file_or_path in self.files:
-            if not self.files['u_file_or_path'].is_directory:
-                raise ValueError('Not a directory')
+        u_file: Optional[UploadedFile] = None
+        if isinstance(u_file_or_path, str) \
+                and self.files.contains(u_file_or_path,
+                                        is_ancillary=is_ancillary,
+                                        is_removed=is_removed,
+                                        is_system=is_system):
+            u_file = self.files.get(u_file_or_path,
+                                    is_ancillary=is_ancillary,
+                                    is_removed=is_removed,
+                                    is_system=is_system)
         elif isinstance(u_file_or_path, UploadedFile):
-            if not u_file_or_path.is_directory:
-                raise ValueError('Not a directory')
-            path = u_file_or_path.path
-        else:
-            path = u_file_or_path
+            u_file = u_file_or_path
 
-        for _path, _file in list(self.files.items()):
+        if u_file is not None and not u_file.is_directory:
+            raise ValueError('Not a directory')
+
+        path = u_file.path if u_file is not None else u_file_or_path
+        for _path, _file in list(self.files.items(is_ancillary=is_ancillary,
+                                                  is_removed=is_removed,
+                                                  is_system=is_system)):
             if _path.startswith(path) and not _path == path:
                 if max_depth is not None:
                     if path != '':
@@ -339,32 +362,45 @@ class UploadWorkspace:
                 yield _path, _file
 
     def _update_refs(self, u_file: UploadedFile, from_path: str) -> None:
-        self.files.pop(from_path)   # Discard old ref.
-        self.files[u_file.path] = u_file
-        self._errors[u_file.path] += self._errors.pop(from_path, [])
-        self._warnings[u_file.path] += self._warnings.pop(from_path, [])
+        self.files.pop(from_path, is_ancillary=u_file.is_ancillary,
+                       is_removed=u_file.is_removed,
+                       is_system=u_file.is_system)   # Discard old ref.
+        self.files.set(u_file.path, u_file)
 
-    def _drop_refs(self, from_path: str) -> None:
-        self.files.pop(from_path, None)
-        self._errors.pop(from_path, None)
-        self._warnings.pop(from_path, None)
+    def _drop_refs(self, from_path: str, is_ancillary: bool = False,
+                   is_removed: bool = False, is_system: bool = False) -> None:
+        self.files.pop(from_path, is_ancillary=is_ancillary,
+                       is_removed=is_removed, is_system=is_system)
 
     @property
-    def errors(self) -> List[Tuple[Literal['fatal'], str, str]]:
-        return [{'level': 'fatal', 'path': path, 'message': error}
-                for path, errors in self._errors.items() for error in errors
-                if path in self.files and self.files[path].is_active]
+    def errors(self) -> List[Error]:
+        return [error for u_file in self.files for error in u_file.errors
+                if u_file.is_active] + self._errors
+
+    @property
+    def fatal_errors(self) -> List[Error]:
+        return (
+            [error for u_file in self.files for error in u_file.errors
+             if u_file.is_active and error.severity is Error.Severity.FATAL]
+            +
+            [error for error in self._errors
+             if error.severity is Error.Severity.FATAL]
+        )
 
     @property
     def warnings(self) -> Mapping[str, List[str]]:
-        return [{'level': 'warn', 'path': path, 'message': error}
-                for path, errors in self._warnings.items() for error in errors
-                if path in self.files and self.files[path].is_active]
+        return (
+            [error for u_file in self.files for error in u_file.errors
+             if u_file.is_active and error.severity is Error.Severity.WARNING]
+            +
+            [error for error in self._errors
+             if error.severity is Error.Severity.WARNING]
+        )
 
     @property
     def readiness(self) -> Readiness:
         """Readiness state of the upload workspace."""
-        if self.has_errors:
+        if self.has_fatal_errors:
             return UploadWorkspace.Readiness.ERRORS
         elif self.has_warnings:
             return UploadWorkspace.Readiness.READY_WITH_WARNINGS
@@ -388,7 +424,8 @@ class UploadWorkspace:
                 _file.is_removed = True
         self.add_non_file_warning(reason)
         if not keep_refs:
-            self._drop_refs(u_file.path)
+            self._drop_refs(u_file.path, is_ancillary=u_file.is_ancillary,
+                            is_removed=False, is_system=u_file.is_system)
 
     def persist(self, u_file: UploadedFile) -> None:
         self.storage.persist(self, u_file, self.get_path(u_file))
@@ -401,43 +438,51 @@ class UploadWorkspace:
                 parent += '/'
                 if not self.exists(parent):
                     self.create(parent, FileType.DIRECTORY, is_directory=True)
-            self.files[u_file.path] = u_file
+            self.files.set(u_file.path, u_file)
         self.strategy.check(self, self.checkers)
 
-    def add_error(self, u_file: UploadedFile, message: str) -> None:
+    def add_error(self, u_file: UploadedFile, msg: str,
+                  severity: Error.Severity = Error.Severity.FATAL,
+                  is_persistant: bool = True) -> None:
         """Add an error for a specific file."""
-        u_file.errors.append(message)
-        self._errors[u_file.path].append(message)
+        u_file.errors.append(Error(severity=severity, path=u_file.path,
+                                   message=msg, is_persistant=is_persistant))
 
-    def add_non_file_error(self, message: str) -> None:
+    def add_non_file_error(self, msg: str,
+                           severity: Error.Severity = Error.Severity.FATAL,
+                           is_persistant: bool = True) -> None:
         """Add an error for the workspace that is not specific to a file."""
-        self._errors['__all__'].append(message)
+        self._errors.append(Error(severity=severity, path=None, message=msg,
+                                  is_persistant=is_persistant))
 
-    def add_warning(self, u_file: UploadedFile, message: str) -> None:
+    def add_warning(self, u_file: UploadedFile, msg: str,
+                    is_persistant: bool = False) -> None:
         """Add a warning for a specific file."""
-        u_file.warnings.append(message)
-        self._warnings[u_file.path].append(message)
+        self.add_error(u_file, msg, severity=Error.Severity.WARNING,
+                       is_persistant=is_persistant)
 
-    def add_non_file_warning(self, message: str) -> None:
+    def add_non_file_warning(self, msg: str, is_persistant: bool = False) \
+            -> None:
         """Add a warning for the workspace that is not specific to a file."""
-        self._warnings['__all__'].append(message)
+        self.add_non_file_error(msg, severity=Error.Severity.WARNING,
+                                is_persistant=is_persistant)
 
     def iter_files(self, allow_ancillary: bool = True,
                    allow_removed: bool = False,
-                   allow_directories: bool = False) -> Iterable[UploadedFile]:
+                   allow_directories: bool = False,
+                   allow_system: bool = False) -> Iterable[UploadedFile]:
         """Get an iterator over :class:`.UploadFile`s in this workspace."""
-        return [f for f in self.files.values()
-                if (allow_ancillary or not f.is_ancillary)
+        return [f for f in self.files
+                if (allow_directories or not f.is_directory)
                 and (allow_removed or not f.is_removed)
-                and (allow_directories or not f.is_directory)]
+                and (allow_ancillary or not f.is_ancillary)
+                and (allow_system or not f.is_system)]
 
     @property
     def file_count(self) -> int:
         """Get the total number of non-ancillary files in this workspace."""
-        return len([f for f in self.iter_files()
-                    if not f.is_ancillary
-                    and not f.is_removed
-                    and not f.is_directory])
+        return len(self.iter_files(allow_ancillary=False))
+
     @property
     def size_bytes(self) -> int:
         """Total size of the source content (including ancillary files)."""
@@ -451,8 +496,8 @@ class UploadWorkspace:
     @property
     def ancillary_file_count(self) -> int:
         """Get the total number of ancillary files in this workspace."""
-        return len([f for f in self.iter_files()
-                    if f.is_ancillary and not f.is_removed])
+        files = self.iter_files(allow_ancillary=True, allow_removed=False)
+        return len([f for f in files if f.is_ancillary])
 
     def get_file_type_counts(self) -> Mapping[Union[FileType, str], int]:
         """Get the number of files of each type in the workspace."""
@@ -473,8 +518,6 @@ class UploadWorkspace:
     def open(self, u_file: UploadedFile, flags: str = 'r', **kwargs: Any) \
             -> Iterator[io.IOBase]:
         """Get a file pointer for a :class:`.UploadFile`."""
-        if u_file.path not in self.files and not u_file.is_system:
-            raise ValueError('File does not belong to this workspace')
         with self.storage.open(self, u_file, flags, **kwargs) as f:
             yield f
         self.get_size_bytes(u_file)
@@ -492,8 +535,11 @@ class UploadWorkspace:
         """Create a new :class:`.UploadedFile` at ``path``."""
         path = self.LEADING_DOTSLASH.sub('', path)
         logger.debug('Create a file at %s with type %s', path, file_type.value)
-        if path in self.files:
-            if self.files[path].is_directory:
+        if self.files.contains(path, is_ancillary=is_ancillary,
+                               is_system=is_system):
+            e_file = self.files.get(path, is_ancillary=is_ancillary,
+                                    is_system=is_system)
+            if e_file.is_directory:
                 raise ValueError('Directory exists at that path')
             if not replace:
                 raise ValueError('File at that path already exists')
@@ -514,7 +560,7 @@ class UploadWorkspace:
                               is_system=is_system)
 
         if not is_system:   # System files are not part of the source package.
-            self.files[u_file.path] = u_file
+            self.files.set(u_file.path, u_file)
 
         if touch:
             self.storage.create(self, u_file)
@@ -568,7 +614,7 @@ class UploadWorkspace:
         old_path = replace_with.path
         replace_with.path = to_replace.path
         self._update_refs(replace_with, old_path)
-        self.files[replace_with.path] = replace_with
+        self.files.set(replace_with.path, replace_with)
 
         # If the file is a directory, we are counting on storage to have moved
         # both the directory itself along with all of its children. But we must
@@ -585,23 +631,29 @@ class UploadWorkspace:
         # TODO: update info for target children if target was a directory.
         return replace_with
 
-    def get(self, path: str, is_system: bool = False) -> UploadedFile:
+    def get(self, path: str, is_ancillary: bool = False,
+            is_removed: bool = False, is_system: bool = False) -> UploadedFile:
         """Get a file at ``path``."""
         if is_system:
             # Create a description of the file, since system files are not part
             # of the source package.
             return self.create(path, is_system=is_system, touch=True)
-        return self.files[path]
+        return self.files.get(path, is_ancillary=is_ancillary,
+                              is_removed=is_removed, is_system=is_system)
 
     @property
-    def has_warnings(self):
+    def has_warnings(self) -> bool:
         """Determine whether or not this workspace has warnings."""
         return len(self.warnings) > 0
 
     @property
-    def has_errors(self):
+    def has_errors(self) -> bool:
         """Determine whether or not this workspace has errors."""
         return len(self.errors) > 0
+
+    @property
+    def has_fatal_errors(self) -> bool:
+        return len(self.fatal_errors) > 0
 
     def perform_checks(self) -> None:
         """Perform all checks on this workspace using the assigned strategy."""

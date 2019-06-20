@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from typing import Any, Optional, Dict, List
 from io import BytesIO
 from http import HTTPStatus as status
+from pprint import pprint
 
 from pytz import UTC
 import json
@@ -23,7 +24,7 @@ from requests.utils import quote
 from flask import Flask
 
 from filemanager.factory import create_web_app
-from filemanager.services import uploads
+from filemanager.services import database
 
 from arxiv.users import domain, auth
 
@@ -82,15 +83,18 @@ class TestNewUpload(TestCase):
 
     def setUp(self) -> None:
         """Initialize the Flask application, and get a client for testing."""
-        # There is a bug in arxiv.base where it doesn't pick up app config
-        # parameters. Until then, we pass it to os.environ.
+        self.server_name = 'fooserver'
         self.app = create_web_app()
         self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'
+        self.app.config['SERVER_NAME'] = self.server_name
+
+        # There is a bug in arxiv.base where it doesn't pick up app config
+        # parameters. Until then, we pass it to os.environ.
         os.environ['JWT_SECRET'] = self.app.config.get('JWT_SECRET')
         self.client = self.app.test_client()
         # self.app.app_context().push()
         with self.app.app_context():
-            uploads.db.create_all()
+            database.db.create_all()
 
     def test_no_auth_token(self):
         """No auth token is included in the request."""
@@ -267,10 +271,41 @@ class TestNewUpload(TestCase):
 
         self.assertEqual(response.status_code, 201,
                          "Accepted and processed uploaded Submission Contents")
+        post_data = json.loads(response.data)
         try:
-            jsonschema.validate(json.loads(response.data), schema)
+            jsonschema.validate(post_data, schema)
         except jsonschema.exceptions.SchemaError as e:
             self.fail(e)
+
+        # Verify that the state of the upload workspace is preserved.
+        location = response.headers['Location']
+        _, location = location.split(f'http://{self.server_name}', 1)
+        response = self.client.get(location, headers={'Authorization': token})
+        self.assertEqual(response.status_code, 200)
+
+        get_data = json.loads(response.data)
+
+        self.assertEqual(post_data['upload_total_size'],
+                         get_data['upload_total_size'],
+                         'Upload size is consistent between requests')
+        self.assertEqual(post_data['lock_state'], get_data['lock_state'],
+                         'Lock state is consistent between requests')
+        self.assertEqual(post_data['status'], get_data['status'],
+                         'Status is consistent between requests')
+        self.assertEqual(post_data['checksum'], get_data['checksum'],
+                         'Checksum is consistent between requests')
+        self.assertEqual(len(post_data['files']), len(get_data['files']),
+                         'Number of files is consistent between requests')
+
+        # TODO: need to look a little closer at how we think about readiness.
+        # Right now, a workspace can be READY_WITH_WARNINGS on upload, but then
+        # READY on subsequent status requests. Guess I'm not clear on what
+        # _WITH_WARNINGS should signify -- should it be persistant warnings?
+        # --Erick 2019-06-20
+        #
+        # self.assertEqual(post_data['readiness'], get_data['readiness'],
+        #                  'Readiness is consistent between requests')
+
 
 
 # class TestUploadAPIRoutes(TestCase):
@@ -284,7 +319,7 @@ class TestNewUpload(TestCase):
 #         os.environ['JWT_SECRET'] = self.app.config.get('JWT_SECRET')
 #         self.client = self.app.test_client()
 #         self.app.app_context().push()
-#         uploads.db.create_all()
+#         database.db.create_all()
 #
 #     # # Provide general statistics on the upload service. Primarily intended to
 #     # # indicate normal operation or exception conditions. This information will be
