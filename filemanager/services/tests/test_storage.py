@@ -29,7 +29,7 @@ class TestSimpleStorage(TestCase):
             base_path=str(self.upload_id)
         )
 
-        def get_path(f, *a, is_ancillary=False, is_removed=False):
+        def get_path(f, *a, is_ancillary=False, is_removed=False, **k):
             pre = 'src'
             if is_ancillary is True:
                 pre = 'src/anc'
@@ -66,7 +66,7 @@ class TestSimpleStorage(TestCase):
             f.write('Thanks for all the fish')
         mock_file = mock.MagicMock(path=rel_path)
 
-        self.assertEqual(self.adapter.getsize(self.mock_workspace, mock_file),
+        self.assertEqual(self.adapter.get_size_bytes(self.mock_workspace, mock_file),
                          os.path.getsize(fpath))
 
     def test_cmp(self):
@@ -204,7 +204,7 @@ class TestQuarantineStorage(TestCase):
             base_path=str(self.upload_id)
         )
 
-        def get_path(f, *a, is_ancillary=False, is_removed=False):
+        def get_path(f, *a, is_ancillary=False, is_removed=False, **k):
             pre = 'src'
             if is_ancillary is True:
                 pre = 'src/anc'
@@ -225,7 +225,8 @@ class TestQuarantineStorage(TestCase):
         rel_path = fpath.split(self.q_source_path, 1)[1].lstrip('/')
         with open(fpath, 'w') as f:
             f.write('Thanks for all the fish')
-        mock_file = mock.MagicMock(path=rel_path, is_persisted=False,
+        mock_file = mock.MagicMock(path=rel_path,
+                                   is_persisted=False,
                                    is_directory=False,
                                    is_ancillary=False,
                                    is_removed=False,
@@ -250,7 +251,7 @@ class TestQuarantineStorage(TestCase):
                                    is_removed=False,
                                    spec=UploadedFile)
 
-        self.assertEqual(self.adapter.getsize(self.mock_workspace, mock_file),
+        self.assertEqual(self.adapter.get_size_bytes(self.mock_workspace, mock_file),
                          os.path.getsize(fpath))
 
     def test_cmp(self):
@@ -467,9 +468,7 @@ class TestStorageWithWorkspace(TestCase):
         self.mock_strategy = mock.MagicMock()
         self.wks = UploadWorkspace(
             upload_id=1234,
-            submission_id=None,
             owner_user_id='98765',
-            archive=None,
             created_datetime=datetime.now(),
             modified_datetime=datetime.now(),
             strategy=self.mock_strategy,
@@ -516,6 +515,7 @@ class TestStorageWithWorkspace(TestCase):
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
+                                   is_system=False,
                                    path='path/to/file')
         self.assertEqual(self.wks.get_path(mock_file),
                          f'{self.wks.source_path}/path/to/file',
@@ -529,6 +529,7 @@ class TestStorageWithWorkspace(TestCase):
                                    is_ancillary=True,
                                    is_removed=False,
                                    is_directory=False,
+                                   is_system=False,
                                    path='path/to/file')
         self.assertEqual(self.wks.get_path(mock_file),
                          f'{self.wks.ancillary_path}/path/to/file',
@@ -542,6 +543,7 @@ class TestStorageWithWorkspace(TestCase):
                                    is_ancillary=False,
                                    is_removed=True,
                                    is_directory=False,
+                                   is_system=False,
                                    path='path/to/file')
         self.assertEqual(self.wks.get_path(mock_file),
                          f'{self.wks.removed_path}/path/to/file',
@@ -552,7 +554,7 @@ class TestStorageWithWorkspace(TestCase):
     def test_get_full_path(self):
         """Can get a full path to a file on disk, using a storage adapter."""
         u_file = self.wks.create('path/to/file', is_ancillary=False,
-                                 is_directory=False,)
+                                 is_directory=False, is_system=False)
         self.assertEqual(
             self.wks.get_full_path(u_file),
             os.path.join(self.base_path,

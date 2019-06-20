@@ -59,7 +59,7 @@ class SimpleStorageAdapter:
         if not strict or is_system:
             logger.debug('evaluate liberally: %s', full_path)
             wks_full_path = self.get_path_bare(workspace.base_path,
-                                                is_persisted=is_persisted)
+                                               is_persisted=is_persisted)
         elif is_ancillary:
             logger.debug('evaluate as ancillary: %s', full_path)
             wks_full_path = self.get_path_bare(workspace.ancillary_path,
@@ -160,7 +160,8 @@ class SimpleStorageAdapter:
             workspace.get_path(u_file_or_path, is_ancillary=is_ancillary,
                                is_removed=is_removed,
                                is_persisted=is_persisted,
-                               is_system=is_system)
+                               is_system=is_system),
+            is_persisted=is_persisted
         )
         self._check_safe(workspace, path, is_ancillary=is_ancillary,
                          is_removed=is_removed, is_persisted=is_persisted,
@@ -223,6 +224,7 @@ class SimpleStorageAdapter:
             tar.add(self.get_path_bare(workspace.source_path),
                     arcname=os.path.sep)
         u_file.size_bytes = self.get_size_bytes(workspace, u_file)
+        u_file.last_modified = self.get_last_modified(workspace, u_file)
         return u_file
 
 

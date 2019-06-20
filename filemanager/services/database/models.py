@@ -42,9 +42,6 @@ class DBUpload(db.Model):
     upload_id = Column(Integer, primary_key=True)
     """The unique identifier for the upload workspace."""
 
-    submission_id = Column(Integer)
-    """Submission identifier (optional)"""
-
     owner_user_id = Column(String(255))
     """Owner of upload workspace."""
 

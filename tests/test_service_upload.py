@@ -18,7 +18,7 @@ class TestUploadGetter(TestCase):
     def setUp(self) -> None:
         """Initialize an in-memory SQLite database."""
 
-        self.uploads = uploads
+        self.database = database
         app = mock.MagicMock(
             config={
                 # 'SQLALCHEMY_DATABASE_URI': 'mysql://bob:dole@localhost/ack',
@@ -33,7 +33,7 @@ class TestUploadGetter(TestCase):
         self.data = dict(owner_user_id='dlf2',
                          created_datetime=datetime.now(UTC),
                          modified_datetime=datetime.now(UTC),
-                         state=UploadWorkspace.Status.ACTIVE)
+                         status=UploadWorkspace.Status.ACTIVE.value)
         self.dbupload = self.database.DBUpload(**self.data)  # type: ignore
         self.database.db.session.add(self.dbupload)  # type: ignore
         self.database.db.session.commit()  # type: ignore
@@ -80,7 +80,7 @@ class TestUploadCreator(TestCase):
 
     def setUp(self) -> None:
         """Initialize an in-memory SQLite database."""
-        self.uploads = uploads
+        self.database = database
         app = mock.MagicMock(
             config={
                 # 'SQLALCHEMY_DATABASE_URI': 'mysql://bob:dole@localhost/ack',
@@ -95,7 +95,7 @@ class TestUploadCreator(TestCase):
         self.data = {'owner_user_id': 'dlf2',
                      'created_datetime': datetime.now(UTC),
                      'modified_datetime': datetime.now(UTC),
-                     'state': UploadWorkspace.Status.ACTIVE}
+                     'state': UploadWorkspace.Status.ACTIVE.value}
         self.dbupload = self.database.DBUpload(**self.data)  # type: ignore
         self.database.db.session.add(self.dbupload)  # type: ignore
         self.database.db.session.commit()  # type: ignore
@@ -135,7 +135,7 @@ class TestUploadUpdater(TestCase):
     def setUp(self) -> None:
         """Initialize an in-memory SQLite database."""
 
-        self.uploads = uploads
+        self.database = database
         app = mock.MagicMock(
             config={
                 # 'SQLALCHEMY_DATABASE_URI': 'mysql://bob:dole@localhost/ack',

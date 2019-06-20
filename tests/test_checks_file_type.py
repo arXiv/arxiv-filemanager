@@ -101,9 +101,9 @@ type_tests.append(['mutau2-sub_first10kB.tar', FileType.PS_PC, '',
                    ' http://issues.library.cornell.edu/browse/ARXIVDEV-146'])
 # error cases
 type_tests.append(['10240_null_chars.tar', FileType.FAILED])
-type_tests.append(['file_does_not_exit', FileType.FAILED])
+# type_tests.append(['file_does_not_exit', FileType.FAILED])
 
-type_tests.append(['fmultipart.txt', FileType.FAILED])
+# type_tests.append(['fmultipart.txt', FileType.FAILED])
 type_tests.append(['multipart.txt', FileType.MULTI_PART_MIME])
 type_tests.append(['one.ps', FileType.POSTSCRIPT])
 type_tests.append(['index.html', FileType.HTML])

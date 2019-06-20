@@ -14,6 +14,7 @@ class Error:
 
         FATAL = 'fatal'
         WARNING = 'warn'
+        INFO = 'info'
 
     class Code(Enum):
         """

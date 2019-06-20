@@ -2235,7 +2235,7 @@ class Upload:
 
         self.log('\n******** File Upload Finished *****\n\n')
 
-        self.log(f'\n******** Errors: {self.has_errors()} *****\n\n')
+        self.log(f'\n******** Errors: {self.has_fatal_errors()} *****\n\n')
 
     # Content package routines
 

@@ -16,9 +16,7 @@ class TestPaths(TestCase):
         self.mock_storage.get_path.return_value = '/tmp/foo'
         self.wks = UploadWorkspace(
             upload_id=1234,
-            submission_id=None,
             owner_user_id='98765',
-            archive=None,
             created_datetime=datetime.now(),
             modified_datetime=datetime.now(),
             strategy=self.mock_strategy,
@@ -125,9 +123,7 @@ class TestAddRemoveFiles(TestCase):
         self.mock_storage.get_path.return_value = '/tmp/foo'
         self.wks = UploadWorkspace(
             upload_id=1234,
-            submission_id=None,
             owner_user_id='98765',
-            archive=None,
             created_datetime=datetime.now(),
             modified_datetime=datetime.now(),
             strategy=self.mock_strategy,
@@ -140,6 +136,7 @@ class TestAddRemoveFiles(TestCase):
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
+                                   is_system=False,
                                    path='path/to/file')
         self.assertEqual(self.wks.file_count, 0,
                          'There are no files in the workspace')
@@ -156,6 +153,7 @@ class TestAddRemoveFiles(TestCase):
                                    is_ancillary=True,
                                    is_removed=False,
                                    is_directory=False,
+                                   is_system=False,
                                    path='path/to/file')
         self.assertEqual(self.wks.file_count, 0,
                          'There are no files in the workspace')
@@ -164,7 +162,7 @@ class TestAddRemoveFiles(TestCase):
                          'There are no files; ancillary files are not counted')
         self.assertEqual(self.wks.ancillary_file_count, 1,
                          'There is one ancillary file')
-        self.assertTrue(self.wks.exists('path/to/file'))
+        self.assertTrue(self.wks.exists('path/to/file', is_ancillary=True))
 
     def test_remove_file(self):
         """Remove a file from the workspace."""
@@ -172,6 +170,7 @@ class TestAddRemoveFiles(TestCase):
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
+                                   is_system=False,
                                    path='path/to/file')
         self.assertEqual(self.wks.file_count, 0,
                          'There are no files in the workspace')
@@ -195,11 +194,13 @@ class TestAddRemoveFiles(TestCase):
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
+                                   is_system=False,
                                    path='path/to/file')
         mock_file2 = mock.MagicMock(spec=UploadedFile,
                                     is_ancillary=False,
                                     is_removed=False,
                                     is_directory=False,
+                                    is_system=False,
                                     path='path/to/file2')
         self.assertEqual(self.wks.file_count, 0,
                          'There are no files in the workspace')
@@ -217,11 +218,13 @@ class TestAddRemoveFiles(TestCase):
                                   is_ancillary=False,
                                   is_removed=False,
                                   is_directory=True,
+                                  is_system=False,
                                   path='path/to/dir')
         mock_file = mock.MagicMock(spec=UploadedFile,
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
+                                   is_system=False,
                                    path='path/to/dir/file')
         self.wks.add_files(mock_dir, mock_file)
         self.assertEqual(self.wks.file_count, 1,
@@ -239,6 +242,7 @@ class TestAddRemoveFiles(TestCase):
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
+                                   is_system=False,
                                    path='path/to/dir/file')
         self.wks.add_files(mock_file)
         self.assertTrue(self.wks.exists('path/'),
@@ -254,6 +258,7 @@ class TestAddRemoveFiles(TestCase):
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
+                                   is_system=False,
                                    path='path/to/dir/file')
         self.wks.add_files(mock_file)
         self.wks.delete(mock_file)
@@ -271,16 +276,19 @@ class TestAddRemoveFiles(TestCase):
                                   is_ancillary=False,
                                   is_removed=False,
                                   is_directory=True,
+                                  is_system=False,
                                   path='path/to/dir')
         mock_file = mock.MagicMock(spec=UploadedFile,
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
+                                   is_system=False,
                                    path='path/to/dir/file')
         mock_other_file = mock.MagicMock(spec=UploadedFile,
                                          is_ancillary=False,
                                          is_removed=False,
                                          is_directory=False,
+                                         is_system=False,
                                          path='path/to/other/file')
         self.wks.add_files(mock_dir, mock_file, mock_other_file)
         self.assertEqual(self.wks.file_count, 2,
@@ -305,9 +313,7 @@ class TestOperations(TestCase):
         self.mock_storage.get_path.return_value = '/tmp/foo'
         self.wks = UploadWorkspace(
             upload_id=1234,
-            submission_id=None,
             owner_user_id='98765',
-            archive=None,
             created_datetime=datetime.now(),
             modified_datetime=datetime.now(),
             strategy=self.mock_strategy,
@@ -317,6 +323,7 @@ class TestOperations(TestCase):
                                         is_ancillary=False,
                                         is_removed=False,
                                         is_directory=False,
+                                        is_system=False,
                                         path='path/to/file')
         self.wks.add_files(self.mock_file)
 
@@ -379,9 +386,7 @@ class TestMoveFiles(TestCase):
         self.mock_storage.get_path.return_value = '/tmp/foo'
         self.wks = UploadWorkspace(
             upload_id=1234,
-            submission_id=None,
             owner_user_id='98765',
-            archive=None,
             created_datetime=datetime.now(),
             modified_datetime=datetime.now(),
             strategy=self.mock_strategy,
@@ -395,6 +400,7 @@ class TestMoveFiles(TestCase):
                                         is_directory=False,
                                         is_system=False,
                                         is_active=True,
+                                        errors=[],
                                         path=self.path)
         self.mock_file2 = mock.MagicMock(spec=UploadedFile,
                                          is_ancillary=False,
@@ -402,6 +408,7 @@ class TestMoveFiles(TestCase):
                                          is_directory=False,
                                          is_system=False,
                                          is_active=True,
+                                         errors=[],
                                          path=self.path2)
         self.wks.add_files(self.mock_file, self.mock_file2)
 

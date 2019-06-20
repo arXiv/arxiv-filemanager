@@ -109,11 +109,11 @@ INCLUDE_GRAPHICS = re.compile(rb'^[^%]*\\includegraphics[^%]*\.'
 PDF_OUTPUT = re.compile(rb'^[^%]*\\pdfoutput(?:\s+)?=(?:\s+)?1')
 
 
-def _check_exists(workspace: UploadWorkspace,
-                  u_file: UploadedFile) -> Optional[FileType]:
-    """Check whether file exists (new)."""
-    if not workspace.exists(u_file.path):
-        return FileType.FAILED    # , '', ''
+# def _check_exists(workspace: UploadWorkspace,
+#                   u_file: UploadedFile) -> Optional[FileType]:
+#     """Check whether file exists (new)."""
+#     if not workspace.exists(u_file.path):
+#         return FileType.FAILED    # , '', ''
 
 
 def _check_command(workspace: UploadWorkspace,
@@ -499,7 +499,7 @@ def _type_of_latex2e(f: io.BytesIO, count: int) -> FileType:
 
 _type_checkers: Callable[[UploadWorkspace, UploadedFile],
                          Optional[FileType]] = [
-    _check_exists,
+    # _check_exists,
     # Currently the following type identification relies on the extension
     # to identify the type without inspecting content of file.
     _check_command,

@@ -142,22 +142,23 @@ def retrieve(upload_id: int, skip_cache: bool = False) \
     args['storage'] = create_adapter(current_app)
     workspace = UploadWorkspace(**args)
 
-    workspace.files.source = {
-        p: translate.dict_to_file(d, workspace)
-        for p, d in upload_data.files['source'].items()
-    }
-    workspace.files.ancillary = {
-        p: translate.dict_to_file(d, workspace)
-        for p, d in upload_data.files['ancillary'].items()
-    }
-    workspace.files.removed = {
-        p: translate.dict_to_file(d, workspace)
-        for p, d in upload_data.files['removed'].items()
-    }
-    workspace.files.system = {
-        p: translate.dict_to_file(d, workspace)
-        for p, d in upload_data.files['system'].items()
-    }
+    if upload_data.files:
+        workspace.files.source = {
+            p: translate.dict_to_file(d, workspace)
+            for p, d in upload_data.files['source'].items()
+        }
+        workspace.files.ancillary = {
+            p: translate.dict_to_file(d, workspace)
+            for p, d in upload_data.files['ancillary'].items()
+        }
+        workspace.files.removed = {
+            p: translate.dict_to_file(d, workspace)
+            for p, d in upload_data.files['removed'].items()
+        }
+        workspace.files.system = {
+            p: translate.dict_to_file(d, workspace)
+            for p, d in upload_data.files['system'].items()
+        }
     for datum in upload_data.errors:
         workspace._errors.append(translate.dict_to_error(datum))
     return workspace

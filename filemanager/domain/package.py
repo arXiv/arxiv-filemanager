@@ -21,7 +21,9 @@ class SourcePackage:
     @property
     def is_stale(self) -> bool:
         """Indicates whether or not the source package is out of date."""
-        return self.last_modified > self.workspace.last_modified
+        if self.workspace.last_modified is None:
+            return False
+        return self.last_modified < self.workspace.last_modified
 
     @property
     def size_bytes(self) -> int:
@@ -49,7 +51,6 @@ class SourcePackage:
             yield f
 
     def pack(self) -> None:
-        self.workspace.delete(self._file)
         self._file = \
             self.workspace.storage.pack_source(self.workspace, self._file)
 

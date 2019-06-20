@@ -391,11 +391,19 @@ class UploadWorkspace:
     def warnings(self) -> Mapping[str, List[str]]:
         return (
             [error for u_file in self.files for error in u_file.errors
-             if u_file.is_active and error.severity is Error.Severity.WARNING]
+             if error.severity is Error.Severity.WARNING]
             +
             [error for error in self._errors
              if error.severity is Error.Severity.WARNING]
         )
+
+    def get_warnings_for_path(self, path: str, is_ancillary: bool = False,
+                              is_system: bool = False,
+                              is_removed: bool = False) -> List[str]:
+        u_file = self.files.get(path, is_ancillary=is_ancillary,
+                                is_system=is_system, is_removed=is_removed)
+        return [e.message for e in u_file.errors
+                if e.severity is Error.Severity.WARNING]
 
     @property
     def readiness(self) -> Readiness:
@@ -406,8 +414,8 @@ class UploadWorkspace:
             return UploadWorkspace.Readiness.READY_WITH_WARNINGS
         return UploadWorkspace.Readiness.READY
 
-    def remove(self, u_file: UploadedFile, reason: Optional[str] = None,
-               keep_refs: bool = True) -> None:
+    def remove(self, u_file: UploadedFile, reason: Optional[str] = None) \
+            -> None:
         """
         Mark a file as removed, and quarantine.
 
@@ -417,15 +425,22 @@ class UploadWorkspace:
             reason = f"Removed file '{u_file.name}'."
         logger.debug('Remove file %s: %s', u_file.path, reason)
         self.storage.remove(self, u_file)
-        u_file.is_removed = True
-        u_file.reason_for_removal = reason
+
         if u_file.is_directory:
             for former_path, _file in self.iter_children(u_file):
                 _file.is_removed = True
-        self.add_non_file_warning(reason)
-        if not keep_refs:
-            self._drop_refs(u_file.path, is_ancillary=u_file.is_ancillary,
-                            is_removed=False, is_system=u_file.is_system)
+                self._drop_refs(_file.path, is_ancillary=_file.is_ancillary,
+                                is_removed=False, is_system=_file.is_system)
+                self.files.set(_file.path, _file)
+
+        u_file.is_removed = True
+        u_file.reason_for_removal = reason
+
+        self.add_non_file_error(reason, severity=Error.Severity.INFO)
+
+        self._drop_refs(u_file.path, is_ancillary=u_file.is_ancillary,
+                        is_removed=False, is_system=u_file.is_system)
+        self.files.set(u_file.path, u_file)
 
     def persist(self, u_file: UploadedFile) -> None:
         self.storage.persist(self, u_file, self.get_path(u_file))
@@ -489,9 +504,12 @@ class UploadWorkspace:
         return sum([f.size_bytes for f in self.iter_files()])
 
     @property
-    def last_modified(self) -> datetime:
+    def last_modified(self) -> Optional[datetime]:
         """Time of the most recent change to a file in the workspace."""
-        return max([f.last_modified for f in self.iter_files()])
+        files_last_modified = [f.last_modified for f in self.iter_files()]
+        if not files_last_modified:
+            return None
+        return max(files_last_modified)
 
     @property
     def ancillary_file_count(self) -> int:
@@ -518,6 +536,11 @@ class UploadWorkspace:
     def open(self, u_file: UploadedFile, flags: str = 'r', **kwargs: Any) \
             -> Iterator[io.IOBase]:
         """Get a file pointer for a :class:`.UploadFile`."""
+        if not self.files.contains(u_file.path,
+                                   is_ancillary=u_file.is_ancillary,
+                                   is_system=u_file.is_system,
+                                   is_removed=u_file.is_removed):
+            raise ValueError('No such file')
         with self.storage.open(self, u_file, flags, **kwargs) as f:
             yield f
         self.get_size_bytes(u_file)
@@ -559,8 +582,8 @@ class UploadWorkspace:
                               is_ancillary=is_ancillary,
                               is_system=is_system)
 
-        if not is_system:   # System files are not part of the source package.
-            self.files.set(u_file.path, u_file)
+        # if not is_system:   # System files are not part of the source package.
+        self.files.set(u_file.path, u_file)
 
         if touch:
             self.storage.create(self, u_file)
@@ -582,7 +605,9 @@ class UploadWorkspace:
         """
         logger.debug('Delete file %s', u_file.path)
         self.storage.delete(self, u_file)
-        self._drop_refs(u_file.path)
+        self._drop_refs(u_file.path, is_ancillary=u_file.is_ancillary,
+                        is_system=u_file.is_system,
+                        is_removed=u_file.is_removed)
         if u_file.is_directory:
             for child_path, child_file in self.iter_children(u_file):
                 self._drop_refs(child_path)
@@ -598,6 +623,7 @@ class UploadWorkspace:
 
     def get_checksum(self, u_file: UploadedFile) -> str:
         hash_md5 = md5()
+        print('get chex', u_file.path, u_file.is_system)
         with self.open(u_file, "rb") as f:
             for chunk in iter(lambda: f.read(4096), b""):
                 hash_md5.update(chunk)
@@ -609,12 +635,13 @@ class UploadWorkspace:
         self.storage.move(self, replace_with, replace_with.path,
                           to_replace.path)
 
-        if not keep_refs:
-            self._drop_refs(to_replace.path)
+        if keep_refs:
+            replace_with.errors += to_replace.errors
+
+        self._drop_refs(to_replace.path)
         old_path = replace_with.path
         replace_with.path = to_replace.path
         self._update_refs(replace_with, old_path)
-        self.files.set(replace_with.path, replace_with)
 
         # If the file is a directory, we are counting on storage to have moved
         # both the directory itself along with all of its children. But we must

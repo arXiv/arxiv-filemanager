@@ -101,8 +101,7 @@ class UnpackCompressedTarFiles(BaseChecker):
             workspace.add_warning(u_file, f'Tar error message: {e}')
             return u_file
 
-        workspace.remove(u_file, f"Removed packed file '{u_file.name}'.",
-                         keep_refs=False)
+        workspace.remove(u_file, f"Removed packed file '{u_file.name}'.")
         workspace.log(f'Removed packed file {u_file.name}')
         return u_file
 
@@ -132,8 +131,7 @@ class UnpackCompressedZIPFiles(BaseChecker):
             return u_file
 
         # Now move zip file out of way to removed directory
-        workspace.remove(u_file, f"Removed packed file '{u_file.name}'.",
-                         keep_refs=False)
+        workspace.remove(u_file, f"Removed packed file '{u_file.name}'.")
         workspace.log(f'Removed packed file {u_file.name}')
         return u_file
 
