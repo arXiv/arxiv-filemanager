@@ -8,6 +8,8 @@ from flask_sqlalchemy import SQLAlchemy, Model
 
 from arxiv.util.serialize import dumps, loads
 
+from ...domain import UploadWorkspace
+
 db: SQLAlchemy = SQLAlchemy()
 
 
@@ -69,8 +71,12 @@ class DBUpload(db.Model):
     lastupload_readiness = Column(Text, nullable=True)
     """Upload content readiness status."""
 
-    status = Column(String(30), default='ACTIVE')
+    status = Column(String(30), default=UploadWorkspace.Status.ACTIVE.value)
     """State of upload. ACTIVE, RELEASED, DELETED"""
 
-    lock_state = Column(String(30), default='UNLOCKED')
+    lock_state = Column(String(30), 
+                        default=UploadWorkspace.LockState.UNLOCKED.value)
     """Lock state of upload workspace. UNLOCKED or LOCKED."""
+
+    source_type = Column(String(30), 
+                         default=UploadWorkspace.SourceType.UNKNOWN.value)

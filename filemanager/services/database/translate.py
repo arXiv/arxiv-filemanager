@@ -8,7 +8,7 @@ in somewhat different from our internal representation. In contrast, the goal
 here is fidelity.
 """
 
-from ...domain import Error, UploadedFile, UploadWorkspace
+from ...domain import Error, UploadedFile, UploadWorkspace, FileType
 
 
 def error_to_dict(error: Error) -> dict:
@@ -64,5 +64,6 @@ def dict_to_file(data: dict, workspace: UploadWorkspace) -> UploadedFile:
         is_system=data.get('is_system', False),
         last_modified=data['last_modified'],
         reason_for_removal=data.get('reason_for_removal'),
-        errors=[dict_to_error(error) for error in data.get('errors', [])]
+        errors=[dict_to_error(error) for error in data.get('errors', [])],
+        file_type=FileType(data['file_type'])
     )

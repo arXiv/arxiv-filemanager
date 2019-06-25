@@ -248,6 +248,9 @@ def client_delete_file(upload_id: int, public_file_path: str) -> Response:
         except NoSuchFile:
             raise NotFound(UPLOAD_FILE_NOT_FOUND)
 
+        workspace.strategy = strategy.create_strategy(current_app)
+        workspace.checkers = check.get_default_checkers()
+        workspace.perform_checks()
         database.update(workspace)
 
     except IOError:

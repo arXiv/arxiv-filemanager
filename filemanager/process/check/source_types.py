@@ -135,7 +135,9 @@ class InferSourceType(BaseChecker):
     def check_finally(self, workspace: UploadWorkspace,
                       u_file: UploadedFile) -> None:
         """Check for unknown single-file source."""
-        if workspace.source_type.is_unknown and workspace.file_count == 1:
+        if workspace.source_type.is_unknown \
+                and workspace.file_count == 1 \
+                and not workspace.has_unchecked_files:
             logger.debug('Source type not known, and only one file')
             workspace.source_type = UploadWorkspace.SourceType.INVALID
             workspace.add_error(u_file, 'Unsupported submission type')

@@ -227,6 +227,12 @@ class RemoveDOCFiles(BaseChecker):
     def check_FAILED(self, workspace: UploadWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         if u_file.name.endswith('.doc'):
-            workspace.remove(u_file)
+            # TODO: The original code did indeed include removal here; and 
+            # yet we are issuing a warning that pre-supposes the presence of 
+            # the file after processing. Disabling removal for now, but we 
+            # should get clear on what the desired behavior is. 
+            # -- Erick 2019-06-25
+            #
+            # workspace.remove(u_file)  
             workspace.add_error(u_file, self.DOC_WARNING)
         return u_file

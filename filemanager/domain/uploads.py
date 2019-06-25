@@ -385,9 +385,19 @@ class UploadWorkspace:
 
     @property
     def warnings(self) -> Mapping[str, List[str]]:
+        """Warnings for all files in the workspace."""
+        return self._get_warnings()
+    
+    @property
+    def active_warnings(self) -> Mapping[str, List[str]]:
+        """Warnings for active files only."""
+        return self._get_warnings(is_active=True)
+
+    def _get_warnings(self, is_active: bool = None) -> Mapping[str, List[str]]:
         return (
             [error for u_file in self.files for error in u_file.errors
-             if error.severity is Error.Severity.WARNING]
+             if error.severity is Error.Severity.WARNING
+             and (is_active is None or u_file.is_active == is_active)]
             +
             [error for error in self._errors
              if error.severity is Error.Severity.WARNING]
@@ -406,7 +416,7 @@ class UploadWorkspace:
         """Readiness state of the upload workspace."""
         if self.has_fatal_errors:
             return UploadWorkspace.Readiness.ERRORS
-        elif self.has_warnings:
+        elif self.has_active_warnings:
             return UploadWorkspace.Readiness.READY_WITH_WARNINGS
         return UploadWorkspace.Readiness.READY
 
@@ -684,6 +694,11 @@ class UploadWorkspace:
     def has_warnings(self) -> bool:
         """Determine whether or not this workspace has warnings."""
         return len(self.warnings) > 0
+
+    @property
+    def has_active_warnings(self) -> bool:
+        """Determine whether this workspace has warnings for active files."""
+        return len(self.active_warnings) > 0
 
     @property
     def has_errors(self) -> bool:

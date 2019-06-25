@@ -122,6 +122,7 @@ def retrieve(upload_id: int, skip_cache: bool = False) \
     args['modified_datetime'] = upload_data.modified_datetime.replace(tzinfo=UTC)
     args['status'] = UploadWorkspace.Status(upload_data.status)
     args['lock_state'] = UploadWorkspace.LockState(upload_data.lock_state)
+    args['source_type'] = UploadWorkspace.SourceType(upload_data.source_type)
 
     if upload_data.lastupload_start_datetime is not None:
         args['lastupload_start_datetime'] = \
@@ -245,6 +246,7 @@ def update(workspace: UploadWorkspace) -> None:
     upload_data.lastupload_readiness = workspace.lastupload_readiness.value
     upload_data.status = workspace.status.value
     upload_data.lock_state = workspace.lock_state.value
+    upload_data.source_type = workspace.source_type.value
 
     upload_data.files = {
         'source': {p: translate.file_to_dict(f)
