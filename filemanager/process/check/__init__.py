@@ -13,7 +13,7 @@ from .file_names import FixWindowsFileNames, WarnAboutTeXBackupFiles, \
 from .errata import RemoveHyperlinkStyleFiles, RemoveDisallowedFiles, \
     RemoveMetaFiles, RemoveExtraneousRevTeXFiles, RemoveDiagramsPackage, \
     RemoveAADemoFile, RemoveMissingFontFile, RemoveSyncTeXFiles, \
-    FixTGZFileName, RemoveDOCFiles, CheckForBibFile
+    FixTGZFileName, RemoveDOCFiles
 from .tex_generated import RemoveTeXGeneratedFiles, DisallowDVIFiles
 from .cleanup import UnMacify, CleanupPostScript, RepairDOSEPSFiles
 from .tex_format import CheckTeXForm
@@ -22,6 +22,7 @@ from .uuencoded import CheckForUUEncodedFiles
 from .ancillary import AncillaryFileChecker
 from .zero_length_files import ZeroLengthFileChecker
 from .top_level_directory import RemoveTopLevelDirectory
+from .missing_references import CheckForMissingReferences
 
 
 CHECKS = [
@@ -45,7 +46,6 @@ CHECKS = [
     RemoveDisallowedFiles,
     RemoveMetaFiles,
 
-    CheckForBibFile,
     RemoveExtraneousRevTeXFiles,
     RemoveDiagramsPackage,
     RemoveAADemoFile,
@@ -54,9 +54,9 @@ CHECKS = [
     PanicOnIllegalCharacters,
     RemoveTeXGeneratedFiles,
     FixTGZFileName,
-    RemoveDOCFiles,
 
     InferFileType,
+    RemoveDOCFiles,
     DisallowDVIFiles,
     FixFileExtensions,
     UnMacify,
@@ -68,6 +68,8 @@ CHECKS = [
     FlagInvalidFileTypes,
     InferSourceType,
     FlagInvalidSourceTypes,
+
+    CheckForMissingReferences,
 
     UnpackCompressedTarFiles,
     UnpackCompressedZIPFiles,

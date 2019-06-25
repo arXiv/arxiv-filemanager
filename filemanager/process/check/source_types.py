@@ -125,12 +125,12 @@ class InferSourceType(BaseChecker):
             workspace.add_error(u_file, 'Could not determine file type.')
         return u_file
 
-    def check_DOS_EPS(self, workspace: UploadWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
-        if workspace.source_type.is_unknown and workspace.file_count == 1:
-            workspace.source_type = UploadWorkspace.SourceType.INVALID
-            workspace.add_error(u_file, 'DOS EPS format is not supported.')
-        return u_file
+    # def check_DOS_EPS(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    #         -> UploadedFile:
+    #     if workspace.source_type.is_unknown and workspace.file_count == 1:
+    #         workspace.source_type = UploadWorkspace.SourceType.INVALID
+    #         workspace.add_error(u_file, 'DOS EPS format is not supported.')
+    #     return u_file
 
     def check_finally(self, workspace: UploadWorkspace,
                       u_file: UploadedFile) -> None:

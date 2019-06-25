@@ -315,23 +315,3 @@ class TestUnReleasedWorkspace(TestCase):
         self.assertEqual(response.status_code, status.OK, 
                          'Can delete files from an unreleased workspace')
 
-
-
-#
-#         # Try request that failed while upload workspace was released
-#         response = self.client.post(f"/filemanager/api/{self.upload_id}/delete_all",
-#                                     headers={'Authorization': token},
-#                                     content_type='multipart/form-data')
-#
-#         self.assertEqual(response.status_code, status.OK, "Delete all user-uploaded "
-#                                                     "files from released workspace.")
-#
-#         # Clean up after ourselves
-#
-#         response = self.client.delete(f"/filemanager/api/{self.upload_id}",
-#                                       headers={'Authorization': admin_token}
-#                                       )
-#
-#         self.assertEqual(response.status_code, status.OK, "Accepted request to delete workspace.")
-#
-#         # Done test

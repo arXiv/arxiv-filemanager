@@ -515,9 +515,10 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         logger.info("%s: Upload failed: '{forb}'.", upload_id)
         raise forb
     except Exception as ue:
-        logger.info("Unknown error with existing workspace."
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
-        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+        raise
+        # logger.info("Unknown error with existing workspace."
+        #             " Add except clauses for '%s'. DO IT NOW!", ue)
+        # raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return None
 

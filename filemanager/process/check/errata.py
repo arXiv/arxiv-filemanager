@@ -48,7 +48,7 @@ class RemoveDisallowedFiles(BaseChecker):
         """Check for and removes disallowed files."""
         if u_file.name in self.DISALLOWED:
             workspace.remove(u_file,
-                             f"Removed the file '{u_file.name}' [File not"
+                             f"Removed file '{u_file.name}' [File not"
                              " allowed].")
         return u_file
 
@@ -67,68 +67,8 @@ class RemoveMetaFiles(BaseChecker):
         for pattern in self.DISALLOWED_PATTERNS:
             if pattern.search(u_file.name):
                 workspace.remove(u_file,
-                                 f"Removed file '{obj.name}' [File not"
+                                 f"Removed file '{u_file.name}' [File not"
                                  " allowed].")
-        return u_file
-
-
-class CheckForBibFile(BaseChecker):
-    """
-    Checks for .bib files, and removes them if a .bbl file is present.
-
-    New modified handling of .bib without .bbl. We no longer delete .bib UNLESS
-    we detect .bbl file Generate error until we have .bbl.
-    """
-
-    BIB_FILE = re.compile(r'(.*)\.bib$', re.IGNORECASE)
-
-    BIB_WITH_BBL_WARNING = (
-        "We do not run bibtex in the auto - TeXing procedure. We do not run"
-        " bibtex because the .bib database files can be quite large, and the"
-        " only thing necessary to make the references for a given paper is"
-        " the .bbl file."
-    )
-
-    BIB_NO_BBL_WARNING = (
-        "We do not run bibtex in the auto - TeXing "
-        "procedure. If you use it, include in your submission the .bbl file "
-        "which bibtex produces on your home machine; otherwise your "
-        "references will not come out correctly. We do not run bibtex "
-        "because the .bib database files can be quite large, and the only "
-        "thing necessary to make the references for a given paper is "
-        "the.bbl file."
-    )
-
-    BBL_MISSING_MSG = (
-        "Your submission contained {base}.bib file, but no {base}.bbl"
-        " file (include {base}.bbl, or submit without {base}.bib; and"
-        " remember to verify references)."
-    )
-
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
-        """Check for a .bib file, and remove if a .bbl file is present."""
-        if self.BIB_FILE.search(u_file.name):
-            # Create path to bbl file - assume uses same basename as .bib.
-            base_path, name = os.path.split(u_file.path)
-            base, _ = os.path.splitext(name)
-            bbl_file = f'{base}.bbl'
-            bbl_path = os.path.join(base_path, bbl_file)
-
-            if workspace.exists(bbl_path):
-                # If .bbl exists we go ahead and delete .bib file and warn
-                # submitter of this action.
-                workspace.add_warning(u_file, self.BIB_WITH_BBL_WARNING)
-                workspace.remove(u_file,
-                                 f"Removed the file '{u_file.name}'. Using"
-                                 f" '{bbl_file}' for references.")
-            else:
-                # Missing .bbl (potential missing references). Generate an
-                # error and DO NOT DELETE .bib file. Note: We are using .bib as
-                # flag until .bbl exists.
-                workspace.add_warning(u_file, self.BIB_NO_BBL_WARNING)
-                workspace.add_error(u_file,
-                                    self.BBL_MISSING_MSG.format(base=base))
         return u_file
 
 
@@ -239,7 +179,7 @@ class RemoveSyncTeXFiles(BaseChecker):
     def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """Check for and remove synctex files."""
-        if u_file.name == 'missfont.log':
+        if self.SYNCTEX.search(u_file.name):
             workspace.remove(u_file, self.SYNCTEX_MSG % u_file.name)
         return u_file
 
@@ -264,7 +204,10 @@ class FixTGZFileName(BaseChecker):
         return u_file
 
 
+# TODO: it's unclear why we have a fatal error that discusses rejection here 
+# when we are also removing the file. -- Erick 2019-06-25
 class RemoveDOCFiles(BaseChecker):
+    """Removes .doc files that fail type checks."""
 
     DOC_WARNING = (
         "Your submission has been rejected because it contains "
@@ -281,7 +224,7 @@ class RemoveDOCFiles(BaseChecker):
     )
     """DOC (MS Word) format not accepted warning message."""
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check_FAILED(self, workspace: UploadWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         if u_file.name.endswith('.doc'):
             workspace.remove(u_file)

@@ -370,8 +370,8 @@ class UploadWorkspace:
 
     @property
     def errors(self) -> List[Error]:
-        return [error for u_file in self.files for error in u_file.errors
-                if u_file.is_active] + self._errors
+        return [error for u_file in self.files for error in u_file.errors] \
+            + self._errors
 
     @property
     def fatal_errors(self) -> List[Error]:
@@ -432,7 +432,8 @@ class UploadWorkspace:
         u_file.is_removed = True
         u_file.reason_for_removal = reason
 
-        self.add_non_file_error(reason, severity=Error.Severity.INFO)
+        self.add_error(u_file, reason, severity=Error.Severity.INFO, 
+                       is_persistant=False)
 
         self._drop_refs(u_file.path, is_ancillary=u_file.is_ancillary,
                         is_removed=False, is_system=u_file.is_system)
