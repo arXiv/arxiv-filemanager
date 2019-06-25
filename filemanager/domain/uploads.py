@@ -287,8 +287,8 @@ class UploadWorkspace:
                                            is_system=u_file.is_system)
             if existing_file.is_directory:
                 raise ValueError('Directory exists at that path')
-            if not replace:
-                raise ValueError('File at that path already exists')
+            # if not replace:
+            #     raise ValueError('File at that path already exists')
         new_file = UploadedFile(self, path=new_path,
                                 size_bytes=u_file.size_bytes,
                                 file_type=u_file.file_type,
@@ -402,7 +402,7 @@ class UploadWorkspace:
                 if e.severity is Error.Severity.WARNING]
 
     @property
-    def readiness(self) -> Readiness:
+    def readiness(self) -> 'Readiness':
         """Readiness state of the upload workspace."""
         if self.has_fatal_errors:
             return UploadWorkspace.Readiness.ERRORS
@@ -549,6 +549,16 @@ class UploadWorkspace:
     LEADING_DOTSLASH = re.compile(r'^\./')
     """Pattern to match leading ``./`` in relative paths."""
 
+    def _check_is_ancillary_path(self, path: str) -> Tuple[str, bool]:
+        if path.startswith(self.ANCILLARY_PREFIX):
+            logger.debug('Path indicates an ancillary file')
+            _, path = path.split(self.ANCILLARY_PREFIX, 1)
+            path = path.strip('/')
+            logger.debug('Path indicates ancillary file; trimmed to `%s`',
+                         path)
+            return path, True
+        return path, False        
+
     def create(self, path: str, file_type: FileType = FileType.UNKNOWN,
                replace: bool = False,
                is_directory: bool = False,
@@ -564,17 +574,11 @@ class UploadWorkspace:
                                     is_system=is_system)
             if e_file.is_directory:
                 raise ValueError('Directory exists at that path')
-            if not replace:
-                raise ValueError('File at that path already exists')
+            # if not replace:
+            #     raise ValueError('File at that path already exists')
 
         if is_ancillary is None:    # Infer whether this is an ancillary file.
-            if path.startswith(self.ANCILLARY_PREFIX):
-                logger.debug('Path indicates an ancillary file')
-                is_ancillary = True
-                _, path = path.split(self.ANCILLARY_PREFIX, 1)
-                path = path.strip('/')
-                logger.debug('Path indicates ancillary file; trimmed to `%s`',
-                             path)
+            path, is_ancillary = self._check_is_ancillary_path(path)
 
         u_file = UploadedFile(self, path=path, size_bytes=0,
                               file_type=file_type,
@@ -611,6 +615,12 @@ class UploadWorkspace:
         if u_file.is_directory:
             for child_path, child_file in self.iter_children(u_file):
                 self._drop_refs(child_path)
+    
+    def delete_all_files(self) -> None:
+        """Delete all source and ancillary files in the workspace."""
+        self.storage.delete_all(self)
+        self.files.source.clear()
+        self.files.ancillary.clear()
 
     def get_size_bytes(self, u_file: UploadedFile) -> int:
         """Get (and update) the size in bytes of a file."""
@@ -623,7 +633,6 @@ class UploadWorkspace:
 
     def get_checksum(self, u_file: UploadedFile) -> str:
         hash_md5 = md5()
-        print('get chex', u_file.path, u_file.is_system)
         with self.open(u_file, "rb") as f:
             for chunk in iter(lambda: f.read(4096), b""):
                 hash_md5.update(chunk)
@@ -658,13 +667,15 @@ class UploadWorkspace:
         # TODO: update info for target children if target was a directory.
         return replace_with
 
-    def get(self, path: str, is_ancillary: bool = False,
+    def get(self, path: str, is_ancillary: Optional[bool] = None,
             is_removed: bool = False, is_system: bool = False) -> UploadedFile:
         """Get a file at ``path``."""
         if is_system:
             # Create a description of the file, since system files are not part
             # of the source package.
             return self.create(path, is_system=is_system, touch=True)
+        if is_ancillary is None:
+            path, is_ancillary = self._check_is_ancillary_path(path)
         return self.files.get(path, is_ancillary=is_ancillary,
                               is_removed=is_removed, is_system=is_system)
 
@@ -697,6 +708,10 @@ class UploadWorkspace:
         if counts['ignore'] == 1:
             return False
         return True
+
+    @property
+    def is_active(self) -> bool:
+        return bool(self.status == UploadWorkspace.Status.ACTIVE)
 
     @property
     def is_locked(self) -> bool:

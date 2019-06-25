@@ -4,3 +4,4 @@ from .uploads import UploadedFile, UploadWorkspace, IChecker, IStorageAdapter
 from .file_type import FileType
 from .checks import ICheckingStrategy
 from .error import Error
+from .index import NoSuchFile, FileIndex

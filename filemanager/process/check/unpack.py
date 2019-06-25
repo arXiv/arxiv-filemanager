@@ -34,7 +34,10 @@ class UnpackCompressedTarFiles(BaseChecker):
     def _unpack_file(self, workspace: UploadWorkspace, u_file: UploadedFile,
                      tar: tarfile.TarFile, tarinfo: tarfile.TarInfo) -> None:
         # Extract files and directories for now
-        dest = os.path.join(u_file.dir, tarinfo.name).lstrip('/')
+        fname = tarinfo.name
+        if fname.startswith('./'):
+            fname = fname[2:]
+        dest = os.path.join(u_file.dir, fname).lstrip('/')
 
         # Tarfiles may contain relative paths! We must ensure that each file is
         # not going to escape the upload source directory _before_ we extract
@@ -70,15 +73,19 @@ class UnpackCompressedTarFiles(BaseChecker):
             logger.debug('Unpacked to %s', parent)
 
             os.utime(parent)  # Update access and modified times to now.
+            # If the parent is not explicitly an ancillary file, leave it up 
+            # to the workspace to infer whether or not the new file is 
+            # ancillary or not.
+            is_ancillary = True if u_file.is_ancillary else None
             if tarinfo.isdir():
                 if not dest.endswith('/'):
                     dest += '/'
                 workspace.create(dest, touch=False, is_directory=True,
-                                 is_ancillary=u_file.is_ancillary,
+                                 is_ancillary=is_ancillary,
                                  file_type=FileType.DIRECTORY)
             else:
                 workspace.create(dest, touch=False,
-                                 is_ancillary=u_file.is_ancillary)
+                                 is_ancillary=is_ancillary)
 
     def _unpack(self, workspace: UploadWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
@@ -141,7 +148,11 @@ class UnpackCompressedZIPFiles(BaseChecker):
 
     def _unpack_file(self, workspace: UploadWorkspace, u_file: UploadedFile,
                      zip: zipfile.ZipFile, zipinfo: zipfile.ZipInfo) -> None:
-        dest = os.path.join(u_file.dir, zipinfo.filename).lstrip('/')
+        fname = zipinfo.filename
+        if fname.startswith('./'):
+            fname = fname[2:]
+        dest = os.path.join(u_file.dir, fname).lstrip('/')
+
         # Zip files may contain relative paths! We must ensure that each file
         # is not going to escape the upload source directory _before_ we
         # extract it.
@@ -151,10 +162,15 @@ class UnpackCompressedZIPFiles(BaseChecker):
                           ' to escape workspace.')
             return
 
+        # If the parent is not explicitly an ancillary file, leave it up 
+        # to the workspace to infer whether or not the new file is 
+        # ancillary or not.
+        is_ancillary = True if u_file.is_ancillary else None
+
         full_path = workspace.get_full_path(u_file.dir)
         zip.extract(zipinfo, full_path)
         os.utime(full_path)  # Update access and modified times to now.
-        workspace.create(dest, touch=False)
+        workspace.create(dest, touch=False, is_ancillary=is_ancillary)
 
 
 # TODO: Add support for compressed files.

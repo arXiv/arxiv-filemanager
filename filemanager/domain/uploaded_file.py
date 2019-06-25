@@ -127,3 +127,8 @@ class UploadedFile:
     def full_path(self) -> str:
         """Absolute path to this file."""
         return self.workspace.get_full_path(self)
+    
+    @property
+    def checksum(self) -> str:
+        """Base64-endocded MD5 hash of the file contents."""
+        return self.workspace.get_checksum(self)

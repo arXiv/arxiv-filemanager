@@ -23,7 +23,7 @@ from arxiv.users import domain as auth_domain
 from arxiv.base.globals import get_application_config
 
 from ..shared import url_for
-from ..domain import UploadWorkspace
+from ..domain import UploadWorkspace, NoSuchFile
 from ..services import database, storage
 from ..process import strategy, check
 from ..serialize import serialize_workspace
@@ -119,6 +119,7 @@ SOME_ERROR = {'Need to define and assign better error'}
 Response = Tuple[Optional[dict], int, dict]
 
 
+@database.atomic
 def delete_workspace(upload_id: int) -> Response:
     """
     Delete workspace.
@@ -206,8 +207,10 @@ def delete_workspace(upload_id: int) -> Response:
     return {'reason': UPLOAD_DELETED_WORKSPACE}, status.OK, {}
 
 
+@database.atomic
 def client_delete_file(upload_id: int, public_file_path: str) -> Response:
-    """Delete a single file.
+    """
+    Delete a single file.
 
     This request is being received from API so we need to be extra careful.
 
@@ -231,24 +234,21 @@ def client_delete_file(upload_id: int, public_file_path: str) -> Response:
     logger.info("%s: Delete file '%s'.", upload_id, public_file_path)
 
     try:
-        # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
-
-        if upload_db_data is None:
-            # Invalid workspace identifier
+        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
+        if workspace is None:   # Invalid workspace identifier.
             raise NotFound(UPLOAD_NOT_FOUND)
-        if upload_db_data.status != Upload.ACTIVE:
-            # Do we log anything for these requests
+        if not workspace.is_active:    # Do we log anything for these requests?
             raise Forbidden(UPLOAD_NOT_ACTIVE)
-        if upload_db_data.lock == Upload.LOCKED:
+        if workspace.is_locked:
             raise Forbidden(UPLOAD_WORKSPACE_LOCKED)
 
+        # Call routine that will do the actual work.
+        try:
+            workspace.delete(workspace.get(public_file_path))
+        except NoSuchFile:
+            raise NotFound(UPLOAD_FILE_NOT_FOUND)
 
-        # Create Upload object
-        upload_workspace = UploadWorkspace(upload_id)
-
-        # Call routine that will do the actual work
-        upload_workspace.client_remove(public_file_path)
+        database.update(workspace)
 
     except IOError:
         logger.error("%s: Delete file request failed ", upload_id)
@@ -265,19 +265,18 @@ def client_delete_file(upload_id: int, public_file_path: str) -> Response:
         logger.info("%s: Delete file forbidden: %s.", upload_id, forb)
         raise forb
     except Exception as ue:
-        logger.info("Unknown error in delete file. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
-        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+        raise ue
+        # logger.info("Unknown error in delete file. "
+        #             " Add except clauses for '%s'. DO IT NOW!", ue)
+        # raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    response_data = _status_data(upload_db_data, upload_workspace)
-    response_data.update({
-        'reason': UPLOAD_DELETED_FILE,
-        'checksum': upload_workspace.content_checksum()
-    })  # Get rid of pylint errorT
-    headers = {'ARXIV-OWNER': upload_db_data.owner_user_id}
+    response_data = serialize_workspace(workspace)
+    response_data.update({'reason': UPLOAD_DELETED_FILE})
+    headers = {'ARXIV-OWNER': workspace.owner_user_id}
     return response_data, status.OK, headers
 
 
+@database.atomic
 def client_delete_all_files(upload_id: int) -> Response:
     """
     Delete all files uploaded by client from specified workspace.
@@ -301,30 +300,27 @@ def client_delete_all_files(upload_id: int) -> Response:
         Some extra headers to add to the response.
 
     """
-    logger.info("%s: Deleting all uploaded files from this workspace.", upload_id)
+    logger.info("%s: Deleting all uploaded files from this workspace.", 
+                upload_id)
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
+        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
 
-        if upload_db_data is None:
-            # Invalid workspace identifier
-            raise NotFound(UPLOAD_NOT_FOUND)
-        if upload_db_data.status != Upload.ACTIVE:
-            # Do we log anything for these requests
+        if workspace is None:
+            raise NotFound(UPLOAD_NOT_FOUND)    # Invalid workspace identifier.
+        if not workspace.is_active: # Do we log anything for these requests.            
             raise Forbidden(UPLOAD_NOT_ACTIVE)
-        if upload_db_data.lock == Upload.LOCKED:
+        if workspace.is_locked:
             raise Forbidden(UPLOAD_WORKSPACE_LOCKED)
 
-        # Create Upload object
-        upload_workspace = UploadWorkspace(upload_id)
-
-        upload_workspace.client_remove_all_files()
-
+        workspace.delete_all_files()
+        database.update(workspace)
 
     except IOError:
-        logger.error("%s: Delete all files request failed ", upload_id)
-        raise InternalServerError(CANT_DELETE_ALL_FILES)
+        raise
+        # logger.error("%s: Delete all files request failed ", upload_id)
+        # raise InternalServerError(CANT_DELETE_ALL_FILES)
     except NotFound as nf:
         logger.info("%s: DeleteAllFiles: '%s'", upload_id, nf)
         raise
@@ -335,13 +331,10 @@ def client_delete_all_files(upload_id: int) -> Response:
         logger.info("Unknown error in delete all files. "
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
-
-    response_data = _status_data(upload_db_data, upload_workspace)
-    response_data.update({
-        'reason': UPLOAD_DELETED_ALL_FILES,
-        'checksum': upload_workspace.content_checksum()
-    })  # Get rid of pylint error
-    headers = {'ARXIV-OWNER': upload_db_data.owner_user_id}
+    
+    response_data = serialize_workspace(workspace)
+    response_data.update({'reason': UPLOAD_DELETED_ALL_FILES})
+    headers = {'ARXIV-OWNER': workspace.owner_user_id}
     return response_data, status.OK, headers
 
 
@@ -484,7 +477,6 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         workspace.lastupload_readiness = workspace.readiness
         workspace.status = UploadWorkspace.Status.ACTIVE
 
-        # workspace.
         database.update(workspace)    # Store in DB
         print('db updated at', time.time() - start)
 
@@ -501,6 +493,9 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         logger.info("%s: Generating upload summary.", workspace.upload_id)
         headers.update({'ARXIV-OWNER': workspace.owner_user_id})
         print('done at', time.time() - start)
+
+        # TODO: this should only be 201 Created if it's a new workspace; 
+        # otherwise just 200 OK. -- Erick
         return response_data, status.CREATED, headers
 
     except IOError as e:
@@ -520,14 +515,14 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         logger.info("%s: Upload failed: '{forb}'.", upload_id)
         raise forb
     except Exception as ue:
-        raise
-        # logger.info("Unknown error with existing workspace."
-        #             " Add except clauses for '%s'. DO IT NOW!", ue)
-        # raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
+        logger.info("Unknown error with existing workspace."
+                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
     return None
 
 
+@database.atomic
 def upload_summary(upload_id: int) -> Response:
     """
     Provide summary of important upload workspace details.
@@ -604,7 +599,7 @@ def upload_summary(upload_id: int) -> Response:
 # TODO: is working on it? These locks currently mean no changes are allowed.
 # TODO: Is there another flavor of lock? Administrative lock? Or do admin
 # TODO: and submitter coordinate on changes to upload workspace.
-
+@database.atomic
 def upload_lock(upload_id: int) -> Response:
     """
     Lock upload workspace.
@@ -631,23 +626,23 @@ def upload_lock(upload_id: int) -> Response:
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
+        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
 
-        if upload_db_data is None:
+        if workspace is None:
             # Invalid workspace identifier
             raise NotFound(UPLOAD_NOT_FOUND)
 
         # Lock upload workspace
         # update database
-        if upload_db_data.lock == Upload.LOCKED:
+        if workspace.is_locked:
             logger.info("%s: Lock: Workspace is already locked.", upload_id)
         else:
-            upload_db_data.lock = Upload.LOCKED
+            workspace.lock_state = UploadWorkspace.LockState.LOCKED
 
             # Store in DB
-            database.update(upload_db_data)
+            database.update(workspace)
 
-        response_data = {'reason': UPLOAD_LOCKED_WORKSPACE}  # Get rid of pylint error
+        response_data = {'reason': UPLOAD_LOCKED_WORKSPACE}
         status_code = status.OK
 
     except IOError:
@@ -661,10 +656,11 @@ def upload_lock(upload_id: int) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    headers = {'ARXIV-OWNER': upload_db_data.owner_user_id}
+    headers = {'ARXIV-OWNER': workspace.owner_user_id}
     return response_data, status_code, headers
 
 
+@database.atomic
 def upload_unlock(upload_id: int) -> Response:
     """
     Unlock upload workspace.
@@ -685,21 +681,18 @@ def upload_unlock(upload_id: int) -> Response:
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
+        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
 
-        if upload_db_data is None:
-            # Invalid workspace identifier
+        if workspace is None:
             raise NotFound(UPLOAD_NOT_FOUND)
 
         # Lock upload workspace
-        # update database
-        if upload_db_data.lock == Upload.UNLOCKED:
-            logger.info("%s: Unlock: Workspace is already unlocked.", upload_id)
+        if not workspace.is_locked:
+            logger.info("%s: Unlock: Workspace is already unlocked.", 
+                        upload_id)
         else:
-            upload_db_data.lock = Upload.UNLOCKED
-
-            # Store in DB
-            database.update(upload_db_data)
+            workspace.lock_state = UploadWorkspace.LockState.UNLOCKED
+            database.update(workspace)
 
         response_data = {'reason': UPLOAD_UNLOCKED_WORKSPACE}  # Get rid of pylint error
         status_code = status.OK
@@ -715,10 +708,11 @@ def upload_unlock(upload_id: int) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    headers = {'ARXIV-OWNER': upload_db_data.owner_user_id}
+    headers = {'ARXIV-OWNER': workspace.owner_user_id}
     return response_data, status_code, headers
 
 
+@database.atomic
 def upload_release(upload_id: int) -> Response:
     """
     Release inidcates owner is done with upload workspace.
@@ -733,16 +727,13 @@ def upload_release(upload_id: int) -> Response:
     Returns
     -------
     dict
-           Detailed information about the upload_db_data.
-
-           logs - Errors and Warnings
-           files - list of file details
-
-
-       int
-           An HTTP status code.
-       dict
-           Some extra headers to add to the response.
+        Detailed information about the upload_db_data.
+        logs - Errors and Warnings
+        files - list of file details
+    int
+        An HTTP status code.
+    dict
+        Some extra headers to add to the response.
 
     """
     # Again, as with delete workspace, authentication, authorization, and
@@ -751,34 +742,28 @@ def upload_release(upload_id: int) -> Response:
     # Expect workspace to be in ACTIVE state.
 
     try:
-        # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
+        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
 
-        if upload_db_data is None:
+        if workspace is None:
             # Invalid workspace identifier
             raise NotFound(UPLOAD_NOT_FOUND)
 
-        # Release upload workspace
-        # update database
-
-        if upload_db_data.status == Upload.RELEASED:
-            logger.info("%s: Release: Workspace has already been released.", upload_id)
-            response_data = {'reason': UPLOAD_RELEASED_WORKSPACE}  # Should this be an error?
-            status_code = status.OK
-        elif upload_db_data.status == Upload.DELETED:
-            logger.info("%s: Release failed: Workspace has been deleted.", upload_id)
-            # response_data = {'reason': UPLOAD_WORKSPACE_ALREADY_DELETED}
-            # status_code = status.OK
+        if workspace.is_released:
+            logger.info("%s: Release: Workspace has already been released.", 
+                        upload_id)
+            response_data = {'reason': UPLOAD_RELEASED_WORKSPACE}  
+            
+            status_code = status.OK # Should this be an error?
+        elif workspace.is_deleted:
+            logger.info("%s: Release failed: Workspace has been deleted.", 
+                        upload_id)
             raise NotFound(UPLOAD_WORKSPACE_ALREADY_DELETED)
-        elif upload_db_data.status == Upload.ACTIVE:
+        elif workspace.is_active:
             logger.info("%s: Release upload workspace.", upload_id)
+            workspace.status = UploadWorkspace.Status.RELEASED
+            database.update(workspace)
 
-            upload_db_data.status = Upload.RELEASED
-
-            # Store in DB
-            database.update(upload_db_data)
-
-            response_data = {'reason': UPLOAD_RELEASED_WORKSPACE}  # Get rid of pylint error
+            response_data = {'reason': UPLOAD_RELEASED_WORKSPACE} 
             status_code = status.OK
 
     except IOError:
@@ -792,10 +777,11 @@ def upload_release(upload_id: int) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    headers = {'ARXIV-OWNER': upload_db_data.owner_user_id}
+    headers = {'ARXIV-OWNER': workspace.owner_user_id}
     return response_data, status_code, headers
 
 
+@database.atomic
 def upload_unrelease(upload_id: int) -> Response:
     """
     Unrelease returns released workspace to active state.
@@ -813,52 +799,42 @@ def upload_unrelease(upload_id: int) -> Response:
     Returns
     -------
     dict
-           Detailed information about the upload_db_data.
-
-           logs - Errors and Warnings
-           files - list of file details
-
-
-       int
-           An HTTP status code.
-       dict
-           Some extra headers to add to the response.
+        Detailed information about the upload_db_data.
+        logs - Errors and Warnings
+        files - list of file details
+    int
+        An HTTP status code.
+    dict
+        Some extra headers to add to the response.
 
     """
     # Again, as with delete workspace, authentication, authorization, and
     # existence of workspace is verified in route level
 
     # Expect workspace to be in RELEASED state.
-
     logger.info("%s: Unrelease upload workspace.", upload_id)
 
     try:
         # Make sure we have an upload_db_data to work with
-        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
+        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
 
-        if upload_db_data is None:
-            # Invalid workspace identifier
+        if workspace is None:
             raise NotFound(UPLOAD_NOT_FOUND)
 
         # Unrelease upload workspace
         # update database
-        if upload_db_data.status == Upload.DELETED:
-            # logger.info(f"{upload_id}: Unrelease Failed: Workspace has been deleted.")
-            # response_data = {'reason': UPLOAD_WORKSPACE_ALREADY_DELETED}
-            # tatus_code = status.OK
+        if workspace.is_deleted:
             raise NotFound(UPLOAD_WORKSPACE_ALREADY_DELETED)
 
-        if upload_db_data.status == Upload.ACTIVE:
+        if workspace.is_active:
             logger.info("%s: Unrelease: Workspace is already active.", upload_id)
-            response_data = {'reason': UPLOAD_UNRELEASED_WORKSPACE}  # Should this be an error?
-            status_code = status.OK
-        elif upload_db_data.status == Upload.RELEASED:
+            response_data = {'reason': UPLOAD_UNRELEASED_WORKSPACE}  
+            status_code = status.OK     # Should this be an error?
+        elif workspace.is_released:
             logger.info("%s: Unrelease upload workspace.", upload_id)
 
-            upload_db_data.status = Upload.ACTIVE
-
-            # Store in DB
-            database.update(upload_db_data)
+            workspace.status = UploadWorkspace.Status.ACTIVE
+            database.update(workspace)
 
             response_data = {'reason': UPLOAD_UNRELEASED_WORKSPACE}
             status_code = status.OK
@@ -874,7 +850,7 @@ def upload_unrelease(upload_id: int) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    headers = {'ARXIV-OWNER': upload_db_data.owner_user_id}
+    headers = {'ARXIV-OWNER': workspace.owner_user_id}
     return response_data, status_code, headers
 
 
@@ -895,7 +871,7 @@ def check_upload_content_exists(upload_id: int) -> Response:
 
     """
     try:
-        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
+        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
     except IOError:
         logger.error("%s: ContentExistsCheck: There was a problem connecting "
                      "to database.", upload_id)
@@ -938,7 +914,7 @@ def get_upload_content(upload_id: int) -> Response:
 
     """
     try:
-        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
+        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
     except IOError:
         logger.error("%s: ContentDownload: There was a problem connecting "
                      "to database.", upload_id)
@@ -977,30 +953,26 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) -> R
 
     """
     try:
-        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
+        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
     except IOError:
         logger.error("%s: ContentFileExistsCheck: There was a problem "
                      "connecting to database.", upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
 
-    if upload_db_data is None:
+    if workspace is None:
         raise NotFound(UPLOAD_NOT_FOUND)
 
     logger.info("%s: Upload content file exists request.", upload_id)
 
     try:
 
-        upload_workspace = UploadWorkspace(upload_id)
 
         # file exists
-        if upload_workspace.content_file_exists(public_file_path):
-            size = upload_workspace.content_file_size(public_file_path)
-            modified = upload_workspace.content_file_last_modified(public_file_path)
-            checksum = upload_workspace.content_file_checksum(public_file_path)
-            return {}, status.OK, {'ETag': checksum,
-                                            'Content-Length': size,
-                                            'Last-Modified': modified
-                                            }
+        if workspace.exists(public_file_path):
+            u_file = workspace.get(public_file_path)
+            return {}, status.OK, {'ETag': u_file.checksum,
+                                   'Content-Length': u_file.size_bytes,
+                                   'Last-Modified': u_file.last_modified}
 
         raise NotFound(f"File '{public_file_path}' not found.")
 
@@ -1049,39 +1021,33 @@ def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
 
     """
     try:
-        upload_db_data: Optional[Upload] = database.retrieve(upload_id)
+        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
     except IOError:
-        logger.error("%s: ContentFileDownload: There was a problem connecting to database.",
-                     upload_db_data.upload_id)
+        logger.error("%s: ContentFileDownload: There was a problem connecting"
+                     " to database.", upload_db_data.upload_id)
         raise InternalServerError(UPLOAD_DB_CONNECT_ERROR)
 
-    if upload_db_data is None:
+    if workspace is None:
         raise NotFound(UPLOAD_NOT_FOUND)
 
     try:
-
-        upload_workspace = UploadWorkspace(upload_id)
-
-        # Returns path if file exists
-        if upload_workspace.content_file_exists(public_file_path):
-            size = upload_workspace.content_file_size(public_file_path)
-            modified = upload_workspace.content_file_last_modified(public_file_path)
-            checksum = upload_workspace.content_file_checksum(public_file_path)
-            filepointer = upload_workspace.content_file_pointer(public_file_path)
-            headers = {
-                "Content-disposition": f"filename={filepointer.name}",
-                'ETag': checksum,
-                'Content-Length': size,
-                'Last-Modified': modified
-            }
+        if workspace.exists(public_file_path):
+            u_file = workspace.get(public_file_path)
+            headers = {'ETag': u_file.checksum,
+                       'Content-Length': u_file.size_bytes,
+                       'Last-Modified': u_file.last_modified,
+                       'Content-disposition': f'filename={u_file.name}'}
         else:
             raise NotFound(f"File '{public_file_path}' not found.")
+        
+        filepointer = workspace.open_pointer(u_file)
 
     except IOError:
-        logger.error("%s: Delete file request failed ", upload_db_data.upload_id)
+        logger.error("%s: Get file content request failed ", 
+                     workspace.upload_id)
         raise InternalServerError(CANT_DELETE_FILE)
     except NotFound as nf:
-        logger.info("%s: DeleteFile: %s", upload_id, nf)
+        logger.info("%s: Get file content: %s", upload_id, nf)
         raise nf
     except SecurityError as secerr:
         logger.info("%s: %s", upload_id, secerr.description)
@@ -1089,14 +1055,14 @@ def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
         # NotFound in order to provide as little feedback as posible to client.
         raise NotFound(UPLOAD_FILE_NOT_FOUND)
     except Forbidden as forb:
-        logger.info("%s: Delete file forbidden: %s.", upload_id, forb)
+        logger.info("%s: Get file content forbidden: %s.", upload_id, forb)
         raise forb
     except Exception as ue:
-        logger.info("Unknown error in delete file. "
+        logger.info("Unknown error in get file content. "
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(UPLOAD_UNKNOWN_ERROR)
 
-    headers.update({'ARXIV-OWNER': upload_db_data.owner_user_id})
+    headers.update({'ARXIV-OWNER': workspace.owner_user_id})
     return filepointer, status.OK, headers
 
 
@@ -1281,22 +1247,3 @@ def get_upload_service_log() -> Response:
         'Last-Modified': modified
     }
     return filepointer, status.OK, headers
-
-#
-# def _status_data(workspace: UploadWorkspace) -> dict:
-#     return {
-#         'upload_id': workspace.upload_id,
-#         'upload_total_size': workspace.size_bytes,
-#         'upload_compressed_size': workspace.source_package.size_bytes,
-#         'created_datetime': workspace.created_datetime,
-#         'modified_datetime': workspace.modified_datetime,
-#         'start_datetime': workspace.lastupload_start_datetime,
-#         'completion_datetime': workspace.lastupload_completion_datetime,
-#         # 'files': workspace.files,
-#         'errors': workspace.errors + workspace.warnings,
-#         'readiness': workspace.readiness.value,
-#         'status': workspace.status.value,
-#         'lock_state': workspace.lock_state.value,
-#         'source_format': workspace.source_type.value,
-#         'checksum': workspace.source_package.checksum
-#     }

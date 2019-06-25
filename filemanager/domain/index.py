@@ -4,6 +4,10 @@ from typing import Iterable, Tuple, Optional
 from itertools import chain
 
 
+class NoSuchFile(Exception):
+    """An operation has been attempted on a non-existant file."""
+
+
 class FileIndex:
     """
     Indexing struct for :class:`.UploadedFile`s.
@@ -46,13 +50,16 @@ class FileIndex:
             is_removed: bool = False, is_system: bool = False) \
             -> 'UploadedFile':
         """Get an :class:`.UploadedFile` exists at ``path``."""
-        if is_system:
-            return self.system[path]
-        if is_removed:
-            return self.removed[path]
-        if is_ancillary:
-            return self.ancillary[path]
-        return self.source[path]
+        try:
+            if is_system:
+                return self.system[path]
+            if is_removed:
+                return self.removed[path]
+            if is_ancillary:
+                return self.ancillary[path]
+            return self.source[path]
+        except KeyError as e:
+            raise NoSuchFile('No such file') from e
 
     def items(self, is_ancillary: bool = False, is_removed: bool = False,
               is_system: bool = False) -> Iterable[Tuple[str, 'UploadedFile']]:
@@ -70,12 +77,14 @@ class FileIndex:
             -> Optional['UploadedFile']:
         """Pop the :class:`.UploadedFile` at ``path``."""
         if is_system:
-            return self.system.pop(path, None)
-        if is_removed:
-            return self.removed.pop(path, None)
-        if is_ancillary:
-            return self.ancillary.pop(path, None)
-        return self.source.pop(path, None)
+            value = self.system.pop(path, None)
+        elif is_removed:
+            value = self.removed.pop(path, None)
+        elif is_ancillary:
+            value = self.ancillary.pop(path, None)
+        else:
+            value = self.source.pop(path, None)
+        return value
 
     def __iter__(self) -> Iterable['UploadedFile']:
         """Get an interator over all :class:`.UploadedFile`s."""

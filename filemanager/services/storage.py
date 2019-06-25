@@ -215,6 +215,13 @@ class SimpleStorageAdapter:
             shutil.rmtree(self.get_path(workspace, u_file))
         else:
             os.unlink(self.get_path(workspace, u_file))
+    
+    def delete_path(self, workspace: UploadWorkspace, path: str) -> None:
+        shutil.rmtree(self.get_path(workspace, path))
+    
+    def delete_all(self, workspace: UploadWorkspace):
+        shutil.rmtree(self.get_path_bare(workspace.ancillary_path))
+        shutil.rmtree(self.get_path_bare(workspace.source_path))
 
     def get_size_bytes(self, workspace: UploadWorkspace, u_file: UploadedFile) \
             -> int:
