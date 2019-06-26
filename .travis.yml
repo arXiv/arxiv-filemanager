@@ -2,6 +2,7 @@ language: python
 sudo: required
 env:
   MIN_PYLINT_SCORE: 8
+  LOGLEVEL: 50
 os:
   - linux
 python:
