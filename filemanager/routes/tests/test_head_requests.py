@@ -33,7 +33,7 @@ class TestContentLengthHeader(TestCase):
                                         scope=auth_scope)
 
     @mock.patch('arxiv.users.auth.middleware.os.environ', OS_ENVIRON)
-    @mock.patch(f'{upload_api.__name__}.upload.check_upload_content_exists')
+    @mock.patch(f'{upload_api.__name__}.package.check_upload_content_exists')
     def test_check_upload_content_exists(self, mock_controller: Any) -> None:
         """HEAD request to content status endpoint returns correct length."""
         mock_controller.return_value = {}, 200, {'Content-Length': '392351'}
@@ -49,7 +49,7 @@ class TestContentLengthHeader(TestCase):
                          'The value provided by the controller is returned')
 
     @mock.patch('arxiv.users.auth.middleware.os.environ', OS_ENVIRON)
-    @mock.patch(f'{upload_api.__name__}.upload.check_upload_file_content_exists')
+    @mock.patch(f'{upload_api.__name__}.files.check_upload_file_content_exists')
     def test_check_file_exists(self, mock_controller: Any) -> None:
         """HEAD request to file status endpoint returns correct length."""
         mock_controller.return_value = {}, 200, {'Content-Length': '392351'}
@@ -65,7 +65,7 @@ class TestContentLengthHeader(TestCase):
                          'The value provided by the controller is returned')
 
     @mock.patch('arxiv.users.auth.middleware.os.environ', OS_ENVIRON)
-    @mock.patch(f'{upload_api.__name__}.upload.check_upload_source_log_exists')
+    @mock.patch(f'{upload_api.__name__}.source_log.check_upload_source_log_exists')
     def test_check_upload_source_log_exists(self, mock_controller: Any) -> None:
         """HEAD request to source log endpoint returns correct length."""
         mock_controller.return_value = {}, 200, {'Content-Length': '392351'}
@@ -81,7 +81,7 @@ class TestContentLengthHeader(TestCase):
                          'The value provided by the controller is returned')
 
     @mock.patch('arxiv.users.auth.middleware.os.environ', OS_ENVIRON)
-    @mock.patch(f'{upload_api.__name__}.upload.check_upload_service_log_exists')
+    @mock.patch(f'{upload_api.__name__}.service_log.check_upload_service_log_exists')
     def test_check_upload_service_log_exists(self, mock_controller: Any) -> None:
         """HEAD request to service log endpoint returns correct length."""
         mock_controller.return_value = {}, 200, {'Content-Length': '392351'}
