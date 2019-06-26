@@ -197,8 +197,10 @@ class TestSingleFileSubmissions(WorkspaceTestCase):
 
     def test_single_file_eps_submission(self):
         """Test checking invalid single-file 'EPS' submission."""
+        from pprint import pprint
         self.write_upload('type_test_files/dos_eps_1.eps')
         self.workspace.perform_checks()
+        pprint(self.workspace.files.source['dos_eps_1.eps'])
         self.assertEqual(self.workspace.source_type,
                          UploadWorkspace.SourceType.INVALID,
                          'Source type is INVALID')
@@ -408,8 +410,8 @@ class TestBadFilenames(WorkspaceTestCase):
         self.write_upload('Upload9BadFileNames.tar.gz')
         self.workspace.perform_checks()
         self.assertTrue(self.workspace.has_warnings)
-        self.assertIn('Renamed 10-1-1(63).png to 10_1_1(63).png',
-                      self.workspace.get_warnings_for_path('10_1_1(63).png'))
+        self.assertIn('Renamed 10-1-1(63).png to 10-1-1_63_.png',
+                      self.workspace.get_warnings_for_path('10-1-1_63_.png'))
 
 
 class TestUnpack(WorkspaceTestCase):

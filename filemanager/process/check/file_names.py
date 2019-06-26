@@ -90,7 +90,8 @@ class PanicOnIllegalCharacters(BaseChecker):
     def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """Check for illegal characters and generate error if found."""
-
+        if u_file.is_directory:
+            return u_file
         if ReplaceIllegalCharacters.ILLEGAL.search(u_file.name):
             workspace.add_error(u_file, self.ILLEGAL_ERROR % u_file.name)
         return u_file
