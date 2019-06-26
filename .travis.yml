@@ -3,6 +3,7 @@ sudo: required
 env:
   MIN_PYLINT_SCORE: 8
   LOGLEVEL: 50
+  FILE_MANAGEMENT_SQLALCHEMY_DATABASE_URI: "sqlite://:memory:" 
 os:
   - linux
 python:
