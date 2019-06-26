@@ -343,6 +343,13 @@ class _PathsMixin:
             path, is_ancillary = self._check_is_ancillary_path(path)
         return self.files.get(path, is_ancillary=is_ancillary,
                               is_removed=is_removed, is_system=is_system)
+    
+    def get_public_path(self: 'UploadWorkspace', u_file: UploadedFile) -> str:
+        if u_file.is_system or u_file.is_removed:
+            raise RuntimeError('Not a public file')
+        if u_file.is_ancillary:
+            return os.path.join(self.ANCILLARY_PREFIX, u_file.path)
+        return u_file.path
 
     def get_path(self: 'UploadWorkspace', 
                  u_file_or_path: Union[str, UploadedFile],
@@ -775,7 +782,8 @@ class UploadWorkspace(_ErrorsAndWarningsMixin, _PathsMixin, _CountsMixin,
     lastupload_file_summary: str = field(default_factory=str)
     """Logs associated with last upload event."""
 
-    lastupload_readiness: str = field(default_factory=str)
+    lastupload_readiness: 'Readiness' = \
+        field(default=_ReadinessMixin.Readiness.READY)
     """Content readiness status after last upload event."""
 
     def __post_init__(self) -> None:

@@ -17,7 +17,8 @@ from arxiv.users.auth import scopes
 from arxiv.users.auth.decorators import scoped
 
 from ..services import database
-from ..controllers import upload, status
+from ..controllers import upload, status, service_log, source_log, lock, \
+    release, package, files
 
 
 logger = logging.getLogger(__name__)
@@ -145,8 +146,8 @@ def delete_file(upload_id: int, public_file_path: str) -> tuple:
         Relative file path that uniquely identifies file to be removed.
 
     """
-    data, status_code, headers = upload.client_delete_file(upload_id,
-                                                           public_file_path)
+    data, status_code, headers = files.client_delete_file(upload_id,
+                                                          public_file_path)
     return jsonify(data), status_code, headers
 
 # File and workspace deletion
@@ -163,7 +164,7 @@ def delete_all_files(upload_id: int) -> tuple:
         Workspace identifier
 
     """
-    data, status_code, headers = upload.client_delete_all_files(upload_id)
+    data, status_code, headers = files.client_delete_all_files(upload_id)
     return jsonify(data), status_code, headers
 
 
@@ -187,7 +188,7 @@ def workspace_delete(upload_id: int) -> tuple:
 
 @blueprint.route('/<int:upload_id>/lock', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
-def lock(upload_id: int) -> tuple:
+def lock_workspace(upload_id: int) -> tuple:
     """
     Lock submission workspace.
 
@@ -200,44 +201,44 @@ def lock(upload_id: int) -> tuple:
         Workspace identifier
 
     """
-    data, status_code, headers = upload.upload_lock(upload_id)
+    data, status_code, headers = lock.upload_lock(upload_id)
     return jsonify(data), status_code, headers
 
 
 # This could be thaw or release instead of unlock
 @blueprint.route('/<int:upload_id>/unlock', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
-def unlock(upload_id: int) -> tuple:
+def unlock_workspace(upload_id: int) -> tuple:
     """Unlock submission workspace and allow updates."""
-    data, status_code, headers = upload.upload_unlock(upload_id)
+    data, status_code, headers = lock.upload_unlock(upload_id)
     return jsonify(data), status_code, headers
 
 
 # This could be remove or delete instead of release
 @blueprint.route('/<int:upload_id>/release', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
-def release(upload_id: int) -> tuple:
+def release_workspace(upload_id: int) -> tuple:
     """
     Client indicates they are finished with submission.
 
     File management service is free to remove submissions files,
     or schedule workspace for removal.
     """
-    data, status_code, headers = upload.upload_release(upload_id)
+    data, status_code, headers = release.upload_release(upload_id)
     return jsonify(data), status_code, headers
 
 
 # This could be remove or delete instead of release
 @blueprint.route('/<int:upload_id>/unrelease', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
-def unrelease(upload_id: int) -> tuple:
+def unrelease_workspace(upload_id: int) -> tuple:
     """
     Client indicates they are NOT finished with submission.
 
     Workspace was previously release by client. Client has changed their
     mind and does not want to remove workspace.
     """
-    data, status_code, headers = upload.upload_unrelease(upload_id)
+    data, status_code, headers = release.upload_unrelease(upload_id)
     return jsonify(data), status_code, headers
 
 
@@ -251,7 +252,7 @@ def check_upload_content_exists(upload_id: int) -> Response:
 
     Returns an ``ETag`` header with the current source package checksum.
     """
-    data, status_code, headers = upload.check_upload_content_exists(upload_id)
+    data, status_code, headers = package.check_upload_content_exists(upload_id)
     response = _update_headers(jsonify(data), headers)
     response.status_code = status_code
     return response
@@ -269,7 +270,7 @@ def get_upload_content(upload_id: int) -> Response:
     logger.debug('Request for upload content: %s (%s)',
                  upload_id, type(upload_id))
     # Note: status_code is not used
-    data, _, headers = upload.get_upload_content(upload_id)
+    data, _, headers = package.get_upload_content(upload_id)
     response = send_file(data, mimetype="application/tar+gzip")
     response.set_etag(headers.get('ETag'))
     return response
@@ -284,7 +285,7 @@ def check_file_exists(upload_id: int, public_file_path: str) -> Response:
     Returns an ``ETag`` header with the current source file checksum.
     """
     data, status_code, headers = \
-        upload.check_upload_file_content_exists(upload_id, public_file_path)
+        files.check_upload_file_content_exists(upload_id, public_file_path)
 
     response = _update_headers(jsonify(data), headers)
     response.status_code = status_code
@@ -303,7 +304,7 @@ def get_file_content(upload_id: int, public_file_path: str) -> Response:
     """
     # Note: status_code not used
     data, _, headers = \
-        upload.get_upload_file_content(upload_id, public_file_path)
+        files.get_upload_file_content(upload_id, public_file_path)
     response = send_file(data, mimetype="application/*")
     response.set_etag(headers.get('ETag'))
     return response
@@ -327,7 +328,7 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
 
     """
     data, status_code, headers = \
-        upload.check_upload_source_log_exists(upload_id)
+        source_log.check_upload_source_log_exists(upload_id)
     response = _update_headers(jsonify(data), headers)
     response.status_code = status_code
     return response
@@ -352,7 +353,7 @@ def get_upload_source_log(upload_id: int) -> Response:
 
     """
     # Note: status_code not used
-    data, _, headers = upload.get_upload_source_log(upload_id)
+    data, _, headers = source_log.get_upload_source_log(upload_id)
     response = send_file(data, mimetype="application/tar+gzip")
     response.set_etag(headers.get('ETag'))
     return response
@@ -369,7 +370,7 @@ def check_upload_service_log_exists() -> Response:
     Returns an ``ETag`` header with the current source package checksum.
 
     """
-    data, status_code, headers = upload.check_upload_service_log_exists()
+    data, status_code, headers = service_log.check_upload_service_log_exists()
     response = _update_headers(jsonify(data), headers)
     response.status_code = status_code
     return response
@@ -392,7 +393,7 @@ def get_upload_service_log() -> Response:
 
     """
     # Note: status_code not used
-    data, _, headers = upload.get_upload_service_log()
+    data, _, headers = service_log.get_upload_service_log()
     response = send_file(data, mimetype="application/tar+gzip")
     response.set_etag(headers.get('ETag'))
     return response

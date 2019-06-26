@@ -1,0 +1,10 @@
+[run]
+omit =
+    app.py
+    setup.py
+    docs/*
+    tests/*
+    wsgi.py
+    generate_token.py
+    populate_test_database.py
+    *tests/*

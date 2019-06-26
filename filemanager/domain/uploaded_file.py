@@ -72,6 +72,10 @@ class UploadedFile:
             self.path += '/'
 
     @property
+    def public_path(self) -> str:
+        return self.workspace.get_public_path(self)
+
+    @property
     def errors(self) -> List[Error]:
         """Get errors for this file."""
         # May have inherited errors with a different path.

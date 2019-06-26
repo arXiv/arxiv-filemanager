@@ -166,8 +166,9 @@ def retrieve(upload_id: int, skip_cache: bool = False) \
             p: translate.dict_to_file(d, workspace)
             for p, d in upload_data.files['system'].items()
         })
-    for datum in upload_data.errors:
-        workspace._errors.append(translate.dict_to_error(datum))
+    if upload_data.errors:
+        for datum in upload_data.errors:
+            workspace._errors.append(translate.dict_to_error(datum))
     return workspace
 
 

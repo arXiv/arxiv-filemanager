@@ -28,7 +28,7 @@ def serialize_file(u_file: UploadedFile) -> dict:
     """Make a JSON-friendly dict from an :class:`UploadedFile`."""
     return {
         'name': u_file.name,
-        'public_filepath': u_file.path,
+        'public_filepath': u_file.public_path,
         'size': u_file.size_bytes,
         'type': u_file.file_type.value,
         'modified_datetime': u_file.last_modified

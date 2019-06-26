@@ -95,7 +95,7 @@ class TestUploadCreator(TestCase):
         self.data = {'owner_user_id': 'dlf2',
                      'created_datetime': datetime.now(UTC),
                      'modified_datetime': datetime.now(UTC),
-                     'state': UploadWorkspace.Status.ACTIVE.value}
+                     'status': UploadWorkspace.Status.ACTIVE.value}
         self.dbupload = self.database.DBUpload(**self.data)  # type: ignore
         self.database.db.session.add(self.dbupload)  # type: ignore
         self.database.db.session.commit()  # type: ignore
