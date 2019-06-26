@@ -11,6 +11,7 @@ from pathlib import Path
 from contextlib import contextmanager
 from datetime import datetime
 
+from pytz import UTC
 from flask import Flask
 
 from arxiv.base import logging
@@ -209,12 +210,17 @@ class SimpleStorageAdapter:
         shutil.copy(self.get_path(workspace, u_file),
                     self.get_path(workspace, new_file))
 
-    def delete(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def delete(self, workspace: UploadWorkspace, u_file: UploadedFile,
+               is_ancillary: bool = False,
+               is_system: bool = False,
+               is_persisted: bool = False) -> None:
         """Delete a file or directory."""
+        path = self.get_path(workspace, u_file, is_ancillary=is_ancillary,
+                             is_system=is_system, is_persisted=is_persisted)
         if u_file.is_directory:
-            shutil.rmtree(self.get_path(workspace, u_file))
+            shutil.rmtree(path)
         else:
-            os.unlink(self.get_path(workspace, u_file))
+            os.unlink(path)
     
     def delete_path(self, workspace: UploadWorkspace, path: str) -> None:
         shutil.rmtree(self.get_path(workspace, path))
@@ -231,7 +237,8 @@ class SimpleStorageAdapter:
     def get_last_modified(self, workspace: UploadWorkspace,
                           u_file: UploadedFile) -> str:
         _path = self.get_path(workspace, u_file)
-        return datetime.utcfromtimestamp(os.path.getmtime(_path))
+        ts = datetime.utcfromtimestamp(os.path.getmtime(_path)).replace(tzinfo=UTC)
+        return ts
 
     def pack_source(self, workspace: UploadWorkspace,
                     u_file: UploadedFile) -> UploadedFile:

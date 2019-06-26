@@ -119,7 +119,8 @@ def retrieve(upload_id: int, skip_cache: bool = False) \
     args['upload_id'] = upload_data.upload_id
     args['owner_user_id'] = upload_data.owner_user_id
     args['created_datetime'] = upload_data.created_datetime.replace(tzinfo=UTC)
-    args['modified_datetime'] = upload_data.modified_datetime.replace(tzinfo=UTC)
+    args['modified_datetime'] = \
+        upload_data.modified_datetime.replace(tzinfo=UTC)
     args['status'] = UploadWorkspace.Status(upload_data.status)
     args['lock_state'] = UploadWorkspace.LockState(upload_data.lock_state)
     args['source_type'] = UploadWorkspace.SourceType(upload_data.source_type)
@@ -145,22 +146,26 @@ def retrieve(upload_id: int, skip_cache: bool = False) \
     workspace = UploadWorkspace(**args)
 
     if upload_data.files:
-        workspace.files.source = {
+        workspace.files.source.clear()
+        workspace.files.source.update({
             p: translate.dict_to_file(d, workspace)
             for p, d in upload_data.files['source'].items()
-        }
-        workspace.files.ancillary = {
+        })
+        workspace.files.ancillary.clear()
+        workspace.files.ancillary.update({
             p: translate.dict_to_file(d, workspace)
             for p, d in upload_data.files['ancillary'].items()
-        }
-        workspace.files.removed = {
+        })
+        workspace.files.removed.clear()
+        workspace.files.removed.update({
             p: translate.dict_to_file(d, workspace)
             for p, d in upload_data.files['removed'].items()
-        }
-        workspace.files.system = {
+        })
+        workspace.files.system.clear()
+        workspace.files.system.update({
             p: translate.dict_to_file(d, workspace)
             for p, d in upload_data.files['system'].items()
-        }
+        })
     for datum in upload_data.errors:
         workspace._errors.append(translate.dict_to_error(datum))
     return workspace

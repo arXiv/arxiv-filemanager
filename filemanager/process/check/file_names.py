@@ -56,14 +56,15 @@ class WarnAboutTeXBackupFiles(BaseChecker):
 class ReplaceIllegalCharacters(BaseChecker):
     """Checks for illegal characters and replaces them with underscores."""
 
-    ILLEGAL = re.compile(r'[\+\-\=\,]')
+    ILLEGAL = re.compile(r'[^\w\+\-\.\=\,\_]')
     """Filename contains illegal characters ``+-/=,``."""
 
     def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """Check for illegal characters and replace them with underscores."""
 
-        if self.ILLEGAL.search(u_file.name):    # Translate bad characters.
+        if not u_file.is_directory and self.ILLEGAL.search(u_file.name):
+            # Translate bad characters.
             prev_name = u_file.name
             new_name = self.ILLEGAL.sub('_', prev_name)
             base_path, _ = os.path.split(u_file.path.strip('/'))

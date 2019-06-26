@@ -245,18 +245,14 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
                 fatal_errors[name].append(msg)
             elif level == 'info':
                 info_errors[name].append(msg)
-        files = {f['name']: f for f in response_data['files']}
 
         # Normal emacs backup file
-        self.assertIn("File 'submission.tex_' may be a backup file. "
+        self.assertIn("File 'submission.tex~' may be a backup file. "
                       "Please inspect and remove extraneous backup files.",
                       warnings['submission.tex_'])
         
-        # TODO: not sure why this is not working. -- Erick
-        #
-        # self.assertIn("Attempting to rename submission.tex~ to"
-        #               " submission.tex_.",
-        #               info_errors['submission.tex_'])
+        self.assertIn("Renamed submission.tex~ to submission.tex_",
+                      warnings['submission.tex_'])
 
         # Another backup file
         self.assertIn("File 'submission.tex.bak' may be a backup file. "

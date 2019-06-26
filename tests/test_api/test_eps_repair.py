@@ -130,8 +130,8 @@ class TestEPSRepair(TestCase):
         reference_path = os.path.join(self.TEST_FILES_STRIP_PS, 
                                       reference_filename)
         # Compared fixed file to a reference_path stripped version of file.
-        # is_same = filecmp.cmp(content_file_path, reference_path, shallow=False)
-        # self.assertTrue(is_same, f"Repair EPS file '{test_filename}'.")
+        is_same = filecmp.cmp(content_file_path, reference_path, shallow=False)
+        self.assertTrue(is_same, f"Repair EPS file '{test_filename}'.")
 
 #         # Try encapsulate Postscript with trailing TIFF
 #

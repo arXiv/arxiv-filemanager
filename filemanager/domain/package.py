@@ -22,7 +22,7 @@ class SourcePackage:
     def is_stale(self) -> bool:
         """Indicates whether or not the source package is out of date."""
         if self.workspace.last_modified is None:
-            return False
+            return True
         return self.last_modified < self.workspace.last_modified
 
     @property
@@ -49,6 +49,9 @@ class SourcePackage:
         """
         with self.workspace.open(self._file, flags, **kwargs) as f:
             yield f
+    
+    def open_pointer(self, flags: str = 'r', **kwargs: Any) -> io.IOBase:
+        return self.workspace.open_pointer(self._file, flags, **kwargs)
 
     def pack(self) -> None:
         self._file = \

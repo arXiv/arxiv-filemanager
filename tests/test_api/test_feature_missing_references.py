@@ -110,10 +110,10 @@ class TestMissingReferences(TestCase):
             self.fail(e)
 
         # IMPORTANT: After we upload compiled .bbl file 'update_status' changes
-        # from ERRORS to READY_WITH_WARNINGS.
+        # from ERRORS to READY.
         self.assertIn('readiness', response_data, 'Readiness is provided')
         self.assertEqual(response_data['readiness'], 
-                         UploadWorkspace.Readiness.READY_WITH_WARNINGS.value,
+                         UploadWorkspace.Readiness.READY.value,
                          'Workspace is ready with warnings')
 
     

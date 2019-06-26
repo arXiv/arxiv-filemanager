@@ -9,6 +9,7 @@ from pytz import UTC
 from dataclasses import dataclass, field
 
 from .file_type import FileType
+from .error import Error
 
 
 @dataclass
@@ -63,12 +64,24 @@ class UploadedFile:
     last_modified: datetime = field(default_factory=partial(datetime.now, UTC))
 
     reason_for_removal: Optional[str] = field(default=None)
-    errors: List[str] = field(default_factory=list)
+    _errors: List[Error] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         """Make sure that directory paths end with '/'."""
         if self.is_directory and not self.path.endswith('/'):
             self.path += '/'
+
+    @property
+    def errors(self) -> List[Error]:
+        """Get errors for this file."""
+        # May have inherited errors with a different path.
+        for error in self._errors:
+            error.path = self.path
+        return self._errors
+
+    def add_error(self, error: Error) -> None:
+        """Add an error to this file."""
+        self._errors.append(error)
 
     @property
     def name(self) -> str:

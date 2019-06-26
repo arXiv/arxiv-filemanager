@@ -264,17 +264,13 @@ class TestUnReleasedWorkspace(TestCase):
     
     def test_upload_files_to_unreleased_workspace(self):
         """Try to upload files to an unreleased workspace."""
-        filepath = os.path.join(
-            self.DATA_PATH,
-            'test_files_upload/1801.03879-1.tar.gz'
+        fpath = os.path.join(self.DATA_PATH,
+                             'test_files_upload/1801.03879-1.tar.gz'
         )
-        fname = os.path.basename(filepath)
+        fname = os.path.basename(fpath)
         response = self.client.post(f"/filemanager/api/{self.upload_id}",
-                                    data={
-                                        'file': (open(filepath, 'rb'), fname),
-                                    },
+                                    data={'file': (open(fpath, 'rb'), fname)},
                                     headers={'Authorization': self.token},
-                                    #        content_type='application/gzip')
                                     content_type='multipart/form-data')
 
         self.assertEqual(response.status_code, status.CREATED, 
