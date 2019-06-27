@@ -61,8 +61,6 @@ class TestUploadToExistingWorkspace(TestCase):
 
     def test_upload_to_nonexistant_workspace(self) -> None:
         """Upload file to non existent workspace!! Yikes!"""
-
-
         created = datetime.now(UTC)
         modified = datetime.now(UTC)
         expected_data = {'upload_id': 5,
@@ -82,7 +80,6 @@ class TestUploadToExistingWorkspace(TestCase):
                                         'file': (open(filepath, 'rb'), fname),
                                     },
                                     headers={'Authorization': self.token},
-                                    #        content_type='application/gzip')
                                     content_type='multipart/form-data')
 
         self.assertEqual(response.status_code, status.NOT_FOUND,

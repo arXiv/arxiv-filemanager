@@ -53,7 +53,7 @@ def transaction() -> Generator:
     except Exception as e:
         logger.error('Command failed, rolling back: %s', str(e))
         db.session.rollback()
-        raise RuntimeError('Ack! %s' % e) from e
+        raise
 
 
 def atomic(func: Callable) -> Callable:
