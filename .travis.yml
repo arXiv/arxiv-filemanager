@@ -4,6 +4,7 @@ env:
   MIN_PYLINT_SCORE: 8
   LOGLEVEL: 40
   FILE_MANAGEMENT_SQLALCHEMY_DATABASE_URI: "sqlite://:memory:" 
+  PIPENV_IGNORE_VIRTUALENVS: 1
 os:
   - linux
 python:
