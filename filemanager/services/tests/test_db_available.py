@@ -21,7 +21,7 @@ class TestIsAvailable(TestCase):
     def setUp(self):
         """Create an application."""
         self.app = Flask(__name__)
-        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory'
         self.app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         database.init_app(self.app)
 

@@ -39,7 +39,7 @@ class TestUploadAncillaryFile(TestCase):
         self.workdir = tempfile.mkdtemp()
         self.server_name = 'fooserver.localdomain'
         self.app = create_web_app()
-        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory'
         self.app.config['SERVER_NAME'] = self.server_name
         self.app.config['STORAGE_BASE_PATH'] = self.workdir
 

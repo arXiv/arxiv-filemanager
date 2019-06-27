@@ -12,7 +12,7 @@ python:
 script:
   - pip install pipenv
   - pipenv install --dev
-  - pipenv run nose2 tests.test_check_workspace --with-coverage --coverage-report=term-missing
+  - pipenv run nose2 --with-coverage --coverage-report=term-missing
 after_success:
   - coveralls
 
