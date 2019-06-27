@@ -1,0 +1,643 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.process.check.file_type &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.process.check.file_type</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Methods for file type checking.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
+
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">UploadWorkspace</span>
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseChecker</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<div class="viewcode-block" id="InferFileType"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_type.html#filemanager.process.check.file_type.InferFileType">[docs]</a><span class="k">class</span> <span class="nc">InferFileType</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Attempt to check the :class:`.FileType` of an :class:`.UploadedFile`.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="InferFileType.check_UNKNOWN"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_type.html#filemanager.process.check.file_type.InferFileType.check_UNKNOWN">[docs]</a>    <span class="k">def</span> <span class="nf">check_UNKNOWN</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Perform file type check.&quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Identify a type for </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">check_type</span> <span class="ow">in</span> <span class="n">_type_checkers</span><span class="p">:</span>
+            <span class="n">file_type</span> <span class="o">=</span> <span class="n">check_type</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Tried </span><span class="si">%s</span><span class="s1">, got </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">check_type</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">file_type</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">file_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">u_file</span><span class="o">.</span><span class="n">file_type</span> <span class="o">=</span> <span class="n">file_type</span>
+                <span class="k">return</span> <span class="n">u_file</span>
+
+        <span class="c1"># We need up to the first kilobyte of the file.</span>
+        <span class="k">with</span> <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">check_type</span> <span class="ow">in</span> <span class="n">_content_type_checkers</span><span class="p">:</span>
+            <span class="n">file_type</span> <span class="o">=</span> <span class="n">check_type</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Tried </span><span class="si">%s</span><span class="s1">, got </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">check_type</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">file_type</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">file_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">u_file</span><span class="o">.</span><span class="n">file_type</span> <span class="o">=</span> <span class="n">file_type</span>
+                <span class="k">return</span> <span class="n">u_file</span>
+
+        <span class="n">file_type</span> <span class="o">=</span> <span class="n">_heavy_introspection</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Tried </span><span class="si">%s</span><span class="s1">, got </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;heavy_introspection&#39;</span><span class="p">,</span> <span class="n">file_type</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">file_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">u_file</span><span class="o">.</span><span class="n">file_type</span> <span class="o">=</span> <span class="n">file_type</span>
+            <span class="k">return</span> <span class="n">u_file</span>
+
+        <span class="c1"># Failed type identification</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Type identification failed for </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">u_file</span><span class="o">.</span><span class="n">file_type</span> <span class="o">=</span> <span class="n">FileType</span><span class="o">.</span><span class="n">FAILED</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+        <span class="k">return</span> <span class="n">u_file</span></div></div>
+
+
+<span class="c1"># These are compiled ahead of time, since we may use them many many times in a</span>
+<span class="c1"># single request.</span>
+<span class="n">ARXIV_COMMAND_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(^|/)00README\.XXX$&#39;</span><span class="p">)</span>
+<span class="n">DVIPS_TEMP_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(^|/)(head|body)\.tmp$&#39;</span><span class="p">)</span>
+<span class="n">MISSFONT_LOG_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(^|/)missfont\.log$&#39;</span><span class="p">)</span>
+<span class="n">AUX_TEX_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\.(sty|cls|mf|\d*pk|bbl|bst|tfm|ax|def|log|hrfldf&#39;</span>
+                          <span class="sa">r</span><span class="s1">&#39;|cfg|clo|inx|end|fgx|tbx|rtx|rty|toc)$&#39;</span><span class="p">,</span>
+                          <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+<span class="n">ABS_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\.abs$&#39;</span><span class="p">)</span>
+<span class="n">XFIG_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\.fig$&#39;</span><span class="p">)</span>
+<span class="n">NOTEBOOK_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\.nb$&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+<span class="n">INPUT_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\.inp$&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+<span class="n">HTML_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\.html?$&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+<span class="n">ENCRYPTED_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\.cry$&#39;</span><span class="p">)</span>
+<span class="n">TIFF_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\.tif$&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+<span class="n">JAR_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\.jar$&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+<span class="n">ODT_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\.odt$&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+<span class="n">DOCX_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\.docx$&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+<span class="n">XLSX_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\.xlsx$&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+
+<span class="c1"># Patterns for content matching.</span>
+<span class="n">MAC</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;#!/bin/csh -f\r#|(\r|^)begin \d{1,4}\s+\S.*\r[^\n]&#39;</span><span class="p">)</span>
+<span class="n">PDF</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;%PDF-&#39;</span><span class="p">)</span>
+<span class="n">AUTO_IGNORE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;</span><span class="si">%a</span><span class="s1">uto-ignore&#39;</span><span class="p">)</span>
+<span class="n">TEXINFO</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">input texinfo&#39;</span><span class="p">)</span>
+<span class="n">MULTI_PART_MIME</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;(^|\r)Content-type: &#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+<span class="n">PS_FONT</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;^(......)?%!(PS-AdobeFont-1\.|FontType1&#39;</span>
+                     <span class="sa">rb</span><span class="s1">&#39;|PS-Adobe-3\.0 Resource-Font)&#39;</span><span class="p">,</span>
+                     <span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">DOTALL</span><span class="p">)</span>
+<span class="n">POSTSCRIPT</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;^%!&#39;</span><span class="p">)</span>
+<span class="n">PS_PC</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;(^%*</span><span class="se">\004</span><span class="s1">%!)|(.*%!PS-Adobe)&#39;</span><span class="p">)</span>
+<span class="n">PS</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;^%!PS&#39;</span><span class="p">)</span>
+<span class="n">LATEX_MACRO</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;^\r?%&amp;([^\s\n]+)&#39;</span><span class="p">)</span>
+<span class="n">HTML</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;&lt;html[&gt;\s]&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+<span class="n">INCLUDE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;</span><span class="si">%a</span><span class="s1">uto-include&#39;</span><span class="p">)</span>
+
+<span class="n">PERCENT_COMMENT</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;\%[^\r]*&#39;</span><span class="p">)</span>
+<span class="n">LATEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;(^|\r)\s*</span><span class="se">\\</span><span class="s1">documentstyle&#39;</span><span class="p">)</span>
+<span class="n">LATEX2E_PDFLATEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;(^|\r)\s*</span><span class="se">\\</span><span class="s1">documentclass&#39;</span><span class="p">)</span>
+<span class="n">MAYBE_TEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;(^|\r)\s*(</span><span class="se">\\</span><span class="s1">font|</span><span class="se">\\</span><span class="s1">magnification|</span><span class="se">\\</span><span class="s1">input|</span><span class="se">\\</span><span class="s1">def&#39;</span>
+                       <span class="sa">rb</span><span class="s1">&#39;|</span><span class="se">\\</span><span class="s1">special|</span><span class="se">\\</span><span class="s1">baselineskip|</span><span class="se">\\</span><span class="s1">begin)&#39;</span><span class="p">)</span>
+<span class="n">TEX_PRIORITY</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">input\s+amstex&#39;</span><span class="p">)</span>
+<span class="n">PARTIAL_HINT_1</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;(^|\r)\s*</span><span class="se">\\</span><span class="s1">(end|bye)(\s|$)&#39;</span><span class="p">)</span>
+<span class="n">PARTIAL_HINT_2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">(end|bye)(\s|$)&#39;</span><span class="p">)</span>
+<span class="n">TEX_MAC</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;(</span><span class="se">\\</span><span class="s1">input *(harv|lanl)mac)|(</span><span class="se">\\</span><span class="s1">input\s+phyzzx)&#39;</span><span class="p">)</span>
+<span class="n">METAFONT</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;beginchar\(&#39;</span><span class="p">)</span>
+<span class="n">BIBTEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;(^|\r)@(book|article|inbook|unpublished){&#39;</span><span class="p">,</span>
+                    <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+<span class="n">BEGIN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;^begin \d{1,4}\s+[^\s]+\r?$&#39;</span><span class="p">)</span>
+<span class="n">CARRIAGE_RETURN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;\r$&#39;</span><span class="p">)</span>
+<span class="n">ALWAYS_IGNORE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;paper deliberately replaced by what little&#39;</span><span class="p">)</span>
+<span class="n">INCLUDE_GRAPHICS</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;^[^%]*</span><span class="se">\\</span><span class="s1">includegraphics[^%]*\.&#39;</span>
+                              <span class="sa">rb</span><span class="s1">&#39;(?:pdf|png|gif|jpg)\s?\}&#39;</span><span class="p">,</span>
+                              <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+<span class="n">PDF_OUTPUT</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;^[^%]*</span><span class="se">\\</span><span class="s1">pdfoutput(?:\s+)?=(?:\s+)?1&#39;</span><span class="p">)</span>
+
+
+<span class="c1"># def _check_exists(workspace: UploadWorkspace,</span>
+<span class="c1">#                   u_file: UploadedFile) -&gt; Optional[FileType]:</span>
+<span class="c1">#     &quot;&quot;&quot;Check whether file exists (new).&quot;&quot;&quot;</span>
+<span class="c1">#     if not workspace.exists(u_file.path):</span>
+<span class="c1">#         return FileType.FAILED    # , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_command</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                   <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Check for arXiv&#39;s special command file.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">ARXIV_COMMAND_FILE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">README</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_dvips_temp</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                      <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Ignore tmp files created by (unpatched) dvihps, in top dir.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">DVIPS_TEMP_FILE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">ALWAYS_IGNORE</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="c1"># QUESTION: is this still relevant, given that FM service is decoupled from</span>
+<span class="c1"># compilation? -- Erick</span>
+<span class="k">def</span> <span class="nf">_check_missing_font</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                        <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Missing font error is fatal error.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">MISSFONT_LOG_FILE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">ABORT</span>    <span class="c1"># &#39;, &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_aux_tex</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                   <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Check whether this is an auxillary TeX File.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">AUX_TEX_FILE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">TEXAUX</span>    <span class="c1"># &#39;, &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_abs_file</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                    <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Check whether this is an arXiv legacy abstract metadata record.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">ABS_FILE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">ABS</span>    <span class="c1"># &#39;, &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_xfig</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="c1"># Ignore xfig files</span>
+    <span class="k">if</span> <span class="n">XFIG_FILE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">IGNORE</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_notebook</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                    <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">NOTEBOOK_FILE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">NOTEBOOK</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_input</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                 <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">INPUT_FILE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">INPUT</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_html</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">HTML_FILE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">HTML</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_encrypted</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                     <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">ENCRYPTED_FILE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">ENCRYPTED</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_zero_size</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                     <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Check for zero size file size.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">get_size_bytes</span><span class="p">(</span><span class="n">u_file</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">IGNORE</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="c1"># Check for compressed formats (compressed,gzip,bzips)</span>
+<span class="k">def</span> <span class="nf">_check_compressed</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+                      <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x1F</span> <span class="ow">and</span> <span class="n">content</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x9D</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">COMPRESSED</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_gzipped</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+                   <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x1F</span> <span class="ow">and</span> <span class="n">content</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x8B</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">GZIPPED</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_bzip2</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+                 <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x42</span> <span class="ow">and</span> <span class="n">content</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x5A</span> \
+            <span class="ow">and</span> <span class="n">content</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x68</span> <span class="ow">and</span> <span class="n">content</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mh">0x2F</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">BZIP2</span>   <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_posix_tarfile</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                         <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+                         <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="c1"># POSIX tarfiles: look for the string &#39;ustar&#39; at position 257</span>
+    <span class="c1"># (There used to be additional code to detect non-POSIX tar files</span>
+    <span class="c1"># which is not detected with above, no longer necessary)</span>
+    <span class="k">if</span> <span class="n">content</span><span class="p">[</span><span class="mi">257</span><span class="p">:</span><span class="mi">262</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;ustar&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">TAR</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_dvi</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+               <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Check for DVI file.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xF7</span> <span class="ow">and</span> <span class="n">content</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">DVI</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_gif8</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+                <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Check for GIF8 image.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;GIF8&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">IMAGE</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_png</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+               <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Check for PNG image.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">8</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;</span><span class="se">\211</span><span class="s1">PNG</span><span class="se">\r\n\032\n</span><span class="s1">&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">IMAGE</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_tiff</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+                <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check for TIFF image (big endian and little endian).</span>
+
+<span class="sd">    Should really test b3 and b4 also, see</span>
+<span class="sd">    `https://en.wikipedia.org/wiki/List_of_file_signatures`_.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">TIFF_FILE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x4D</span> <span class="ow">and</span> <span class="n">content</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x4D</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">IMAGE</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+        <span class="k">if</span> <span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x49</span> <span class="ow">and</span> <span class="n">content</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x49</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">IMAGE</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_jpeg</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+                <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check for JPEG image.</span>
+
+<span class="sd">    2015-11: not sure about b4==0xEE, perhaps should add</span>
+<span class="sd">    b4==0xDB || b4==0xE1</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xFF</span> <span class="ow">and</span> <span class="n">content</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xD8</span> <span class="ow">and</span> <span class="n">content</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xFF</span> \
+            <span class="ow">and</span> <span class="p">(</span><span class="n">content</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xE0</span> <span class="ow">or</span> <span class="n">content</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xEE</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">IMAGE</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_mpeg_image</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+                      <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check for MPEG image.</span>
+
+<span class="sd">    2015-11: other seqs for MPEG, and certainly other movie types missing.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x0</span> <span class="ow">and</span> <span class="n">content</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x0</span> <span class="ow">and</span> <span class="n">content</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x1</span> \
+            <span class="ow">and</span> <span class="n">content</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xB3</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">ANIM</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_zip_and_extensions</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                              <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+                              <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check for zip format or an extension.</span>
+
+<span class="sd">    Related formats: JAR, ODF,DOCX,XLSX,ZIP.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">zip_preamble_1</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;PK</span><span class="se">\003\004</span><span class="s1">&#39;</span>
+    <span class="n">zip_preamble_2</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;PK00PK</span><span class="se">\003\004</span><span class="s1">&#39;</span>
+    <span class="k">if</span> <span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="n">zip_preamble_1</span> <span class="ow">or</span> <span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">8</span><span class="p">]</span> <span class="o">==</span> <span class="n">zip_preamble_2</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">JAR_FILE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">JAR</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+        <span class="k">if</span> <span class="n">ODT_FILE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">ODF</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+        <span class="k">if</span> <span class="n">DOCX_FILE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">DOCX</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+        <span class="k">if</span> <span class="n">XLSX_FILE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">XLSX</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">ZIP</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_rar</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+               <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Check for a RAR file.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;Rar!&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">RAR</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_dos_eps</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+                   <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check for DOS EPS.</span>
+
+<span class="sd">    :0  belong          0xC5D0D3C6      DOS EPS Binary File</span>
+<span class="sd">    -&gt;4 long            &gt;0              Postscript starts at byte %d</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xC5</span> <span class="ow">and</span> <span class="n">content</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xD0</span> <span class="ow">and</span> <span class="n">content</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xD3</span> \
+            <span class="ow">and</span> <span class="n">content</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xC6</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">DOS_EPS</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_pdf</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+               <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">PDF</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">content</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">PDF</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_check_mac</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+               <span class="n">content</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">MAC</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">content</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">MAC</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="c1"># TODO: this can use more refactoring, but didn&#39;t want to get too deep into</span>
+<span class="c1"># it right now. -- Erick</span>
+<span class="k">def</span> <span class="nf">_heavy_introspection</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                         <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform final checks that involve heavy reading from the file.</span>
+
+<span class="sd">    This implementation is stateful, so this should be preserved as one</span>
+<span class="sd">    function unless refactored to be less stateful.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Keep track of TeX files</span>
+    <span class="n">maybe_tex</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">maybe_tex_priority</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">maybe_tex_priority2</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># Scan file line by line looking for a wide variety of type indicators</span>
+    <span class="k">with</span> <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">line_no</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">accum</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+            <span class="c1"># Ignore</span>
+            <span class="k">if</span> <span class="n">line_no</span> <span class="o">&lt;=</span> <span class="mi">10</span> <span class="ow">and</span> <span class="n">AUTO_IGNORE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">IGNORE</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+            <span class="c1"># TeXinfo</span>
+            <span class="k">if</span> <span class="n">line_no</span> <span class="o">&lt;=</span> <span class="mi">10</span> <span class="ow">and</span> <span class="n">TEXINFO</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">TEXINFO</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+            <span class="c1"># Mult part document</span>
+            <span class="k">if</span> <span class="n">line_no</span> <span class="o">&lt;=</span> <span class="mi">40</span> <span class="ow">and</span> <span class="n">MULTI_PART_MIME</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">MULTI_PART_MIME</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+            <span class="c1"># LaTeX2e/PDFLaTeX</span>
+            <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;%!TEX &#39;</span> <span class="ow">and</span> <span class="n">line_no</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">_type_of_latex2e</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">line_no</span><span class="p">)</span>
+
+            <span class="n">accum</span> <span class="o">+=</span> <span class="n">line</span>   <span class="c1"># Accumulate what we&#39;ve already seen.</span>
+
+            <span class="c1"># QUESTION: why does this (now commented by me) code exist? The</span>
+            <span class="c1"># print statement will never be reached, and it does not generate</span>
+            <span class="c1"># information about a file type. -- Erick</span>
+            <span class="c1">#</span>
+            <span class="c1"># once = 0</span>
+            <span class="c1"># if re.search(rb&#39;PS-AdobeFont-1\.&#39;, accum):</span>
+            <span class="c1">#     if once:</span>
+            <span class="c1">#         print(&quot;ACCUM: &quot; + str(accum[0:200]) + &quot;\n&quot;)</span>
+            <span class="c1">#         once += 1</span>
+
+            <span class="c1"># Match strings starting at either 1st or 7th byte. Use $accum</span>
+            <span class="c1"># to build string of file to this point as the preceding 6 chars</span>
+            <span class="c1"># may include \n</span>
+
+            <span class="c1"># Postscript Font</span>
+            <span class="k">if</span> <span class="n">line_no</span> <span class="o">&lt;=</span> <span class="mi">7</span> <span class="ow">and</span> <span class="n">PS_FONT</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">accum</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">PS_FONT</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+            <span class="c1"># Postscript</span>
+            <span class="k">if</span> <span class="n">POSTSCRIPT</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="ow">and</span> <span class="n">line_no</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">POSTSCRIPT</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+            <span class="c1"># TODO MUST Test this adjusted regex</span>
+            <span class="k">if</span> <span class="p">((</span><span class="n">line_no</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">PS_PC</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+                    <span class="ow">or</span> <span class="p">(</span><span class="n">line_no</span> <span class="o">&lt;=</span> <span class="mi">10</span> <span class="ow">and</span> <span class="n">PS</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="ow">and</span> <span class="n">maybe_tex</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)):</span>
+                <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">PS_PC</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+            <span class="c1"># LaTeX and TeX macros</span>
+            <span class="n">match</span> <span class="o">=</span> <span class="n">LATEX_MACRO</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">line_no</span> <span class="o">&lt;=</span> <span class="mi">12</span> <span class="ow">and</span> <span class="n">match</span><span class="p">:</span>
+                <span class="n">latex_type</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+                <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">latex_type</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">latex_type</span> <span class="o">==</span> <span class="s1">&#39;latex209&#39;</span> <span class="ow">or</span> <span class="n">latex_type</span> <span class="o">==</span> <span class="s1">&#39;biglatex&#39;</span>
+                            <span class="ow">or</span> <span class="n">latex_type</span> <span class="o">==</span> <span class="s1">&#39;latex&#39;</span> <span class="ow">or</span> <span class="n">latex_type</span> <span class="o">==</span> <span class="s1">&#39;LaTeX&#39;</span><span class="p">):</span>
+                        <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">LATEX</span>    <span class="c1"># , str(latex_type), &#39;&#39;</span>
+
+                    <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">TEX_MAC</span>    <span class="c1"># , str(latex_type), &#39;&#39;</span>
+
+            <span class="c1"># HTML</span>
+            <span class="k">if</span> <span class="n">line_no</span> <span class="o">&lt;=</span> <span class="mi">10</span> <span class="ow">and</span> <span class="n">HTML</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">HTML</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+            <span class="c1"># Include</span>
+            <span class="k">if</span> <span class="n">line_no</span> <span class="o">&lt;=</span> <span class="mi">10</span> <span class="ow">and</span> <span class="n">INCLUDE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">INCLUDE</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+            <span class="c1"># All subsequent checks have lines with &#39;%&#39; in them chopped.</span>
+            <span class="c1">#  if we need to look for a % then do it earlier!</span>
+            <span class="n">orig</span> <span class="o">=</span> <span class="n">line</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">PERCENT_COMMENT</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">line</span> <span class="o">!=</span> <span class="n">orig</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;ORIG: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">orig</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;New: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+
+            <span class="c1"># LaTeX</span>
+            <span class="k">if</span> <span class="n">LATEX</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">LATEX</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+            <span class="c1"># LaTeX2e/PDFLaTeX</span>
+            <span class="k">if</span> <span class="n">LATEX2E_PDFLATEX</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">_type_of_latex2e</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">line_no</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">MAYBE_TEX</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="n">maybe_tex</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">TEX_PRIORITY</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">TEX_priority</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+            <span class="c1"># Partianl Hint</span>
+            <span class="k">if</span> <span class="n">PARTIAL_HINT_1</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="n">maybe_tex_priority</span> <span class="o">=</span> <span class="mi">1</span>
+
+            <span class="c1"># Partial Hint</span>
+            <span class="k">if</span> <span class="n">PARTIAL_HINT_2</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="n">maybe_tex_priority2</span> <span class="o">=</span> <span class="mi">1</span>
+
+            <span class="k">if</span> <span class="n">TEX_MAC</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">TEX_MAC</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+            <span class="c1"># MetaFont</span>
+            <span class="k">if</span> <span class="n">METAFONT</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">MF</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+            <span class="c1"># BibTeX</span>
+            <span class="k">if</span> <span class="n">BIBTEX</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">BIBTEX</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+            <span class="c1"># Make some decisions using partial hints we&#39;ve seen already</span>
+            <span class="c1"># TeX,PC,UUENCODED</span>
+            <span class="k">if</span> <span class="n">BEGIN</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">maybe_tex_priority</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">TEX_priority</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+                <span class="k">if</span> <span class="n">maybe_tex</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">TEX</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+                <span class="k">if</span> <span class="n">CARRIAGE_RETURN</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">PC</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+                <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">UUENCODED</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+            <span class="k">if</span> <span class="n">ALWAYS_IGNORE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">ALWAYS_IGNORE</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+            <span class="n">line_no</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># last chance guesses</span>
+        <span class="k">if</span> <span class="n">maybe_tex_priority</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">TEX_priority</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+        <span class="k">if</span> <span class="n">maybe_tex_priority2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">TEX_priority2</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">maybe_tex</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">TEX</span>    <span class="c1"># , &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="c1"># Select bewteen PDFLATEX and LATEX2e types.</span>
+<span class="k">def</span> <span class="nf">_type_of_latex2e</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FileType</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Determine whether file is PDFLATEX or LATEX2e.&quot;&quot;&quot;</span>
+    <span class="n">limit</span> <span class="o">=</span> <span class="n">count</span> <span class="o">+</span> <span class="mi">5</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>    <span class="c1"># Rewind to beginning of file</span>
+    <span class="n">line_no</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">INCLUDE_GRAPHICS</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> \
+                <span class="ow">or</span> <span class="p">(</span><span class="n">line_no</span> <span class="o">&lt;</span> <span class="n">limit</span> <span class="ow">and</span> <span class="n">PDF_OUTPUT</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">PDFLATEX</span>    <span class="c1"># &#39;, &#39;&#39;, &#39;&#39;</span>
+        <span class="n">line_no</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">FileType</span><span class="o">.</span><span class="n">LATEX2e</span>    <span class="c1"># &#39;, &#39;&#39;, &#39;&#39;</span>
+
+
+<span class="n">_type_checkers</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">],</span>
+                         <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="c1"># _check_exists,</span>
+    <span class="c1"># Currently the following type identification relies on the extension</span>
+    <span class="c1"># to identify the type without inspecting content of file.</span>
+    <span class="n">_check_command</span><span class="p">,</span>
+    <span class="n">_check_dvips_temp</span><span class="p">,</span>
+    <span class="n">_check_missing_font</span><span class="p">,</span>
+    <span class="n">_check_aux_tex</span><span class="p">,</span>
+    <span class="n">_check_abs_file</span><span class="p">,</span>
+    <span class="n">_check_xfig</span><span class="p">,</span>
+    <span class="n">_check_notebook</span><span class="p">,</span>
+    <span class="n">_check_input</span><span class="p">,</span>
+    <span class="n">_check_html</span><span class="p">,</span>
+    <span class="n">_check_encrypted</span><span class="p">,</span>
+    <span class="n">_check_zero_size</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="sd">&quot;&quot;&quot;Checks that do not require inspecting content.&quot;&quot;&quot;</span>
+
+<span class="n">_content_type_checkers</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">],</span>
+                                 <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">_check_compressed</span><span class="p">,</span>
+    <span class="n">_check_gzipped</span><span class="p">,</span>
+    <span class="n">_check_bzip2</span><span class="p">,</span>
+    <span class="n">_check_posix_tarfile</span><span class="p">,</span>
+    <span class="n">_check_dvi</span><span class="p">,</span>
+    <span class="n">_check_gif8</span><span class="p">,</span>
+    <span class="n">_check_png</span><span class="p">,</span>
+    <span class="n">_check_tiff</span><span class="p">,</span>
+    <span class="n">_check_jpeg</span><span class="p">,</span>
+    <span class="n">_check_mpeg_image</span><span class="p">,</span>
+    <span class="n">_check_zip_and_extensions</span><span class="p">,</span>
+    <span class="n">_check_rar</span><span class="p">,</span>
+    <span class="n">_check_dos_eps</span><span class="p">,</span>
+    <span class="n">_check_pdf</span><span class="p">,</span>
+    <span class="n">_check_mac</span><span class="p">,</span>
+
+<span class="p">]</span>
+<span class="sd">&quot;&quot;&quot;Checks requiring content inspection.&quot;&quot;&quot;</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  <li><a href="../check.html">filemanager.process.check</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

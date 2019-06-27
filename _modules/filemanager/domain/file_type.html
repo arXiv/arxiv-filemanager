@@ -1,0 +1,269 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.domain.file_type &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.domain.file_type</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;File type definitions.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">enum</span> <span class="k">import</span> <span class="n">Enum</span>
+
+
+<span class="c1"># TODO: add docstrings for each of these, so that it is clear what each type</span>
+<span class="c1"># represents.</span>
+<div class="viewcode-block" id="FileType"><a class="viewcode-back" href="../../../api/filemanager.domain.file_type.html#filemanager.domain.file_type.FileType">[docs]</a><span class="k">class</span> <span class="nc">FileType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Known file types.&quot;&quot;&quot;</span>
+
+    <span class="n">UNKNOWN</span> <span class="o">=</span> <span class="s1">&#39;UNKNOWN&#39;</span>
+    <span class="sd">&quot;&quot;&quot;The file type has not been inferred.&quot;&quot;&quot;</span>
+
+    <span class="n">ABORT</span> <span class="o">=</span> <span class="s1">&#39;ABORT&#39;</span>
+    <span class="n">FAILED</span> <span class="o">=</span> <span class="s1">&#39;FAILED&#39;</span>
+    <span class="sd">&quot;&quot;&quot;Attempt to infer file type failed.&quot;&quot;&quot;</span>
+
+    <span class="n">DIRECTORY</span> <span class="o">=</span> <span class="s1">&#39;DIRECTORY&#39;</span>
+    <span class="sd">&quot;&quot;&quot;Represents a directory.&quot;&quot;&quot;</span>
+
+    <span class="n">ALWAYS_IGNORE</span> <span class="o">=</span> <span class="s1">&#39;ALWAYS_IGNORE&#39;</span>
+    <span class="n">INPUT</span> <span class="o">=</span> <span class="s1">&#39;INPUT&#39;</span>
+    <span class="n">BIBTEX</span> <span class="o">=</span> <span class="s1">&#39;BIBTEX&#39;</span>
+    <span class="n">POSTSCRIPT</span> <span class="o">=</span> <span class="s1">&#39;POSTSCRIPT&#39;</span>
+    <span class="n">DOS_EPS</span> <span class="o">=</span> <span class="s1">&#39;DOS_EPS&#39;</span>
+    <span class="n">PS_FONT</span> <span class="o">=</span> <span class="s1">&#39;PS_FONT&#39;</span>
+    <span class="n">PS_PC</span> <span class="o">=</span> <span class="s1">&#39;PS_PC&#39;</span>
+    <span class="n">IMAGE</span> <span class="o">=</span> <span class="s1">&#39;IMAGE&#39;</span>
+    <span class="n">ANIM</span> <span class="o">=</span> <span class="s1">&#39;ANIM&#39;</span>
+    <span class="n">HTML</span> <span class="o">=</span> <span class="s1">&#39;HTML&#39;</span>
+    <span class="n">PDF</span> <span class="o">=</span> <span class="s1">&#39;PDF&#39;</span>
+    <span class="n">DVI</span> <span class="o">=</span> <span class="s1">&#39;DVI&#39;</span>
+    <span class="n">NOTEBOOK</span> <span class="o">=</span> <span class="s1">&#39;NOTEBOOK&#39;</span>
+    <span class="n">ODF</span> <span class="o">=</span> <span class="s1">&#39;ODF&#39;</span>
+    <span class="n">DOCX</span> <span class="o">=</span> <span class="s1">&#39;DOCX&#39;</span>
+    <span class="n">TEX</span> <span class="o">=</span> <span class="s1">&#39;TEX&#39;</span>
+    <span class="n">PDFTEX</span> <span class="o">=</span> <span class="s1">&#39;PDFTEX&#39;</span>
+    <span class="n">TEX_priority2</span> <span class="o">=</span> <span class="s1">&#39;TEX_priority2&#39;</span>
+    <span class="n">TEX_AMS</span> <span class="o">=</span> <span class="s1">&#39;TEX_AMS&#39;</span>
+    <span class="n">TEX_priority</span> <span class="o">=</span> <span class="s1">&#39;TEX_priority&#39;</span>
+    <span class="n">TEX_MAC</span> <span class="o">=</span> <span class="s1">&#39;TEX_MAC&#39;</span>
+    <span class="n">LATEX</span> <span class="o">=</span> <span class="s1">&#39;LATEX&#39;</span>
+    <span class="n">LATEX2e</span> <span class="o">=</span> <span class="s1">&#39;LATEX2e&#39;</span>
+    <span class="n">PDFLATEX</span> <span class="o">=</span> <span class="s1">&#39;PDFLATEX&#39;</span>
+    <span class="n">TEXINFO</span> <span class="o">=</span> <span class="s1">&#39;TEXINFO&#39;</span>
+    <span class="n">MF</span> <span class="o">=</span> <span class="s1">&#39;MF&#39;</span>
+    <span class="n">UUENCODED</span> <span class="o">=</span> <span class="s1">&#39;UUENCODED&#39;</span>
+    <span class="n">ENCRYPTED</span> <span class="o">=</span> <span class="s1">&#39;ENCRYPTED&#39;</span>
+    <span class="n">PC</span> <span class="o">=</span> <span class="s1">&#39;PC&#39;</span>
+    <span class="n">MAC</span> <span class="o">=</span> <span class="s1">&#39;MAC&#39;</span>
+    <span class="n">CSH</span> <span class="o">=</span> <span class="s1">&#39;CSH&#39;</span>
+    <span class="n">SH</span> <span class="o">=</span> <span class="s1">&#39;SH&#39;</span>
+    <span class="n">JAR</span> <span class="o">=</span> <span class="s1">&#39;JAR&#39;</span>
+    <span class="n">RAR</span> <span class="o">=</span> <span class="s1">&#39;RAR&#39;</span>
+    <span class="n">XLSX</span> <span class="o">=</span> <span class="s1">&#39;XLSX&#39;</span>
+    <span class="n">COMPRESSED</span> <span class="o">=</span> <span class="s1">&#39;COMPRESSED&#39;</span>
+    <span class="n">ZIP</span> <span class="o">=</span> <span class="s1">&#39;ZIP&#39;</span>
+    <span class="n">GZIPPED</span> <span class="o">=</span> <span class="s1">&#39;GZIPPED&#39;</span>
+    <span class="n">BZIP2</span> <span class="o">=</span> <span class="s1">&#39;BZIP2&#39;</span>
+    <span class="n">MULTI_PART_MIME</span> <span class="o">=</span> <span class="s1">&#39;MULTI_PART_MIME&#39;</span>
+    <span class="n">TAR</span> <span class="o">=</span> <span class="s1">&#39;TAR&#39;</span>
+    <span class="n">IGNORE</span> <span class="o">=</span> <span class="s1">&#39;IGNORE&#39;</span>
+    <span class="n">README</span> <span class="o">=</span> <span class="s1">&#39;README&#39;</span>
+    <span class="n">TEXAUX</span> <span class="o">=</span> <span class="s1">&#39;TEXAUX&#39;</span>
+    <span class="n">ABS</span> <span class="o">=</span> <span class="s1">&#39;ABS&#39;</span>
+    <span class="n">INCLUDE</span> <span class="o">=</span> <span class="s1">&#39;INCLUDE&#39;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Human-readable name of the file type.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">FILE_NAMES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;unknown&#39;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_tex_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Indicate whether this is a TeX type.</span>
+
+<span class="sd">        This method does some normalization prior to calling internal routine.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="ow">in</span> <span class="n">TEX_TYPES</span>
+
+    <span class="c1"># QUESTION: The only place that I see this logic used is in tests. Is it</span>
+    <span class="c1"># actually still needed? -- Erick 2019-06-10</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">priority</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the priority for this file type.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">get_type_priority</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+
+<span class="n">FILE_NAMES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">UNKNOWN</span><span class="p">:</span> <span class="s1">&#39;Unknown&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">ABORT</span><span class="p">:</span> <span class="s1">&#39;Immediate stop&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">FAILED</span><span class="p">:</span> <span class="s1">&#39;unknown&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">ALWAYS_IGNORE</span><span class="p">:</span> <span class="s1">&#39;Always ignore&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">INPUT</span><span class="p">:</span> <span class="s1">&#39;Input for (La)TeX&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">BIBTEX</span><span class="p">:</span> <span class="s1">&#39;BiBTeX&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">POSTSCRIPT</span><span class="p">:</span> <span class="s1">&#39;Postscript&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">DOS_EPS</span><span class="p">:</span> <span class="s1">&#39;DOS EPS Binary File&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">PS_FONT</span><span class="p">:</span> <span class="s1">&#39;Postscript Type 1 Font&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">PS_PC</span><span class="p">:</span> <span class="s1">&#39;^D%! Postscript&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">IMAGE</span><span class="p">:</span> <span class="s1">&#39;Image (gif/jpg etc)&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">ANIM</span><span class="p">:</span> <span class="s1">&#39;Animation (mpeg etc)&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">HTML</span><span class="p">:</span> <span class="s1">&#39;HTML&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">PDF</span><span class="p">:</span> <span class="s1">&#39;PDF&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">DVI</span><span class="p">:</span> <span class="s1">&#39;DVI&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">NOTEBOOK</span><span class="p">:</span> <span class="s1">&#39;Mathematica Notebook&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">ODF</span><span class="p">:</span> <span class="s1">&#39;OpenDocument Format&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">DOCX</span><span class="p">:</span> <span class="s1">&#39;Microsoft DOCX&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">TEX</span><span class="p">:</span> <span class="s1">&#39;TEX&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">PDFTEX</span><span class="p">:</span> <span class="s1">&#39;PDFTEX&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">TEX_priority2</span><span class="p">:</span>
+        <span class="s1">&#39;TeX (with </span><span class="se">\\</span><span class="s1">end or </span><span class="se">\\</span><span class="s1">bye - not starting a line)&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">TEX_AMS</span><span class="p">:</span> <span class="s1">&#39;AMSTeX&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">TEX_priority</span><span class="p">:</span> <span class="s1">&#39;TeX (with </span><span class="se">\\</span><span class="s1">end or </span><span class="se">\\</span><span class="s1">bye)&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">TEX_MAC</span><span class="p">:</span> <span class="s1">&#39;TeX +macros (harv,lanl..)&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">LATEX</span><span class="p">:</span> <span class="s1">&#39;LaTeX&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">LATEX2e</span><span class="p">:</span> <span class="s1">&#39;LATEX2e&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">PDFLATEX</span><span class="p">:</span> <span class="s1">&#39;PDFLATEX&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">TEXINFO</span><span class="p">:</span> <span class="s1">&#39;Texinfo&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">MF</span><span class="p">:</span> <span class="s1">&#39;Metafont&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">UUENCODED</span><span class="p">:</span> <span class="s1">&#39;UUencoded&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">ENCRYPTED</span><span class="p">:</span> <span class="s1">&#39;Encrypted&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">PC</span><span class="p">:</span> <span class="s1">&#39;PC-ctrl-Ms&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">MAC</span><span class="p">:</span> <span class="s1">&#39;MAC-ctrl-Ms&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">CSH</span><span class="p">:</span> <span class="s1">&#39;CSH&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">SH</span><span class="p">:</span> <span class="s1">&#39;SH&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">JAR</span><span class="p">:</span> <span class="s1">&#39;JAR archive&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">RAR</span><span class="p">:</span> <span class="s1">&#39;RAR archive&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">XLSX</span><span class="p">:</span> <span class="s1">&#39;Microsoft XLSX&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">COMPRESSED</span><span class="p">:</span> <span class="s1">&#39;UNIX-compressed&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">ZIP</span><span class="p">:</span> <span class="s1">&#39;ZIP-compressed&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">GZIPPED</span><span class="p">:</span> <span class="s1">&#39;GZIP-compressed&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">BZIP2</span><span class="p">:</span> <span class="s1">&#39;BZIP2-compressed&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">MULTI_PART_MIME</span><span class="p">:</span> <span class="s1">&#39;MULTI_PART_MIME&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">TAR</span><span class="p">:</span> <span class="s1">&#39;TAR archive&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">IGNORE</span><span class="p">:</span> <span class="s1">&#39; user defined IGNORE&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">README</span><span class="p">:</span> <span class="s1">&#39;override&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">TEXAUX</span><span class="p">:</span> <span class="s1">&#39;TeX auxiliary&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">ABS</span><span class="p">:</span> <span class="s1">&#39;abstract&#39;</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">INCLUDE</span><span class="p">:</span> <span class="s1">&#39; keep&#39;</span>
+<span class="p">}</span>
+
+<span class="n">TEX_TYPES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">LATEX</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">TEX</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">TEX_priority</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">TEX_AMS</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">TEX_MAC</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">LATEX2e</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">TEX_priority2</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">TEXINFO</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">PDFLATEX</span><span class="p">,</span>
+    <span class="n">FileType</span><span class="o">.</span><span class="n">PDFTEX</span>
+<span class="p">]</span>
+
+
+<span class="c1"># QUESTION: The only place that I see this logic used is in tests. Is it</span>
+<span class="c1"># actually still needed? -- Erick 2019-06-10</span>
+<div class="viewcode-block" id="get_type_priority"><a class="viewcode-back" href="../../../api/filemanager.domain.file_type.html#filemanager.domain.file_type.get_type_priority">[docs]</a><span class="k">def</span> <span class="nf">get_type_priority</span><span class="p">(</span><span class="n">file_type</span><span class="p">:</span> <span class="n">FileType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return an integer indicating the processing priority of file type.</span>
+
+<span class="sd">    Higher numbers should be processed first. Will return 0 (lower</span>
+<span class="sd">    than all other types) if file_type is not recognized.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">FileType</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">file_type</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

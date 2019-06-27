@@ -1,0 +1,223 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.process.check.file_names &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.process.check.file_names</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Check for and fix malformed disallowed/filenames.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
+
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">UploadWorkspace</span>
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseChecker</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="FixWindowsFileNames"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.FixWindowsFileNames">[docs]</a><span class="k">class</span> <span class="nc">FixWindowsFileNames</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Checks for and fixes Windows-style filenames.&quot;&quot;&quot;</span>
+
+    <span class="n">WINDOWS_FILE_PREFIX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^[A-Za-z]:</span><span class="se">\\</span><span class="s1">(.*</span><span class="se">\\</span><span class="s1">)?&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="FixWindowsFileNames.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.FixWindowsFileNames.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Find Windows-style filenames and fix them.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">WINDOWS_FILE_PREFIX</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+            <span class="c1"># Rename using basename</span>
+            <span class="n">prev_name</span> <span class="o">=</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">new_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">WINDOWS_FILE_PREFIX</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">prev_name</span><span class="p">)</span>
+            <span class="n">base_path</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="n">new_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="n">new_name</span><span class="p">)</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">new_path</span><span class="p">)</span>
+
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;Renamed </span><span class="si">{prev_name}</span><span class="s1"> to </span><span class="si">{new_name}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div></div>
+
+
+<div class="viewcode-block" id="WarnAboutTeXBackupFiles"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.WarnAboutTeXBackupFiles">[docs]</a><span class="k">class</span> <span class="nc">WarnAboutTeXBackupFiles</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks for possible TeX backup files.</span>
+
+<span class="sd">    We need to check this before tilde character gets translated to</span>
+<span class="sd">    undderscore. Otherwise this warning never gets generated properly for</span>
+<span class="sd">    ``.tex~``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">WARNING_MSG</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;File &#39;</span><span class="si">%s</span><span class="s2">&#39; may be a backup file. Please inspect and remove&quot;</span>
+                   <span class="s2">&quot; extraneous backup files.&quot;</span><span class="p">)</span>
+    <span class="n">TEX_BACKUP_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(.+)\.(tex_|tex.bak|tex\~)$&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+
+<div class="viewcode-block" id="WarnAboutTeXBackupFiles.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.WarnAboutTeXBackupFiles.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Check for and warn about possible backup files.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span> \
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">TEX_BACKUP_FILE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">WARNING_MSG</span> <span class="o">%</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div></div>
+
+
+<div class="viewcode-block" id="ReplaceIllegalCharacters"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.ReplaceIllegalCharacters">[docs]</a><span class="k">class</span> <span class="nc">ReplaceIllegalCharacters</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Checks for illegal characters and replaces them with underscores.&quot;&quot;&quot;</span>
+
+    <span class="n">ILLEGAL</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[^\w\+\-\.\=\,\_]&#39;</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Filename contains illegal characters ``+-/=,``.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ReplaceIllegalCharacters.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.ReplaceIllegalCharacters.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Check for illegal characters and replace them with underscores.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_directory</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">ILLEGAL</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
+            <span class="c1"># Translate bad characters.</span>
+            <span class="n">prev_name</span> <span class="o">=</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">new_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ILLEGAL</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="n">prev_name</span><span class="p">)</span>
+            <span class="n">base_path</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">))</span>
+            <span class="n">new_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="n">new_name</span><span class="p">)</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">new_path</span><span class="p">)</span>
+
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span>
+                                  <span class="s2">&quot;We only accept file names containing the&quot;</span>
+                                  <span class="s2">&quot; characters: a-z A-Z 0-9 _ + - . =&quot;</span><span class="p">)</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;Renamed </span><span class="si">{prev_name}</span><span class="s1"> to </span><span class="si">{new_name}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div></div>
+
+
+<span class="c1"># TODO: needs more context; why would this happen? -- Erick 2019-06-07</span>
+<div class="viewcode-block" id="PanicOnIllegalCharacters"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.PanicOnIllegalCharacters">[docs]</a><span class="k">class</span> <span class="nc">PanicOnIllegalCharacters</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Register an error for files with illegal characters in their names.&quot;&quot;&quot;</span>
+
+    <span class="n">ILLEGAL_ERROR</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s1">&#39;Filename &quot;</span><span class="si">%s</span><span class="s1">&quot; contains unwanted bad characters. The only allowed are &#39;</span>
+        <span class="s1">&#39;a-z A-Z 0-9 _ + - . , =&#39;</span>
+    <span class="p">)</span>
+
+<div class="viewcode-block" id="PanicOnIllegalCharacters.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.PanicOnIllegalCharacters.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Check for illegal characters and generate error if found.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_directory</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">u_file</span>
+        <span class="k">if</span> <span class="n">ReplaceIllegalCharacters</span><span class="o">.</span><span class="n">ILLEGAL</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_error</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ILLEGAL_ERROR</span> <span class="o">%</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div></div>
+
+
+<div class="viewcode-block" id="ReplaceLeadingHyphen"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.ReplaceLeadingHyphen">[docs]</a><span class="k">class</span> <span class="nc">ReplaceLeadingHyphen</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Checks for a leading hyphen, and replaces it with an underscore.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ReplaceLeadingHyphen.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.ReplaceLeadingHyphen.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Check for a leading hyphen, and replace it with an underscore.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">):</span>
+            <span class="n">prev_name</span> <span class="o">=</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">new_name</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s1">&#39;^-&#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="n">prev_name</span><span class="p">)</span>
+            <span class="n">base_path</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="n">new_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="n">new_name</span><span class="p">)</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">new_path</span><span class="p">)</span>
+
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span>
+                                  <span class="s1">&#39;We do not accept files starting with a&#39;</span>
+                                  <span class="n">f</span><span class="s1">&#39; hyphen. Renamed </span><span class="si">{prev_name}</span><span class="s1"> to&#39;</span>
+                                  <span class="n">f</span><span class="s1">&#39; </span><span class="si">{new_name}</span><span class="s1">.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  <li><a href="../check.html">filemanager.process.check</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

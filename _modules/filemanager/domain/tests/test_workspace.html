@@ -1,0 +1,590 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.domain.tests.test_workspace &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.domain.tests.test_workspace</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Tests for :class:`.domain.UploadWorkspace`.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">unittest</span> <span class="k">import</span> <span class="n">TestCase</span><span class="p">,</span> <span class="n">mock</span>
+<span class="kn">from</span> <span class="nn">..uploads</span> <span class="k">import</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">UploadedFile</span>
+<span class="kn">from</span> <span class="nn">..file_type</span> <span class="k">import</span> <span class="n">FileType</span>
+
+
+<div class="viewcode-block" id="TestPaths"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestPaths">[docs]</a><span class="k">class</span> <span class="nc">TestPaths</span><span class="p">(</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Workspace is responsible for managing several relative paths.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TestPaths.setUp"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestPaths.setUp">[docs]</a>    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;We have a vanilla workspace.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_strategy</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">get_path</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="s1">&#39;/tmp/foo&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="p">(</span>
+            <span class="n">upload_id</span><span class="o">=</span><span class="mi">1234</span><span class="p">,</span>
+            <span class="n">owner_user_id</span><span class="o">=</span><span class="s1">&#39;98765&#39;</span><span class="p">,</span>
+            <span class="n">created_datetime</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+            <span class="n">modified_datetime</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+            <span class="n">strategy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_strategy</span><span class="p">,</span>
+            <span class="n">storage</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestPaths.test_get_source_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestPaths.test_get_source_path">[docs]</a>    <span class="k">def</span> <span class="nf">test_get_source_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Source path is based on the upload ID and class-specific prefix.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">source_path</span><span class="p">,</span>
+                         <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.wks.upload_id}</span><span class="s1">/</span><span class="si">{self.wks.SOURCE_PREFIX}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">source_path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">),</span>
+                         <span class="s1">&#39;Must return a relative path&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestPaths.test_get_removed_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestPaths.test_get_removed_path">[docs]</a>    <span class="k">def</span> <span class="nf">test_get_removed_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Removed path is based on the upload ID and class-specific prefix.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">removed_path</span><span class="p">,</span>
+                         <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.wks.upload_id}</span><span class="s1">/</span><span class="si">{self.wks.REMOVED_PREFIX}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">removed_path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">),</span>
+                         <span class="s1">&#39;Must return a relative path&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestPaths.test_get_ancillary_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestPaths.test_get_ancillary_path">[docs]</a>    <span class="k">def</span> <span class="nf">test_get_ancillary_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Ancillary path is based on source path and class-specific prefix.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">ancillary_path</span><span class="p">,</span>
+                         <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.wks.upload_id}</span><span class="s1">/</span><span class="si">{self.wks.SOURCE_PREFIX}</span><span class="s1">/anc&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">ancillary_path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">),</span>
+                         <span class="s1">&#39;Must return a relative path&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestPaths.test_get_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestPaths.test_get_path">[docs]</a>    <span class="k">def</span> <span class="nf">test_get_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Can get a relative path for an :class:`.UploadedFile`.&quot;&quot;&quot;</span>
+        <span class="n">mock_file</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                   <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                   <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/file&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">mock_file</span><span class="p">),</span>
+                         <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.wks.source_path}</span><span class="s1">/path/to/file&#39;</span><span class="p">,</span>
+                         <span class="s1">&#39;File path is inside workspace.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">mock_file</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">),</span>
+                         <span class="s1">&#39;Must return a relative path&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestPaths.test_get_ancillary_file_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestPaths.test_get_ancillary_file_path">[docs]</a>    <span class="k">def</span> <span class="nf">test_get_ancillary_file_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Can get a relative path for an ancillary :class:`.UploadedFile`.&quot;&quot;&quot;</span>
+        <span class="n">mock_file</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                   <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                   <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                   <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/file&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">mock_file</span><span class="p">),</span>
+                         <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.wks.ancillary_path}</span><span class="s1">/path/to/file&#39;</span><span class="p">,</span>
+                         <span class="s1">&#39;File path is inside workspace.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">mock_file</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">),</span>
+                         <span class="s1">&#39;Must return a relative path&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestPaths.test_get_removed_file_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestPaths.test_get_removed_file_path">[docs]</a>    <span class="k">def</span> <span class="nf">test_get_removed_file_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Can get a relative path for a removed :class:`.UploadedFile`.&quot;&quot;&quot;</span>
+        <span class="n">mock_file</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                   <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_removed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                   <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                   <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/file&#39;</span><span class="p">,</span>
+                                   <span class="n">workspace</span><span class="o">=</span><span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">())</span>
+        <span class="n">mock_file</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">get_full_path</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="s1">&#39;/tmp/foo&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">mock_file</span><span class="p">),</span>
+                         <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.wks.removed_path}</span><span class="s1">/path/to/file&#39;</span><span class="p">,</span>
+                         <span class="s1">&#39;File path is inside workspace.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">mock_file</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">),</span>
+                         <span class="s1">&#39;Must return a relative path&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestPaths.test_get_full_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestPaths.test_get_full_path">[docs]</a>    <span class="k">def</span> <span class="nf">test_get_full_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Can get a full path to a file on disk, using a storage adapter.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">get_path</span><span class="o">.</span><span class="n">side_effect</span> \
+            <span class="o">=</span> <span class="k">lambda</span> <span class="n">w</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="o">**</span><span class="n">k</span><span class="p">:</span> <span class="n">f</span><span class="s1">&#39;/foo/{w.get_path(f)}&#39;</span>
+        <span class="n">mock_file</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                   <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                   <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/file&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">get_full_path</span><span class="p">(</span><span class="n">mock_file</span><span class="p">),</span>
+                         <span class="n">f</span><span class="s1">&#39;/foo/</span><span class="si">{self.wks.source_path}</span><span class="s1">/path/to/file&#39;</span><span class="p">,</span>
+                         <span class="s1">&#39;File path is inside workspace.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertGreater</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">get_path</span><span class="o">.</span><span class="n">call_count</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+                           <span class="s1">&#39;Storage adapter get_full_path method is called&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">get_path</span><span class="o">.</span><span class="n">call_args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                         <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="p">,</span> <span class="n">mock_file</span><span class="p">),</span>
+                         <span class="s1">&#39;Workspace and uploaded file are passed&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="TestAddRemoveFiles"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestAddRemoveFiles">[docs]</a><span class="k">class</span> <span class="nc">TestAddRemoveFiles</span><span class="p">(</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Test adding and removing files to/from the workspace.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TestAddRemoveFiles.setUp"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestAddRemoveFiles.setUp">[docs]</a>    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;We have a vanilla workspace.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_strategy</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">get_path</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="s1">&#39;/tmp/foo&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="p">(</span>
+            <span class="n">upload_id</span><span class="o">=</span><span class="mi">1234</span><span class="p">,</span>
+            <span class="n">owner_user_id</span><span class="o">=</span><span class="s1">&#39;98765&#39;</span><span class="p">,</span>
+            <span class="n">created_datetime</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+            <span class="n">modified_datetime</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+            <span class="n">strategy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_strategy</span><span class="p">,</span>
+            <span class="n">storage</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestAddRemoveFiles.test_add_single_file"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestAddRemoveFiles.test_add_single_file">[docs]</a>    <span class="k">def</span> <span class="nf">test_add_single_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adding a file to to the workspace.&quot;&quot;&quot;</span>
+        <span class="n">mock_file</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                   <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/file&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">file_count</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+                         <span class="s1">&#39;There are no files in the workspace&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">add_files</span><span class="p">(</span><span class="n">mock_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">file_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
+                         <span class="s1">&#39;There is one file in the workspace&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_strategy</span><span class="o">.</span><span class="n">check</span><span class="o">.</span><span class="n">call_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
+                         <span class="s1">&#39;Checker strategy is called&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;path/to/file&#39;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TestAddRemoveFiles.test_add_ancillary_file"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestAddRemoveFiles.test_add_ancillary_file">[docs]</a>    <span class="k">def</span> <span class="nf">test_add_ancillary_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adding an ancillary file to to the workspace.&quot;&quot;&quot;</span>
+        <span class="n">mock_file</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                   <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                   <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/file&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">file_count</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+                         <span class="s1">&#39;There are no files in the workspace&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">add_files</span><span class="p">(</span><span class="n">mock_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">file_count</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+                         <span class="s1">&#39;There are no files; ancillary files are not counted&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">ancillary_file_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
+                         <span class="s1">&#39;There is one ancillary file&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;path/to/file&#39;</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TestAddRemoveFiles.test_remove_file"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestAddRemoveFiles.test_remove_file">[docs]</a>    <span class="k">def</span> <span class="nf">test_remove_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove a file from the workspace.&quot;&quot;&quot;</span>
+        <span class="n">mock_file</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                   <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/file&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">file_count</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+                         <span class="s1">&#39;There are no files in the workspace&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">add_files</span><span class="p">(</span><span class="n">mock_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">file_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
+                         <span class="s1">&#39;There is one file in the workspace&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">mock_file</span><span class="p">,</span> <span class="s1">&#39;This is the reason&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">file_count</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+                         <span class="s1">&#39;There are no files in the workspace&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;path/to/file&#39;</span><span class="p">),</span>
+                         <span class="s1">&#39;The file does not exist because it is removed&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">mock_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">,</span> <span class="s1">&#39;File is marked as removed&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">mock_file</span><span class="o">.</span><span class="n">reason_for_removal</span><span class="p">,</span> <span class="s1">&#39;This is the reason&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">remove</span><span class="o">.</span><span class="n">call_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
+                         <span class="s1">&#39;Storage adapter move method is called&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestAddRemoveFiles.test_add_files"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestAddRemoveFiles.test_add_files">[docs]</a>    <span class="k">def</span> <span class="nf">test_add_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add multiple files.&quot;&quot;&quot;</span>
+        <span class="n">mock_file</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                   <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/file&#39;</span><span class="p">)</span>
+        <span class="n">mock_file2</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                    <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                    <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                    <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                    <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                    <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/file2&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">file_count</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+                         <span class="s1">&#39;There are no files in the workspace&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">add_files</span><span class="p">(</span><span class="n">mock_file</span><span class="p">,</span> <span class="n">mock_file2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">file_count</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span>
+                         <span class="s1">&#39;There are two files in the workspace&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_strategy</span><span class="o">.</span><span class="n">check</span><span class="o">.</span><span class="n">call_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
+                         <span class="s1">&#39;Checker strategy is called&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;path/to/file&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;path/to/file2&#39;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TestAddRemoveFiles.test_remove_directory"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestAddRemoveFiles.test_remove_directory">[docs]</a>    <span class="k">def</span> <span class="nf">test_remove_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove a directory.&quot;&quot;&quot;</span>
+        <span class="n">mock_dir</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                  <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                  <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                  <span class="n">is_directory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                  <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                  <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/dir&#39;</span><span class="p">)</span>
+        <span class="n">mock_file</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                   <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/dir/file&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">add_files</span><span class="p">(</span><span class="n">mock_dir</span><span class="p">,</span> <span class="n">mock_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">file_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
+                         <span class="s1">&#39;There is one file in the workspace (directories)&#39;</span>
+                         <span class="s1">&#39; don</span><span class="se">\&#39;</span><span class="s1">t count&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">mock_dir</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">mock_dir</span><span class="o">.</span><span class="n">is_removed</span><span class="p">,</span> <span class="s1">&#39;Directory is marked as removed&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">mock_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">,</span>
+                        <span class="s1">&#39;File is also removed because it is inside the&#39;</span>
+                        <span class="s1">&#39; directory&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestAddRemoveFiles.test_add_file_at_subpath"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestAddRemoveFiles.test_add_file_at_subpath">[docs]</a>    <span class="k">def</span> <span class="nf">test_add_file_at_subpath</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a file where the containing directories do not exist.&quot;&quot;&quot;</span>
+        <span class="n">mock_file</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                   <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/dir/file&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">add_files</span><span class="p">(</span><span class="n">mock_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;path/&#39;</span><span class="p">),</span>
+                        <span class="s1">&#39;Containing directories are added&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;path/to/&#39;</span><span class="p">),</span>
+                        <span class="s1">&#39;Containing directories are added&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;path/to/dir/&#39;</span><span class="p">),</span>
+                        <span class="s1">&#39;Containing directories are added&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestAddRemoveFiles.test_delete_files"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestAddRemoveFiles.test_delete_files">[docs]</a>    <span class="k">def</span> <span class="nf">test_delete_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Delete a file completely.&quot;&quot;&quot;</span>
+        <span class="n">mock_file</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                   <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/dir/file&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">add_files</span><span class="p">(</span><span class="n">mock_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">mock_file</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">delete</span><span class="o">.</span><span class="n">call_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
+                         <span class="s1">&#39;The underlying storage adapter is called&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">delete</span><span class="o">.</span><span class="n">call_args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                         <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="p">,</span> <span class="n">mock_file</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;path/to/dir/file&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">file_count</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestAddRemoveFiles.test_delete_directory"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestAddRemoveFiles.test_delete_directory">[docs]</a>    <span class="k">def</span> <span class="nf">test_delete_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Delete a directory completely.&quot;&quot;&quot;</span>
+        <span class="n">mock_dir</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                  <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                  <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                  <span class="n">is_directory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                  <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                  <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/dir&#39;</span><span class="p">)</span>
+        <span class="n">mock_file</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                   <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/dir/file&#39;</span><span class="p">)</span>
+        <span class="n">mock_other_file</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                         <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/other/file&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">add_files</span><span class="p">(</span><span class="n">mock_dir</span><span class="p">,</span> <span class="n">mock_file</span><span class="p">,</span> <span class="n">mock_other_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">file_count</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span>
+                         <span class="s1">&#39;There are two files in the workspace (directories)&#39;</span>
+                         <span class="s1">&#39; do not count&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">mock_dir</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">delete</span><span class="o">.</span><span class="n">call_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
+                         <span class="s1">&#39;The underlying storage adapter is called&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;path/to/dir&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;path/to/dir/file&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;path/to/other/file&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">file_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;There is only one file left&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="TestOperations"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestOperations">[docs]</a><span class="k">class</span> <span class="nc">TestOperations</span><span class="p">(</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Test file operations via the workspace API.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TestOperations.setUp"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestOperations.setUp">[docs]</a>    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;We have a vanilla workspace.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_strategy</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">get_path</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="s1">&#39;/tmp/foo&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="p">(</span>
+            <span class="n">upload_id</span><span class="o">=</span><span class="mi">1234</span><span class="p">,</span>
+            <span class="n">owner_user_id</span><span class="o">=</span><span class="s1">&#39;98765&#39;</span><span class="p">,</span>
+            <span class="n">created_datetime</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+            <span class="n">modified_datetime</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+            <span class="n">strategy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_strategy</span><span class="p">,</span>
+            <span class="n">storage</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_file</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                        <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                        <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                        <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                        <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                        <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/file&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">add_files</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_file</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestOperations.test_open"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestOperations.test_open">[docs]</a>    <span class="k">def</span> <span class="nf">test_open</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get a file pointer for a file.&quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">open</span><span class="o">.</span><span class="n">call_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
+                         <span class="s1">&#39;Calls the underlying storage adapter&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">open</span><span class="o">.</span><span class="n">call_args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                         <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mock_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TestOperations.test_open_nonexistant"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestOperations.test_open_nonexistant">[docs]</a>    <span class="k">def</span> <span class="nf">test_open_nonexistant</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Try to get a file pointer for a file not in this workspace.&quot;&quot;&quot;</span>
+        <span class="n">mock_other_file</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                         <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                         <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/other/file&#39;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">mock_other_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="TestOperations.test_compare_files"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestOperations.test_compare_files">[docs]</a>    <span class="k">def</span> <span class="nf">test_compare_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Test comparing the contents of two files via workspace API.&quot;&quot;&quot;</span>
+        <span class="n">mock_other_file</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                         <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                         <span class="n">path</span><span class="o">=</span><span class="s1">&#39;path/to/other/file&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">add_files</span><span class="p">(</span><span class="n">mock_other_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">cmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_file</span><span class="p">,</span> <span class="n">mock_other_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">cmp</span><span class="o">.</span><span class="n">call_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
+                         <span class="s1">&#39;Calls underlying storage adapter&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">cmp</span><span class="o">.</span><span class="n">call_args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                         <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mock_file</span><span class="p">,</span> <span class="n">mock_other_file</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TestOperations.test_get_size_bytes"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestOperations.test_get_size_bytes">[docs]</a>    <span class="k">def</span> <span class="nf">test_get_size_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Test getting the size in bytes of a file.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">get_size_bytes</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="mi">42</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">get_size_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_file</span><span class="p">),</span> <span class="mi">42</span><span class="p">,</span>
+                         <span class="s1">&#39;Returns the size in bytes of the file&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">get_size_bytes</span><span class="o">.</span><span class="n">call_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
+                         <span class="s1">&#39;Calls the underlying storage adapter&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_file</span><span class="o">.</span><span class="n">size_bytes</span><span class="p">,</span> <span class="mi">42</span><span class="p">,</span>
+                         <span class="s1">&#39;Updates the size on the UploadedFile itself&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="TestMoveFiles"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestMoveFiles">[docs]</a><span class="k">class</span> <span class="nc">TestMoveFiles</span><span class="p">(</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Move/replace files in a workspace.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TestMoveFiles.setUp"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestMoveFiles.setUp">[docs]</a>    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;We have a vanilla workspace.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_strategy</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">get_path</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="s1">&#39;/tmp/foo&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="p">(</span>
+            <span class="n">upload_id</span><span class="o">=</span><span class="mi">1234</span><span class="p">,</span>
+            <span class="n">owner_user_id</span><span class="o">=</span><span class="s1">&#39;98765&#39;</span><span class="p">,</span>
+            <span class="n">created_datetime</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+            <span class="n">modified_datetime</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+            <span class="n">strategy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_strategy</span><span class="p">,</span>
+            <span class="n">storage</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="s1">&#39;path/to/file&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path2</span> <span class="o">=</span> <span class="s1">&#39;path/to/file2&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_file</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                        <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                        <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                        <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                        <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                        <span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                        <span class="n">errors</span><span class="o">=</span><span class="p">[],</span>
+                                        <span class="n">path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_file2</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">UploadedFile</span><span class="p">,</span>
+                                         <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">is_directory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">is_system</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                         <span class="n">errors</span><span class="o">=</span><span class="p">[],</span>
+                                         <span class="n">path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">path2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">add_files</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mock_file2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestMoveFiles.test_replace"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestMoveFiles.test_replace">[docs]</a>    <span class="k">def</span> <span class="nf">test_replace</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Replace a file with another file.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">file_count</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;There are two files&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mock_file2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_storage</span><span class="o">.</span><span class="n">move</span><span class="o">.</span><span class="n">call_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
+                         <span class="s1">&#39;The underlying storage adapter is called&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">),</span> <span class="s1">&#39;Target path still exists&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path2</span><span class="p">),</span>
+                         <span class="s1">&#39;Source path does not exist&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wks</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">mock_file2</span><span class="p">,</span>
+                         <span class="s1">&#39;Second file is now at the path of the first file&#39;</span><span class="p">)</span></div></div>
+
+    <span class="c1"># TODO: implement these.</span>
+    <span class="c1"># def test_replace_directory(self):</span>
+    <span class="c1">#     &quot;&quot;&quot;Replace a directory with another directory.&quot;&quot;&quot;</span>
+    <span class="c1"># def test_replace_file_with_directory(self):</span>
+    <span class="c1">#     &quot;&quot;&quot;Replace a file with a directory.&quot;&quot;&quot;</span>
+    <span class="c1"># def test_replace_file_with_directory(self):</span>
+    <span class="c1">#     &quot;&quot;&quot;Replace a directory with a file.&quot;&quot;&quot;</span>
+
+
+<span class="c1"># class TestPersist(TestCase):</span>
+<span class="c1">#     &quot;&quot;&quot;Test persisting files in the workspace.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TestUploadedFile"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestUploadedFile">[docs]</a><span class="k">class</span> <span class="nc">TestUploadedFile</span><span class="p">(</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Test methods of the :class:`.UploadedFile`.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TestUploadedFile.setUp"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestUploadedFile.setUp">[docs]</a>    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;We have a file.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_file</span> <span class="o">=</span> <span class="n">UploadedFile</span><span class="p">(</span><span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(),</span>
+                                   <span class="n">path</span><span class="o">=</span><span class="s1">&#39;foo/path/afile.txt&#39;</span><span class="p">,</span>
+                                   <span class="n">size_bytes</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
+                                   <span class="n">file_type</span><span class="o">=</span><span class="n">FileType</span><span class="o">.</span><span class="n">TEX</span><span class="p">,)</span></div>
+
+<div class="viewcode-block" id="TestUploadedFile.test_name"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestUploadedFile.test_name">[docs]</a>    <span class="k">def</span> <span class="nf">test_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the name of the file.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;afile.txt&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestUploadedFile.test_ext"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestUploadedFile.test_ext">[docs]</a>    <span class="k">def</span> <span class="nf">test_ext</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the extension of the file.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_file</span><span class="o">.</span><span class="n">ext</span><span class="p">,</span> <span class="s1">&#39;txt&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestUploadedFile.test_dir"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestUploadedFile.test_dir">[docs]</a>    <span class="k">def</span> <span class="nf">test_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the path of the containing directory.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_file</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="s1">&#39;foo/path/&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestUploadedFile.test_type_string"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestUploadedFile.test_type_string">[docs]</a>    <span class="k">def</span> <span class="nf">test_type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the human-readable name of this file&#39;s type.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_file</span><span class="o">.</span><span class="n">type_string</span><span class="p">,</span> <span class="n">FileType</span><span class="o">.</span><span class="n">TEX</span><span class="o">.</span><span class="n">name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestUploadedFile.test_type_string_directory"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestUploadedFile.test_type_string_directory">[docs]</a>    <span class="k">def</span> <span class="nf">test_type_string_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the human-readable name of a directory.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_directory</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_file</span><span class="o">.</span><span class="n">type_string</span><span class="p">,</span> <span class="s1">&#39;Directory&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestUploadedFile.test_type_string_ancillary_directory"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestUploadedFile.test_type_string_ancillary_directory">[docs]</a>    <span class="k">def</span> <span class="nf">test_type_string_ancillary_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the human-readable name of a directory.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="s1">&#39;anc/&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_directory</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_file</span><span class="o">.</span><span class="n">type_string</span><span class="p">,</span> <span class="s1">&#39;Ancillary files directory&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestUploadedFile.test_removed_type_string"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestUploadedFile.test_removed_type_string">[docs]</a>    <span class="k">def</span> <span class="nf">test_removed_type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the human-readable type for removed file.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_file</span><span class="o">.</span><span class="n">type_string</span><span class="p">,</span> <span class="s1">&#39;Invalid File&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestUploadedFile.test_is_empty"><a class="viewcode-back" href="../../../../api/filemanager.domain.tests.test_workspace.html#filemanager.domain.tests.test_workspace.TestUploadedFile.test_is_empty">[docs]</a>    <span class="k">def</span> <span class="nf">test_is_empty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether the file is empty.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_empty</span><span class="p">,</span>
+                         <span class="s1">&#39;File is not empty because it has bytes &gt; 0&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_file</span><span class="o">.</span><span class="n">size_bytes</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_empty</span><span class="p">,</span>
+                        <span class="s1">&#39;File is empty because it has bytes == 0&#39;</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

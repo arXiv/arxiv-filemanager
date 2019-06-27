@@ -1,0 +1,161 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.process.check.tex_generated &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.process.check.tex_generated</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Check for TeX-generated files.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
+
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">UploadWorkspace</span>
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseChecker</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="RemoveTeXGeneratedFiles"><a class="viewcode-back" href="../../../../api/filemanager.process.check.tex_generated.html#filemanager.process.check.tex_generated.RemoveTeXGeneratedFiles">[docs]</a><span class="k">class</span> <span class="nc">RemoveTeXGeneratedFiles</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check for TeX processed output files (log, aux, blg, dvi, ps, pdf, etc).</span>
+
+<span class="sd">    Detect naming conflict, warn, remove offending files.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">TEX_PRODUCED</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(.+)\.(log|aux|out|blg|dvi|ps|pdf)$&#39;</span><span class="p">,</span>
+                              <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RemoveTeXGeneratedFiles.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.tex_generated.html#filemanager.process.check.tex_generated.RemoveTeXGeneratedFiles.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Check for and remove TeX processing files.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">TEX_PRODUCED</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
+            <span class="n">base_path</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="n">base</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+            <span class="n">tex_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{base}</span><span class="s1">.tex&#39;</span><span class="p">)</span>
+            <span class="n">ucase_tex_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{base}</span><span class="s1">.TEX&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">tex_file</span><span class="p">)</span> <span class="ow">or</span> <span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">ucase_tex_file</span><span class="p">):</span>
+                <span class="c1"># Potential conflict / corruption by including TeX generated</span>
+                <span class="c1"># files in submission.</span>
+                <span class="n">workspace</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span>
+                                 <span class="n">f</span><span class="s2">&quot;Removed file &#39;</span><span class="si">{u_file.name}</span><span class="s2">&#39; due to name&quot;</span>
+                                 <span class="s2">&quot; conflict.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div></div>
+
+
+<div class="viewcode-block" id="DisallowDVIFiles"><a class="viewcode-back" href="../../../../api/filemanager.process.check.tex_generated.html#filemanager.process.check.tex_generated.DisallowDVIFiles">[docs]</a><span class="k">class</span> <span class="nc">DisallowDVIFiles</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check for DVI files in the source, and generate an error if found.</span>
+
+<span class="sd">    If dvi file is present we ask for TeX source. Do we need to do this is TeX</span>
+<span class="sd">    was also included???????</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">ERROR_MSG</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> is a TeX-produced DVI file. Please submit the TeX source&#39;</span>
+                 <span class="s1">&#39; instead.&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DisallowDVIFiles.check_DVI"><a class="viewcode-back" href="../../../../api/filemanager.process.check.tex_generated.html#filemanager.process.check.tex_generated.DisallowDVIFiles.check_DVI">[docs]</a>    <span class="k">def</span> <span class="nf">check_DVI</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">:</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_error</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ERROR_MSG</span> <span class="o">%</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  <li><a href="../check.html">filemanager.process.check</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

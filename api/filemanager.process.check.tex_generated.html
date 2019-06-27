@@ -1,0 +1,170 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.process.check.tex_generated module &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="filemanager.process.check.top_level_directory module" href="filemanager.process.check.top_level_directory.html" />
+    <link rel="prev" title="filemanager.process.check.tex_format module" href="filemanager.process.check.tex_format.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-filemanager.process.check.tex_generated">
+<span id="filemanager-process-check-tex-generated-module"></span><h1>filemanager.process.check.tex_generated module<a class="headerlink" href="#module-filemanager.process.check.tex_generated" title="Permalink to this headline">¶</a></h1>
+<p>Check for TeX-generated files.</p>
+<dl class="class">
+<dt id="filemanager.process.check.tex_generated.DisallowDVIFiles">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.process.check.tex_generated.</code><code class="sig-name descname">DisallowDVIFiles</code><a class="reference internal" href="../_modules/filemanager/process/check/tex_generated.html#DisallowDVIFiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.tex_generated.DisallowDVIFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.process.check.base.html#filemanager.process.check.base.BaseChecker" title="filemanager.process.check.base.BaseChecker"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.process.check.base.BaseChecker</span></code></a></p>
+<p>Check for DVI files in the source, and generate an error if found.</p>
+<p>If dvi file is present we ask for TeX source. Do we need to do this is TeX
+was also included???????</p>
+<dl class="attribute">
+<dt id="filemanager.process.check.tex_generated.DisallowDVIFiles.ERROR_MSG">
+<code class="sig-name descname">ERROR_MSG</code><em class="property"> = '%s is a TeX-produced DVI file. Please submit the TeX source instead.'</em><a class="headerlink" href="#filemanager.process.check.tex_generated.DisallowDVIFiles.ERROR_MSG" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="filemanager.process.check.tex_generated.DisallowDVIFiles.check_DVI">
+<code class="sig-name descname">check_DVI</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/tex_generated.html#DisallowDVIFiles.check_DVI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.tex_generated.DisallowDVIFiles.check_DVI" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.process.check.tex_generated.RemoveTeXGeneratedFiles">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.process.check.tex_generated.</code><code class="sig-name descname">RemoveTeXGeneratedFiles</code><a class="reference internal" href="../_modules/filemanager/process/check/tex_generated.html#RemoveTeXGeneratedFiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.tex_generated.RemoveTeXGeneratedFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.process.check.base.html#filemanager.process.check.base.BaseChecker" title="filemanager.process.check.base.BaseChecker"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.process.check.base.BaseChecker</span></code></a></p>
+<p>Check for TeX processed output files (log, aux, blg, dvi, ps, pdf, etc).</p>
+<p>Detect naming conflict, warn, remove offending files.</p>
+<dl class="attribute">
+<dt id="filemanager.process.check.tex_generated.RemoveTeXGeneratedFiles.TEX_PRODUCED">
+<code class="sig-name descname">TEX_PRODUCED</code><em class="property"> = re.compile('(.+)\\.(log|aux|out|blg|dvi|ps|pdf)$', re.IGNORECASE)</em><a class="headerlink" href="#filemanager.process.check.tex_generated.RemoveTeXGeneratedFiles.TEX_PRODUCED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="filemanager.process.check.tex_generated.RemoveTeXGeneratedFiles.check">
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/tex_generated.html#RemoveTeXGeneratedFiles.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.tex_generated.RemoveTeXGeneratedFiles.check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check for and remove TeX processing files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">filemanager</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="filemanager.html">filemanager package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">filemanager</a><ul>
+  <li><a href="filemanager.html">filemanager package</a><ul>
+  <li><a href="filemanager.process.html">filemanager.process package</a><ul>
+  <li><a href="filemanager.process.check.html">filemanager.process.check package</a><ul>
+      <li>Previous: <a href="filemanager.process.check.tex_format.html" title="previous chapter">filemanager.process.check.tex_format module</a></li>
+      <li>Next: <a href="filemanager.process.check.top_level_directory.html" title="next chapter">filemanager.process.check.top_level_directory module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/api/filemanager.process.check.tex_generated.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

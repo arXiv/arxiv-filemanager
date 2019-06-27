@@ -1,0 +1,241 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.process.check.file_names module &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="filemanager.process.check.file_type module" href="filemanager.process.check.file_type.html" />
+    <link rel="prev" title="filemanager.process.check.file_extensions module" href="filemanager.process.check.file_extensions.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-filemanager.process.check.file_names">
+<span id="filemanager-process-check-file-names-module"></span><h1>filemanager.process.check.file_names module<a class="headerlink" href="#module-filemanager.process.check.file_names" title="Permalink to this headline">¶</a></h1>
+<p>Check for and fix malformed disallowed/filenames.</p>
+<dl class="class">
+<dt id="filemanager.process.check.file_names.FixWindowsFileNames">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.process.check.file_names.</code><code class="sig-name descname">FixWindowsFileNames</code><a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#FixWindowsFileNames"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.FixWindowsFileNames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.process.check.base.html#filemanager.process.check.base.BaseChecker" title="filemanager.process.check.base.BaseChecker"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.process.check.base.BaseChecker</span></code></a></p>
+<p>Checks for and fixes Windows-style filenames.</p>
+<dl class="attribute">
+<dt id="filemanager.process.check.file_names.FixWindowsFileNames.WINDOWS_FILE_PREFIX">
+<code class="sig-name descname">WINDOWS_FILE_PREFIX</code><em class="property"> = re.compile('^[A-Za-z]:\\\\(.*\\\\)?')</em><a class="headerlink" href="#filemanager.process.check.file_names.FixWindowsFileNames.WINDOWS_FILE_PREFIX" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="filemanager.process.check.file_names.FixWindowsFileNames.check">
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#FixWindowsFileNames.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.FixWindowsFileNames.check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find Windows-style filenames and fix them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.process.check.file_names.PanicOnIllegalCharacters">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.process.check.file_names.</code><code class="sig-name descname">PanicOnIllegalCharacters</code><a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#PanicOnIllegalCharacters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.PanicOnIllegalCharacters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.process.check.base.html#filemanager.process.check.base.BaseChecker" title="filemanager.process.check.base.BaseChecker"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.process.check.base.BaseChecker</span></code></a></p>
+<p>Register an error for files with illegal characters in their names.</p>
+<dl class="attribute">
+<dt id="filemanager.process.check.file_names.PanicOnIllegalCharacters.ILLEGAL_ERROR">
+<code class="sig-name descname">ILLEGAL_ERROR</code><em class="property"> = 'Filename &quot;%s&quot; contains unwanted bad characters. The only allowed are a-z A-Z 0-9 _ + - . , ='</em><a class="headerlink" href="#filemanager.process.check.file_names.PanicOnIllegalCharacters.ILLEGAL_ERROR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="filemanager.process.check.file_names.PanicOnIllegalCharacters.check">
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#PanicOnIllegalCharacters.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.PanicOnIllegalCharacters.check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check for illegal characters and generate error if found.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.process.check.file_names.ReplaceIllegalCharacters">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.process.check.file_names.</code><code class="sig-name descname">ReplaceIllegalCharacters</code><a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#ReplaceIllegalCharacters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.ReplaceIllegalCharacters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.process.check.base.html#filemanager.process.check.base.BaseChecker" title="filemanager.process.check.base.BaseChecker"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.process.check.base.BaseChecker</span></code></a></p>
+<p>Checks for illegal characters and replaces them with underscores.</p>
+<dl class="attribute">
+<dt id="filemanager.process.check.file_names.ReplaceIllegalCharacters.ILLEGAL">
+<code class="sig-name descname">ILLEGAL</code><em class="property"> = re.compile('[^\\w\\+\\-\\.\\=\\,\\_]')</em><a class="headerlink" href="#filemanager.process.check.file_names.ReplaceIllegalCharacters.ILLEGAL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filename contains illegal characters <code class="docutils literal notranslate"><span class="pre">+-/=,</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.process.check.file_names.ReplaceIllegalCharacters.check">
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#ReplaceIllegalCharacters.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.ReplaceIllegalCharacters.check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check for illegal characters and replace them with underscores.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.process.check.file_names.ReplaceLeadingHyphen">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.process.check.file_names.</code><code class="sig-name descname">ReplaceLeadingHyphen</code><a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#ReplaceLeadingHyphen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.ReplaceLeadingHyphen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.process.check.base.html#filemanager.process.check.base.BaseChecker" title="filemanager.process.check.base.BaseChecker"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.process.check.base.BaseChecker</span></code></a></p>
+<p>Checks for a leading hyphen, and replaces it with an underscore.</p>
+<dl class="method">
+<dt id="filemanager.process.check.file_names.ReplaceLeadingHyphen.check">
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#ReplaceLeadingHyphen.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.ReplaceLeadingHyphen.check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check for a leading hyphen, and replace it with an underscore.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.process.check.file_names.WarnAboutTeXBackupFiles">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.process.check.file_names.</code><code class="sig-name descname">WarnAboutTeXBackupFiles</code><a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#WarnAboutTeXBackupFiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.WarnAboutTeXBackupFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.process.check.base.html#filemanager.process.check.base.BaseChecker" title="filemanager.process.check.base.BaseChecker"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.process.check.base.BaseChecker</span></code></a></p>
+<p>Checks for possible TeX backup files.</p>
+<p>We need to check this before tilde character gets translated to
+undderscore. Otherwise this warning never gets generated properly for
+<code class="docutils literal notranslate"><span class="pre">.tex~</span></code>.</p>
+<dl class="attribute">
+<dt id="filemanager.process.check.file_names.WarnAboutTeXBackupFiles.TEX_BACKUP_FILE">
+<code class="sig-name descname">TEX_BACKUP_FILE</code><em class="property"> = re.compile('(.+)\\.(tex_|tex.bak|tex\\~)$', re.IGNORECASE)</em><a class="headerlink" href="#filemanager.process.check.file_names.WarnAboutTeXBackupFiles.TEX_BACKUP_FILE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.process.check.file_names.WarnAboutTeXBackupFiles.WARNING_MSG">
+<code class="sig-name descname">WARNING_MSG</code><em class="property"> = &quot;File '%s' may be a backup file. Please inspect and remove extraneous backup files.&quot;</em><a class="headerlink" href="#filemanager.process.check.file_names.WarnAboutTeXBackupFiles.WARNING_MSG" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="filemanager.process.check.file_names.WarnAboutTeXBackupFiles.check">
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#WarnAboutTeXBackupFiles.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.WarnAboutTeXBackupFiles.check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check for and warn about possible backup files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">filemanager</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="filemanager.html">filemanager package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">filemanager</a><ul>
+  <li><a href="filemanager.html">filemanager package</a><ul>
+  <li><a href="filemanager.process.html">filemanager.process package</a><ul>
+  <li><a href="filemanager.process.check.html">filemanager.process.check package</a><ul>
+      <li>Previous: <a href="filemanager.process.check.file_extensions.html" title="previous chapter">filemanager.process.check.file_extensions module</a></li>
+      <li>Next: <a href="filemanager.process.check.file_type.html" title="next chapter">filemanager.process.check.file_type module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/api/filemanager.process.check.file_names.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

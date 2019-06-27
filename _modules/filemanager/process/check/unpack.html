@@ -1,0 +1,289 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.process.check.unpack &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.process.check.unpack</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Unpack compressed files in the workspace.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">tarfile</span>
+<span class="kn">import</span> <span class="nn">zipfile</span>
+<span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
+
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">UploadWorkspace</span>
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseChecker</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<div class="viewcode-block" id="UnpackCompressedTarFiles"><a class="viewcode-back" href="../../../../api/filemanager.process.check.unpack.html#filemanager.process.check.unpack.UnpackCompressedTarFiles">[docs]</a><span class="k">class</span> <span class="nc">UnpackCompressedTarFiles</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Unpack any compressed Tar files in a workspace.&quot;&quot;&quot;</span>
+
+    <span class="n">UNPACK_ERROR_MSG</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;There were problems unpacking &#39;</span><span class="si">%s</span><span class="s2">&#39;. Please try again&quot;</span>
+                        <span class="s2">&quot; and confirm your files.&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="UnpackCompressedTarFiles.check_TAR"><a class="viewcode-back" href="../../../../api/filemanager.process.check.unpack.html#filemanager.process.check.unpack.UnpackCompressedTarFiles.check_TAR">[docs]</a>    <span class="k">def</span> <span class="nf">check_TAR</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unpack</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="UnpackCompressedTarFiles.check_GZIPPED"><a class="viewcode-back" href="../../../../api/filemanager.process.check.unpack.html#filemanager.process.check.unpack.UnpackCompressedTarFiles.check_GZIPPED">[docs]</a>    <span class="k">def</span> <span class="nf">check_GZIPPED</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unpack</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="UnpackCompressedTarFiles.check_BZIP2"><a class="viewcode-back" href="../../../../api/filemanager.process.check.unpack.html#filemanager.process.check.unpack.UnpackCompressedTarFiles.check_BZIP2">[docs]</a>    <span class="k">def</span> <span class="nf">check_BZIP2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unpack</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_unpack_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+                     <span class="n">tar</span><span class="p">:</span> <span class="n">tarfile</span><span class="o">.</span><span class="n">TarFile</span><span class="p">,</span> <span class="n">tarinfo</span><span class="p">:</span> <span class="n">tarfile</span><span class="o">.</span><span class="n">TarInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Extract files and directories for now</span>
+        <span class="n">fname</span> <span class="o">=</span> <span class="n">tarinfo</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">if</span> <span class="n">fname</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;./&#39;</span><span class="p">):</span>
+            <span class="n">fname</span> <span class="o">=</span> <span class="n">fname</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+        <span class="n">dest</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Tarfiles may contain relative paths! We must ensure that each file is</span>
+        <span class="c1"># not going to escape the upload source directory _before_ we extract</span>
+        <span class="c1"># it.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">workspace</span><span class="o">.</span><span class="n">is_safe</span><span class="p">(</span><span class="n">dest</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Member of </span><span class="si">%s</span><span class="s1"> tried to escape workspace&#39;</span><span class="p">,</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Member of file </span><span class="si">{u_file.name}</span><span class="s1"> tried to escape&#39;</span>
+                          <span class="s1">&#39; workspace.&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">u_file</span>
+
+        <span class="c1"># Warn about entities we don&#39;t want to see in upload archives. We</span>
+        <span class="c1"># did not check carefully in legacy system and hard links caused</span>
+        <span class="c1"># bad things to happen.</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> are not allowed. &#39;</span> <span class="o">+</span> <span class="n">f</span><span class="s1">&#39;Removing </span><span class="si">{tarinfo.name}</span><span class="s1">&#39;</span>
+        <span class="k">if</span> <span class="n">tarinfo</span><span class="o">.</span><span class="n">issym</span><span class="p">():</span>  <span class="c1"># sym link</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">msg</span> <span class="o">%</span> <span class="s1">&#39;Symbolic links&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">tarinfo</span><span class="o">.</span><span class="n">islnk</span><span class="p">():</span>  <span class="c1"># hard link</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">msg</span> <span class="o">%</span> <span class="s1">&#39;Hard links&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">tarinfo</span><span class="o">.</span><span class="n">ischr</span><span class="p">():</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">msg</span> <span class="o">%</span> <span class="s1">&#39;Character devices&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">tarinfo</span><span class="o">.</span><span class="n">isblk</span><span class="p">():</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">msg</span> <span class="o">%</span> <span class="s1">&#39;Block devices&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">tarinfo</span><span class="o">.</span><span class="n">isfifo</span><span class="p">():</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">msg</span> <span class="o">%</span> <span class="s1">&#39;FIFO devices&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">tarinfo</span><span class="o">.</span><span class="n">isdev</span><span class="p">():</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">msg</span> <span class="o">%</span> <span class="s1">&#39;Character devices&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Extract a regular file or directory.</span>
+        <span class="k">elif</span> <span class="n">tarinfo</span><span class="o">.</span><span class="n">isreg</span><span class="p">()</span> <span class="ow">or</span> <span class="n">tarinfo</span><span class="o">.</span><span class="n">isdir</span><span class="p">():</span>
+            <span class="n">parent</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">get_full_path</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span>
+                                             <span class="n">is_ancillary</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">)</span>
+            <span class="n">tar</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">tarinfo</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Unpacked to </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+
+            <span class="n">os</span><span class="o">.</span><span class="n">utime</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>  <span class="c1"># Update access and modified times to now.</span>
+            <span class="c1"># If the parent is not explicitly an ancillary file, leave it up </span>
+            <span class="c1"># to the workspace to infer whether or not the new file is </span>
+            <span class="c1"># ancillary or not.</span>
+            <span class="n">is_ancillary</span> <span class="o">=</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">tarinfo</span><span class="o">.</span><span class="n">isdir</span><span class="p">():</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">dest</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">):</span>
+                    <span class="n">dest</span> <span class="o">+=</span> <span class="s1">&#39;/&#39;</span>
+                <span class="n">workspace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span> <span class="n">touch</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">is_directory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                 <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
+                                 <span class="n">file_type</span><span class="o">=</span><span class="n">FileType</span><span class="o">.</span><span class="n">DIRECTORY</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">workspace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span> <span class="n">touch</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                 <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_unpack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">workspace</span><span class="o">.</span><span class="n">is_tarfile</span><span class="p">(</span><span class="n">u_file</span><span class="p">):</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_error</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;Unable to read tar </span><span class="si">{u_file.name}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">u_file</span>
+
+        <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="n">f</span><span class="s2">&quot;***** unpack {u_file.file_type.value.lower()} </span><span class="si">{u_file.path}</span><span class="s2">&quot;</span>
+            <span class="n">f</span><span class="s2">&quot; to dir: {os.path.split(u_file.path)[0]}&quot;</span>
+        <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">tarfile</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">fileobj</span><span class="o">=</span><span class="n">f</span><span class="p">)</span> <span class="k">as</span> <span class="n">tar</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">tarinfo</span> <span class="ow">in</span> <span class="n">tar</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_unpack_file</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="n">tar</span><span class="p">,</span> <span class="n">tarinfo</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="n">tarfile</span><span class="o">.</span><span class="n">TarError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Do something better with as error</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">UNPACK_ERROR_MSG</span> <span class="o">%</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;Tar error message: </span><span class="si">{e}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">u_file</span>
+
+        <span class="n">workspace</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">f</span><span class="s2">&quot;Removed packed file &#39;</span><span class="si">{u_file.name}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Removed packed file </span><span class="si">{u_file.name}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div>
+
+
+<div class="viewcode-block" id="UnpackCompressedZIPFiles"><a class="viewcode-back" href="../../../../api/filemanager.process.check.unpack.html#filemanager.process.check.unpack.UnpackCompressedZIPFiles">[docs]</a><span class="k">class</span> <span class="nc">UnpackCompressedZIPFiles</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
+
+    <span class="n">UNPACK_ERROR_MSG</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;There were problems unpacking &#39;</span><span class="si">%s</span><span class="s2">&#39;. Please try again&quot;</span>
+                        <span class="s2">&quot; and confirm your files.&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="UnpackCompressedZIPFiles.check_ZIP"><a class="viewcode-back" href="../../../../api/filemanager.process.check.unpack.html#filemanager.process.check.unpack.UnpackCompressedZIPFiles.check_ZIP">[docs]</a>    <span class="k">def</span> <span class="nf">check_ZIP</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;*******Process zip archive: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="n">f</span><span class="s1">&#39;***** unpack {u_file.file_type.value.lower()} </span><span class="si">{u_file.name}</span><span class="s1">&#39;</span>
+            <span class="n">f</span><span class="s1">&#39; to dir: {os.path.split(u_file.path)[0]}&#39;</span>
+        <span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">as</span> <span class="nb">zip</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">zipinfo</span> <span class="ow">in</span> <span class="nb">zip</span><span class="o">.</span><span class="n">infolist</span><span class="p">():</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_unpack_file</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="nb">zip</span><span class="p">,</span> <span class="n">zipinfo</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">BadZipFile</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># TODO: Think about warnings a bit. Tar/zip problems currently</span>
+            <span class="c1"># reported as warnings. Upload warnings allow submitter to continue</span>
+            <span class="c1"># on to process/compile step.</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">UNPACK_ERROR_MSG</span> <span class="o">%</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;Zip error message: </span><span class="si">{e}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">u_file</span>
+
+        <span class="c1"># Now move zip file out of way to removed directory</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">f</span><span class="s2">&quot;Removed packed file &#39;</span><span class="si">{u_file.name}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Removed packed file </span><span class="si">{u_file.name}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div>
+
+    <span class="k">def</span> <span class="nf">_unpack_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+                     <span class="nb">zip</span><span class="p">:</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">,</span> <span class="n">zipinfo</span><span class="p">:</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fname</span> <span class="o">=</span> <span class="n">zipinfo</span><span class="o">.</span><span class="n">filename</span>
+        <span class="k">if</span> <span class="n">fname</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;./&#39;</span><span class="p">):</span>
+            <span class="n">fname</span> <span class="o">=</span> <span class="n">fname</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+        <span class="n">dest</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Zip files may contain relative paths! We must ensure that each file</span>
+        <span class="c1"># is not going to escape the upload source directory _before_ we</span>
+        <span class="c1"># extract it.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">workspace</span><span class="o">.</span><span class="n">is_safe</span><span class="p">(</span><span class="n">dest</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Member of </span><span class="si">%s</span><span class="s1"> tried to escape workspace&#39;</span><span class="p">,</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Member of file </span><span class="si">{u_file.name}</span><span class="s1"> tried&#39;</span>
+                          <span class="s1">&#39; to escape workspace.&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># If the parent is not explicitly an ancillary file, leave it up </span>
+        <span class="c1"># to the workspace to infer whether or not the new file is </span>
+        <span class="c1"># ancillary or not.</span>
+        <span class="n">is_ancillary</span> <span class="o">=</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="n">full_path</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">get_full_path</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">dir</span><span class="p">)</span>
+        <span class="nb">zip</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">zipinfo</span><span class="p">,</span> <span class="n">full_path</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">utime</span><span class="p">(</span><span class="n">full_path</span><span class="p">)</span>  <span class="c1"># Update access and modified times to now.</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span> <span class="n">touch</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">)</span></div>
+
+
+<span class="c1"># TODO: Add support for compressed files.</span>
+<div class="viewcode-block" id="UnpackCompressedZFiles"><a class="viewcode-back" href="../../../../api/filemanager.process.check.unpack.html#filemanager.process.check.unpack.UnpackCompressedZFiles">[docs]</a><span class="k">class</span> <span class="nc">UnpackCompressedZFiles</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Unpack compressed .Z files.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="UnpackCompressedZFiles.check_COMPRESSED"><a class="viewcode-back" href="../../../../api/filemanager.process.check.unpack.html#filemanager.process.check.unpack.UnpackCompressedZFiles.check_COMPRESSED">[docs]</a>    <span class="k">def</span> <span class="nf">check_COMPRESSED</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                         <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;We can&#39;t uncompress .Z files yet: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Unable to uncompress .Z file. Not implemented yet.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  <li><a href="../check.html">filemanager.process.check</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

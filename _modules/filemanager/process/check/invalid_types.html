@@ -1,0 +1,181 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.process.check.invalid_types &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.process.check.invalid_types</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Methods for checking for invalid file types.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
+
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">UploadWorkspace</span>
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseChecker</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="FlagInvalidSourceTypes"><a class="viewcode-back" href="../../../../api/filemanager.process.check.invalid_types.html#filemanager.process.check.invalid_types.FlagInvalidSourceTypes">[docs]</a><span class="k">class</span> <span class="nc">FlagInvalidSourceTypes</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Flag any invalid source types.&quot;&quot;&quot;</span>
+
+    <span class="n">DOCX_ERROR_MESSAGE</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;Submissions in docx are no longer supported. Please create a PDF file&quot;</span>
+        <span class="s2">&quot; and submit that instead. Server side conversion of .docx to PDF may&quot;</span>
+        <span class="s2">&quot; lead to incorrect font substitutions, among other problems, and your&quot;</span>
+        <span class="s2">&quot; own PDF is likely to be more accurate.&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">ODF_ERROR_MESSAGE</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;Unfortunately arXiv does not support ODF. Please submit PDF instead.&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">EPS_ERROR_MESSAGE</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;This file appears to be a single encapsulated PostScript file.&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">TEXAUX_ERROR_MESSAGE</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;This file appears to be a single auxiliary TeX file.&quot;</span>
+    <span class="p">)</span>
+
+<div class="viewcode-block" id="FlagInvalidSourceTypes.check_DOCX"><a class="viewcode-back" href="../../../../api/filemanager.process.check.invalid_types.html#filemanager.process.check.invalid_types.FlagInvalidSourceTypes.check_DOCX">[docs]</a>    <span class="k">def</span> <span class="nf">check_DOCX</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;We no longer support DOCX.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">file_count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">source_type</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">SourceType</span><span class="o">.</span><span class="n">INVALID</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_error</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">DOCX_ERROR_MESSAGE</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div>
+
+<div class="viewcode-block" id="FlagInvalidSourceTypes.check_ODF"><a class="viewcode-back" href="../../../../api/filemanager.process.check.invalid_types.html#filemanager.process.check.invalid_types.FlagInvalidSourceTypes.check_ODF">[docs]</a>    <span class="k">def</span> <span class="nf">check_ODF</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;We no longer support ODF.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">file_count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">source_type</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">SourceType</span><span class="o">.</span><span class="n">INVALID</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_error</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">DOCX_ERROR_MESSAGE</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div>
+
+<div class="viewcode-block" id="FlagInvalidSourceTypes.check_EPS"><a class="viewcode-back" href="../../../../api/filemanager.process.check.invalid_types.html#filemanager.process.check.invalid_types.FlagInvalidSourceTypes.check_EPS">[docs]</a>    <span class="k">def</span> <span class="nf">check_EPS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Encapsulated postscript format is not supported.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">file_count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">source_type</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">SourceType</span><span class="o">.</span><span class="n">INVALID</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_error</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">EPS_ERROR_MESSAGE</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div>
+
+<div class="viewcode-block" id="FlagInvalidSourceTypes.check_TEXAUX"><a class="viewcode-back" href="../../../../api/filemanager.process.check.invalid_types.html#filemanager.process.check.invalid_types.FlagInvalidSourceTypes.check_TEXAUX">[docs]</a>    <span class="k">def</span> <span class="nf">check_TEXAUX</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Auxiliary TeX files are not allowed.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">file_count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">source_type</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">SourceType</span><span class="o">.</span><span class="n">INVALID</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_error</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">TEXAUX_ERROR_MESSAGE</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div></div>
+
+
+<div class="viewcode-block" id="FlagInvalidFileTypes"><a class="viewcode-back" href="../../../../api/filemanager.process.check.invalid_types.html#filemanager.process.check.invalid_types.FlagInvalidFileTypes">[docs]</a><span class="k">class</span> <span class="nc">FlagInvalidFileTypes</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Flag any invalid file types.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="FlagInvalidFileTypes.check_RAR"><a class="viewcode-back" href="../../../../api/filemanager.process.check.invalid_types.html#filemanager.process.check.invalid_types.FlagInvalidFileTypes.check_RAR">[docs]</a>    <span class="k">def</span> <span class="nf">check_RAR</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Disallow rar files.&quot;&quot;&quot;</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">add_error</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span>
+                            <span class="s2">&quot;We do not support &#39;rar&#39; files. Please use &#39;zip&#39;&quot;</span>
+                            <span class="s2">&quot; or &#39;tar&#39; instead.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  <li><a href="../check.html">filemanager.process.check</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

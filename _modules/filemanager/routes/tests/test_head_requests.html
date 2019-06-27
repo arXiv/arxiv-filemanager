@@ -1,0 +1,200 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.routes.tests.test_head_requests &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.routes.tests.test_head_requests</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Tests for routes that respond to HEAD requests.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">unittest</span> <span class="k">import</span> <span class="n">TestCase</span><span class="p">,</span> <span class="n">mock</span>
+
+<span class="kn">from</span> <span class="nn">arxiv.users.helpers</span> <span class="k">import</span> <span class="n">generate_token</span>
+<span class="kn">from</span> <span class="nn">arxiv.users.auth</span> <span class="k">import</span> <span class="n">scopes</span>
+<span class="kn">from</span> <span class="nn">arxiv.integration.api</span> <span class="k">import</span> <span class="n">status</span>
+
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">upload_api</span>
+<span class="kn">from</span> <span class="nn">...factory</span> <span class="k">import</span> <span class="n">create_web_app</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span>
+
+<span class="n">OS_ENVIRON</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;JWT_SECRET&#39;</span><span class="p">:</span> <span class="s1">&#39;foosecret&#39;</span><span class="p">}</span>
+
+
+<div class="viewcode-block" id="TestContentLengthHeader"><a class="viewcode-back" href="../../../../api/filemanager.routes.tests.test_head_requests.html#filemanager.routes.tests.test_head_requests.TestContentLengthHeader">[docs]</a><span class="k">class</span> <span class="nc">TestContentLengthHeader</span><span class="p">(</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Verify that the Content-Length header is set correctly.</span>
+
+<span class="sd">    Per RFC2616§14.13 the Content-Length header should be the size of the</span>
+<span class="sd">    entity-body were the client to retrieve the resource with a GET request.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TestContentLengthHeader.setUp"><a class="viewcode-back" href="../../../../api/filemanager.routes.tests.test_head_requests.html#filemanager.routes.tests.test_head_requests.TestContentLengthHeader.setUp">[docs]</a>    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">create_web_app</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;JWT_SECRET&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;foosecret&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">test_client</span><span class="p">()</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">app_context</span><span class="p">():</span>
+            <span class="n">auth_scope</span> <span class="o">=</span> <span class="p">[</span><span class="n">scopes</span><span class="o">.</span><span class="n">READ_UPLOAD</span><span class="p">,</span> <span class="n">scopes</span><span class="o">.</span><span class="n">READ_UPLOAD_SERVICE_LOGS</span><span class="p">,</span>
+                          <span class="n">scopes</span><span class="o">.</span><span class="n">READ_UPLOAD_LOGS</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">token</span> <span class="o">=</span> <span class="n">generate_token</span><span class="p">(</span><span class="s1">&#39;123&#39;</span><span class="p">,</span> <span class="s1">&#39;foo@user.com&#39;</span><span class="p">,</span> <span class="s1">&#39;foouser&#39;</span><span class="p">,</span>
+                                        <span class="n">scope</span><span class="o">=</span><span class="n">auth_scope</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestContentLengthHeader.test_check_upload_content_exists"><a class="viewcode-back" href="../../../../api/filemanager.routes.tests.test_head_requests.html#filemanager.routes.tests.test_head_requests.TestContentLengthHeader.test_check_upload_content_exists">[docs]</a>    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="s1">&#39;arxiv.users.auth.middleware.os.environ&#39;</span><span class="p">,</span> <span class="n">OS_ENVIRON</span><span class="p">)</span>
+    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{upload_api.__name__}</span><span class="s1">.package.check_upload_content_exists&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test_check_upload_content_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mock_controller</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;HEAD request to content status endpoint returns correct length.&quot;&quot;&quot;</span>
+        <span class="n">mock_controller</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="p">{},</span> <span class="mi">200</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;Content-Length&#39;</span><span class="p">:</span> <span class="s1">&#39;392351&#39;</span><span class="p">}</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">app_context</span><span class="p">():</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="s1">&#39;/filemanager/api/1/content&#39;</span><span class="p">,</span>
+                                        <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Authorization&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">token</span><span class="p">})</span>
+
+        <span class="n">content_length</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s1">&#39;Content-Length&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">content_length</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;Only one value is returned&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">content_length</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;392351&#39;</span><span class="p">,</span>
+                         <span class="s1">&#39;The value provided by the controller is returned&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestContentLengthHeader.test_check_file_exists"><a class="viewcode-back" href="../../../../api/filemanager.routes.tests.test_head_requests.html#filemanager.routes.tests.test_head_requests.TestContentLengthHeader.test_check_file_exists">[docs]</a>    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="s1">&#39;arxiv.users.auth.middleware.os.environ&#39;</span><span class="p">,</span> <span class="n">OS_ENVIRON</span><span class="p">)</span>
+    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{upload_api.__name__}</span><span class="s1">.files.check_upload_file_content_exists&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test_check_file_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mock_controller</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;HEAD request to file status endpoint returns correct length.&quot;&quot;&quot;</span>
+        <span class="n">mock_controller</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="p">{},</span> <span class="mi">200</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;Content-Length&#39;</span><span class="p">:</span> <span class="s1">&#39;392351&#39;</span><span class="p">}</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">app_context</span><span class="p">():</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;/filemanager/api/1/file.txt/content&#39;</span><span class="p">,</span>
+                                        <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Authorization&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">token</span><span class="p">})</span>
+
+        <span class="n">content_length</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s1">&#39;Content-Length&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">content_length</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;Only one value is returned&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">content_length</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;392351&#39;</span><span class="p">,</span>
+                         <span class="s1">&#39;The value provided by the controller is returned&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestContentLengthHeader.test_check_upload_source_log_exists"><a class="viewcode-back" href="../../../../api/filemanager.routes.tests.test_head_requests.html#filemanager.routes.tests.test_head_requests.TestContentLengthHeader.test_check_upload_source_log_exists">[docs]</a>    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="s1">&#39;arxiv.users.auth.middleware.os.environ&#39;</span><span class="p">,</span> <span class="n">OS_ENVIRON</span><span class="p">)</span>
+    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{upload_api.__name__}</span><span class="s1">.source_log.check_upload_source_log_exists&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test_check_upload_source_log_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mock_controller</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;HEAD request to source log endpoint returns correct length.&quot;&quot;&quot;</span>
+        <span class="n">mock_controller</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="p">{},</span> <span class="mi">200</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;Content-Length&#39;</span><span class="p">:</span> <span class="s1">&#39;392351&#39;</span><span class="p">}</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">app_context</span><span class="p">():</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;/filemanager/api/1/log&#39;</span><span class="p">,</span>
+                                        <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Authorization&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">token</span><span class="p">})</span>
+
+        <span class="n">content_length</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s1">&#39;Content-Length&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">content_length</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;Only one value is returned&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">content_length</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;392351&#39;</span><span class="p">,</span>
+                         <span class="s1">&#39;The value provided by the controller is returned&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestContentLengthHeader.test_check_upload_service_log_exists"><a class="viewcode-back" href="../../../../api/filemanager.routes.tests.test_head_requests.html#filemanager.routes.tests.test_head_requests.TestContentLengthHeader.test_check_upload_service_log_exists">[docs]</a>    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="s1">&#39;arxiv.users.auth.middleware.os.environ&#39;</span><span class="p">,</span> <span class="n">OS_ENVIRON</span><span class="p">)</span>
+    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{upload_api.__name__}</span><span class="s1">.service_log.check_upload_service_log_exists&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test_check_upload_service_log_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mock_controller</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;HEAD request to service log endpoint returns correct length.&quot;&quot;&quot;</span>
+        <span class="n">mock_controller</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="p">{},</span> <span class="mi">200</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;Content-Length&#39;</span><span class="p">:</span> <span class="s1">&#39;392351&#39;</span><span class="p">}</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">app_context</span><span class="p">():</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;/filemanager/api/log&#39;</span><span class="p">,</span>
+                                        <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Authorization&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">token</span><span class="p">})</span>
+
+        <span class="n">content_length</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s1">&#39;Content-Length&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">content_length</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;Only one value is returned&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">content_length</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;392351&#39;</span><span class="p">,</span>
+                         <span class="s1">&#39;The value provided by the controller is returned&#39;</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

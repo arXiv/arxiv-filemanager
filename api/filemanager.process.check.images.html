@@ -1,0 +1,153 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.process.check.images module &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="filemanager.process.check.invalid_types module" href="filemanager.process.check.invalid_types.html" />
+    <link rel="prev" title="filemanager.process.check.hidden_files module" href="filemanager.process.check.hidden_files.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-filemanager.process.check.images">
+<span id="filemanager-process-check-images-module"></span><h1>filemanager.process.check.images module<a class="headerlink" href="#module-filemanager.process.check.images" title="Permalink to this headline">¶</a></h1>
+<p>Checks related to images/graphics.</p>
+<dl class="class">
+<dt id="filemanager.process.check.images.CheckForUnacceptableImages">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.process.check.images.</code><code class="sig-name descname">CheckForUnacceptableImages</code><a class="reference internal" href="../_modules/filemanager/process/check/images.html#CheckForUnacceptableImages"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.images.CheckForUnacceptableImages" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.process.check.base.html#filemanager.process.check.base.BaseChecker" title="filemanager.process.check.base.BaseChecker"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.process.check.base.BaseChecker</span></code></a></p>
+<p>Checks for image types that are not accepted.</p>
+<p>Issue error for graphics that are not supported by arXiv.</p>
+<p>Issue this error once due to possibility submission may contain
+dozens of invalid graphics files that we do not accept.</p>
+<dl class="attribute">
+<dt id="filemanager.process.check.images.CheckForUnacceptableImages.ERROR_MSG">
+<code class="sig-name descname">ERROR_MSG</code><em class="property"> = '%s is not a supported graphics format: most readers do not have the programs needed to view and print .$format figures. Please save your [% format %] figures instead as PostScript, PNG, JPEG, or GIF (PNG/JPEG/GIF files can be viewed and printed with any graphical web browser) -- for more information.'</em><a class="headerlink" href="#filemanager.process.check.images.CheckForUnacceptableImages.ERROR_MSG" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.process.check.images.CheckForUnacceptableImages.UNACCEPTABLE">
+<code class="sig-name descname">UNACCEPTABLE</code><em class="property"> = re.compile('\\.(pcx|bmp|wmf|opj|pct|tiff?)$', re.IGNORECASE)</em><a class="headerlink" href="#filemanager.process.check.images.CheckForUnacceptableImages.UNACCEPTABLE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="filemanager.process.check.images.CheckForUnacceptableImages.check_IMAGE">
+<code class="sig-name descname">check_IMAGE</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/images.html#CheckForUnacceptableImages.check_IMAGE"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.images.CheckForUnacceptableImages.check_IMAGE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check and warn about image types that are not accepted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">filemanager</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="filemanager.html">filemanager package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">filemanager</a><ul>
+  <li><a href="filemanager.html">filemanager package</a><ul>
+  <li><a href="filemanager.process.html">filemanager.process package</a><ul>
+  <li><a href="filemanager.process.check.html">filemanager.process.check package</a><ul>
+      <li>Previous: <a href="filemanager.process.check.hidden_files.html" title="previous chapter">filemanager.process.check.hidden_files module</a></li>
+      <li>Next: <a href="filemanager.process.check.invalid_types.html" title="next chapter">filemanager.process.check.invalid_types module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/api/filemanager.process.check.images.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

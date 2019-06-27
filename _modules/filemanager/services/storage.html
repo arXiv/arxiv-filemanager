@@ -1,0 +1,463 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.services.storage &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.services.storage</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;On-disk storage for uploads.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Iterator</span>
+<span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">tarfile</span>
+<span class="kn">import</span> <span class="nn">zipfile</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">filecmp</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="k">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+
+<span class="kn">from</span> <span class="nn">pytz</span> <span class="k">import</span> <span class="n">UTC</span>
+<span class="kn">from</span> <span class="nn">flask</span> <span class="k">import</span> <span class="n">Flask</span>
+
+<span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
+<span class="kn">from</span> <span class="nn">..domain</span> <span class="k">import</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">IStorageAdapter</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<div class="viewcode-block" id="SimpleStorageAdapter"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter">[docs]</a><span class="k">class</span> <span class="nc">SimpleStorageAdapter</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Simple storage adapter for a workspace.&quot;&quot;&quot;</span>
+
+    <span class="n">PARAMS</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;base_path&#39;</span><span class="p">,</span> <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Initialize with a base path.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span> <span class="o">=</span> <span class="n">base_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_deleted_logs_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span><span class="p">,</span>
+                                               <span class="s1">&#39;deleted_workspace_logs&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Volume does not exist&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_deleted_logs_path</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_deleted_logs_path</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;New SimpleStorageAdapter at </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.makedirs"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.makedirs">[docs]</a>    <span class="k">def</span> <span class="nf">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Make directories recursively for ``path``.&quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Make dirs to </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="n">abs_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_path_bare</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">abs_path</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">abs_path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.is_safe"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.is_safe">[docs]</a>    <span class="k">def</span> <span class="nf">is_safe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="n">is_persisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not a path is safe to use.&quot;&quot;&quot;</span>
+        <span class="n">path_in_workspace</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="p">,</span> <span class="n">is_removed</span><span class="p">)</span>
+        <span class="n">full_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_path_bare</span><span class="p">(</span><span class="n">path_in_workspace</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_safe</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">full_path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
+                             <span class="n">is_removed</span><span class="o">=</span><span class="n">is_removed</span><span class="p">,</span> <span class="n">is_persisted</span><span class="o">=</span><span class="n">is_persisted</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+    <span class="k">def</span> <span class="nf">_check_safe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">full_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                    <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="n">is_persisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">strict</span> <span class="ow">or</span> <span class="n">is_system</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;evaluate liberally: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">full_path</span><span class="p">)</span>
+            <span class="n">wks_full_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_path_bare</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">base_path</span><span class="p">,</span>
+                                               <span class="n">is_persisted</span><span class="o">=</span><span class="n">is_persisted</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">is_ancillary</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;evaluate as ancillary: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">full_path</span><span class="p">)</span>
+            <span class="n">wks_full_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_path_bare</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">ancillary_path</span><span class="p">,</span>
+                                                <span class="n">is_persisted</span><span class="o">=</span><span class="n">is_persisted</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">is_removed</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;evaluate as removed: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">full_path</span><span class="p">)</span>
+            <span class="n">wks_full_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_path_bare</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">removed_path</span><span class="p">,</span>
+                                                <span class="n">is_persisted</span><span class="o">=</span><span class="n">is_persisted</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;evaluate as active source file: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">full_path</span><span class="p">)</span>
+            <span class="n">wks_full_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_path_bare</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">source_path</span><span class="p">,</span>
+                                                <span class="n">is_persisted</span><span class="o">=</span><span class="n">is_persisted</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Valid path (persisted=</span><span class="si">%s</span><span class="s1">)? </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">is_persisted</span><span class="p">,</span> <span class="n">full_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">wks_full_path</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">full_path</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Not a valid path for workspace: </span><span class="si">{full_path}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.set_permissions"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.set_permissions">[docs]</a>    <span class="k">def</span> <span class="nf">set_permissions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                        <span class="n">file_mode</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mo">0o664</span><span class="p">,</span> <span class="n">dir_mode</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mo">0o775</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the file permissions for all uploaded files and directories.</span>
+
+<span class="sd">        Applies to files and directories in submitter&#39;s upload source</span>
+<span class="sd">        directory.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="n">workspace</span><span class="o">.</span><span class="n">iter_files</span><span class="p">(</span><span class="n">allow_directories</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_directory</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">),</span> <span class="n">dir_mode</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">),</span> <span class="n">file_mode</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.remove"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.remove">[docs]</a>    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Remove a file.&quot;&quot;&quot;</span>
+        <span class="n">src_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_path_bare</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">u_file</span><span class="p">),</span>
+                                       <span class="n">u_file</span><span class="o">.</span><span class="n">is_persisted</span><span class="p">)</span>
+        <span class="n">dest_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_path_bare</span><span class="p">(</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">is_removed</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="n">is_persisted</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_persisted</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_safe</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">src_path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_safe</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">dest_path</span><span class="p">,</span> <span class="n">is_removed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">parent</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">dest_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">parent</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">src_path</span><span class="p">,</span> <span class="n">dest_path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.move"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.move">[docs]</a>    <span class="k">def</span> <span class="nf">move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+             <span class="n">from_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">to_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Move a file from one path to another.&quot;&quot;&quot;</span>
+        <span class="n">src_path_rel</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">from_path</span><span class="p">,</span>
+                                          <span class="n">is_ancillary</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">,</span>
+                                          <span class="n">is_removed</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">)</span>
+        <span class="n">src_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_path_bare</span><span class="p">(</span><span class="n">src_path_rel</span><span class="p">,</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_persisted</span><span class="p">)</span>
+        <span class="n">dest_path_rel</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">to_path</span><span class="p">,</span>
+                                           <span class="n">is_ancillary</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">,</span>
+                                           <span class="n">is_removed</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">)</span>
+        <span class="n">dest_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_path_bare</span><span class="p">(</span><span class="n">dest_path_rel</span><span class="p">,</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_persisted</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Move </span><span class="si">%s</span><span class="s1"> from </span><span class="si">%s</span><span class="s1"> to </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">from_path</span><span class="p">,</span> <span class="n">to_path</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> -&gt; </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">from_path</span><span class="p">,</span> <span class="n">src_path</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> -&gt; </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">to_path</span><span class="p">,</span> <span class="n">dest_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_safe</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">src_path</span><span class="p">,</span>
+                         <span class="n">is_ancillary</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">,</span>
+                         <span class="n">is_removed</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">,</span>
+                         <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_safe</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">dest_path</span><span class="p">,</span>
+                         <span class="n">is_ancillary</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">,</span>
+                         <span class="n">is_removed</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">)</span>
+        <span class="n">parent</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">dest_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">parent</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">src_path</span><span class="p">,</span> <span class="n">dest_path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.open"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.open">[docs]</a>    <span class="nd">@contextmanager</span>
+    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+             <span class="n">flags</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get an open file pointer to a file on disk.&quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">),</span> <span class="n">flags</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">f</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.open_pointer"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.open_pointer">[docs]</a>    <span class="k">def</span> <span class="nf">open_pointer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+                     <span class="n">flags</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">),</span> <span class="n">flags</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.is_tarfile"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.is_tarfile">[docs]</a>    <span class="k">def</span> <span class="nf">is_tarfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                   <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not a file can be opened with ``tarfile``.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">tarfile</span><span class="o">.</span><span class="n">is_tarfile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.get_path"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.get_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                 <span class="n">u_file_or_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">],</span>
+                 <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">is_persisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the absolute path to an :class:`.UploadedFile`.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">u_file_or_path</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">):</span>
+            <span class="n">is_ancillary</span> <span class="o">=</span> <span class="n">u_file_or_path</span><span class="o">.</span><span class="n">is_ancillary</span>
+            <span class="n">is_removed</span> <span class="o">=</span> <span class="n">u_file_or_path</span><span class="o">.</span><span class="n">is_removed</span>
+            <span class="n">is_persisted</span> <span class="o">=</span> <span class="n">u_file_or_path</span><span class="o">.</span><span class="n">is_persisted</span>
+            <span class="n">is_system</span> <span class="o">=</span> <span class="n">u_file_or_path</span><span class="o">.</span><span class="n">is_system</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_path_bare</span><span class="p">(</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">u_file_or_path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
+                               <span class="n">is_removed</span><span class="o">=</span><span class="n">is_removed</span><span class="p">,</span>
+                               <span class="n">is_persisted</span><span class="o">=</span><span class="n">is_persisted</span><span class="p">,</span>
+                               <span class="n">is_system</span><span class="o">=</span><span class="n">is_system</span><span class="p">),</span>
+            <span class="n">is_persisted</span><span class="o">=</span><span class="n">is_persisted</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_safe</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
+                         <span class="n">is_removed</span><span class="o">=</span><span class="n">is_removed</span><span class="p">,</span> <span class="n">is_persisted</span><span class="o">=</span><span class="n">is_persisted</span><span class="p">,</span>
+                         <span class="n">is_system</span><span class="o">=</span><span class="n">is_system</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">path</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.get_path_bare"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.get_path_bare">[docs]</a>    <span class="k">def</span> <span class="nf">get_path_bare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_persisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.persist"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.persist">[docs]</a>    <span class="k">def</span> <span class="nf">persist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Persist a file.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;File does not exist&#39;</span><span class="p">)</span>
+        <span class="n">u_file</span><span class="o">.</span><span class="n">is_persisted</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.cmp"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.cmp">[docs]</a>    <span class="k">def</span> <span class="nf">cmp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">a_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+            <span class="n">b_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">shallow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Compare the contents of two files.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">filecmp</span><span class="o">.</span><span class="n">cmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">a_file</span><span class="p">),</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">b_file</span><span class="p">),</span>
+                           <span class="n">shallow</span><span class="o">=</span><span class="n">shallow</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.create"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.create">[docs]</a>    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Create a file.&quot;&quot;&quot;</span>
+        <span class="n">full_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="n">parent</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">full_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">parent</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Made dirs to </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+        <span class="n">Path</span><span class="p">(</span><span class="n">full_path</span><span class="p">)</span><span class="o">.</span><span class="n">touch</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Touched </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">full_path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.copy"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+             <span class="n">new_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Copy the contents of ``u_file`` into ``new_file``.&quot;&quot;&quot;</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">),</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">new_file</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.delete"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+               <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+               <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+               <span class="n">is_persisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Delete a file or directory.&quot;&quot;&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
+                             <span class="n">is_system</span><span class="o">=</span><span class="n">is_system</span><span class="p">,</span> <span class="n">is_persisted</span><span class="o">=</span><span class="n">is_persisted</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_directory</span><span class="p">:</span>
+            <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="SimpleStorageAdapter.delete_path"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.delete_path">[docs]</a>    <span class="k">def</span> <span class="nf">delete_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span></div>
+    
+<div class="viewcode-block" id="SimpleStorageAdapter.delete_all"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.delete_all">[docs]</a>    <span class="k">def</span> <span class="nf">delete_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">):</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_path_bare</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">ancillary_path</span><span class="p">))</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_path_bare</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">source_path</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.get_size_bytes"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.get_size_bytes">[docs]</a>    <span class="k">def</span> <span class="nf">get_size_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the size in bytes of a file.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.get_last_modified"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.get_last_modified">[docs]</a>    <span class="k">def</span> <span class="nf">get_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                          <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="n">ts</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcfromtimestamp</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">_path</span><span class="p">))</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">UTC</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ts</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.pack_source"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.pack_source">[docs]</a>    <span class="k">def</span> <span class="nf">pack_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                    <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">tarfile</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">),</span> <span class="s1">&#39;w:gz&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">tar</span><span class="p">:</span>
+            <span class="n">tar</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_path_bare</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">source_path</span><span class="p">),</span>
+                    <span class="n">arcname</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span><span class="p">)</span>
+        <span class="n">u_file</span><span class="o">.</span><span class="n">size_bytes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_size_bytes</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="n">u_file</span><span class="o">.</span><span class="n">last_modified</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_last_modified</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.stash_log"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.stash_log">[docs]</a>    <span class="k">def</span> <span class="nf">stash_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Copy the workspace log to the deleted logs directory.&quot;&quot;&quot;</span>
+        <span class="c1"># Since every source log has the same filename we will prefix</span>
+        <span class="c1"># upload identifier to log.</span>
+        <span class="n">padded_id</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{0:07d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">upload_id</span><span class="p">)</span>
+        <span class="n">new_filename</span> <span class="o">=</span> <span class="n">padded_id</span> <span class="o">+</span> <span class="s2">&quot;_source.log&quot;</span>
+        <span class="n">deleted_log_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_deleted_logs_path</span><span class="p">,</span> <span class="n">new_filename</span><span class="p">)</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Move source log for </span><span class="si">{workspace.upload_id}</span><span class="s2"> to&quot;</span>
+                           <span class="n">f</span><span class="s2">&quot; &#39;</span><span class="si">{deleted_log_path}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Delete workspace &#39;</span><span class="si">{workspace.upload_id}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">shutil</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">full_path</span><span class="p">,</span> <span class="n">deleted_log_path</span><span class="p">):</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Saving source.log failed.&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SimpleStorageAdapter.delete_workspace"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter.delete_workspace">[docs]</a>    <span class="k">def</span> <span class="nf">delete_workspace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Completely delete a workspace and all of its contents.&quot;&quot;&quot;</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_path_bare</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">base_path</span><span class="p">,</span>
+                                         <span class="n">is_persisted</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="QuarantineStorageAdapter"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.QuarantineStorageAdapter">[docs]</a><span class="k">class</span> <span class="nc">QuarantineStorageAdapter</span><span class="p">(</span><span class="n">SimpleStorageAdapter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Storage adapter that keeps un/persisted files in separate locations.&quot;&quot;&quot;</span>
+
+    <span class="n">PARAMS</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;base_path&#39;</span><span class="p">,</span> <span class="s1">&#39;quarantine_path&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">quarantine_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Initialize with two distinct base paths.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span> <span class="o">=</span> <span class="n">base_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_quarantine_path</span> <span class="o">=</span> <span class="n">quarantine_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_deleted_logs_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span><span class="p">,</span>
+                                               <span class="s1">&#39;deleted_workspace_logs&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Volume does not exist: </span><span class="si">{base_path}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_quarantine_path</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Volume does not exist: </span><span class="si">{quarantine_path}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_deleted_logs_path</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_deleted_logs_path</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_permanent_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_quarantine_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_quarantine_path</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+
+<div class="viewcode-block" id="QuarantineStorageAdapter.get_path_bare"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.QuarantineStorageAdapter.get_path_bare">[docs]</a>    <span class="k">def</span> <span class="nf">get_path_bare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_persisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_persisted</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_permanent_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_quarantine_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="QuarantineStorageAdapter.set_permissions"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.QuarantineStorageAdapter.set_permissions">[docs]</a>    <span class="k">def</span> <span class="nf">set_permissions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                        <span class="n">file_mode</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mo">0o664</span><span class="p">,</span> <span class="n">dir_mode</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mo">0o775</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the file permissions for all uploaded files and directories.</span>
+
+<span class="sd">        Applies to files and directories in submitter&#39;s upload source</span>
+<span class="sd">        directory.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="n">workspace</span><span class="o">.</span><span class="n">iter_files</span><span class="p">(</span><span class="n">allow_directories</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_persisted</span><span class="p">:</span>     <span class="c1"># Skip persisted content.</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_directory</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">),</span> <span class="n">dir_mode</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">),</span> <span class="n">file_mode</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="QuarantineStorageAdapter.persist"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.QuarantineStorageAdapter.persist">[docs]</a>    <span class="k">def</span> <span class="nf">persist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Move a file or directory from quarantine to permanent storage.&quot;&quot;&quot;</span>
+        <span class="n">src_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_quarantine_path</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">u_file</span><span class="p">))</span>
+        <span class="n">dst_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_permanent_path</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">u_file</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_safe</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">src_path</span><span class="p">,</span>
+                         <span class="n">is_ancillary</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">,</span>
+                         <span class="n">is_removed</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">,</span>
+                         <span class="n">is_persisted</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_safe</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">dst_path</span><span class="p">,</span>
+                         <span class="n">is_ancillary</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">,</span>
+                         <span class="n">is_removed</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">,</span>
+                         <span class="n">is_persisted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">parent</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">dst_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">parent</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Persist from </span><span class="si">%s</span><span class="s1"> to </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">src_path</span><span class="p">,</span> <span class="n">dst_path</span><span class="p">)</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">src_path</span><span class="p">,</span> <span class="n">dst_path</span><span class="p">)</span>
+        <span class="n">u_file</span><span class="o">.</span><span class="n">is_persisted</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># Since we are working on a conventional file system, if we just copied</span>
+        <span class="c1"># a directory then we have also copied all of its children. So we can</span>
+        <span class="c1"># go ahead and mark those as persisted, too, in order to prevent</span>
+        <span class="c1"># unnecessary i/o.</span>
+        <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_directory</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">_path</span><span class="p">,</span> <span class="n">_file</span> <span class="ow">in</span> <span class="n">workspace</span><span class="o">.</span><span class="n">iter_children</span><span class="p">(</span><span class="n">u_file</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">_path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_file</span><span class="o">.</span><span class="n">is_persisted</span><span class="p">:</span>
+                    <span class="n">_file</span><span class="o">.</span><span class="n">is_persisted</span> <span class="o">=</span> <span class="kc">True</span></div></div>
+
+
+<span class="n">ADAPTERS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;simple&#39;</span><span class="p">:</span> <span class="n">SimpleStorageAdapter</span><span class="p">,</span>
+    <span class="s1">&#39;quarantine&#39;</span><span class="p">:</span> <span class="n">QuarantineStorageAdapter</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="init_app"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.init_app">[docs]</a><span class="k">def</span> <span class="nf">init_app</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">Flask</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;STORAGE_BACKEND&#39;</span><span class="p">,</span> <span class="s1">&#39;simple&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_adapter"><a class="viewcode-back" href="../../../api/filemanager.services.storage.html#filemanager.services.storage.create_adapter">[docs]</a><span class="k">def</span> <span class="nf">create_adapter</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">Flask</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IStorageAdapter</span><span class="p">:</span>
+    <span class="n">adapter_class</span> <span class="o">=</span> <span class="n">ADAPTERS</span><span class="p">[</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;STORAGE_BACKEND&#39;</span><span class="p">]]</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">f</span><span class="s1">&#39;STORAGE_{param.upper()}&#39;</span><span class="p">]</span>
+              <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">adapter_class</span><span class="o">.</span><span class="n">PARAMS</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">adapter_class</span><span class="p">(</span><span class="o">*</span><span class="n">values</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

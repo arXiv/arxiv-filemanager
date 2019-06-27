@@ -1,0 +1,381 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.services.database &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.services.database</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Provides access to the uploads data store.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Generator</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">pytz</span> <span class="k">import</span> <span class="n">UTC</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">wraps</span>
+
+<span class="kn">from</span> <span class="nn">flask</span> <span class="k">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">current_app</span>
+<span class="kn">from</span> <span class="nn">werkzeug.local</span> <span class="k">import</span> <span class="n">LocalProxy</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.exc</span> <span class="k">import</span> <span class="n">OperationalError</span>
+<span class="kn">from</span> <span class="nn">retry</span> <span class="k">import</span> <span class="n">retry</span>
+
+<span class="kn">from</span> <span class="nn">arxiv.base.globals</span> <span class="k">import</span> <span class="n">get_application_global</span>
+<span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
+
+<span class="kn">from</span> <span class="nn">filemanager.domain</span> <span class="k">import</span> <span class="n">UploadWorkspace</span>
+<span class="kn">from</span> <span class="nn">.models</span> <span class="k">import</span> <span class="n">db</span><span class="p">,</span> <span class="n">DBUpload</span>
+<span class="kn">from</span> <span class="nn">..storage</span> <span class="k">import</span> <span class="n">create_adapter</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">translate</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="init_app"><a class="viewcode-back" href="../../../api/filemanager.services.database.html#filemanager.services.database.init_app">[docs]</a><span class="k">def</span> <span class="nf">init_app</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LocalProxy</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Set configuration defaults and attach session to the application.&quot;&quot;&quot;</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="n">app</span><span class="p">)</span></div>
+
+
+<span class="c1"># OperationalError is often due to a transient connection problem that can be</span>
+<span class="c1"># resolved with a retry.</span>
+<div class="viewcode-block" id="is_available"><a class="viewcode-back" href="../../../api/filemanager.services.database.html#filemanager.services.database.is_available">[docs]</a><span class="nd">@retry</span><span class="p">(</span><span class="n">OperationalError</span><span class="p">,</span> <span class="n">tries</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">backoff</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">is_available</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Make a quick check to see whether databse is available.&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;SELECT 1&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Database not available: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="transaction"><a class="viewcode-back" href="../../../api/filemanager.services.database.html#filemanager.services.database.transaction">[docs]</a><span class="nd">@contextmanager</span>
+<span class="k">def</span> <span class="nf">transaction</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Context manager for database transaction.&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">db</span><span class="o">.</span><span class="n">session</span>
+        <span class="c1"># Only commit if there are un-flushed changes. The caller may commit</span>
+        <span class="c1"># explicitly, e.g. to do exception handling.</span>
+        <span class="k">if</span> <span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">dirty</span> <span class="ow">or</span> <span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">deleted</span> <span class="ow">or</span> <span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">new</span><span class="p">:</span>
+            <span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Command failed, rolling back: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">rollback</span><span class="p">()</span>
+        <span class="k">raise</span></div>
+
+
+<div class="viewcode-block" id="atomic"><a class="viewcode-back" href="../../../api/filemanager.services.database.html#filemanager.services.database.atomic">[docs]</a><span class="k">def</span> <span class="nf">atomic</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Decorate a function to run within a database transaction.&quot;&quot;&quot;</span>
+    <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">inner</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">transaction</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">inner</span></div>
+
+
+<div class="viewcode-block" id="retrieve"><a class="viewcode-back" href="../../../api/filemanager.services.database.html#filemanager.services.database.retrieve">[docs]</a><span class="k">def</span> <span class="nf">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">skip_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> \
+        <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UploadWorkspace</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get data about a upload.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    upload_id : int</span>
+<span class="sd">        Unique identifier for the upload.</span>
+<span class="sd">    skip_cache : bool</span>
+<span class="sd">        If `True`, will load fresh data regardless of what might already be</span>
+<span class="sd">        around. Otherwise, will only load the same :class:`UploadWorkspace`</span>
+<span class="sd">        instance once.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`.UploadWorkspace`</span>
+<span class="sd">        Data about the upload.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    IOError</span>
+<span class="sd">        When there is a problem querying the database.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Retrieve upload data from database for </span><span class="si">%s</span><span class="s1"> (skip_cache: </span><span class="si">%s</span><span class="s1">)&#39;</span><span class="p">,</span>
+                 <span class="n">upload_id</span><span class="p">,</span> <span class="n">skip_cache</span><span class="p">)</span>
+    <span class="c1"># We use the application global object to create a simple cache for</span>
+    <span class="c1"># loaded uploads. This allows us to avoid multiple queries on the same</span>
+    <span class="c1"># state when different parts of the application need access to the same</span>
+    <span class="c1"># upload.</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">get_application_global</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">g</span> <span class="ow">and</span> <span class="s1">&#39;uploads&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">g</span><span class="p">:</span>
+        <span class="n">g</span><span class="o">.</span><span class="n">uploads</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">if</span> <span class="n">g</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">skip_cache</span> <span class="ow">and</span> <span class="n">upload_id</span> <span class="ow">in</span> <span class="n">g</span><span class="o">.</span><span class="n">uploads</span><span class="p">:</span>
+        <span class="n">upload_data</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="n">uploads</span><span class="p">[</span><span class="n">upload_id</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">upload_data</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">DBUpload</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">OperationalError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Could not query database: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">detail</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;Could not query database: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">e</span><span class="o">.</span><span class="n">detail</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+
+        <span class="k">if</span> <span class="n">upload_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">g</span><span class="p">:</span>
+            <span class="n">g</span><span class="o">.</span><span class="n">uploads</span><span class="p">[</span><span class="n">upload_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">upload_data</span>  <span class="c1"># Cache for next time.</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">args</span><span class="p">[</span><span class="s1">&#39;upload_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">upload_id</span>
+    <span class="n">args</span><span class="p">[</span><span class="s1">&#39;owner_user_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">owner_user_id</span>
+    <span class="n">args</span><span class="p">[</span><span class="s1">&#39;created_datetime&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">created_datetime</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">UTC</span><span class="p">)</span>
+    <span class="n">args</span><span class="p">[</span><span class="s1">&#39;modified_datetime&#39;</span><span class="p">]</span> <span class="o">=</span> \
+        <span class="n">upload_data</span><span class="o">.</span><span class="n">modified_datetime</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">UTC</span><span class="p">)</span>
+    <span class="n">args</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">Status</span><span class="p">(</span><span class="n">upload_data</span><span class="o">.</span><span class="n">status</span><span class="p">)</span>
+    <span class="n">args</span><span class="p">[</span><span class="s1">&#39;lock_state&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">LockState</span><span class="p">(</span><span class="n">upload_data</span><span class="o">.</span><span class="n">lock_state</span><span class="p">)</span>
+    <span class="n">args</span><span class="p">[</span><span class="s1">&#39;source_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">SourceType</span><span class="p">(</span><span class="n">upload_data</span><span class="o">.</span><span class="n">source_type</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">lastupload_start_datetime</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">args</span><span class="p">[</span><span class="s1">&#39;lastupload_start_datetime&#39;</span><span class="p">]</span> <span class="o">=</span> \
+            <span class="n">upload_data</span><span class="o">.</span><span class="n">lastupload_start_datetime</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">UTC</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">lastupload_completion_datetime</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">args</span><span class="p">[</span><span class="s1">&#39;lastupload_completion_datetime&#39;</span><span class="p">]</span> <span class="o">=</span> \
+            <span class="n">upload_data</span><span class="o">.</span><span class="n">lastupload_completion_datetime</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">UTC</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">lastupload_logs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">args</span><span class="p">[</span><span class="s1">&#39;lastupload_logs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">lastupload_logs</span>
+
+    <span class="k">if</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">lastupload_file_summary</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">args</span><span class="p">[</span><span class="s1">&#39;lastupload_file_summary&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">lastupload_file_summary</span>
+
+    <span class="k">if</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">lastupload_readiness</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">args</span><span class="p">[</span><span class="s1">&#39;lastupload_readiness&#39;</span><span class="p">]</span> \
+            <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">Readiness</span><span class="p">(</span><span class="n">upload_data</span><span class="o">.</span><span class="n">lastupload_readiness</span><span class="p">)</span>
+    <span class="n">args</span><span class="p">[</span><span class="s1">&#39;storage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">create_adapter</span><span class="p">(</span><span class="n">current_app</span><span class="p">)</span>
+    <span class="n">workspace</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+            <span class="n">p</span><span class="p">:</span> <span class="n">translate</span><span class="o">.</span><span class="n">dict_to_file</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">workspace</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">})</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">ancillary</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">ancillary</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+            <span class="n">p</span><span class="p">:</span> <span class="n">translate</span><span class="o">.</span><span class="n">dict_to_file</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">workspace</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;ancillary&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">})</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">removed</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">removed</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+            <span class="n">p</span><span class="p">:</span> <span class="n">translate</span><span class="o">.</span><span class="n">dict_to_file</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">workspace</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;removed&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">})</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+            <span class="n">p</span><span class="p">:</span> <span class="n">translate</span><span class="o">.</span><span class="n">dict_to_file</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">workspace</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;system&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">})</span>
+    <span class="k">if</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">errors</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">datum</span> <span class="ow">in</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">errors</span><span class="p">:</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">translate</span><span class="o">.</span><span class="n">dict_to_error</span><span class="p">(</span><span class="n">datum</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">workspace</span></div>
+
+
+<div class="viewcode-block" id="store"><a class="viewcode-back" href="../../../api/filemanager.services.database.html#filemanager.services.database.store">[docs]</a><span class="k">def</span> <span class="nf">store</span><span class="p">(</span><span class="n">new_upload_data</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadWorkspace</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a new record for a :class:`.UploadWorkspace` in the database.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    upload_data : :class:`.UploadWorkspace`</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    IOError</span>
+<span class="sd">        When there is a problem querying the database.</span>
+<span class="sd">    RuntimeError</span>
+<span class="sd">        When there is some other problem.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">upload_data</span> <span class="o">=</span> <span class="n">DBUpload</span><span class="p">(</span><span class="n">owner_user_id</span><span class="o">=</span><span class="n">new_upload_data</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">,</span>
+                           <span class="n">created_datetime</span><span class="o">=</span><span class="n">new_upload_data</span><span class="o">.</span><span class="n">created_datetime</span><span class="p">,</span>
+                           <span class="n">modified_datetime</span><span class="o">=</span><span class="n">new_upload_data</span><span class="o">.</span><span class="n">modified_datetime</span><span class="p">,</span>
+                           <span class="n">status</span><span class="o">=</span><span class="n">new_upload_data</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">upload_data</span><span class="p">)</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="n">new_upload_data</span><span class="o">.</span><span class="n">upload_id</span> <span class="o">=</span> <span class="n">upload_data</span><span class="o">.</span><span class="n">upload_id</span>
+    <span class="k">return</span> <span class="n">new_upload_data</span></div>
+
+
+<div class="viewcode-block" id="create"><a class="viewcode-back" href="../../../api/filemanager.services.database.html#filemanager.services.database.create">[docs]</a><span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="n">owner_user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+           <span class="n">status</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">Status</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">ACTIVE</span><span class="p">)</span> \
+        <span class="o">-&gt;</span> <span class="n">UploadWorkspace</span><span class="p">:</span>
+    <span class="n">current_datetime</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">UTC</span><span class="p">)</span>
+    <span class="n">upload_data</span> <span class="o">=</span> <span class="n">DBUpload</span><span class="p">(</span><span class="n">owner_user_id</span><span class="o">=</span><span class="n">owner_user_id</span><span class="p">,</span>
+                           <span class="n">created_datetime</span><span class="o">=</span><span class="n">current_datetime</span><span class="p">,</span>
+                           <span class="n">modified_datetime</span><span class="o">=</span><span class="n">current_datetime</span><span class="p">,</span>
+                           <span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">upload_data</span><span class="p">)</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">UploadWorkspace</span><span class="p">(</span><span class="n">upload_id</span><span class="o">=</span><span class="n">upload_data</span><span class="o">.</span><span class="n">upload_id</span><span class="p">,</span>
+                           <span class="n">owner_user_id</span><span class="o">=</span><span class="n">owner_user_id</span><span class="p">,</span>
+                           <span class="n">created_datetime</span><span class="o">=</span><span class="n">current_datetime</span><span class="p">,</span>
+                           <span class="n">modified_datetime</span><span class="o">=</span><span class="n">current_datetime</span><span class="p">,</span>
+                           <span class="n">storage</span><span class="o">=</span><span class="n">create_adapter</span><span class="p">(</span><span class="n">current_app</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="update"><a class="viewcode-back" href="../../../api/filemanager.services.database.html#filemanager.services.database.update">[docs]</a><span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Update the database with the latest :class:`.UploadWorkspace`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    the_thing : :class:`.UploadWorkspace`</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    IOError</span>
+<span class="sd">        When there is a problem querying the database.</span>
+<span class="sd">    RuntimeError</span>
+<span class="sd">        When there is some other problem.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">workspace</span><span class="o">.</span><span class="n">upload_id</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;The upload data has no id!&#39;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">upload_data</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">DBUpload</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">upload_id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">OperationalError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;Could not query database: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">e</span><span class="o">.</span><span class="n">detail</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+    <span class="k">if</span> <span class="n">upload_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Cannot find the thing!&#39;</span><span class="p">)</span>
+
+    <span class="c1"># owner_user_id, archive</span>
+    <span class="n">upload_data</span><span class="o">.</span><span class="n">owner_user_id</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span>
+
+    <span class="c1"># We won&#39;t let client update created_datetime</span>
+
+    <span class="n">upload_data</span><span class="o">.</span><span class="n">lastupload_start_datetime</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">lastupload_start_datetime</span>
+    <span class="n">upload_data</span><span class="o">.</span><span class="n">lastupload_completion_datetime</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">lastupload_completion_datetime</span>
+    <span class="n">upload_data</span><span class="o">.</span><span class="n">lastupload_logs</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">lastupload_logs</span>
+    <span class="n">upload_data</span><span class="o">.</span><span class="n">lastupload_file_summary</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">lastupload_file_summary</span>
+    <span class="n">upload_data</span><span class="o">.</span><span class="n">lastupload_readiness</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">lastupload_readiness</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">upload_data</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">upload_data</span><span class="o">.</span><span class="n">lock_state</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">lock_state</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">upload_data</span><span class="o">.</span><span class="n">source_type</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_type</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="n">upload_data</span><span class="o">.</span><span class="n">files</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="n">translate</span><span class="o">.</span><span class="n">file_to_dict</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">workspace</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+        <span class="s1">&#39;ancillary&#39;</span><span class="p">:</span> <span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="n">translate</span><span class="o">.</span><span class="n">file_to_dict</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+                      <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">workspace</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">ancillary</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+        <span class="s1">&#39;removed&#39;</span><span class="p">:</span> <span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="n">translate</span><span class="o">.</span><span class="n">file_to_dict</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">workspace</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">removed</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+        <span class="s1">&#39;system&#39;</span><span class="p">:</span> <span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="n">translate</span><span class="o">.</span><span class="n">file_to_dict</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+                   <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">workspace</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+    <span class="p">}</span>
+
+    <span class="n">upload_data</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="p">[</span><span class="n">translate</span><span class="o">.</span><span class="n">error_to_dict</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">workspace</span><span class="o">.</span><span class="n">_errors</span>
+                          <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">is_persistant</span><span class="p">]</span>
+
+    <span class="c1"># Always set this when workspace DB entry is updated</span>
+    <span class="n">upload_data</span><span class="o">.</span><span class="n">modified_datetime</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">UTC</span><span class="p">)</span>
+
+    <span class="c1"># TODO: Would user ever need to set the modification time manually?</span>
+    <span class="c1"># upload_data.modified_datetime = workspace.modified_datetime</span>
+
+    <span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">upload_data</span><span class="p">)</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,431 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.services.storage module &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="filemanager.celeryconfig module" href="filemanager.celeryconfig.html" />
+    <link rel="prev" title="filemanager.services.tests.test_storage module" href="filemanager.services.tests.test_storage.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-filemanager.services.storage">
+<span id="filemanager-services-storage-module"></span><h1>filemanager.services.storage module<a class="headerlink" href="#module-filemanager.services.storage" title="Permalink to this headline">¶</a></h1>
+<p>On-disk storage for uploads.</p>
+<dl class="class">
+<dt id="filemanager.services.storage.QuarantineStorageAdapter">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.services.storage.</code><code class="sig-name descname">QuarantineStorageAdapter</code><span class="sig-paren">(</span><em class="sig-param">base_path</em>, <em class="sig-param">quarantine_path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#QuarantineStorageAdapter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.QuarantineStorageAdapter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#filemanager.services.storage.SimpleStorageAdapter" title="filemanager.services.storage.SimpleStorageAdapter"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.services.storage.SimpleStorageAdapter</span></code></a></p>
+<p>Storage adapter that keeps un/persisted files in separate locations.</p>
+<dl class="attribute">
+<dt id="filemanager.services.storage.QuarantineStorageAdapter.PARAMS">
+<code class="sig-name descname">PARAMS</code><em class="property"> = ('base_path', 'quarantine_path')</em><a class="headerlink" href="#filemanager.services.storage.QuarantineStorageAdapter.PARAMS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.QuarantineStorageAdapter.get_path_bare">
+<code class="sig-name descname">get_path_bare</code><span class="sig-paren">(</span><em class="sig-param">path</em>, <em class="sig-param">is_persisted=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#QuarantineStorageAdapter.get_path_bare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.QuarantineStorageAdapter.get_path_bare" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.QuarantineStorageAdapter.persist">
+<code class="sig-name descname">persist</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#QuarantineStorageAdapter.persist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.QuarantineStorageAdapter.persist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move a file or directory from quarantine to permanent storage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.QuarantineStorageAdapter.set_permissions">
+<code class="sig-name descname">set_permissions</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">file_mode=436</em>, <em class="sig-param">dir_mode=509</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#QuarantineStorageAdapter.set_permissions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.QuarantineStorageAdapter.set_permissions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the file permissions for all uploaded files and directories.</p>
+<p>Applies to files and directories in submitter’s upload source
+directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.services.storage.SimpleStorageAdapter">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.services.storage.</code><code class="sig-name descname">SimpleStorageAdapter</code><span class="sig-paren">(</span><em class="sig-param">base_path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Simple storage adapter for a workspace.</p>
+<dl class="attribute">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.PARAMS">
+<code class="sig-name descname">PARAMS</code><em class="property"> = ('base_path',)</em><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.PARAMS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.cmp">
+<code class="sig-name descname">cmp</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">a_file</em>, <em class="sig-param">b_file</em>, <em class="sig-param">shallow=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.cmp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.cmp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare the contents of two files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.copy">
+<code class="sig-name descname">copy</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em>, <em class="sig-param">new_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy the contents of <code class="docutils literal notranslate"><span class="pre">u_file</span></code> into <code class="docutils literal notranslate"><span class="pre">new_file</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.create">
+<code class="sig-name descname">create</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.delete">
+<code class="sig-name descname">delete</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em>, <em class="sig-param">is_ancillary=False</em>, <em class="sig-param">is_system=False</em>, <em class="sig-param">is_persisted=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a file or directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.delete_all">
+<code class="sig-name descname">delete_all</code><span class="sig-paren">(</span><em class="sig-param">workspace</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.delete_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.delete_all" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.delete_path">
+<code class="sig-name descname">delete_path</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.delete_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.delete_path" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.delete_workspace">
+<code class="sig-name descname">delete_workspace</code><span class="sig-paren">(</span><em class="sig-param">workspace</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.delete_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.delete_workspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Completely delete a workspace and all of its contents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.get_last_modified">
+<code class="sig-name descname">get_last_modified</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.get_last_modified"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.get_last_modified" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.get_path">
+<code class="sig-name descname">get_path</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file_or_path</em>, <em class="sig-param">is_ancillary=False</em>, <em class="sig-param">is_removed=False</em>, <em class="sig-param">is_persisted=False</em>, <em class="sig-param">is_system=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.get_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.get_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the absolute path to an <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.get_path_bare">
+<code class="sig-name descname">get_path_bare</code><span class="sig-paren">(</span><em class="sig-param">path</em>, <em class="sig-param">is_persisted=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.get_path_bare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.get_path_bare" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.get_size_bytes">
+<code class="sig-name descname">get_size_bytes</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.get_size_bytes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.get_size_bytes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the size in bytes of a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.is_safe">
+<code class="sig-name descname">is_safe</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">path</em>, <em class="sig-param">is_ancillary=False</em>, <em class="sig-param">is_removed=False</em>, <em class="sig-param">is_persisted=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.is_safe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.is_safe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether or not a path is safe to use.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.is_tarfile">
+<code class="sig-name descname">is_tarfile</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.is_tarfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.is_tarfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether or not a file can be opened with <code class="docutils literal notranslate"><span class="pre">tarfile</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.makedirs">
+<code class="sig-name descname">makedirs</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.makedirs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.makedirs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make directories recursively for <code class="docutils literal notranslate"><span class="pre">path</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.move">
+<code class="sig-name descname">move</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em>, <em class="sig-param">from_path</em>, <em class="sig-param">to_path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.move"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.move" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move a file from one path to another.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.open">
+<code class="sig-name descname">open</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em>, <em class="sig-param">flags='r'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.open"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.open" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an open file pointer to a file on disk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Iterator" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/io.html#io.IOBase" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">IOBase</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.open_pointer">
+<code class="sig-name descname">open_pointer</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em>, <em class="sig-param">flags='r'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.open_pointer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.open_pointer" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/io.html#io.IOBase" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">IOBase</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.pack_source">
+<code class="sig-name descname">pack_source</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.pack_source"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.pack_source" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.persist">
+<code class="sig-name descname">persist</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.persist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.persist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Persist a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.remove">
+<code class="sig-name descname">remove</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.set_permissions">
+<code class="sig-name descname">set_permissions</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">file_mode=436</em>, <em class="sig-param">dir_mode=509</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.set_permissions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.set_permissions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the file permissions for all uploaded files and directories.</p>
+<p>Applies to files and directories in submitter’s upload source
+directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.storage.SimpleStorageAdapter.stash_log">
+<code class="sig-name descname">stash_log</code><span class="sig-paren">(</span><em class="sig-param">workspace</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#SimpleStorageAdapter.stash_log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.SimpleStorageAdapter.stash_log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy the workspace log to the deleted logs directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="filemanager.services.storage.create_adapter">
+<code class="sig-prename descclassname">filemanager.services.storage.</code><code class="sig-name descname">create_adapter</code><span class="sig-paren">(</span><em class="sig-param">app</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#create_adapter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.create_adapter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.storage.html#filemanager.domain.storage.IStorageAdapter" title="filemanager.domain.storage.IStorageAdapter"><code class="xref py py-class docutils literal notranslate"><span class="pre">IStorageAdapter</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="filemanager.services.storage.init_app">
+<code class="sig-prename descclassname">filemanager.services.storage.</code><code class="sig-name descname">init_app</code><span class="sig-paren">(</span><em class="sig-param">app</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/storage.html#init_app"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.storage.init_app" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">filemanager</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="filemanager.html">filemanager package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">filemanager</a><ul>
+  <li><a href="filemanager.html">filemanager package</a><ul>
+  <li><a href="filemanager.services.html">filemanager.services package</a><ul>
+      <li>Previous: <a href="filemanager.services.tests.test_storage.html" title="previous chapter">filemanager.services.tests.test_storage module</a></li>
+      <li>Next: <a href="filemanager.celeryconfig.html" title="next chapter">filemanager.celeryconfig module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/api/filemanager.services.storage.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

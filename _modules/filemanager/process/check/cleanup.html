@@ -1,0 +1,678 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.process.check.cleanup &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.process.check.cleanup</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Various format-specific cleanup routines.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">mmap</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
+
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">UploadWorkspace</span>
+<span class="kn">from</span> <span class="nn">..util.unmacify</span> <span class="k">import</span> <span class="n">unmacify</span>
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseChecker</span>
+<span class="kn">from</span> <span class="nn">.file_type</span> <span class="k">import</span> <span class="n">InferFileType</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># Types of embedded content</span>
+<span class="n">PHOTOSHOP</span> <span class="o">=</span> <span class="s1">&#39;Photoshop&#39;</span>
+<span class="n">PREVIEW</span> <span class="o">=</span> <span class="s1">&#39;Preview&#39;</span>
+<span class="n">THUMBNAIL</span> <span class="o">=</span> <span class="s1">&#39;Thumbnail&#39;</span>
+
+<span class="n">EOF_MARKER</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">br</span><span class="s1">&#39;^</span><span class="si">%%</span><span class="s1">EOF$&#39;</span><span class="p">)</span>
+<span class="sd">&quot;&quot;&quot;Marker for end of Postscript file.&quot;&quot;&quot;</span>
+
+<span class="n">LB_MARKER</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;^(II\*\000|MM\000\*)&#39;</span><span class="p">)</span>
+<span class="sd">&quot;&quot;&quot;Marker for TIFF image - little or big endian.&quot;&quot;&quot;</span>
+
+<span class="c1"># TODO: This needs more context. -- Erick 2019-06-07</span>
+<span class="n">PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;Thumbnail:|BeginPreview|BeginPhotoshop|&#39;</span>
+                     <span class="sa">rb</span><span class="s1">&#39;BeginFont|BeginResource: font&#39;</span><span class="p">,</span>
+                     <span class="n">re</span><span class="o">.</span><span class="n">DOTALL</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">)</span>
+<span class="sd">&quot;&quot;&quot;[ needs info ]&quot;&quot;&quot;</span>
+
+<span class="c1"># TODO: This needs more context. -- Erick 2019-06-07</span>
+<span class="n">PS_BEGIN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;^%!PS-&#39;</span><span class="p">)</span>
+<span class="sd">&quot;&quot;&quot;[ needs info ]&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="UnMacify"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.UnMacify">[docs]</a><span class="k">class</span> <span class="nc">UnMacify</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;UnMac-ifies files.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="UnMacify.check_HTML"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.UnMacify.check_HTML">[docs]</a>    <span class="k">def</span> <span class="nf">check_HTML</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;UnMac-ify HTML files.&quot;&quot;&quot;</span>
+        <span class="n">unmacify</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div>
+
+<div class="viewcode-block" id="UnMacify.check_PC"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.UnMacify.check_PC">[docs]</a>    <span class="k">def</span> <span class="nf">check_PC</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;UnMac-ify PC files.&quot;&quot;&quot;</span>
+        <span class="n">unmacify</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div>
+
+<div class="viewcode-block" id="UnMacify.check_MAC"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.UnMacify.check_MAC">[docs]</a>    <span class="k">def</span> <span class="nf">check_MAC</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;UnMac-ify mac files.&quot;&quot;&quot;</span>
+        <span class="n">unmacify</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div>
+
+<div class="viewcode-block" id="UnMacify.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.UnMacify.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;If file is identified as core TeX type then we need to unmacify.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">file_type</span><span class="o">.</span><span class="n">is_tex_type</span><span class="p">:</span>
+            <span class="n">unmacify</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+            <span class="c1"># TODO: Check if TeX source file contains raw Postscript</span>
+            <span class="n">_extract_uu</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div></div>
+
+
+<span class="c1"># TODO: this needs more context -- Erick 2019-06-07</span>
+<div class="viewcode-block" id="RepairDOSEPSFiles"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.RepairDOSEPSFiles">[docs]</a><span class="k">class</span> <span class="nc">RepairDOSEPSFiles</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Repair DOS EPS files.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="RepairDOSEPSFiles.check_DOS_EPS"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.RepairDOSEPSFiles.check_DOS_EPS">[docs]</a>    <span class="k">def</span> <span class="nf">check_DOS_EPS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;[ needs info ]&quot;&quot;&quot;</span>
+        <span class="n">u_file</span><span class="p">,</span> <span class="n">fixed</span> <span class="o">=</span> <span class="n">_repair_dos_eps</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fixed</span><span class="p">:</span>
+            <span class="c1"># stripped TIFF</span>
+            <span class="k">if</span> <span class="s1">&#39;leading&#39;</span> <span class="ow">in</span> <span class="n">fixed</span><span class="p">:</span>
+                <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s2">&quot;leading TIFF preview stripped&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;trailing&#39;</span> <span class="ow">in</span> <span class="n">fixed</span><span class="p">:</span>
+                <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s2">&quot;trailing TIFF preview stripped&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s2">&quot;Failed to strip TIFF preview&quot;</span><span class="p">)</span>
+            <span class="n">u_file</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_repair_postscript</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div></div>
+
+
+<span class="c1"># TODO: this needs more context -- Erick 2019-06-07</span>
+<span class="c1"># TODO: Sets type to postscript regardless of what happens in check_postscript.</span>
+<span class="c1"># Should we at least warn? Or should we try to check to see if type failed</span>
+<span class="c1"># turned to postscript after fixing up file in check_postscript?</span>
+<span class="c1"># TODO: Find example and test.</span>
+<div class="viewcode-block" id="CleanupPostScript"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.CleanupPostScript">[docs]</a><span class="k">class</span> <span class="nc">CleanupPostScript</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Checks and cleanup for postscript files.&quot;&quot;&quot;</span>
+
+    <span class="n">PS</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\.e?psi?$&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CleanupPostScript.check_POSTSCRIPT"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.CleanupPostScript.check_POSTSCRIPT">[docs]</a>    <span class="k">def</span> <span class="nf">check_POSTSCRIPT</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                         <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        [ needs info ]</span>
+
+<span class="sd">        Check postscript for unwanted inclusions and inspect unidentified files</span>
+<span class="sd">        that appear to be Postscript.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">unmacify</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_check_postscript</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CleanupPostScript.check_PS_PC"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.CleanupPostScript.check_PS_PC">[docs]</a>    <span class="k">def</span> <span class="nf">check_PS_PC</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Repair poscript for PS PC files.</span>
+
+<span class="sd">        Seeing very few of this type in recent submissions.</span>
+<span class="sd">        leer.eps header repaired to: %!PS-Adobe-2.0 EPSF-2.0</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">u_file</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_repair_postscript</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div>
+
+<div class="viewcode-block" id="CleanupPostScript.check_FAILED"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.CleanupPostScript.check_FAILED">[docs]</a>    <span class="k">def</span> <span class="nf">check_FAILED</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">PS</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
+            <span class="n">u_file</span> <span class="o">=</span> <span class="n">_check_postscript</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div></div>
+
+
+<span class="c1"># TODO: looks like the strip_tiff case is not fully implemented here.</span>
+<span class="c1"># -- Erick 2019-06-07</span>
+<span class="k">def</span> <span class="nf">_check_postscript</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+                      <span class="n">tiff_flag</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check Postscript file for unwanted inclusions.</span>
+
+<span class="sd">    Calls &#39;strip_preview&#39; to preview, thumbnails, and photoshop.</span>
+
+<span class="sd">    Calls &#39;strip_tif&#39; to remove non-compliant embedded TIFF bitmaps.</span>
+
+<span class="sd">    This set of routines (strip_preview, strip_tiff) may modify file by</span>
+<span class="sd">    removing offending preview/thumbnail/photoshop/tiff bitmap.</span>
+
+<span class="sd">    This routine also deals with detecting imbedded fonts in Postscript</span>
+<span class="sd">    files.</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># This code had the incorrect type specified and never actually ran.</span>
+    <span class="c1"># Cleans up Postscript files file extraneous characters that cause</span>
+    <span class="c1"># failure to identify file as Postscript.</span>
+    <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">file_type</span> <span class="o">==</span> <span class="n">FileType</span><span class="o">.</span><span class="n">FAILED</span><span class="p">:</span>
+        <span class="c1"># This code has been not executing for many years. May have</span>
+        <span class="c1"># resulted in more admin interventions to manually fix.</span>
+        <span class="n">u_file</span><span class="p">,</span> <span class="n">hdr</span> <span class="o">=</span> <span class="n">_repair_postscript</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span>
+                              <span class="n">f</span><span class="s2">&quot;File &#39;</span><span class="si">{u_file.path}</span><span class="s2">&#39; did not have proper &quot;</span>
+                              <span class="n">f</span><span class="s2">&quot;Postscript header, repaired to &#39;</span><span class="si">{hdr}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Determine whether Postscript file contains preview, photoshop. fonts,</span>
+    <span class="c1"># or resource.</span>
+
+    <span class="c1"># Scan Postscript file</span>
+    <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Check Postscript: &#39;</span><span class="si">{u_file.name}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Check whether file contains &#39;\r\n&#39; sequence</span>
+    <span class="k">with</span> <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">,</span> <span class="n">buffering</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">,</span> \
+            <span class="n">mmap</span><span class="o">.</span><span class="n">mmap</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">access</span><span class="o">=</span><span class="n">mmap</span><span class="o">.</span><span class="n">ACCESS_READ</span><span class="p">)</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+
+        <span class="c1"># Search file for embedded preview markers.</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">PATTERN</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">results</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">match</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;BeginPhotoshop&#39;</span><span class="p">:</span>
+                    <span class="n">u_file</span> <span class="o">=</span> <span class="n">_strip_preview</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="n">PHOTOSHOP</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">match</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;BeginPreview&#39;</span><span class="p">:</span>
+                    <span class="n">u_file</span> <span class="o">=</span> <span class="n">_strip_preview</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="n">PREVIEW</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">match</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;Thumbnail:&#39;</span><span class="p">:</span>
+                    <span class="n">u_file</span> <span class="o">=</span> <span class="n">_strip_preview</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="n">THUMBNAIL</span><span class="p">)</span>
+
+    <span class="c1"># TODO: Scan Postscript file for embedded fonts - need seperate ticket</span>
+    <span class="c1"># We warn when user includes standard system fonts in their</span>
+    <span class="c1"># Postscript files.</span>
+    <span class="c1"># TODO: Check for TIFF (need another ticket to tackle this task)</span>
+    <span class="n">tiff_found</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Some search of file for TIFF markers</span>
+    <span class="k">if</span> <span class="n">tiff_found</span><span class="p">:</span>
+        <span class="n">u_file</span> <span class="o">=</span> <span class="n">_strip_tiff</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">u_file</span>
+
+
+<span class="n">CASE_1</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;^\%*\004\%\!&#39;</span><span class="p">)</span>
+<span class="n">CASE_2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;^\%\%\!&#39;</span><span class="p">)</span>
+<span class="n">CASE_3</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;.*(%!PS-Adobe-)&#39;</span><span class="p">)</span>
+<span class="n">HEADER_END</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;^%!&#39;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_repair_postscript</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+        <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">UploadedFile</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Repair simple corruptions at the beginning of Postscript file.</span>
+
+<span class="sd">    When repairs are made existing file is replacing with repaired file.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check first 10 lines of Postscript file for corrupted statements</span>
+    <span class="n">new_path</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{u_file.path}</span><span class="s1">.fixed&#39;</span>
+    <span class="n">new_file</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">new_path</span><span class="p">,</span> <span class="n">file_type</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">file_type</span><span class="p">)</span>
+
+    <span class="n">orig_type</span> <span class="o">=</span> <span class="n">u_file</span><span class="o">.</span><span class="n">file_type</span>
+    <span class="n">first_line</span> <span class="o">=</span> <span class="s2">&quot;%!</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+    <span class="k">with</span> <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">,</span> <span class="n">buffering</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">as</span> <span class="n">infile</span><span class="p">,</span> \
+            <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">new_file</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">,</span> <span class="n">buffering</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+
+        <span class="n">line</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">fixed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">stripped</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="c1"># Read each line</span>
+        <span class="k">for</span> <span class="n">line_no</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">infile</span><span class="p">):</span>
+            <span class="c1"># line_no = line_no + 1</span>
+
+            <span class="c1"># Attempt to identify problems and repair.</span>
+            <span class="k">if</span> <span class="n">CASE_1</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>  <span class="c1"># Special character 004.</span>
+                <span class="n">fixed</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">CASE_1</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">br</span><span class="s1">&#39;%!&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">message</span><span class="p">,</span>
+                                    <span class="s2">&quot;Removed carriage return from PS&quot;</span>
+                                    <span class="s2">&quot;header.&quot;</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">CASE_2</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>  <span class="c1"># Extra &#39;%&#39; in header.</span>
+                <span class="n">fixed</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">CASE_2</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">br</span><span class="s1">&#39;%!&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">message</span><span class="p">,</span>
+                                    <span class="s2">&quot;Removed extra &#39;%&#39; from PS header.&quot;</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">CASE_3</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>  <span class="c1"># Characters in front of PS tag.</span>
+                <span class="n">fixed</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">CASE_3</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">br</span><span class="s1">&#39;\1&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">message</span><span class="p">,</span>
+                                    <span class="s2">&quot;Removed extraneous characters before&quot;</span>
+                                    <span class="s2">&quot; PS header.&quot;</span><span class="p">])</span>
+
+            <span class="c1"># QUESTION: shouldn&#39;t this do more than break if line_no &gt; 10?</span>
+            <span class="k">if</span> <span class="n">HEADER_END</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="ow">or</span> <span class="n">line_no</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
+                <span class="c1"># We can stop searching. If we haven&#39;t made any fixes then</span>
+                <span class="c1"># quit.</span>
+                <span class="k">break</span>
+
+            <span class="c1"># Keep track of what we are stripping off the front</span>
+            <span class="n">stripped</span> <span class="o">=</span> <span class="n">stripped</span> <span class="o">+</span> <span class="n">line</span>
+
+        <span class="c1"># Done with initial cleanup</span>
+        <span class="k">if</span> <span class="n">HEADER_END</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">stripped</span><span class="p">:</span>    <span class="c1"># Save stripped content</span>
+                <span class="n">cleaned_filepath</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{u_file.path}</span><span class="s1">.cleaned&#39;</span>
+                <span class="n">cleaned_file</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">cleaned_filepath</span><span class="p">,</span>
+                                                <span class="n">file_type</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">file_type</span><span class="p">)</span>
+                <span class="k">with</span> <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">cleaned_file</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">,</span> <span class="n">buffering</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> \
+                        <span class="k">as</span> <span class="n">cleanfile</span><span class="p">:</span>
+                    <span class="n">cleanfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">stripped</span><span class="p">)</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">message</span><span class="p">,</span>
+                                    <span class="s2">&quot;Removed extraneous lines in front of&quot;</span>
+                                    <span class="s2">&quot; PS header.&quot;</span><span class="p">])</span>
+
+            <span class="c1"># We are at start of Postscript file.</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+            <span class="n">first_line</span> <span class="o">=</span> <span class="n">line</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">infile</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>   <span class="c1"># Reset to beginnng of broken file.</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;%!</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Otherwise insert start indicator.</span>
+
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">infile</span><span class="p">:</span>     <span class="c1"># Write out the rest of file</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">fixed</span><span class="p">:</span>       <span class="c1"># Move repaired file into place.</span>
+        <span class="n">new_file</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">new_file</span><span class="p">)</span>
+
+        <span class="c1"># Check that type of file has changed to &#39;postscript&#39; (new) This</span>
+        <span class="c1"># also sets file_type correctly for subsequent processing.</span>
+        <span class="n">InferFileType</span><span class="p">()</span><span class="o">.</span><span class="n">check_UNKNOWN</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">new_file</span><span class="p">)</span>
+        <span class="n">check_type</span> <span class="o">=</span> <span class="n">new_file</span><span class="o">.</span><span class="n">file_type</span>
+
+        <span class="k">if</span> <span class="n">orig_type</span> <span class="o">!=</span> <span class="n">check_type</span> <span class="ow">and</span> <span class="n">check_type</span> <span class="o">==</span> <span class="n">FileType</span><span class="o">.</span><span class="n">POSTSCRIPT</span><span class="p">:</span>
+            <span class="n">lm</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;Repaired Postscript file &#39;</span><span class="si">{new_file.name}</span><span class="s2">&#39;: </span><span class="si">{message}</span><span class="s2">&#39;&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lm</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s2">&quot;Attempted repairs on Postscript file&quot;</span>
+                  <span class="n">f</span><span class="s2">&quot; &#39;</span><span class="si">{new_file.name}</span><span class="s2">&#39;: </span><span class="si">{message}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+
+        <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">new_file</span><span class="p">,</span> <span class="n">lm</span><span class="p">)</span>   <span class="c1"># Make note of the repair.</span>
+        <span class="k">return</span> <span class="n">new_file</span><span class="p">,</span> <span class="n">first_line</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">75</span><span class="p">]</span>
+
+    <span class="n">workspace</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">new_file</span><span class="p">)</span>  <span class="c1"># Cleanup.</span>
+    <span class="k">return</span> <span class="n">u_file</span><span class="p">,</span> <span class="n">first_line</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">75</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">_strip_preview</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+                   <span class="n">what_to_strip</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Remove embedded preview from Postscript file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+
+<span class="sd">    what_to_strip : str</span>
+<span class="sd">        The type of inclusion that we are seeking to remove [Thumbnail,</span>
+<span class="sd">        Preview, Photoshop]</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Strip embedded &#39;</span><span class="si">{what_to_strip}</span><span class="s2">&#39; from file&quot;</span>
+                  <span class="n">f</span><span class="s2">&quot; &#39;</span><span class="si">{u_file.name}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Set start and end delimiters of preview.</span>
+    <span class="c1"># TODO: we could even define these earlier, outside method scope.</span>
+    <span class="k">if</span> <span class="n">what_to_strip</span> <span class="o">==</span> <span class="n">PHOTOSHOP</span><span class="p">:</span>
+        <span class="n">start_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;^%BeginPhotoshop&#39;</span><span class="p">)</span>
+        <span class="n">end_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;^</span><span class="si">%E</span><span class="s1">ndPhotoshop&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">what_to_strip</span> <span class="o">==</span> <span class="n">PREVIEW</span><span class="p">:</span>
+        <span class="n">start_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;^</span><span class="si">%%</span><span class="s1">BeginPreview&#39;</span><span class="p">)</span>
+        <span class="n">end_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;^</span><span class="si">%%</span><span class="s1">EndPreview&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">what_to_strip</span> <span class="o">==</span> <span class="n">THUMBNAIL</span><span class="p">:</span>
+        <span class="n">start_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;Thumbnail&#39;</span><span class="p">)</span>
+        <span class="c1"># Removed the ``^`` from ``^%%EndData``, since the examples have</span>
+        <span class="c1"># %%EndData inline.</span>
+        <span class="n">end_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;</span><span class="si">%%</span><span class="s1">EndData&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Open a file to store stripped contents</span>
+    <span class="n">new_path</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{u_file.path}</span><span class="s1">.stripped&#39;</span>
+    <span class="n">new_file</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">new_path</span><span class="p">,</span> <span class="n">file_type</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">file_type</span><span class="p">)</span>
+
+    <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;File: </span><span class="si">{u_file.name}</span><span class="s2"> in dir </span><span class="si">{u_file.dir}</span><span class="s2"> save to &quot;</span>
+                  <span class="n">f</span><span class="s2">&quot;</span><span class="si">{new_file.name}</span><span class="s2"> at </span><span class="si">{u_file.path}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="c1"># Default is to retain all lines</span>
+    <span class="n">retain</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">strip_warning</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+    <span class="k">with</span> <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">infile</span><span class="p">,</span> \
+            <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">new_file</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+
+        <span class="k">for</span> <span class="n">line_no</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">infile</span><span class="p">):</span>
+            <span class="c1"># Check line for start pattern</span>
+            <span class="k">if</span> <span class="n">retain</span> <span class="ow">and</span> <span class="n">start_re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="n">strip_warning</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">f</span><span class="s2">&quot;Unnecessary </span><span class="si">{what_to_strip}</span><span class="s2"> removed from&quot;</span>
+                    <span class="n">f</span><span class="s2">&quot; &#39;</span><span class="si">{u_file.name}</span><span class="s2">&#39; from line {line_no + 1}&quot;</span>
+                <span class="p">)</span>
+                <span class="n">retain</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="k">if</span> <span class="n">retain</span><span class="p">:</span>
+                <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+            <span class="c1"># Check for end pattern</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">retain</span> <span class="ow">and</span> <span class="n">end_re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="n">strip_warning</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">strip_warning</span><span class="p">,</span>
+                                          <span class="n">f</span><span class="s2">&quot;to line {line_no + 1},&quot;</span><span class="p">])</span>
+                <span class="n">retain</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="c1"># Handle bug in certain files</span>
+                <span class="c1"># AI bug %%EndData^M%%EndComments</span>
+                <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;.*</span><span class="se">\r</span><span class="s1">%/%&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+                    <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Finished stripping </span><span class="si">%s</span><span class="s1"> from </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">what_to_strip</span><span class="p">,</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="c1"># Generate some warnings</span>
+    <span class="k">if</span> <span class="n">retain</span> <span class="ow">and</span> <span class="n">strip_warning</span><span class="p">:</span>
+        <span class="n">orig_size</span> <span class="o">=</span> <span class="n">u_file</span><span class="o">.</span><span class="n">size_bytes</span>  <span class="c1"># os.path.getsize(original_filepath)</span>
+        <span class="n">strip_size</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">get_size_bytes</span><span class="p">(</span><span class="n">new_file</span><span class="p">)</span>
+        <span class="n">new_file</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">new_file</span><span class="p">)</span>
+
+        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s2">&quot;reduced from </span><span class="si">{orig_size}</span><span class="s2"> bytes to </span><span class="si">{strip_size}</span><span class="s2"> bytes &quot;</span>
+               <span class="s2">&quot;(see http://arxiv.org/help/sizes)&quot;</span><span class="p">)</span>
+        <span class="n">strip_warning</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">strip_warning</span><span class="p">,</span> <span class="n">msg</span><span class="p">])</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">new_file</span><span class="p">,</span> <span class="n">strip_warning</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_file</span>
+
+    <span class="k">if</span> <span class="n">strip_warning</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;</span><span class="si">{u_file.name}</span><span class="s2"> had unpaired </span><span class="si">{end_re.pattern}</span><span class="s2">&quot;</span>
+        <span class="n">strip_warning</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">strip_warning</span><span class="p">,</span> <span class="n">msg</span><span class="p">])</span>
+    <span class="c1"># Removed failed attempt to strip Postscript</span>
+    <span class="n">workspace</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">new_file</span><span class="p">)</span>
+    <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">strip_warning</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">u_file</span>
+
+
+<span class="k">def</span> <span class="nf">_strip_tiff</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Strip non-compliant embedded TIFF bitmaps from Postscript file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;checking &#39;</span><span class="si">{u_file.path}</span><span class="s2">&#39; for TIFF&quot;</span><span class="p">)</span>
+    <span class="c1"># Check for embedded TIFF and truncate file if we find one.</span>
+    <span class="c1"># Adobe_level2_AI5 / terminate get exec</span>
+    <span class="c1"># %%EOF</span>
+    <span class="c1"># II *???</span>
+
+    <span class="k">with</span> <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s1">&#39;rb+&#39;</span><span class="p">,</span> <span class="n">buffering</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">as</span> <span class="n">infile</span><span class="p">:</span>
+        <span class="n">lastnw</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">infile</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">EOF_MARKER</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>     <span class="c1"># Find Postscript EOF</span>
+                <span class="n">pos</span> <span class="o">=</span> <span class="n">infile</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+                <span class="n">next_bytes</span> <span class="o">=</span> <span class="n">infile</span><span class="o">.</span><span class="n">readline</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+
+                <span class="c1"># Locate start of TIFF</span>
+                <span class="k">if</span> <span class="n">LB_MARKER</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">next_bytes</span><span class="p">):</span>
+                    <span class="n">end</span> <span class="o">=</span> <span class="n">pos</span>
+                <span class="k">break</span>   <span class="c1"># all set, we are done</span>
+
+            <span class="c1"># Find TIFF marker</span>
+            <span class="k">if</span> <span class="n">LB_MARKER</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="n">offset</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="n">end</span> <span class="o">=</span> <span class="n">infile</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span> <span class="o">-</span> <span class="n">offset</span>
+                <span class="n">infile</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+                <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;No </span><span class="si">%%</span><span class="s2">EOF, but truncate at </span><span class="si">{end}</span><span class="s2"> bytes, &quot;</span>
+                              <span class="n">f</span><span class="s2">&quot;lastnonwhitespace was </span><span class="si">{lastnw}</span><span class="s2"> untruncated&quot;</span>
+                              <span class="n">f</span><span class="s2">&quot; version moved to $scratch_file&quot;</span><span class="p">)</span>
+
+            <span class="c1"># In the exception case, where Postscript %%EOF marker is not</span>
+            <span class="c1"># detected before we detect TIFF bitmap, we will log last line</span>
+            <span class="c1"># containing stuff before TIFF bitmap. TIFF is stripped.</span>
+            <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">rb</span><span class="s1">&#39;\S&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+                <span class="n">lastnw</span> <span class="o">=</span> <span class="n">line</span>
+
+        <span class="k">if</span> <span class="n">end</span><span class="p">:</span>     <span class="c1"># Truncate file after EOF marker</span>
+            <span class="n">infile</span><span class="o">.</span><span class="n">truncate</span><span class="p">(</span><span class="n">end</span><span class="p">)</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                  <span class="n">f</span><span class="s2">&quot;Non-compliant attached TIFF removed&quot;</span>
+                                  <span class="n">f</span><span class="s2">&quot; from &#39;</span><span class="si">{file_obj.name}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+
+
+<span class="c1"># TODO: this is a pretty big method; could use some refactoring.</span>
+<span class="c1"># -- Erick 2019-06-07</span>
+<span class="k">def</span> <span class="nf">_repair_dos_eps</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                    <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">UploadedFile</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Look for leading/trailing TIFF bitmaps and remove them.</span>
+
+<span class="sd">    ADD MORE HERE</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    file_obj : File</span>
+<span class="sd">        File we are repairing.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        String message indicates that something was done and message</span>
+<span class="sd">        details what was done.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    DOS EPS Binary File Header</span>
+
+<span class="sd">    0-3   Must be hex C5D0D3C6 (byte 0=C5).</span>
+<span class="sd">    4-7   Byte position in file for start of PostScript language code</span>
+<span class="sd">          section.</span>
+<span class="sd">    8-11  Byte length of PostScript language section</span>
+<span class="sd">    12-15 Byte position in file for start of Metafile screen</span>
+<span class="sd">          representation.</span>
+<span class="sd">    16-19 Byte length of Metafile section (PSize).</span>
+<span class="sd">    20-23 Byte position of TIFF representation.</span>
+<span class="sd">    24-27 Byte length of TIFF section.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s1">&#39;r+b&#39;</span><span class="p">,</span> <span class="n">buffering</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">as</span> <span class="n">infile</span><span class="p">:</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>   <span class="c1"># Read past ESP file marker (C5D0D3C6)</span>
+
+        <span class="c1"># Read header bytes we are interested in.</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="n">infile</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">24</span><span class="p">)</span>
+        <span class="n">pb</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;24s&#39;</span><span class="p">,</span> <span class="n">header</span><span class="p">)</span>
+
+        <span class="c1"># Extract offsets/lengths for Postscript and TIFF.</span>
+        <span class="n">psoffset</span><span class="p">,</span> <span class="n">pslength</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">tiffoffset</span><span class="p">,</span> <span class="n">tifflength</span> \
+            <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;6i&#39;</span><span class="p">,</span> <span class="n">pb</span><span class="p">)</span>
+
+        <span class="c1">#(f&quot;psoffset:{psoffset} len:{pslength} tiffoffset:{tiffoffset}&quot;</span>
+        <span class="c1"># f&quot;len:{tifflength}&quot;)</span>
+
+        <span class="k">if</span> <span class="n">psoffset</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">pslength</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">tiffoffset</span> <span class="o">&lt;=</span> <span class="mi">0</span> \
+                <span class="ow">or</span> <span class="n">tifflength</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># Encapsulated Postscript does not contain embedded TIFF.</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Encapsulated Postscript does not contain embedded&#39;</span>
+                         <span class="s1">&#39; TIFF.&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">u_file</span><span class="p">,</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="c1"># Extract Postscript.</span>
+        <span class="k">if</span> <span class="n">psoffset</span> <span class="o">&gt;</span> <span class="n">tiffoffset</span><span class="p">:</span>
+            <span class="c1"># Postscript follows TIFF so we will seek to Postscript and</span>
+            <span class="c1"># extract (eliminate header and TIFF).</span>
+            <span class="n">infile</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">psoffset</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>    <span class="c1"># Seek to postscript.</span>
+            <span class="n">first_line</span> <span class="o">=</span> <span class="n">infile</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>  <span class="c1"># Look for start of Postscript.</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">PS_BEGIN</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">first_line</span><span class="p">):</span>
+                <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;</span><span class="si">{u_file.path}</span><span class="s2">: Couldn&#39;t find &quot;</span>
+                              <span class="n">f</span><span class="s2">&quot;beginning of Postscript section&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">u_file</span><span class="p">,</span> <span class="s2">&quot;&quot;</span>
+
+            <span class="n">new_path</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{u_file.path}</span><span class="s1">.fixed&#39;</span>
+            <span class="n">new_file</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">new_path</span><span class="p">,</span>
+                                        <span class="n">file_type</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">file_type</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">new_file</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">,</span> <span class="n">buffering</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+                <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">first_line</span><span class="p">)</span>   <span class="c1"># write out first line</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">infile</span><span class="p">:</span>
+                    <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+            <span class="c1"># Move repaired file into place.</span>
+            <span class="n">new_file</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">new_file</span><span class="p">)</span>
+
+            <span class="c1"># Indicate we stripped header and leading TIFF</span>
+            <span class="k">return</span> <span class="n">new_file</span><span class="p">,</span> <span class="n">f</span><span class="s2">&quot;stripped </span><span class="si">{psoffset}</span><span class="s2"> leading bytes&quot;</span>
+
+        <span class="k">elif</span> <span class="n">psoffset</span> <span class="o">&lt;</span> <span class="n">tiffoffset</span><span class="p">:</span>
+            <span class="c1"># truncate the trailing TIFF image</span>
+            <span class="c1"># strip off eps header leaving Postscript</span>
+            <span class="c1"># save a copy of original file before we hack it to death</span>
+            <span class="n">backup_path</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{u_file.path}</span><span class="s1">.original&#39;</span>
+            <span class="n">backup_file</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">backup_path</span><span class="p">)</span>
+
+            <span class="c1"># Let&#39;s get rid of TIFF first</span>
+            <span class="n">infile</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">tiffoffset</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="n">infile</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+            <span class="n">infile</span><span class="o">.</span><span class="n">truncate</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>     <span class="c1"># truncate TIFF</span>
+            <span class="n">infile</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">psoffset</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>    <span class="c1"># Seek to postscript</span>
+            <span class="n">first_line</span> <span class="o">=</span> <span class="n">infile</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>  <span class="c1"># Look for start of Postscript.</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">PS_BEGIN</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">first_line</span><span class="p">):</span>
+                <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;</span><span class="si">{u_file.path}</span><span class="s2">: Couldn&#39;t find beginning of&quot;</span>
+                              <span class="s2">&quot; Postscript section&quot;</span><span class="p">)</span>
+
+                <span class="n">workspace</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">backup_file</span><span class="p">)</span>  <span class="c1"># Delete backup file.</span>
+                <span class="k">return</span> <span class="n">u_file</span><span class="p">,</span> <span class="s2">&quot;&quot;</span>
+
+            <span class="n">fixed_file</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{u_file.path}</span><span class="s1">.fixed&#39;</span><span class="p">,</span>
+                                          <span class="n">file_type</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">file_type</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">fixed_file</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">,</span> <span class="n">buffering</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+                <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">first_line</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">infile</span><span class="p">:</span>
+                    <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+            <span class="c1"># Move repaired file into place.</span>
+            <span class="n">fixed_file</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">fixed_file</span><span class="p">)</span>
+
+            <span class="c1"># Add warning about backup file we created.</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s2">&quot;Modified file </span><span class="si">{u_file.public_filepath}</span><span class="s2">.&quot;</span>
+                   <span class="n">f</span><span class="s2">&quot;Saving original to </span><span class="si">{backup_file.public_filepath}</span><span class="s2">.&quot;</span>
+                   <span class="n">f</span><span class="s2">&quot;You may delete this file.&quot;</span><span class="p">)</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">backup_file</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
+
+            <span class="c1"># Indicate we stripped header and trailing TIFF.</span>
+            <span class="n">ret_msg</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s2">&quot;stripped trailing tiff at </span><span class="si">{tiffoffset}</span><span class="s2"> bytes &quot;</span>
+                       <span class="n">f</span><span class="s2">&quot;and </span><span class="si">{psoffset}</span><span class="s2"> leading bytes&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">fixed_file</span><span class="p">,</span> <span class="n">ret_msg</span>
+
+
+<span class="c1"># TODO: implement this!</span>
+<span class="k">def</span> <span class="nf">_extract_uu</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Extract uuencode content from file.&quot;&quot;&quot;</span>
+    <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Looking for uu attachment in </span><span class="si">{u_file.name}</span><span class="s1"> of type&#39;</span>
+                  <span class="n">f</span><span class="s1">&#39; </span><span class="si">{u_file.file_type.value}</span><span class="s1">.&#39;</span><span class="p">)</span>
+    <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;I&#39;m sorry Dave I&#39;m afraid I can&#39;t do that. uu extract not&quot;</span>
+                  <span class="s2">&quot; implemented YET.&quot;</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  <li><a href="../check.html">filemanager.process.check</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

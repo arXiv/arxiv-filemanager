@@ -1,0 +1,334 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.services.tests.test_storage module &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="filemanager.services.storage module" href="filemanager.services.storage.html" />
+    <link rel="prev" title="filemanager.services.tests.test_db_available module" href="filemanager.services.tests.test_db_available.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-filemanager.services.tests.test_storage">
+<span id="filemanager-services-tests-test-storage-module"></span><h1>filemanager.services.tests.test_storage module<a class="headerlink" href="#module-filemanager.services.tests.test_storage" title="Permalink to this headline">¶</a></h1>
+<p>Tests for <a class="reference internal" href="filemanager.domain.storage.html#module-filemanager.domain.storage" title="filemanager.domain.storage"><code class="xref py py-mod docutils literal notranslate"><span class="pre">storage</span></code></a>.</p>
+<dl class="class">
+<dt id="filemanager.services.tests.test_storage.TestQuarantineStorage">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.services.tests.test_storage.</code><code class="sig-name descname">TestQuarantineStorage</code><span class="sig-paren">(</span><em class="sig-param">methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestQuarantineStorage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestQuarantineStorage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Test behavior of a <a class="reference internal" href="filemanager.services.storage.html#filemanager.services.storage.QuarantineStorageAdapter" title="filemanager.services.storage.QuarantineStorageAdapter"><code class="xref py py-class docutils literal notranslate"><span class="pre">QuarantineStorageAdapter</span></code></a>.</p>
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestQuarantineStorage.setUp">
+<code class="sig-name descname">setUp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestQuarantineStorage.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestQuarantineStorage.setUp" title="Permalink to this definition">¶</a></dt>
+<dd><p>We have a <a class="reference internal" href="filemanager.services.storage.html#filemanager.services.storage.QuarantineStorageAdapter" title="filemanager.services.storage.QuarantineStorageAdapter"><code class="xref py py-class docutils literal notranslate"><span class="pre">QuarantineStorageAdapter</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestQuarantineStorage.test_cmp">
+<code class="sig-name descname">test_cmp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestQuarantineStorage.test_cmp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestQuarantineStorage.test_cmp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare two files.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestQuarantineStorage.test_copy_file">
+<code class="sig-name descname">test_copy_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestQuarantineStorage.test_copy_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestQuarantineStorage.test_copy_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy a file to a new path.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestQuarantineStorage.test_create_file">
+<code class="sig-name descname">test_create_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestQuarantineStorage.test_create_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestQuarantineStorage.test_create_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new (empty) file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestQuarantineStorage.test_create_file_without_parent_directories">
+<code class="sig-name descname">test_create_file_without_parent_directories</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestQuarantineStorage.test_create_file_without_parent_directories"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestQuarantineStorage.test_create_file_without_parent_directories" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new (empty) file in a non-existant directory.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestQuarantineStorage.test_delete_a_directory">
+<code class="sig-name descname">test_delete_a_directory</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestQuarantineStorage.test_delete_a_directory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestQuarantineStorage.test_delete_a_directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a directory.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestQuarantineStorage.test_delete_a_file">
+<code class="sig-name descname">test_delete_a_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestQuarantineStorage.test_delete_a_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestQuarantineStorage.test_delete_a_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestQuarantineStorage.test_getsize">
+<code class="sig-name descname">test_getsize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestQuarantineStorage.test_getsize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestQuarantineStorage.test_getsize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the size in bytes of a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestQuarantineStorage.test_move_file">
+<code class="sig-name descname">test_move_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestQuarantineStorage.test_move_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestQuarantineStorage.test_move_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move a file to a new path.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestQuarantineStorage.test_open">
+<code class="sig-name descname">test_open</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestQuarantineStorage.test_open"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestQuarantineStorage.test_open" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a pointer to a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestQuarantineStorage.test_persist">
+<code class="sig-name descname">test_persist</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestQuarantineStorage.test_persist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestQuarantineStorage.test_persist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Persist a file from quarantine to permanent storage.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestQuarantineStorage.test_persist_directory">
+<code class="sig-name descname">test_persist_directory</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestQuarantineStorage.test_persist_directory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestQuarantineStorage.test_persist_directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Persist a directory from quarantine to permanent storage.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.services.tests.test_storage.TestSimpleStorage">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.services.tests.test_storage.</code><code class="sig-name descname">TestSimpleStorage</code><span class="sig-paren">(</span><em class="sig-param">methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestSimpleStorage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestSimpleStorage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Test behavior of a <a class="reference internal" href="filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter" title="filemanager.services.storage.SimpleStorageAdapter"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimpleStorageAdapter</span></code></a>.</p>
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestSimpleStorage.setUp">
+<code class="sig-name descname">setUp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestSimpleStorage.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestSimpleStorage.setUp" title="Permalink to this definition">¶</a></dt>
+<dd><p>We have a <a class="reference internal" href="filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter" title="filemanager.services.storage.SimpleStorageAdapter"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimpleStorageAdapter</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestSimpleStorage.test_cmp">
+<code class="sig-name descname">test_cmp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestSimpleStorage.test_cmp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestSimpleStorage.test_cmp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare two files.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestSimpleStorage.test_copy_file">
+<code class="sig-name descname">test_copy_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestSimpleStorage.test_copy_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestSimpleStorage.test_copy_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy a file to a new path.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestSimpleStorage.test_create_file">
+<code class="sig-name descname">test_create_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestSimpleStorage.test_create_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestSimpleStorage.test_create_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new (empty) file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestSimpleStorage.test_create_file_without_parent_directories">
+<code class="sig-name descname">test_create_file_without_parent_directories</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestSimpleStorage.test_create_file_without_parent_directories"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestSimpleStorage.test_create_file_without_parent_directories" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new (empty) file in a non-existant directory.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestSimpleStorage.test_delete_a_directory">
+<code class="sig-name descname">test_delete_a_directory</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestSimpleStorage.test_delete_a_directory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestSimpleStorage.test_delete_a_directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a directory.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestSimpleStorage.test_delete_a_file">
+<code class="sig-name descname">test_delete_a_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestSimpleStorage.test_delete_a_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestSimpleStorage.test_delete_a_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestSimpleStorage.test_getsize">
+<code class="sig-name descname">test_getsize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestSimpleStorage.test_getsize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestSimpleStorage.test_getsize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the size in bytes of a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestSimpleStorage.test_move_file">
+<code class="sig-name descname">test_move_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestSimpleStorage.test_move_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestSimpleStorage.test_move_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move a file to a new path.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestSimpleStorage.test_open">
+<code class="sig-name descname">test_open</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestSimpleStorage.test_open"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestSimpleStorage.test_open" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a pointer to a file.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.services.tests.test_storage.TestStorageWithWorkspace">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.services.tests.test_storage.</code><code class="sig-name descname">TestStorageWithWorkspace</code><span class="sig-paren">(</span><em class="sig-param">methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestStorageWithWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestStorageWithWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Test using a SimpleStorageAdapter with an UploadWorkspace.</p>
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestStorageWithWorkspace.setUp">
+<code class="sig-name descname">setUp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestStorageWithWorkspace.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestStorageWithWorkspace.setUp" title="Permalink to this definition">¶</a></dt>
+<dd><p>We have a <a class="reference internal" href="filemanager.services.storage.html#filemanager.services.storage.SimpleStorageAdapter" title="filemanager.services.storage.SimpleStorageAdapter"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimpleStorageAdapter</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestStorageWithWorkspace.tearDown">
+<code class="sig-name descname">tearDown</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestStorageWithWorkspace.tearDown"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestStorageWithWorkspace.tearDown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook method for deconstructing the test fixture after testing it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_ancillary_file_path">
+<code class="sig-name descname">test_get_ancillary_file_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestStorageWithWorkspace.test_get_ancillary_file_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_ancillary_file_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Can get a relative path for an ancillary <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_ancillary_path">
+<code class="sig-name descname">test_get_ancillary_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestStorageWithWorkspace.test_get_ancillary_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_ancillary_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ancillary path is based on source path and class-specific prefix.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_full_path">
+<code class="sig-name descname">test_get_full_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestStorageWithWorkspace.test_get_full_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_full_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Can get a full path to a file on disk, using a storage adapter.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_path">
+<code class="sig-name descname">test_get_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestStorageWithWorkspace.test_get_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Can get a relative path for an <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_paths">
+<code class="sig-name descname">test_get_paths</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestStorageWithWorkspace.test_get_paths"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_paths" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_removed_file_path">
+<code class="sig-name descname">test_get_removed_file_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestStorageWithWorkspace.test_get_removed_file_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_removed_file_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Can get a relative path for a removed <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_removed_path">
+<code class="sig-name descname">test_get_removed_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestStorageWithWorkspace.test_get_removed_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_removed_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removed path is based on the upload ID and class-specific prefix.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_source_path">
+<code class="sig-name descname">test_get_source_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestStorageWithWorkspace.test_get_source_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_source_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Source path is based on the upload ID and class-specific prefix.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">filemanager</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="filemanager.html">filemanager package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">filemanager</a><ul>
+  <li><a href="filemanager.html">filemanager package</a><ul>
+  <li><a href="filemanager.services.html">filemanager.services package</a><ul>
+  <li><a href="filemanager.services.tests.html">filemanager.services.tests package</a><ul>
+      <li>Previous: <a href="filemanager.services.tests.test_db_available.html" title="previous chapter">filemanager.services.tests.test_db_available module</a></li>
+      <li>Next: <a href="filemanager.services.storage.html" title="next chapter">filemanager.services.storage module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/api/filemanager.services.tests.test_storage.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

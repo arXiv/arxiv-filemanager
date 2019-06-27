@@ -1,0 +1,148 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.controllers.tests.test_status &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.controllers.tests.test_status</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Tests for :mod:`.controllers.status`.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">unittest</span> <span class="k">import</span> <span class="n">TestCase</span><span class="p">,</span> <span class="n">mock</span>
+<span class="kn">from</span> <span class="nn">http</span> <span class="k">import</span> <span class="n">HTTPStatus</span>
+
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">status</span>
+
+
+<div class="viewcode-block" id="TestCheckServiceStatus"><a class="viewcode-back" href="../../../../api/filemanager.controllers.tests.test_status.html#filemanager.controllers.tests.test_status.TestCheckServiceStatus">[docs]</a><span class="k">class</span> <span class="nc">TestCheckServiceStatus</span><span class="p">(</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Tests for :func:`.controllers.status.service_status`.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TestCheckServiceStatus.test_all_ok"><a class="viewcode-back" href="../../../../api/filemanager.controllers.tests.test_status.html#filemanager.controllers.tests.test_status.TestCheckServiceStatus.test_all_ok">[docs]</a>    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{status.__name__}</span><span class="s1">.database.is_available&#39;</span><span class="p">,</span>
+                <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">return_value</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="c1"># @mock.patch(f&#39;{status.__name__}.filesystem.is_available&#39;,</span>
+    <span class="c1">#             mock.MagicMock(return_value=True))</span>
+    <span class="k">def</span> <span class="nf">test_all_ok</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;All dependencies are available.&quot;&quot;&quot;</span>
+        <span class="n">response_data</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">service_status</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">HTTPStatus</span><span class="o">.</span><span class="n">OK</span><span class="p">,</span> <span class="s1">&#39;Returns 200 OK&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">response_data</span><span class="p">[</span><span class="s1">&#39;database&#39;</span><span class="p">],</span> <span class="s1">&#39;Database reports OK&#39;</span><span class="p">)</span></div>
+        <span class="c1"># self.assertTrue(response_data[&#39;filesystem&#39;], &#39;Filesystem reports OK&#39;)</span>
+
+<div class="viewcode-block" id="TestCheckServiceStatus.test_database_not_available"><a class="viewcode-back" href="../../../../api/filemanager.controllers.tests.test_status.html#filemanager.controllers.tests.test_status.TestCheckServiceStatus.test_database_not_available">[docs]</a>    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{status.__name__}</span><span class="s1">.database.is_available&#39;</span><span class="p">,</span>
+                <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">return_value</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+    <span class="c1"># @mock.patch(f&#39;{status.__name__}.filesystem.is_available&#39;,</span>
+    <span class="c1">#             mock.MagicMock(return_value=True))</span>
+    <span class="k">def</span> <span class="nf">test_database_not_available</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Database is unavailable.&quot;&quot;&quot;</span>
+        <span class="n">response_data</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">service_status</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">HTTPStatus</span><span class="o">.</span><span class="n">SERVICE_UNAVAILABLE</span><span class="p">,</span>
+                         <span class="s1">&#39;Returns 503 Service Unavailable&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="n">response_data</span><span class="p">[</span><span class="s1">&#39;database&#39;</span><span class="p">],</span> <span class="s1">&#39;Database reports not OK&#39;</span><span class="p">)</span></div></div>
+        <span class="c1"># self.assertTrue(response_data[&#39;filesystem&#39;], &#39;Filesystem reports OK&#39;)</span>
+
+    <span class="c1"># @mock.patch(f&#39;{status.__name__}.database.is_available&#39;,</span>
+    <span class="c1">#             mock.MagicMock(return_value=True))</span>
+    <span class="c1"># # @mock.patch(f&#39;{status.__name__}.filesystem.is_available&#39;,</span>
+    <span class="c1"># #             mock.MagicMock(return_value=False))</span>
+    <span class="c1"># def test_filesystem_not_available(self):</span>
+    <span class="c1">#     &quot;&quot;&quot;Database is unavailable.&quot;&quot;&quot;</span>
+    <span class="c1">#     response_data, code, headers = status.service_status()</span>
+    <span class="c1">#     self.assertEqual(code, HTTPStatus.SERVICE_UNAVAILABLE,</span>
+    <span class="c1">#                      &#39;Returns 503 Service Unavailable&#39;)</span>
+    <span class="c1">#     self.assertTrue(response_data[&#39;database&#39;], &#39;Database reports OK&#39;)</span>
+    <span class="c1">#     # self.assertFalse(response_data[&#39;filesystem&#39;], &#39;Filesystem not OK&#39;)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

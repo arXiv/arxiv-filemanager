@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.config module &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="filemanager.factory module" href="filemanager.factory.html" />
+    <link rel="prev" title="filemanager.celeryconfig module" href="filemanager.celeryconfig.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-filemanager.config">
+<span id="filemanager-config-module"></span><h1>filemanager.config module<a class="headerlink" href="#module-filemanager.config" title="Permalink to this headline">¶</a></h1>
+<p>Flask configuration.</p>
+<dl class="data">
+<dt id="filemanager.config.KUBE_TOKEN">
+<code class="sig-prename descclassname">filemanager.config.</code><code class="sig-name descname">KUBE_TOKEN</code><em class="property"> = 'fookubetoken'</em><a class="headerlink" href="#filemanager.config.KUBE_TOKEN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Service account token for authenticating with Vault. May be a file path.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="filemanager.config.NAMESPACE">
+<code class="sig-prename descclassname">filemanager.config.</code><code class="sig-name descname">NAMESPACE</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.config.NAMESPACE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Namespace in which this service is deployed; to qualify keys for secrets.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="filemanager.config.STORAGE_BACKEND">
+<code class="sig-prename descclassname">filemanager.config.</code><code class="sig-name descname">STORAGE_BACKEND</code><em class="property"> = 'simple'</em><a class="headerlink" href="#filemanager.config.STORAGE_BACKEND" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the storage backend to use. See <code class="xref py py-mod docutils literal notranslate"><span class="pre">process.storage</span></code>.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="filemanager.config.VAULT_CERT">
+<code class="sig-prename descclassname">filemanager.config.</code><code class="sig-name descname">VAULT_CERT</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.config.VAULT_CERT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Path to CA certificate for TLS verification when talking to Vault.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="filemanager.config.VAULT_ENABLED">
+<code class="sig-prename descclassname">filemanager.config.</code><code class="sig-name descname">VAULT_ENABLED</code><em class="property"> = False</em><a class="headerlink" href="#filemanager.config.VAULT_ENABLED" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable/disable secret retrieval from Vault.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="filemanager.config.VAULT_HOST">
+<code class="sig-prename descclassname">filemanager.config.</code><code class="sig-name descname">VAULT_HOST</code><em class="property"> = 'foovaulthost'</em><a class="headerlink" href="#filemanager.config.VAULT_HOST" title="Permalink to this definition">¶</a></dt>
+<dd><p>Vault hostname/address.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="filemanager.config.VAULT_PORT">
+<code class="sig-prename descclassname">filemanager.config.</code><code class="sig-name descname">VAULT_PORT</code><em class="property"> = '1234'</em><a class="headerlink" href="#filemanager.config.VAULT_PORT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Vault API port.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="filemanager.config.VAULT_REQUESTS">
+<code class="sig-prename descclassname">filemanager.config.</code><code class="sig-name descname">VAULT_REQUESTS</code><em class="property"> = [{'type': 'generic', 'name': 'JWT_SECRET', 'mount_point': 'secret-None/', 'path': 'jwt', 'key': 'jwt-secret', 'minimum_ttl': 60}, {'type': 'database', 'engine': 'mysql+mysqldb', 'host': 'localhost', 'database': 'filemanager', 'params': 'charset=utf8mb4', 'port': '3306', 'name': 'SQLALCHEMY_DATABASE_URI', 'mount_point': 'database-None/', 'role': 'filemanager-write'}]</em><a class="headerlink" href="#filemanager.config.VAULT_REQUESTS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Requests for Vault secrets.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="filemanager.config.VAULT_ROLE">
+<code class="sig-prename descclassname">filemanager.config.</code><code class="sig-name descname">VAULT_ROLE</code><em class="property"> = 'filemanager'</em><a class="headerlink" href="#filemanager.config.VAULT_ROLE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Vault role linked to this application’s service account.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="filemanager.config.VAULT_SCHEME">
+<code class="sig-prename descclassname">filemanager.config.</code><code class="sig-name descname">VAULT_SCHEME</code><em class="property"> = 'https'</em><a class="headerlink" href="#filemanager.config.VAULT_SCHEME" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default is <code class="docutils literal notranslate"><span class="pre">https</span></code>.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">filemanager</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="filemanager.html">filemanager package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">filemanager</a><ul>
+  <li><a href="filemanager.html">filemanager package</a><ul>
+      <li>Previous: <a href="filemanager.celeryconfig.html" title="previous chapter">filemanager.celeryconfig module</a></li>
+      <li>Next: <a href="filemanager.factory.html" title="next chapter">filemanager.factory module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/api/filemanager.config.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

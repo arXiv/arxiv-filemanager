@@ -1,0 +1,342 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.domain.uploaded_file module &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="filemanager.domain.uploads module" href="filemanager.domain.uploads.html" />
+    <link rel="prev" title="filemanager.domain.storage module" href="filemanager.domain.storage.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-filemanager.domain.uploaded_file">
+<span id="filemanager-domain-uploaded-file-module"></span><h1>filemanager.domain.uploaded_file module<a class="headerlink" href="#module-filemanager.domain.uploaded_file" title="Permalink to this headline">¶</a></h1>
+<p>Provides <a class="reference internal" href="#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>.</p>
+<dl class="class">
+<dt id="filemanager.domain.uploaded_file.UploadedFile">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploaded_file.</code><code class="sig-name descname">UploadedFile</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">path</em>, <em class="sig-param">size_bytes</em>, <em class="sig-param">file_type=&lt;FileType.UNKNOWN: 'UNKNOWN'&gt;</em>, <em class="sig-param">is_removed=False</em>, <em class="sig-param">is_ancillary=False</em>, <em class="sig-param">is_directory=False</em>, <em class="sig-param">is_checked=False</em>, <em class="sig-param">is_persisted=False</em>, <em class="sig-param">is_system=False</em>, <em class="sig-param">last_modified=&lt;factory&gt;</em>, <em class="sig-param">reason_for_removal=None</em>, <em class="sig-param">_errors=&lt;factory&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploaded_file.html#UploadedFile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Represents a single file in an upload workspace.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.add_error">
+<code class="sig-name descname">add_error</code><span class="sig-paren">(</span><em class="sig-param">error</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploaded_file.html#UploadedFile.add_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.add_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an error to this file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.checksum">
+<em class="property">property </em><code class="sig-name descname">checksum</code><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.checksum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base64-endocded MD5 hash of the file contents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.dir">
+<em class="property">property </em><code class="sig-name descname">dir</code><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Directory which contains the file.</p>
+<p>Should end with <code class="docutils literal notranslate"><span class="pre">/</span></code> but not begin with <code class="docutils literal notranslate"><span class="pre">/</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.errors">
+<em class="property">property </em><code class="sig-name descname">errors</code><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.errors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get errors for this file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.List" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="filemanager.domain.error.html#filemanager.domain.error.Error" title="filemanager.domain.error.Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.ext">
+<em class="property">property </em><code class="sig-name descname">ext</code><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.ext" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return file extension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.file_type">
+<code class="sig-name descname">file_type</code><em class="property"> = 'UNKNOWN'</em><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.file_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>The content type of the file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.full_path">
+<em class="property">property </em><code class="sig-name descname">full_path</code><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.full_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Absolute path to this file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.is_active">
+<em class="property">property </em><code class="sig-name descname">is_active</code><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.is_active" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicate whether or not this file is part of the primary source.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.is_always_ignore">
+<em class="property">property </em><code class="sig-name descname">is_always_ignore</code><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.is_always_ignore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether or not this file should be ignored.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.is_ancillary">
+<code class="sig-name descname">is_ancillary</code><em class="property"> = False</em><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.is_ancillary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates whether or not this file is an ancillary file.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.is_checked">
+<code class="sig-name descname">is_checked</code><em class="property"> = False</em><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.is_checked" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates whether or not this file has been subjected to all checks.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.is_directory">
+<code class="sig-name descname">is_directory</code><em class="property"> = False</em><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.is_directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates whether or not this file is a directory.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.is_empty">
+<em class="property">property </em><code class="sig-name descname">is_empty</code><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.is_empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicate whether this file is an empty file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.is_persisted">
+<code class="sig-name descname">is_persisted</code><em class="property"> = False</em><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.is_persisted" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates whether or not this file has been persisted.</p>
+<p>Non-persisted files will generally not live beyond a single request
+context.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.is_removed">
+<code class="sig-name descname">is_removed</code><em class="property"> = False</em><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.is_removed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates whether or not this file has been removed.</p>
+<p>Removed files are retained, but moved outside of the source package and
+are therefore generally not mutable by clients.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.is_system">
+<code class="sig-name descname">is_system</code><em class="property"> = False</em><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.is_system" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates whether or not this is a system file.</p>
+<p>System files are not part of the source package, and usually not directly
+mutable by clients.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.name">
+<em class="property">property </em><code class="sig-name descname">name</code><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>File name without path/directory info.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.name_sans_ext">
+<em class="property">property </em><code class="sig-name descname">name_sans_ext</code><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.name_sans_ext" title="Permalink to this definition">¶</a></dt>
+<dd><p>File name without extension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.path">
+<code class="sig-name descname">path</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Path relative to the workspace in which the file resides.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.public_path">
+<em class="property">property </em><code class="sig-name descname">public_path</code><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.public_path" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>rtype</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.reason_for_removal">
+<code class="sig-name descname">reason_for_removal</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.reason_for_removal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.size_bytes">
+<code class="sig-name descname">size_bytes</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.size_bytes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Size of the file in bytes.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.type_string">
+<em class="property">property </em><code class="sig-name descname">type_string</code><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.type_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Human-readable type name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploaded_file.UploadedFile.workspace">
+<code class="sig-name descname">workspace</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploaded_file.UploadedFile.workspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>The workspace to which this file belongs.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">filemanager</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="filemanager.html">filemanager package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">filemanager</a><ul>
+  <li><a href="filemanager.html">filemanager package</a><ul>
+  <li><a href="filemanager.domain.html">filemanager.domain package</a><ul>
+      <li>Previous: <a href="filemanager.domain.storage.html" title="previous chapter">filemanager.domain.storage module</a></li>
+      <li>Next: <a href="filemanager.domain.uploads.html" title="next chapter">filemanager.domain.uploads module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/api/filemanager.domain.uploaded_file.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,263 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.process.check.cleanup module &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="filemanager.process.check.errata module" href="filemanager.process.check.errata.html" />
+    <link rel="prev" title="filemanager.process.check.base module" href="filemanager.process.check.base.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-filemanager.process.check.cleanup">
+<span id="filemanager-process-check-cleanup-module"></span><h1>filemanager.process.check.cleanup module<a class="headerlink" href="#module-filemanager.process.check.cleanup" title="Permalink to this headline">¶</a></h1>
+<p>Various format-specific cleanup routines.</p>
+<dl class="class">
+<dt id="filemanager.process.check.cleanup.CleanupPostScript">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.process.check.cleanup.</code><code class="sig-name descname">CleanupPostScript</code><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#CleanupPostScript"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.CleanupPostScript" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.process.check.base.html#filemanager.process.check.base.BaseChecker" title="filemanager.process.check.base.BaseChecker"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.process.check.base.BaseChecker</span></code></a></p>
+<p>Checks and cleanup for postscript files.</p>
+<dl class="attribute">
+<dt id="filemanager.process.check.cleanup.CleanupPostScript.PS">
+<code class="sig-name descname">PS</code><em class="property"> = re.compile('\\.e?psi?$', re.IGNORECASE)</em><a class="headerlink" href="#filemanager.process.check.cleanup.CleanupPostScript.PS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="filemanager.process.check.cleanup.CleanupPostScript.check_FAILED">
+<code class="sig-name descname">check_FAILED</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#CleanupPostScript.check_FAILED"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.CleanupPostScript.check_FAILED" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.process.check.cleanup.CleanupPostScript.check_POSTSCRIPT">
+<code class="sig-name descname">check_POSTSCRIPT</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#CleanupPostScript.check_POSTSCRIPT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.CleanupPostScript.check_POSTSCRIPT" title="Permalink to this definition">¶</a></dt>
+<dd><p>[ needs info ]</p>
+<p>Check postscript for unwanted inclusions and inspect unidentified files
+that appear to be Postscript.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.process.check.cleanup.CleanupPostScript.check_PS_PC">
+<code class="sig-name descname">check_PS_PC</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#CleanupPostScript.check_PS_PC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.CleanupPostScript.check_PS_PC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Repair poscript for PS PC files.</p>
+<p>Seeing very few of this type in recent submissions.
+leer.eps header repaired to: %!PS-Adobe-2.0 EPSF-2.0</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="data">
+<dt id="filemanager.process.check.cleanup.EOF_MARKER">
+<code class="sig-prename descclassname">filemanager.process.check.cleanup.</code><code class="sig-name descname">EOF_MARKER</code><em class="property"> = re.compile(b'^%%EOF$')</em><a class="headerlink" href="#filemanager.process.check.cleanup.EOF_MARKER" title="Permalink to this definition">¶</a></dt>
+<dd><p>Marker for end of Postscript file.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="filemanager.process.check.cleanup.LB_MARKER">
+<code class="sig-prename descclassname">filemanager.process.check.cleanup.</code><code class="sig-name descname">LB_MARKER</code><em class="property"> = re.compile(b'^(II\\*\\000|MM\\000\\*)')</em><a class="headerlink" href="#filemanager.process.check.cleanup.LB_MARKER" title="Permalink to this definition">¶</a></dt>
+<dd><p>Marker for TIFF image - little or big endian.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="filemanager.process.check.cleanup.PATTERN">
+<code class="sig-prename descclassname">filemanager.process.check.cleanup.</code><code class="sig-name descname">PATTERN</code><em class="property"> = re.compile(b'Thumbnail:|BeginPreview|BeginPhotoshop|BeginFont|BeginResource: font', re.IGNORECASE|re.MULTILINE|re.DOTALL)</em><a class="headerlink" href="#filemanager.process.check.cleanup.PATTERN" title="Permalink to this definition">¶</a></dt>
+<dd><p>[ needs info ]</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="filemanager.process.check.cleanup.PS_BEGIN">
+<code class="sig-prename descclassname">filemanager.process.check.cleanup.</code><code class="sig-name descname">PS_BEGIN</code><em class="property"> = re.compile(b'^%!PS-')</em><a class="headerlink" href="#filemanager.process.check.cleanup.PS_BEGIN" title="Permalink to this definition">¶</a></dt>
+<dd><p>[ needs info ]</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.process.check.cleanup.RepairDOSEPSFiles">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.process.check.cleanup.</code><code class="sig-name descname">RepairDOSEPSFiles</code><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#RepairDOSEPSFiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.RepairDOSEPSFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.process.check.base.html#filemanager.process.check.base.BaseChecker" title="filemanager.process.check.base.BaseChecker"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.process.check.base.BaseChecker</span></code></a></p>
+<p>Repair DOS EPS files.</p>
+<dl class="method">
+<dt id="filemanager.process.check.cleanup.RepairDOSEPSFiles.check_DOS_EPS">
+<code class="sig-name descname">check_DOS_EPS</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#RepairDOSEPSFiles.check_DOS_EPS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.RepairDOSEPSFiles.check_DOS_EPS" title="Permalink to this definition">¶</a></dt>
+<dd><p>[ needs info ]</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.process.check.cleanup.UnMacify">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.process.check.cleanup.</code><code class="sig-name descname">UnMacify</code><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#UnMacify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.UnMacify" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.process.check.base.html#filemanager.process.check.base.BaseChecker" title="filemanager.process.check.base.BaseChecker"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.process.check.base.BaseChecker</span></code></a></p>
+<p>UnMac-ifies files.</p>
+<dl class="method">
+<dt id="filemanager.process.check.cleanup.UnMacify.check">
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#UnMacify.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.UnMacify.check" title="Permalink to this definition">¶</a></dt>
+<dd><p>If file is identified as core TeX type then we need to unmacify.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.process.check.cleanup.UnMacify.check_HTML">
+<code class="sig-name descname">check_HTML</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#UnMacify.check_HTML"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.UnMacify.check_HTML" title="Permalink to this definition">¶</a></dt>
+<dd><p>UnMac-ify HTML files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.process.check.cleanup.UnMacify.check_MAC">
+<code class="sig-name descname">check_MAC</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#UnMacify.check_MAC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.UnMacify.check_MAC" title="Permalink to this definition">¶</a></dt>
+<dd><p>UnMac-ify mac files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.process.check.cleanup.UnMacify.check_PC">
+<code class="sig-name descname">check_PC</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#UnMacify.check_PC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.UnMacify.check_PC" title="Permalink to this definition">¶</a></dt>
+<dd><p>UnMac-ify PC files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">filemanager</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="filemanager.html">filemanager package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">filemanager</a><ul>
+  <li><a href="filemanager.html">filemanager package</a><ul>
+  <li><a href="filemanager.process.html">filemanager.process package</a><ul>
+  <li><a href="filemanager.process.check.html">filemanager.process.check package</a><ul>
+      <li>Previous: <a href="filemanager.process.check.base.html" title="previous chapter">filemanager.process.check.base module</a></li>
+      <li>Next: <a href="filemanager.process.check.errata.html" title="next chapter">filemanager.process.check.errata module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/api/filemanager.process.check.cleanup.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

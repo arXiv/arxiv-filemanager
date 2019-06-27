@@ -1,0 +1,238 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.process.util.unmacify &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.process.util.unmacify</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">mmap</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
+
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">UploadWorkspace</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="c1"># File types unmacify is interested in</span>
+<span class="n">PC</span> <span class="o">=</span> <span class="s1">&#39;pc&#39;</span>
+<span class="n">MAC</span> <span class="o">=</span> <span class="s1">&#39;mac&#39;</span>
+
+
+<div class="viewcode-block" id="unmacify"><a class="viewcode-back" href="../../../../api/filemanager.process.util.unmacify.html#filemanager.process.util.unmacify.unmacify">[docs]</a><span class="k">def</span> <span class="nf">unmacify</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">uploaded_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Cleans up files containing carriage returns and line feeds.</span>
+
+<span class="sd">    Files generated on Macs and Windows machines frequently have carriage</span>
+<span class="sd">    returns that we must clean up prior to compilation.</span>
+
+<span class="sd">    Jake informs me there is a bug in the Perl unmacify routine.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    file_obj : File</span>
+<span class="sd">        File object containing details about file to unmacify.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Determine type of file we are dealing with PC or MAC</span>
+    <span class="n">file_type</span> <span class="o">=</span> <span class="n">MAC</span>
+
+    <span class="c1"># Check whether file contains &#39;\r\n&#39; sequence</span>
+    <span class="k">with</span> <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">uploaded_file</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">,</span> <span class="n">buffering</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">,</span> \
+            <span class="n">mmap</span><span class="o">.</span><span class="n">mmap</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">access</span><span class="o">=</span><span class="n">mmap</span><span class="o">.</span><span class="n">ACCESS_READ</span><span class="p">)</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;</span><span class="se">\r\n</span><span class="s2">&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">file_type</span> <span class="o">=</span> <span class="n">PC</span>
+
+    <span class="c1"># Fix up carriage returns and newlines.</span>
+    <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Un</span><span class="si">{file_type}</span><span class="s1">ify file </span><span class="si">{uploaded_file.path}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Open file and look for carriage return.</span>
+    <span class="n">new_path</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{uploaded_file.path}</span><span class="s1">.new&#39;</span>
+    <span class="n">new_file</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">new_path</span><span class="p">,</span> <span class="n">file_type</span><span class="o">=</span><span class="n">uploaded_file</span><span class="o">.</span><span class="n">file_type</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">uploaded_file</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">,</span> <span class="n">buffering</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">as</span> <span class="n">infile</span><span class="p">,</span> \
+            <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">new_file</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">,</span> <span class="n">buffering</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">,</span> \
+            <span class="n">mmap</span><span class="o">.</span><span class="n">mmap</span><span class="p">(</span><span class="n">infile</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">access</span><span class="o">=</span><span class="n">mmap</span><span class="o">.</span><span class="n">ACCESS_READ</span><span class="p">)</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">file_type</span> <span class="o">==</span> <span class="n">PC</span><span class="p">:</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;</span><span class="se">\r\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">read</span><span class="p">()))</span>
+        <span class="k">elif</span> <span class="n">file_type</span> <span class="o">==</span> <span class="n">MAC</span><span class="p">:</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;</span><span class="se">\r\n</span><span class="s2">?&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">read</span><span class="p">()))</span>
+
+    <span class="c1"># Check if file was changed.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">workspace</span><span class="o">.</span><span class="n">cmp</span><span class="p">(</span><span class="n">uploaded_file</span><span class="p">,</span> <span class="n">new_file</span><span class="p">,</span> <span class="n">shallow</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">uploaded_file</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">,</span> \
+                <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">new_file</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">infile</span><span class="p">:</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">infile</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
+        <span class="c1"># Check for unwanted termination character</span>
+    <span class="n">check_file_termination</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">uploaded_file</span><span class="p">)</span>
+    <span class="n">workspace</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">new_file</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="check_file_termination"><a class="viewcode-back" href="../../../../api/filemanager.process.util.unmacify.html#filemanager.process.util.unmacify.check_file_termination">[docs]</a><span class="k">def</span> <span class="nf">check_file_termination</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+                           <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check for unwanted characters at end of file.</span>
+
+<span class="sd">    The original unmacify/unpcify routine attemtps to cleanup the last few</span>
+<span class="sd">    characters in a file regardless or whether the file is pc/mac generated.</span>
+<span class="sd">    For that reason I have refactored the code into a seperate routine for</span>
+<span class="sd">    ease of testing. This also simplifies the unmacify routine.</span>
+
+<span class="sd">    This code basically seeks to the end of file and removes any end of file</span>
+<span class="sd">    \377, end of transmission ^D (\004), or  characters ^Z (\032).</span>
+
+<span class="sd">    At the current time this routine will get called anytime unmacify routine</span>
+<span class="sd">    is called.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check for special characters at end of file.</span>
+    <span class="c1"># Remove EOT/EOF</span>
+    <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Checking file termination for </span><span class="si">{u_file.path}</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s2">&quot;rb+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="c1"># Seek to last two bytes of file</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># Examine bytes for characters we want to strip.</span>
+        <span class="n">input_bytes</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Read &#39;</span><span class="si">{input_bytes}</span><span class="s2">&#39; from </span><span class="si">{u_file.path}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">byte_found</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">input_bytes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x01A</span> <span class="ow">or</span> <span class="n">input_bytes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x4</span> \
+                <span class="ow">or</span> <span class="n">input_bytes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xFF</span><span class="p">:</span>
+            <span class="n">byte_found</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="n">fsize</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">truncate</span><span class="p">(</span><span class="n">fsize</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">input_bytes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x01A</span> <span class="ow">or</span> <span class="n">input_bytes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x4</span> \
+                <span class="ow">or</span> <span class="n">input_bytes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xFF</span><span class="p">:</span>
+            <span class="n">byte_found</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="n">fsize</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">truncate</span><span class="p">(</span><span class="n">fsize</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">byte_found</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+            <span class="k">if</span> <span class="n">input_bytes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x01A</span> <span class="ow">or</span> <span class="n">input_bytes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x01A</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;trailing ^Z &quot;</span>
+            <span class="k">if</span> <span class="n">input_bytes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x4</span> <span class="ow">or</span> <span class="n">input_bytes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x4</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;trailing ^D &quot;</span>
+            <span class="k">if</span> <span class="n">input_bytes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xFF</span> <span class="ow">or</span> <span class="n">input_bytes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xFF</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;trailing =FF &quot;</span>
+            <span class="k">if</span> <span class="n">input_bytes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0x0A</span><span class="p">:</span>
+                <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;</span><span class="si">{u_file.path}</span><span class="s2"> [stripped newline] &quot;</span><span class="p">)</span>
+
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span>
+                                  <span class="n">f</span><span class="s2">&quot;</span><span class="si">{msg}</span><span class="s2"> stripped from </span><span class="si">{u_file.path}</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Check of last character of file is newline character</span>
+        <span class="c1"># Seek to last two bytes of file</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">last_byte</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">last_byte</span> <span class="o">!=</span> <span class="sa">b</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">:</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span>
+                                  <span class="n">f</span><span class="s2">&quot;File &#39;</span><span class="si">{u_file.path}</span><span class="s2">&#39; does not end with&quot;</span>
+                                  <span class="s2">&quot; newline (</span><span class="se">\\</span><span class="s2">n), TRUNCATED?&quot;</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
