@@ -259,7 +259,13 @@ class FileMutationsMixin:
 
     @modifies_workspace
     def persist(self: 'UploadWorkspace', u_file: UploadedFile) -> None:
-        self.storage.persist(self, u_file, self.get_path(u_file))
+        self.storage.persist(self, u_file)
+    
+    @modifies_workspace
+    def persist_all(self: 'UploadWorkspace') -> None:
+        for u_file in self.iter_files(allow_system=True):
+            if not u_file.is_persisted:
+                self.persist(u_file)
     
     @modifies_workspace
     def rename(self: 'UploadWorkspace', u_file: UploadedFile, 
@@ -395,9 +401,14 @@ class PathsMixin:
                               is_removed=u_file.is_removed,
                               is_system=u_file.is_system)
     
-    def is_safe(self: 'UploadWorkspace', path: str) -> bool:
+    def is_safe(self: 'UploadWorkspace', path: str, is_ancillary: bool = False, 
+                is_removed: bool = False, is_persisted: bool = False, 
+                is_system: bool = False, strict: bool = True) -> bool:
         """Determine whether or not a path is safe to use in this workspace."""
-        return self.storage.is_safe(self, path)
+        return self.storage.is_safe(self, path, is_ancillary=is_ancillary, 
+                                    is_removed=is_removed, 
+                                    is_persisted=is_persisted,
+                                    is_system=is_system, strict=strict)
     
     def exists(self: 'UploadWorkspace', path: str, is_ancillary: bool = False,
                is_removed: bool = False, is_system: bool = False) -> bool:

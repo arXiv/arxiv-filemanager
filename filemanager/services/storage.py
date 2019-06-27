@@ -46,13 +46,18 @@ class SimpleStorageAdapter:
 
     def is_safe(self, workspace: UploadWorkspace, path: str,
                 is_ancillary: bool = False, is_removed: bool = False,
-                is_persisted: bool = False) -> bool:
+                is_persisted: bool = False, is_system: bool = False,
+                strict: bool = True) -> bool:
         """Determine whether or not a path is safe to use."""
-        path_in_workspace = workspace.get_path(path, is_ancillary, is_removed)
-        full_path = self.get_path_bare(path_in_workspace)
+        path_in_workspace = workspace.get_path(path, is_ancillary=is_ancillary, 
+                                               is_removed=is_removed, 
+                                               is_system=is_system)
+        full_path = self.get_path_bare(path_in_workspace, 
+                                       is_persisted=is_persisted)
         try:
             self._check_safe(workspace, full_path, is_ancillary=is_ancillary,
-                             is_removed=is_removed, is_persisted=is_persisted)
+                             is_removed=is_removed, is_persisted=is_persisted,
+                             is_system=is_system, strict=strict)
         except ValueError:
             return False
         return True
@@ -312,7 +317,7 @@ class QuarantineStorageAdapter(SimpleStorageAdapter):
                 os.chmod(self.get_path(workspace, u_file), dir_mode)
             else:
                 os.chmod(self.get_path(workspace, u_file), file_mode)
-
+    
     def persist(self, workspace: UploadWorkspace,
                 u_file: UploadedFile) -> None:
         """Move a file or directory from quarantine to permanent storage."""
@@ -321,10 +326,12 @@ class QuarantineStorageAdapter(SimpleStorageAdapter):
         self._check_safe(workspace, src_path,
                          is_ancillary=u_file.is_ancillary,
                          is_removed=u_file.is_removed,
+                         is_system=u_file.is_system,
                          is_persisted=False)
         self._check_safe(workspace, dst_path,
                          is_ancillary=u_file.is_ancillary,
                          is_removed=u_file.is_removed,
+                         is_system=u_file.is_system,
                          is_persisted=True)
         parent, _ = os.path.split(dst_path)
         if not os.path.exists(parent):

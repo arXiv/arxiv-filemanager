@@ -42,7 +42,8 @@ class UnpackCompressedTarFiles(BaseChecker):
         # Tarfiles may contain relative paths! We must ensure that each file is
         # not going to escape the upload source directory _before_ we extract
         # it.
-        if not workspace.is_safe(dest):
+        if not workspace.is_safe(dest, is_ancillary=u_file.is_ancillary, 
+                                 is_persisted=u_file.is_persisted):
             logger.error('Member of %s tried to escape workspace', u_file.path)
             workspace.log.info(f'Member of file {u_file.name} tried to escape'
                           ' workspace.')

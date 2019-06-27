@@ -102,10 +102,12 @@ VAULT_REQUESTS = [
 
 
 STORAGE_BACKEND = os.environ.get('STORAGE_BACKEND', 'simple')
-"""Name of the storage backend to use. See :mod:`.process.storage`."""
+"""Name of the storage backend to use. See :mod:`.services.storage`."""
 
 STORAGE_BASE_PATH = os.environ.get('STORAGE_BASE_PATH', None)
 if STORAGE_BASE_PATH is None:
     STORAGE_BASE_PATH = tempfile.mkdtemp()
     warnings.warn('STORAGE_BASE_PATH is not set. Using temp directory: %s' %
                   STORAGE_BASE_PATH)
+                  
+STORAGE_QUARANTINE_PATH = os.environ.get('STORAGE_QUARANTINE_PATH', None)

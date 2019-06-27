@@ -157,6 +157,7 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
 
         workspace.perform_checks()      # Runs sanitization, fixes, etc.
         # print('workspace finished processing upload at', time.time() - start)
+        workspace.persist_all()
 
         completion_datetime = datetime.now(UTC)
 
