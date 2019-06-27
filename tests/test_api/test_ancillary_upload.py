@@ -15,6 +15,7 @@ from pprint import pprint
 import jsonschema
 from requests.utils import quote
 from pytz import UTC
+import logging
 
 from arxiv.users import domain, auth
 
@@ -23,6 +24,9 @@ from filemanager.services import database
 from filemanager.domain import UploadWorkspace
 
 from .util import generate_token
+
+logger = logging.getLogger(__name__)
+logger.setLevel(int(os.environ.get('LOGLEVEL', '20')))
 
 
 class TestUploadAncillaryFile(TestCase):

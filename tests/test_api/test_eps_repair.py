@@ -5,6 +5,7 @@ import json
 import shutil
 import tempfile
 import filecmp
+import logging
 from datetime import datetime
 from unittest import TestCase, mock
 from http import HTTPStatus as status
@@ -22,6 +23,9 @@ from filemanager.services import database
 from filemanager.domain import UploadWorkspace
 
 from .util import generate_token
+
+logger = logging.getLogger(__name__)
+logger.setLevel(int(os.environ.get('LOGLEVEL', '20')))
 
 
 # TODO: I'm a bit unclear about why this is an API test. Some of these are not
@@ -123,7 +127,7 @@ class TestEPSRepair(TestCase):
         with open(content_file_path, 'wb') as fileH:
             fileH.write(response.data)
 
-        print(content_file_path)
+        logger.debug(content_file_path)
         # Compare downloaded file (content_file_path) against reference_path 
         # file.
         reference_filename = 'dos_eps_1_stripped.eps'
@@ -149,8 +153,8 @@ class TestEPSRepair(TestCase):
 #                                     #        content_type='application/gzip')
 #                                     content_type='multipart/form-data')
 #
-#         # print("Upload Response:\n" + str(response.data) + "\nEnd Data")
-#         # print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
+#         # logger.debug("Upload Response:\n" + str(response.data) + "\nEnd Data")
+#         # logger.debug(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
 #
 #         self.assertEqual(response.status_code, 201, "Accepted and processed uploaded Submission Contents")
 #         self.maxDiff = None

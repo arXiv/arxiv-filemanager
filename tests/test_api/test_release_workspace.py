@@ -4,6 +4,7 @@ import os
 import json
 import shutil
 import tempfile
+import logging
 from datetime import datetime
 from unittest import TestCase, mock
 from http import HTTPStatus as status
@@ -19,6 +20,9 @@ from filemanager.services import database
 from filemanager.domain import UploadWorkspace
 
 from .util import generate_token
+
+logger = logging.getLogger(__name__)
+logger.setLevel(int(os.environ.get('LOGLEVEL', '20')))
 
 
 class TestReleasedWorkspace(TestCase):
@@ -90,7 +94,7 @@ class TestReleasedWorkspace(TestCase):
         self.assertEqual(response.status_code, status.OK, 
                          f"Release workspace '{self.upload_id}'.")
 
-        print("Release:\n" + str(response.data) + '\n')
+        logger.debug("Release:\n" + str(response.data) + '\n')
 
     def tearDown(self):
         """Delete the workspace."""
@@ -127,7 +131,7 @@ class TestReleasedWorkspace(TestCase):
 
         self.assertEqual(response.status_code, status.FORBIDDEN, 
                          "Cannot upload files to a released workspace")
-        print("Upload files to released workspace:\n{response.data}\n")
+        logger.debug("Upload files to released workspace:\n{response.data}\n")
     
     def test_get_status_released_workspace(self):
         """Get the status of a released workspace."""
@@ -147,7 +151,7 @@ class TestReleasedWorkspace(TestCase):
             f"/filemanager/api/{self.upload_id}/{public_file_path}",
             headers={'Authorization': self.token}
         )
-        print(f"Delete File Response(released): '{public_file_path}'\n"
+        logger.debug(f"Delete File Response(released): '{public_file_path}'\n"
               f" {response.data}\n")
         self.assertEqual(response.status_code, status.FORBIDDEN,
                          "Cannot delete a file from a released workspace")
@@ -159,7 +163,7 @@ class TestReleasedWorkspace(TestCase):
             headers={'Authorization': self.token},
             content_type='multipart/form-data'
         )
-        print("Delete All Files Response(released):\n{response.data}\n")
+        logger.debug("Delete All Files Response(released):\n{response.data}\n")
         self.assertEqual(response.status_code, status.FORBIDDEN, 
                          'Cannot delete files from a released workspace')
 
@@ -232,7 +236,7 @@ class TestUnReleasedWorkspace(TestCase):
         self.assertEqual(response.status_code, status.OK, 
                          f"Release workspace '{self.upload_id}'.")
 
-        print("Release:\n" + str(response.data) + '\n')
+        logger.debug("Release:\n" + str(response.data) + '\n')
 
         # Now test unrelease
         response = self.client.post(
@@ -242,7 +246,7 @@ class TestUnReleasedWorkspace(TestCase):
         self.assertEqual(response.status_code, status.OK, 
                          f"Unrelease workspace '{self.upload_id}'.")
 
-        print("Unrelease:\n" + str(response.data) + '\n')
+        logger.debug("Unrelease:\n" + str(response.data) + '\n')
 
     def tearDown(self):
         """Delete the workspace."""
@@ -275,7 +279,7 @@ class TestUnReleasedWorkspace(TestCase):
 
         self.assertEqual(response.status_code, status.CREATED, 
                          "Can upload files to a locked workspace")
-        print("Upload files to unreleased workspace:\n{response.data}\n")
+        logger.debug("Upload files to unreleased workspace:\n{response.data}\n")
     
     def test_get_status_unreleased_workspace(self):
         """Get the status of a unreleased workspace."""
@@ -295,7 +299,7 @@ class TestUnReleasedWorkspace(TestCase):
             f"/filemanager/api/{self.upload_id}/{public_file_path}",
             headers={'Authorization': self.token}
         )
-        print(f"Delete File Response(locked): '{public_file_path}'\n"
+        logger.debug(f"Delete File Response(locked): '{public_file_path}'\n"
               f" {response.data}\n")
         self.assertEqual(response.status_code, status.NOT_FOUND,
                          "Get a normal 404 when the workspace is unreleased")
@@ -307,7 +311,7 @@ class TestUnReleasedWorkspace(TestCase):
             headers={'Authorization': self.token},
             content_type='multipart/form-data'
         )
-        print("Delete All Files Response (unreleased):\n{response.data}\n")
+        logger.debug("Delete All Files Response (unreleased):\n{response.data}\n")
         self.assertEqual(response.status_code, status.OK, 
                          'Can delete files from an unreleased workspace')
 

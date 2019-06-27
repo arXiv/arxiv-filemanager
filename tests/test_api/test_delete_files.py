@@ -4,6 +4,7 @@ import os
 import json
 import shutil
 import tempfile
+import logging
 from datetime import datetime
 from unittest import TestCase, mock
 from http import HTTPStatus as status
@@ -18,6 +19,9 @@ from filemanager.factory import create_web_app
 from filemanager.services import database
 
 from .util import generate_token
+
+logger = logging.getLogger(__name__)
+logger.setLevel(int(os.environ.get('LOGLEVEL', '20')))
 
 
 class TestDeleteFiles(TestCase):
@@ -101,12 +105,12 @@ class TestDeleteFiles(TestCase):
 
         encoded_file_path = quote(public_file_path, safe='')
         public_file_path = encoded_file_path
-        print(f"ENCODED:{public_file_path}\n")
+        logger.debug(f"ENCODED:{public_file_path}\n")
 
         response = self.client.delete(
             f"/filemanager/api/{self.upload_id}/{public_file_path}",
             headers={'Authorization': self.token})
-        print(f"Delete File Response:'{public_file_path}'\n{response.data}\n")
+        logger.debug(f"Delete File Response:'{public_file_path}'\n{response.data}\n")
         self.assertEqual(response.status_code, status.OK,
                          "Delete an individual file: '{public_file_path}'.")
         self.assertEqual(json.loads(response.data)['reason'], 'deleted file')
@@ -124,7 +128,7 @@ class TestDeleteFiles(TestCase):
             f"/filemanager/api/{self.upload_id}/{public_file_path}",
             headers={'Authorization': self.token}
         )
-        print(f"Delete hacker file path Response:'{public_file_path}'\n",
+        logger.debug(f"Delete hacker file path Response:'{public_file_path}'\n",
               str(response.data), '\n')
         self.assertEqual(response.status_code, status.NOT_FOUND,
                          f"Delete a file outside of workspace:"
@@ -145,7 +149,7 @@ class TestDeleteFiles(TestCase):
             f"/filemanager/api/{self.upload_id}/{public_file_path}",
             headers={'Authorization': self.token
         })
-        print(f"Delete hacker file path Response:'{public_file_path}'\n",
+        logger.debug(f"Delete hacker file path Response:'{public_file_path}'\n",
               str(response.data), '\n')
         self.assertEqual(response.status_code, status.NOT_FOUND,
                          f"Delete a file outside of workspace:"
@@ -162,7 +166,7 @@ class TestDeleteFiles(TestCase):
         response = self.client.delete(
             f"/filemanager/api/{self.upload_id}/{public_file_path}",
             headers={'Authorization': self.token})
-        print(f"Delete system password file Response:'{public_file_path}'\n")
+        logger.debug(f"Delete system password file Response:'{public_file_path}'\n")
         self.assertEqual(response.status_code, status.NOT_FOUND,
                          f"Delete a system file: '{public_file_path}'..")
 
@@ -174,7 +178,7 @@ class TestDeleteFiles(TestCase):
             f"/filemanager/api/{self.upload_id}/{public_file_path}",
             headers={'Authorization': self.token}
         )
-        print(f"Delete non-existent file Response:'{public_file_path}'\n",
+        logger.debug(f"Delete non-existent file Response:'{public_file_path}'\n",
               str(response.data), '\n')
         self.assertEqual(response.status_code, status.NOT_FOUND,
                          f"Delete non-existent file: '{public_file_path}'.")
@@ -187,7 +191,7 @@ class TestDeleteFiles(TestCase):
             f"/filemanager/api/{self.upload_id}/{public_file_path}",
             headers={'Authorization': self.token}
         )
-        print(f"Delete file in subdirectory anc Response:"
+        logger.debug(f"Delete file in subdirectory anc Response:"
               f" '{public_file_path}'\n" + str(response.data) + '\n')
         self.assertEqual(response.status_code, status.OK,
                          f"Delete file in subdirectory: '{public_file_path}'.")
@@ -200,7 +204,7 @@ class TestDeleteFiles(TestCase):
             f"/filemanager/api/{self.upload_id}/{public_file_path}",
             headers={'Authorization': self.token}
         )
-        print(f"Delete file in subdirectory anc Response:'{public_file_path}"
+        logger.debug(f"Delete file in subdirectory anc Response:'{public_file_path}"
               "'\n" + str(response.data) + '\n')
         self.assertEqual(response.status_code, status.NOT_FOUND,
                          f"Delete file in subdirectory: '{public_file_path}'.")
@@ -213,7 +217,7 @@ class TestDeleteFiles(TestCase):
             f"/filemanager/api/{self.upload_id}/{public_file_path}",
             headers={'Authorization': self.token}
         )
-        print(f"Delete file in subdirectory anc Response: '{public_file_path}'"
+        logger.debug(f"Delete file in subdirectory anc Response: '{public_file_path}'"
               "\n" + str(response.data) + '\n')
         self.assertEqual(response.status_code, status.OK,
                          f"Delete file in subdirectory: '{public_file_path}'.")
@@ -234,7 +238,7 @@ class TestDeleteFiles(TestCase):
             f"/filemanager/api/{self.upload_id}/{public_file_path}",
             headers={'Authorization': self.token}
         )
-        print(f"Delete invalid file in subdirectory anc Response: "
+        logger.debug(f"Delete invalid file in subdirectory anc Response: "
               "'{public_file_path}'\n" + str(response.data) + '\n')
         self.assertEqual(response.status_code, status.NOT_FOUND,
                          f"Delete file in subdirectory: '{public_file_path}'.")
@@ -252,7 +256,7 @@ class TestDeleteFiles(TestCase):
             f"/filemanager/api/{self.upload_id}/{public_file_path}",
             headers={'Authorization': self.token}
         )
-        print(f"Delete invalid file in subdirectory anc Response: "
+        logger.debug(f"Delete invalid file in subdirectory anc Response: "
               f"'{public_file_path}'\n" + str(response.data) + '\n')
         self.assertEqual(response.status_code, status.NOT_FOUND,
                          f"Delete file in subdirectory: '{public_file_path}'.")

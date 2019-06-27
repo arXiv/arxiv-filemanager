@@ -4,6 +4,7 @@ import os
 import json
 import shutil
 import tempfile
+import logging
 from datetime import datetime
 from unittest import TestCase, mock
 from http import HTTPStatus as status
@@ -19,6 +20,9 @@ from filemanager.services import database
 from filemanager.domain import UploadWorkspace
 
 from .util import generate_token
+
+logger = logging.getLogger(__name__)
+logger.setLevel(int(os.environ.get('LOGLEVEL', '20')))
 
 
 class TestLockedWorkspace(TestCase):
@@ -89,7 +93,7 @@ class TestLockedWorkspace(TestCase):
         self.assertEqual(response.status_code, status.OK, 
                          f"Lock workspace '{self.upload_id}'.")
 
-        print("Lock:\n" + str(response.data) + '\n')
+        logger.debug("Lock:\n" + str(response.data) + '\n')
     
     def tearDown(self):
         """Delete the workspace."""
@@ -126,7 +130,7 @@ class TestLockedWorkspace(TestCase):
 
         self.assertEqual(response.status_code, status.FORBIDDEN, 
                          "Cannot upload files to a locked workspace")
-        print("Upload files to locked workspace:\n{response.data}\n")
+        logger.debug("Upload files to locked workspace:\n{response.data}\n")
     
     def test_get_status_locked_workspace(self):
         """Get the status of a locked workspace."""
@@ -146,7 +150,7 @@ class TestLockedWorkspace(TestCase):
             f"/filemanager/api/{self.upload_id}/{public_file_path}",
             headers={'Authorization': self.token}
         )
-        print(f"Delete File Response(locked): '{public_file_path}'\n"
+        logger.debug(f"Delete File Response(locked): '{public_file_path}'\n"
               f" {response.data}\n")
         self.assertEqual(response.status_code, status.FORBIDDEN,
                          "Cannot delete a file from a locked workspace")
@@ -158,7 +162,7 @@ class TestLockedWorkspace(TestCase):
             headers={'Authorization': self.token},
             content_type='multipart/form-data'
         )
-        print("Delete All Files Response(locked):\n{response.data}\n")
+        logger.debug("Delete All Files Response(locked):\n{response.data}\n")
         self.assertEqual(response.status_code, status.FORBIDDEN, 
                          'Cannot delete files from a locked workspace')
 
@@ -230,7 +234,7 @@ class TestUnLockedWorkspace(TestCase):
         self.assertEqual(response.status_code, status.OK, 
                          f"Lock workspace '{self.upload_id}'.")
 
-        print("Lock:\n" + str(response.data) + '\n')
+        logger.debug("Lock:\n" + str(response.data) + '\n')
 
         # Now unlock.
         response = self.client.post(
@@ -240,7 +244,7 @@ class TestUnLockedWorkspace(TestCase):
         self.assertEqual(response.status_code, status.OK, 
                          f"Unlock workspace '{self.upload_id}'.")
 
-        print("Unlock:\n{response.data}\n")
+        logger.debug("Unlock:\n{response.data}\n")
     
     def tearDown(self):
         """Delete the workspace."""
@@ -277,7 +281,7 @@ class TestUnLockedWorkspace(TestCase):
 
         self.assertEqual(response.status_code, status.CREATED, 
                          "Can upload files to a locked workspace")
-        print("Upload files to unlocked workspace:\n{response.data}\n")
+        logger.debug("Upload files to unlocked workspace:\n{response.data}\n")
     
     def test_get_status_unlocked_workspace(self):
         """Get the status of a unlocked workspace."""
@@ -297,7 +301,7 @@ class TestUnLockedWorkspace(TestCase):
             f"/filemanager/api/{self.upload_id}/{public_file_path}",
             headers={'Authorization': self.token}
         )
-        print(f"Delete File Response(locked): '{public_file_path}'\n"
+        logger.debug(f"Delete File Response(locked): '{public_file_path}'\n"
               f" {response.data}\n")
         self.assertEqual(response.status_code, status.NOT_FOUND,
                          "Get a normal 404 when the workspace is unlocked")
@@ -309,6 +313,6 @@ class TestUnLockedWorkspace(TestCase):
             headers={'Authorization': self.token},
             content_type='multipart/form-data'
         )
-        print("Delete All Files Response (unlocked):\n{response.data}\n")
+        logger.debug("Delete All Files Response (unlocked):\n{response.data}\n")
         self.assertEqual(response.status_code, status.OK, 
                          'Can delete files from an unlocked workspace')

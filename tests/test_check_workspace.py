@@ -200,7 +200,6 @@ class TestSingleFileSubmissions(WorkspaceTestCase):
         from pprint import pprint
         self.write_upload('type_test_files/dos_eps_1.eps')
         self.workspace.perform_checks()
-        pprint(self.workspace.files.source['dos_eps_1.eps'])
         self.assertEqual(self.workspace.source_type,
                          UploadWorkspace.SourceType.INVALID,
                          'Source type is INVALID')

@@ -4,6 +4,7 @@ import os
 import json
 import shutil
 import tempfile
+import logging
 from datetime import datetime
 from unittest import TestCase, mock
 from http import HTTPStatus as status
@@ -17,6 +18,9 @@ from filemanager.factory import create_web_app
 from filemanager.services import database
 
 from .util import generate_token
+
+logger = logging.getLogger(__name__)
+logger.setLevel(int(os.environ.get('LOGLEVEL', '20')))
 
 
 class TestDeleteWorkspace(TestCase):
@@ -184,7 +188,7 @@ class TestDeleteAnotherWorkspace(TestCase):
             f"/filemanager/api/{self.upload_id}",
             headers={'Authorization': self.admin_token}
         )
-        print("Delete Response:\n" + str(response.data) + '\n')
+        logger.debug("Delete Response:\n" + str(response.data) + '\n')
 
         self.assertEqual(response.status_code, status.NOT_FOUND, 
                          "Delete non-existent workspace.")

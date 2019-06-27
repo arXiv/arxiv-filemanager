@@ -114,7 +114,7 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         workspace = _create_workspace(file, user_id)
         upload_id = workspace.upload_id
 
-    print('upload workspace exists at', time.time() - start)
+    # print('upload workspace exists at', time.time() - start)
     # At this point we expect upload to exist in system
     try:
         if workspace is None:
@@ -142,7 +142,7 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         #       database.retrieve
         logger.info("%s: Upload files to existing workspace: file='%s'",
                     workspace.upload_id, file.filename)
-        print('upload workspace retrieved at', time.time() - start)
+        # print('upload workspace retrieved at', time.time() - start)
 
         # Keep track of how long processing workspace takes.
         start_datetime = datetime.now(UTC)
@@ -156,7 +156,7 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
             raise BadRequest(messages.UPLOAD_FILE_EMPTY)
 
         workspace.perform_checks()      # Runs sanitization, fixes, etc.
-        print('workspace finished processing upload at', time.time() - start)
+        # print('workspace finished processing upload at', time.time() - start)
 
         completion_datetime = datetime.now(UTC)
 
@@ -173,7 +173,7 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         if workspace.source_package.is_stale:
             workspace.source_package.pack()
         database.update(workspace)    # Store in DB
-        print('db updated at', time.time() - start)
+        # print('db updated at', time.time() - start)
 
         logger.info("%s: Processed upload. Saved to DB. Preparing upload "
                     "summary.", workspace.upload_id)
@@ -187,7 +187,7 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
 
         logger.info("%s: Generating upload summary.", workspace.upload_id)
         headers.update({'ARXIV-OWNER': workspace.owner_user_id})
-        print('done at', time.time() - start)
+        # print('done at', time.time() - start)
 
         # TODO: this should only be 201 Created if it's a new workspace; 
         # otherwise just 200 OK. -- Erick

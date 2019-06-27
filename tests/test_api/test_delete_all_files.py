@@ -4,6 +4,7 @@ import os
 import json
 import shutil
 import tempfile
+import logging
 from datetime import datetime
 from unittest import TestCase, mock
 from http import HTTPStatus as status
@@ -18,6 +19,9 @@ from filemanager.factory import create_web_app
 from filemanager.services import database
 
 from .util import generate_token
+
+logger = logging.getLogger(__name__)
+logger.setLevel(int(os.environ.get('LOGLEVEL', '20')))
 
 
 class TestDeleteAllFiles(TestCase):
@@ -119,8 +123,8 @@ class TestDeleteAllFiles(TestCase):
             f"/filemanager/api/{self.upload_id}/{public_file_path}",
             headers={'Authorization': self.token}
         )
-        print(f"Delete already deleted file in subdirectory anc Response:"
-              f"'{public_file_path}'\n{response.data}\n")
+        logger.debug(f"Delete already deleted file in subdirectory anc"
+                     f" Response: '{public_file_path}'\n{response.data}\n")
         self.assertEqual(response.status_code, status.NOT_FOUND,
                          f"Delete already deleted file in subdirectory:"
                          f" '{public_file_path}'.")

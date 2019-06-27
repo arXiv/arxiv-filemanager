@@ -77,8 +77,8 @@ TEST_FILES_STRIP_PS = os.path.join(os.getcwd(), 'tests/test_files_strip_postscri
 #                                     #        content_type='application/gzip')
 #                                     content_type='multipart/form-data')
 #
-#         print("Upload Response:\n")
-#         print(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
+#         logger.debug("Upload Response:\n")
+#         logger.debug(json.dumps(json.loads(response.data), indent=4, sort_keys=True))
 #
 #         with open('schema/resources/Workspace.json') as f:
 #             result_schema = json.load(f)

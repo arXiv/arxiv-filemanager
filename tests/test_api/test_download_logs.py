@@ -4,6 +4,7 @@ import os
 import json
 import shutil
 import tempfile
+import logging
 from datetime import datetime
 from unittest import TestCase, mock
 from http import HTTPStatus as status
@@ -17,6 +18,9 @@ from filemanager.factory import create_web_app
 from filemanager.services import database
 
 from .util import generate_token
+
+logger = logging.getLogger(__name__)
+logger.setLevel(int(os.environ.get('LOGLEVEL', '20')))
 
 
 class TestDownloadLogs(TestCase):
@@ -146,4 +150,4 @@ class TestDownloadLogs(TestCase):
         with open(log_path, 'wb') as fileH:
             fileH.write(response.data)
         # Highlight log download. Remove at some point.
-        print(f"FYI: SAVED UPLOAD SOURCE LOG FILE TO DISK: {log_path}\n")
+        logger.debug(f"FYI: SAVED UPLOAD SOURCE LOG FILE TO DISK: {log_path}\n")

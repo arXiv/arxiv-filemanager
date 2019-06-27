@@ -4,6 +4,7 @@ import os
 import json
 import shutil
 import tempfile
+import logging
 from datetime import datetime
 from unittest import TestCase, mock
 from http import HTTPStatus as status
@@ -18,6 +19,9 @@ from filemanager.factory import create_web_app
 from filemanager.services import database
 
 from .util import generate_token
+
+logger = logging.getLogger(__name__)
+logger.setLevel(int(os.environ.get('LOGLEVEL', '20')))
 
 
 class TestIndividualFileContentDownload(TestCase):
@@ -117,8 +121,8 @@ class TestIndividualFileContentDownload(TestCase):
         with open(log_path, 'wb') as fileH:
             fileH.write(response.data)
 
-        print(f'List downloaded content directory: {self.workdir}\n')
-        print(os.listdir(self.workdir))
+        logger.debug(f'List downloaded content directory: {self.workdir}\n')
+        logger.debug(os.listdir(self.workdir))
     
     def test_head_nonexistant_content_file(self):
         """Test HEAD for file that doesn't exist."""

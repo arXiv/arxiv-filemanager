@@ -6,6 +6,7 @@ import shutil
 import tempfile
 import io
 import tarfile
+import logging
 from datetime import datetime
 from unittest import TestCase, mock
 from http import HTTPStatus as status
@@ -23,6 +24,9 @@ from filemanager.services import database
 from filemanager.domain import UploadWorkspace
 
 from .util import generate_token
+
+logger = logging.getLogger(__name__)
+logger.setLevel(int(os.environ.get('LOGLEVEL', '20')))
 
 
 class TestUploadNormalFiles(TestCase):
@@ -66,10 +70,10 @@ class TestUploadNormalFiles(TestCase):
     
     def test_submission_workflow(self):
         """Post a test submission to upload API."""
-        print(f"Token (for possible use in manual browser tests):"
+        logger.debug(f"Token (for possible use in manual browser tests):"
               f" {self.token}\n")
 
-        print("\nMake request to upload gzipped tar file. \n"
+        logger.debug("\nMake request to upload gzipped tar file. \n"
               "\t[Warnings and errors are currently printed to console.\n"
               "\tLogs coming soon.]\n")
 
@@ -149,9 +153,9 @@ class TestUploadNormalFiles(TestCase):
         with tarfile.open(fileobj=io.BytesIO(response.data)) as tar:
             tar.extractall(path=workdir)
 
-        print(f'List directory containing downloaded content: {workdir}\:n')
-        print(os.listdir(workdir))
-        print(f'End List\n')
+        logger.debug(f'List directory containing downloaded content: {workdir}\:n')
+        logger.debug(os.listdir(workdir))
+        logger.debug(f'End List\n')
 
         # WARNING: THE TESTS BELOW DELETE INDIVIDUAL FILES AND THEN THE ENTIRE
         # WORKSPACE.

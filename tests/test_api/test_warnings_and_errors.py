@@ -4,6 +4,7 @@ import os
 import json
 import shutil
 import tempfile
+import logging
 from datetime import datetime
 from unittest import TestCase, mock
 from http import HTTPStatus as status
@@ -21,6 +22,9 @@ from filemanager.services import database
 from filemanager.domain import UploadWorkspace
 
 from .util import generate_token
+
+logger = logging.getLogger(__name__)
+logger.setLevel(int(os.environ.get('LOGLEVEL', '20')))
 
 
 class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
@@ -212,7 +216,6 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
             content_type='multipart/form-data'
         )
         response_data = json.loads(response.data)
-        pprint(response_data)
         self.assertEqual(response_data['source_format'], 'tex')
         self.assertEqual(response_data['readiness'],    
                          UploadWorkspace.Readiness.READY.value, 

@@ -44,7 +44,7 @@ formatter = logging.Formatter('%(asctime)s %(message)s',
 file_handler.setFormatter(formatter)
 # logger.handlers = []
 logger.addHandler(file_handler)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(int(os.environ.get('LOGLEVEL', logging.DEBUG)))
 logger.propagate = True
 
 # Service log routine + support routine
