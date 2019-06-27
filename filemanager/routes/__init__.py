@@ -1,1 +1,1 @@
-"""Contains route information for arxiv-zero."""
+"""HTTP routes modules."""

@@ -47,7 +47,7 @@ def modifies_workspace(func: Callable) -> Callable:
     return inner
 
 
-class _FileStaticOperationsMixin:
+class FileStaticOperationsMixin:
     """Implements methods for non-mutating operations on individual files."""
 
     def cmp(self: 'UploadWorkspace', a_file: UploadedFile, 
@@ -76,7 +76,7 @@ class _FileStaticOperationsMixin:
         return urlsafe_b64encode(hash_md5.digest()).decode('utf-8')
     
 
-class _OpenFilesMixin:
+class OpenFilesMixin:
     """Implements methods for opening files."""
 
     @contextmanager
@@ -99,7 +99,7 @@ class _OpenFilesMixin:
         return self.storage.open_pointer(self, u_file, flags, **kwargs)
 
 
-class _FileMutationsMixin:
+class FileMutationsMixin:
     """Implements methods that alter files."""
 
     LEADING_DOTSLASH = re.compile(r'^\./')
@@ -308,7 +308,7 @@ class _FileMutationsMixin:
                        is_removed=is_removed, is_system=is_system)
 
 
-class _PathsMixin:
+class PathsMixin:
     """Implements methods related to paths in :class:`.UploadWorkspace."""
 
     @property
@@ -416,7 +416,7 @@ class _PathsMixin:
         return path, False  
 
 
-class _ErrorsAndWarningsMixin:
+class ErrorsAndWarningsMixin:
     """Implements properties and methods for errors and warnings."""
 
     @property
@@ -510,7 +510,7 @@ class _ErrorsAndWarningsMixin:
         return len(self.fatal_errors) > 0
 
 
-class _CountsMixin:
+class CountsMixin:
     """Implements methods related to file counts."""
 
     @property
@@ -540,7 +540,7 @@ class _CountsMixin:
         return counts
 
 
-class _StatusMixin:
+class StatusMixin:
     """Implements status-related methods and properties."""
 
     class Status(Enum):
@@ -578,7 +578,7 @@ class _StatusMixin:
         return bool(self.status == UploadWorkspace.Status.RELEASED)
 
 
-class _ReadinessMixin:
+class ReadinessMixin:
     """Implements methods and properties releated to source readiness."""
 
     class Readiness(Enum):
@@ -618,7 +618,7 @@ class _ReadinessMixin:
         return UploadWorkspace.Readiness.READY
 
 
-class _LockMixin:
+class LockMixin:
     """Implements methods and properties related to locking/unlocking."""
 
     class LockState(Enum):
@@ -644,7 +644,7 @@ class _LockMixin:
         return bool(self.lock_state == UploadWorkspace.LockState.LOCKED)
 
 
-class _SingleFileMixin:
+class SingleFileMixin:
     """Implements methods related to single-file source packages."""
 
     @property
@@ -678,7 +678,7 @@ class _SingleFileMixin:
                 return u_file    # Return the first file.
     
 
-class _ChecksMixin:
+class ChecksMixin:
     """Implements methods related to file and workspace checks."""
 
     @property
@@ -697,10 +697,10 @@ class _ChecksMixin:
 
 
 @dataclass
-class UploadWorkspace(_ErrorsAndWarningsMixin, _PathsMixin, _CountsMixin,
-                      _FileStaticOperationsMixin, _FileMutationsMixin,
-                      _OpenFilesMixin, _StatusMixin, _ReadinessMixin,
-                      _LockMixin, _SingleFileMixin, _ChecksMixin):
+class UploadWorkspace(ErrorsAndWarningsMixin, PathsMixin, CountsMixin,
+                      FileStaticOperationsMixin, FileMutationsMixin,
+                      OpenFilesMixin, StatusMixin, ReadinessMixin,
+                      LockMixin, SingleFileMixin, ChecksMixin):
     """An upload workspace contains a set of submission source files."""
 
     class SourceType(Enum):
@@ -749,10 +749,10 @@ class UploadWorkspace(_ErrorsAndWarningsMixin, _PathsMixin, _CountsMixin,
     storage: IStorageAdapter
     """Adapter for persistence."""
 
-    status: 'Status' = field(default=_StatusMixin.Status.ACTIVE)
+    status: 'Status' = field(default=StatusMixin.Status.ACTIVE)
     """Status of upload workspace."""
 
-    lock_state: 'LockState' = field(default=_LockMixin.LockState.UNLOCKED)
+    lock_state: 'LockState' = field(default=LockMixin.LockState.UNLOCKED)
     """Lock state of upload workspace."""
 
     checkers: List[IChecker] = field(default_factory=list)
@@ -783,7 +783,7 @@ class UploadWorkspace(_ErrorsAndWarningsMixin, _PathsMixin, _CountsMixin,
     """Logs associated with last upload event."""
 
     lastupload_readiness: 'Readiness' = \
-        field(default=_ReadinessMixin.Readiness.READY)
+        field(default=ReadinessMixin.Readiness.READY)
     """Content readiness status after last upload event."""
 
     def __post_init__(self) -> None:
