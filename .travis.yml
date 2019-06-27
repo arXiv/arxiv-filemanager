@@ -2,7 +2,7 @@ language: python
 sudo: required
 env:
   MIN_PYLINT_SCORE: 8
-  LOGLEVEL: 50
+  LOGLEVEL: 40
   FILE_MANAGEMENT_SQLALCHEMY_DATABASE_URI: "sqlite://:memory:" 
 os:
   - linux
