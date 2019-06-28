@@ -401,7 +401,8 @@ def get_upload_service_log() -> Response:
     # Note: status_code not used
     data, _, headers = service_log.get_upload_service_log()
     response = send_file(data, mimetype="application/tar+gzip")
-    response.set_etag(headers.get('ETag'))
+    response = _update_headers(response, headers)
+    # response.set_etag(headers.get('ETag'))
     return response
 
 # Exception handling
@@ -432,7 +433,7 @@ def handle_exception(error: HTTPException) -> Response:
 
 def _update_headers(response: Response, headers: Dict[str, Any]) -> Response:
     for key, value in headers.items():
-        if key == 'Content-Length' and 'Content-Length' in response.headers:
-            response.headers.remove('Content-Length')
+        if key in response.headers:     # Avoid duplicate headers.
+            response.headers.remove(key)
         response.headers.add(key, value)
     return response
