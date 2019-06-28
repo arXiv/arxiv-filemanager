@@ -73,6 +73,7 @@ class TestSourcePackage(TestCase):
 
         self.original_upload_data = json.loads(response.data)
         self.upload_id = self.original_upload_data['upload_id']
+        self.original_checksum = response.headers.get('ETag')
     
     def tearDown(self):
         """Delete the workspace."""
@@ -108,6 +109,7 @@ class TestSourcePackage(TestCase):
         )
         first_checksum = response.headers.get('ETag')
         self.assertIsNotNone(first_checksum)
+        self.assertEqual(first_checksum, self.original_checksum)
 
         response = self.client.head(
             f'/filemanager/api/{self.upload_id}/content',
