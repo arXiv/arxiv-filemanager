@@ -92,6 +92,7 @@ class TestSerializeWorkspace(TestCase):
             strategy=mock.MagicMock(),
             storage=mock_storage
         )
+        workspace.initialize()
         expected = {'upload_id': 5432, 'upload_total_size': 0, 
                     'upload_compressed_size': 1234, 
                     'created_datetime': workspace.created_datetime, 
@@ -123,6 +124,7 @@ class TestSerializeWorkspace(TestCase):
             strategy=mock.MagicMock(),
             storage=mock_storage
         )
+        workspace.initialize()
         u_file = workspace.create('foo/baz.md')
         u_file2 = workspace.create('secret', is_system=True)
         workspace.add_error(u_file, 'foo error', is_persistant=True)

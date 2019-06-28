@@ -75,7 +75,6 @@ class FileStaticOperationsMixin:
             modified = datetime.now(UTC)
         self.storage.set_last_modified(self, u_file, modified)
         
-
     def get_checksum(self: 'UploadWorkspace', u_file: UploadedFile) -> str:
         hash_md5 = md5()
         with self.open(u_file, "rb") as f:
@@ -790,6 +789,9 @@ class UploadWorkspace(ErrorsAndWarningsMixin, PathsMixin, CountsMixin,
 
     source_type: SourceType = field(default=SourceType.UNKNOWN)
 
+    source_package: Optional[SourcePackage] = None
+    log: Optional[SourceLog] = None
+
     _errors: List[Error] = field(default_factory=list)
 
     files: FileIndex = field(default_factory=FileIndex)
@@ -813,6 +815,15 @@ class UploadWorkspace(ErrorsAndWarningsMixin, PathsMixin, CountsMixin,
         field(default=ReadinessMixin.Readiness.READY)
     """Content readiness status after last upload event."""
 
+    def __post_init__(self) -> None:
+        """Mark the workspace as uninitialized."""
+        self._initialized = False
+
+    @property
+    def is_initialized(self) -> bool:
+        """Determine whether or not the workspace has been initialized."""
+        return self._initialized
+
     def initialize(self) -> None:
         """
         Make sure that we have all of the required directories.
@@ -825,8 +836,11 @@ class UploadWorkspace(ErrorsAndWarningsMixin, PathsMixin, CountsMixin,
         self.storage.makedirs(self, self.source_path)
         self.storage.makedirs(self, self.ancillary_path)
         self.storage.makedirs(self, self.removed_path)
-        self.log = SourceLog(self)
-        self.source_package = SourcePackage(self)
+        if self.log is None:
+            self.log = SourceLog(self)
+        if self.source_package is None:
+            self.source_package = SourcePackage(self)
+        self._initialized = True
     
     @property
     def size_bytes(self) -> int:

@@ -38,6 +38,7 @@ class TestPackContent(TestCase):
             storage=SimpleStorageAdapter(self.base_path),
             checkers=get_default_checkers()
         )
+        self.workspace.initialize()
 
         self.write_upload('test_files_upload/upload5.tar.gz')
         self.workspace.perform_checks()

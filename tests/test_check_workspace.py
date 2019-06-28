@@ -41,6 +41,7 @@ class TestTarGZUpload(TestCase):
             storage=SimpleStorageAdapter(self.base_path),
             checkers=get_default_checkers()
         )
+        self.workspace.initialize()
 
     def tearDown(self):
         """Remove the temporary directory for files."""
@@ -89,6 +90,7 @@ class WorkspaceTestCase(TestCase):
             storage=SimpleStorageAdapter(self.base_path),
             checkers=get_default_checkers()
         )
+        self.workspace.initialize()
 
     def tearDown(self):
         """Remove the temporary directory for files."""
