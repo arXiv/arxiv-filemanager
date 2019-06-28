@@ -100,10 +100,11 @@ def get_upload_content(upload_id: int) -> Response:
         filepointer = workspace.source_package.open_pointer('rb')
     except FileNotFoundError as e:
         raise NotFound("No content in workspace") from e
-    
-    headers = {'ARXIV-OWNER': workspace.owner_user_id, 
-               'ETag': workspace.source_package.checksum,
-               'Content-Length': workspace.source_package.size_bytes,
-               'Last-Modified': workspace.source_package.last_modified,
-               "Content-disposition": f"filename={filepointer.name}"}
+    headers = {
+        'ARXIV-OWNER': workspace.owner_user_id, 
+        'ETag': workspace.source_package.checksum,
+        'Content-Length': workspace.source_package.size_bytes,
+        'Last-Modified': workspace.source_package.last_modified,
+        "Content-disposition": f"filename={workspace.source_package.name}"
+    }
     return filepointer, status.OK, headers

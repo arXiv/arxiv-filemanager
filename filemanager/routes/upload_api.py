@@ -278,7 +278,7 @@ def get_upload_content(upload_id: int) -> Response:
     # Note: status_code is not used
     data, _, headers = package.get_upload_content(upload_id)
     response = send_file(data, mimetype="application/tar+gzip")
-    response = _update_headers(jsonify(data), headers)
+    response = _update_headers(response, headers)
     return response
 
 @blueprint.route('/<int:upload_id>/<path:public_file_path>/content',
@@ -431,8 +431,8 @@ def handle_exception(error: HTTPException) -> Response:
 
 
 def _update_headers(response: Response, headers: Dict[str, Any]) -> Response:
-    if 'Content-Length' in response.headers:
-        response.headers.remove('Content-Length')
     for key, value in headers.items():
+        if key == 'Content-Length' and 'Content-Length' in response.headers:
+            response.headers.remove('Content-Length')
         response.headers.add(key, value)
     return response

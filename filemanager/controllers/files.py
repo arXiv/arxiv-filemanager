@@ -222,7 +222,9 @@ def client_delete_file(upload_id: int, public_file_path: str) -> Response:
 
     response_data = serialize_workspace(workspace)
     response_data.update({'reason': messages.UPLOAD_DELETED_FILE})
-    headers = {'ARXIV-OWNER': workspace.owner_user_id}
+    headers = {'ARXIV-OWNER': workspace.owner_user_id,
+               'ETag': workspace.source_package.checksum,
+               'Last-Modified': workspace.source_package.last_modified}
     return response_data, status.OK, headers
 
 
@@ -285,5 +287,7 @@ def client_delete_all_files(upload_id: int) -> Response:
     
     response_data = serialize_workspace(workspace)
     response_data.update({'reason': messages.UPLOAD_DELETED_ALL_FILES})
-    headers = {'ARXIV-OWNER': workspace.owner_user_id}
+    headers = {'ARXIV-OWNER': workspace.owner_user_id,
+               'ETag': workspace.source_package.checksum,
+               'Last-Modified': workspace.source_package.last_modified}
     return response_data, status.OK, headers

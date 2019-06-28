@@ -19,6 +19,11 @@ class SourcePackage:
         self._file = self.workspace.get(self._path, is_system=True)
 
     @property
+    def name(self) -> str:
+        """Source package file name."""
+        return self._file.name
+
+    @property
     def is_stale(self) -> bool:
         """Indicates whether or not the source package is out of date."""
         if self.workspace.last_modified is None:

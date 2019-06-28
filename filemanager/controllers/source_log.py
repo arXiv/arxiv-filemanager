@@ -87,13 +87,13 @@ def get_upload_source_log(upload_id: int) -> Response:
 
 
     filepointer = workspace.log.open_pointer('rb')
-    if filepointer:
-        name = filepointer.name
-    else:
-        name = ""
+    # if filepointer:
+    #     name = filepointer.name
+    # else:
+    #     name = ""
 
     headers = {
-        "Content-disposition": f"filename={name}",
+        "Content-disposition": f"filename={workspace.log.name}",
         'ETag': workspace.log.checksum,
         'Content-Length': workspace.log.size_bytes,
         'Last-Modified': workspace.log.last_modified,

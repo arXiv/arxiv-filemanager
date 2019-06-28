@@ -87,7 +87,9 @@ def upload_lock(upload_id: int) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
 
-    headers = {'ARXIV-OWNER': workspace.owner_user_id}
+    headers = {'ARXIV-OWNER': workspace.owner_user_id,
+               'ETag': workspace.source_package.checksum,
+               'Last-Modified': workspace.source_package.last_modified}
     return response_data, status_code, headers
 
 
@@ -143,5 +145,7 @@ def upload_unlock(upload_id: int) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
 
-    headers = {'ARXIV-OWNER': workspace.owner_user_id}
+    headers = {'ARXIV-OWNER': workspace.owner_user_id,
+               'ETag': workspace.source_package.checksum,
+               'Last-Modified': workspace.source_package.last_modified}
     return response_data, status_code, headers

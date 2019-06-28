@@ -138,8 +138,9 @@ def get_upload_service_log() -> Response:
     size = os.path.getsize(service_log_path)
     modified = __last_modified(service_log_path)
     filepointer = __content_pointer(service_log_path)
+    filename = os.path.basename(service_log_path)
     headers = {
-        "Content-disposition": f"filename={filepointer.name}",
+        "Content-disposition": f"filename={filename}",
         'ETag': checksum,
         'Content-Length': size,
         'Last-Modified': modified

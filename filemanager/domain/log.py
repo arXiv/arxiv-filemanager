@@ -47,6 +47,11 @@ class SourceLog:
         self._logger.propagate = False
 
     @property
+    def name(self) -> str:
+        """File name of the source log."""
+        return self._file.name
+
+    @property
     def size_bytes(self) -> int:
         """Get the size of the log file in bytes."""
         return self.workspace.get_size_bytes(self._file)
