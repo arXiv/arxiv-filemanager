@@ -38,6 +38,5 @@ class RemoveFilesWithLeadingDot(BaseChecker):
                                   is_persistant=False)
             workspace.remove(u_file,
                              f"Removed file '{u_file.name}' [File not"
-                             " allowed].",
-                             is_persistant=False)
+                             " allowed].")
         return u_file
