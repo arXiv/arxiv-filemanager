@@ -41,7 +41,7 @@ class TestUploadToExistingWorkspace(TestCase):
         """Initialize the Flask application, and get a client for testing."""
         self.server_name = 'fooserver.localdomain'
         self.app = create_web_app()
-        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory'
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
         self.app.config['SERVER_NAME'] = self.server_name
 
         # There is a bug in arxiv.base where it doesn't pick up app config
@@ -64,7 +64,7 @@ class TestUploadToExistingWorkspace(TestCase):
         created = datetime.now(UTC)
         modified = datetime.now(UTC)
         expected_data = {'upload_id': 5,
-                         'status': "SUCCEEDED",
+                         'upload_status': "SUCCEEDED",
                          'create_datetime': created.isoformat(),
                          'modify_datetime': modified.isoformat()}
 

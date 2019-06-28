@@ -54,17 +54,23 @@ class UnpackCompressedTarFiles(BaseChecker):
         # bad things to happen.
         msg = '%s are not allowed. ' + f'Removing {tarinfo.name}'
         if tarinfo.issym():  # sym link
-            workspace.add_warning(u_file, msg % 'Symbolic links')
+            workspace.add_warning(u_file, msg % 'Symbolic links',
+                                  is_persistant=False)
         elif tarinfo.islnk():  # hard link
-            workspace.add_warning(u_file, msg % 'Hard links')
+            workspace.add_warning(u_file, msg % 'Hard links',
+                                  is_persistant=False)
         elif tarinfo.ischr():
-            workspace.add_warning(u_file, msg % 'Character devices')
+            workspace.add_warning(u_file, msg % 'Character devices',
+                                  is_persistant=False)
         elif tarinfo.isblk():
-            workspace.add_warning(u_file, msg % 'Block devices')
+            workspace.add_warning(u_file, msg % 'Block devices',
+                                  is_persistant=False)
         elif tarinfo.isfifo():
-            workspace.add_warning(u_file, msg % 'FIFO devices')
+            workspace.add_warning(u_file, msg % 'FIFO devices',
+                                  is_persistant=False)
         elif tarinfo.isdev():
-            workspace.add_warning(u_file, msg % 'Character devices')
+            workspace.add_warning(u_file, msg % 'Character devices',
+                                  is_persistant=False)
 
         # Extract a regular file or directory.
         elif tarinfo.isreg() or tarinfo.isdir():

@@ -64,9 +64,17 @@ class FileStaticOperationsMixin:
         u_file.size_bytes = self.storage.get_size_bytes(self, u_file)
         return u_file.size_bytes
 
-    def get_last_modified(self: 'UploadWorkspace', u_file: UploadedFile) -> datetime:
+    def get_last_modified(self: 'UploadWorkspace', u_file: UploadedFile) \
+            -> datetime:
         u_file.last_modified = self.storage.get_last_modified(self, u_file)
         return u_file.last_modified
+    
+    def set_last_modified(self: 'UploadWorkspace', u_file: UploadedFile, 
+                          modified: Optional[datetime] = None) -> None:
+        if modified is None:
+            modified = datetime.now(UTC)
+        self.storage.set_last_modified(self, u_file, modified)
+        
 
     def get_checksum(self: 'UploadWorkspace', u_file: UploadedFile) -> str:
         hash_md5 = md5()
@@ -140,6 +148,7 @@ class FileMutationsMixin:
         if touch:
             self.storage.create(self, u_file)
         else:
+            self.set_last_modified(u_file)
             self.get_size_bytes(u_file)
             self.get_last_modified(u_file)
         return u_file
@@ -432,11 +441,13 @@ class ErrorsAndWarningsMixin:
 
     @property
     def errors(self: 'UploadWorkspace') -> List[Error]:
+        """All of the errors + warnings in the workspace."""
         return [error for u_file in self.files for error in u_file.errors] \
             + self._errors
 
     @property
     def fatal_errors(self: 'UploadWorkspace') -> List[Error]:
+        """All of the fatal errors on active files in the workspace."""
         return (
             [error for u_file in self.files for error in u_file.errors
              if u_file.is_active and error.severity is Error.Severity.FATAL]
@@ -490,7 +501,7 @@ class ErrorsAndWarningsMixin:
                                   is_persistant=is_persistant))
 
     def add_warning(self: 'UploadWorkspace', u_file: UploadedFile, msg: str,
-                    is_persistant: bool = False) -> None:
+                    is_persistant: bool = True) -> None:
         """Add a warning for a specific file."""
         self.add_error(u_file, msg, severity=Error.Severity.WARNING,
                        is_persistant=is_persistant)

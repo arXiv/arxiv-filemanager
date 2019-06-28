@@ -87,8 +87,11 @@ def new_upload() -> tuple:
     # Collect arguments and call main upload controller
     data, status_code, headers = upload.upload(None, file, archive_arg,
                                                user_or_client)
-
-    return jsonify(data), status_code, headers
+    
+    response: Response = make_response(jsonify(data))
+    response = _update_headers(jsonify(data), headers)
+    response.status_code = status_code
+    return response
 
 
 @blueprint.route('<int:upload_id>', methods=['POST'])
@@ -113,7 +116,10 @@ def upload_files(upload_id: int) -> tuple:
     data, status_code, headers = upload.upload(upload_id, file, archive_arg,
                                                request.session.user,
                                                ancillary=ancillary)
-    return jsonify(data), status_code, headers
+    response: Response = make_response(jsonify(data))
+    response = _update_headers(jsonify(data), headers)
+    response.status_code = status_code
+    return response
 
 
 # Separated this out so that we can support auth granularity. -E
@@ -272,7 +278,7 @@ def get_upload_content(upload_id: int) -> Response:
     # Note: status_code is not used
     data, _, headers = package.get_upload_content(upload_id)
     response = send_file(data, mimetype="application/tar+gzip")
-    response.set_etag(headers.get('ETag'))
+    response = _update_headers(jsonify(data), headers)
     return response
 
 @blueprint.route('/<int:upload_id>/<path:public_file_path>/content',

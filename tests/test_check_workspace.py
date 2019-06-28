@@ -323,7 +323,7 @@ class TestUploadScenarios(WorkspaceTestCase):
         self.write_upload('upload4.gz')
         self.workspace.perform_checks()
         self.assertTrue(self.workspace.has_warnings)
-        self.assertIn("Renaming 'upload4.gz' to 'upload4'.",
+        self.assertIn("Renamed 'upload4.gz' to 'upload4'.",
                       self.workspace.get_warnings_for_path('upload4'))
         self.assertTrue(self.workspace.has_fatal_errors)
 
@@ -365,7 +365,7 @@ class TestNestedArchives(WorkspaceTestCase):
         self.workspace.perform_checks()
         self.assertTrue(self.workspace.has_warnings)
         self.assertIn(
-            'Removing top level directory',
+            'Removed top level directory',
             self.workspace.get_warnings_for_path('index_files/',
                                                  is_removed=True)
         )
@@ -384,7 +384,7 @@ class TestNestedArchives(WorkspaceTestCase):
         self.workspace.perform_checks()
         self.assertTrue(self.workspace.has_warnings)
         self.assertIn(
-            'Removing top level directory',
+            'Removed top level directory',
             self.workspace.get_warnings_for_path('source/', is_removed=True)
         )
         self.workspace.exists('draft.tex')

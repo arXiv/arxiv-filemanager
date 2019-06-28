@@ -68,10 +68,11 @@ class CheckForMissingReferences(BaseChecker):
         if workspace.exists(bbl_path):
             # If .bbl exists we go ahead and delete .bib file and warn
             # submitter of this action.
-            workspace.add_warning(u_file, self.BIB_WITH_BBL_WARNING)
+            workspace.add_warning(u_file, self.BIB_WITH_BBL_WARNING,
+                                  is_persistant=False)
             workspace.remove(u_file,
-                                f"Removed the file '{u_file.name}'. Using"
-                                f" '{bbl_file}' for references.")
+                             f"Removed the file '{u_file.name}'. Using"
+                             f" '{bbl_file}' for references.")
         else:
             # Missing .bbl (potential missing references). Generate an
             # error and DO NOT DELETE .bib file. Note: We are using .bib as

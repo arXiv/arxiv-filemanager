@@ -27,7 +27,8 @@ class FixWindowsFileNames(BaseChecker):
             new_path = os.path.join(base_path, new_name)
             workspace.rename(u_file, new_path)
 
-            workspace.add_warning(u_file, f'Renamed {prev_name} to {new_name}')
+            workspace.add_warning(u_file, f'Renamed {prev_name} to {new_name}',
+                                  is_persistant=False)
         return u_file
 
 
@@ -73,8 +74,10 @@ class ReplaceIllegalCharacters(BaseChecker):
 
             workspace.add_warning(u_file,
                                   "We only accept file names containing the"
-                                  " characters: a-z A-Z 0-9 _ + - . =")
-            workspace.add_warning(u_file, f'Renamed {prev_name} to {new_name}')
+                                  " characters: a-z A-Z 0-9 _ + - . =",
+                                  is_persistant=False)
+            workspace.add_warning(u_file, f'Renamed {prev_name} to {new_name}',
+                                  is_persistant=False)
         return u_file
 
 
@@ -114,5 +117,5 @@ class ReplaceLeadingHyphen(BaseChecker):
             workspace.add_warning(u_file,
                                   'We do not accept files starting with a'
                                   f' hyphen. Renamed {prev_name} to'
-                                  f' {new_name}.')
+                                  f' {new_name}.', is_persistant=False)
         return u_file

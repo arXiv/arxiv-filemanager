@@ -187,7 +187,11 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
                                        upload_id=workspace.upload_id)}
 
         logger.info("%s: Generating upload summary.", workspace.upload_id)
-        headers.update({'ARXIV-OWNER': workspace.owner_user_id})
+        headers.update({
+            'ARXIV-OWNER': workspace.owner_user_id,
+            'ETag': workspace.source_package.checksum,
+            'Last-Modified': workspace.source_package.last_modified
+        })
         # print('done at', time.time() - start)
 
         # TODO: this should only be 201 Created if it's a new workspace; 

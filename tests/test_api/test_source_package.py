@@ -1,6 +1,7 @@
-"""Tests related to deleting all files in a workspace."""
+"""Tests related to the source package."""
 
 import os
+import io
 import json
 import shutil
 import tempfile
@@ -24,12 +25,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(int(os.environ.get('LOGLEVEL', '20')))
 
 
-class TestDeleteAllFiles(TestCase):
-    """
-    Test delete file operation.
-
-    These tests will focus on triggering delete failures.
-    """
+class TestSourcePackage(TestCase):
+    """The source package is a gzipped tarball of the source and anc files."""
 
     DATA_PATH = os.path.join(os.path.split(os.path.abspath(__file__))[0], '..')
 
@@ -59,10 +56,8 @@ class TestDeleteAllFiles(TestCase):
                                                auth.scopes.DELETE_UPLOAD_FILE])
 
         # Upload a gzipped tar archive package containing files to delete.
-        filepath = os.path.join(
-            self.DATA_PATH,
-            'test_files_upload/UploadWithANCDirectory.tar.gz'
-        )
+        filepath = os.path.join(self.DATA_PATH,
+                                'test_files_upload/upload2.tar.gz')
         fname = os.path.basename(filepath)
 
         # Upload some files so we can download them.
@@ -97,60 +92,63 @@ class TestDeleteAllFiles(TestCase):
         self.assertEqual(response.status_code, status.OK, 
                          "Accepted request to delete workspace.")
 
-    def test_delete_all_files(self):
-        """Delete all files in my workspace (normal)."""
+    def test_source_package_exists(self):
+        """The source package is available when the workspace is created."""
+        response = self.client.head(
+            f'/filemanager/api/{self.upload_id}/content',
+            headers={'Authorization': self.token}
+        )
+        self.assertEqual(response.status_code, status.OK)
+    
+    def test_source_package_checksum_is_stable(self):
+        """Checksum should not change while the workspace does not change."""
+        response = self.client.head(
+            f'/filemanager/api/{self.upload_id}/content',
+            headers={'Authorization': self.token}
+        )
+        first_checksum = response.headers.get('ETag')
+        self.assertIsNotNone(first_checksum)
+
+        response = self.client.head(
+            f'/filemanager/api/{self.upload_id}/content',
+            headers={'Authorization': self.token}
+        )
+        second_checksum = response.headers.get('ETag')
+        self.assertEqual(first_checksum, second_checksum)
+
+        response = self.client.get(
+            f'/filemanager/api/{self.upload_id}/content',
+            headers={'Authorization': self.token}
+        )
+        third_checksum = response.headers.get('ETag')
+        self.assertEqual(first_checksum, third_checksum)
+    
+    def test_source_package_checksum_changes(self):
+        """When the workspace changes, so does the checksum."""
+        response = self.client.head(
+            f'/filemanager/api/{self.upload_id}/content',
+            headers={'Authorization': self.token}
+        )
+        first_checksum = response.headers.get('ETag')
+        self.assertIsNotNone(first_checksum)
+
         response = self.client.post(
-            f"/filemanager/api/{self.upload_id}/delete_all",
+            f'/filemanager/api/{self.upload_id}',
+            data={'file': (io.BytesIO(b'foocontent'), 'foo.txt'),},
             headers={'Authorization': self.token},
             content_type='multipart/form-data'
         )
 
-        self.assertEqual(response.status_code, status.OK, 
-                         "Delete all user-uploaded files.")
+        second_checksum = response.headers.get('ETag')
+        self.assertIsNotNone(second_checksum)
+        self.assertNotEqual(first_checksum, second_checksum)
 
-        response = self.client.get(f"/filemanager/api/{self.upload_id}",
-                                   headers={'Authorization': self.token})
-        self.assertEqual(response.status_code, status.OK,
-                         'Workspace is still available')
-        response_data = json.loads(response.data)
-        self.assertEqual(len(response_data['files']), 0,
-                         'All of the files are deleted')
-        
-        # Try an delete an individual file ...we'll know if delete all files really worked.
-        public_file_path = "anc/manuscript_Na2.7Ru4O9.tex"
-        public_file_path = quote(public_file_path, safe='')
-        response = self.client.delete(
-            f"/filemanager/api/{self.upload_id}/{public_file_path}",
+        response = self.client.head(
+            f'/filemanager/api/{self.upload_id}/content',
             headers={'Authorization': self.token}
         )
-        logger.debug(f"Delete already deleted file in subdirectory anc"
-                     f" Response: '{public_file_path}'\n{response.data}\n")
-        self.assertEqual(response.status_code, status.NOT_FOUND,
-                         f"Delete already deleted file in subdirectory:"
-                         f" '{public_file_path}'.")
 
-        expected_data = {'reason': 'file not found'}
-        self.assertDictEqual(json.loads(response.data), expected_data)
-
-    def test_delete_all_nonexistant_files(self):
-        """
-        Delete all files from a non-existant workspace.
-
-        There are really not many exceptions we can generate as long as the
-        upload workspace exists. If upload workspace exists this command will
-        remove all files and directories under src directory. At this point I
-        don't anticipate generating exception when src directory is already
-        empty.
+        third_checksum = response.headers.get('ETag')
+        self.assertIsNotNone(third_checksum)
+        self.assertEqual(second_checksum, third_checksum)
         
-        """
-        # Delete all files in my workspace (that doesn't exist)
-        response = self.client.post(f"/filemanager/api/999999/delete_all",
-                                    headers={'Authorization': self.token},
-                                    content_type='multipart/form-data')
-
-        self.assertEqual(response.status_code, status.NOT_FOUND,
-                         "Delete all user-uploaded files for non-existent"
-                         " workspace.")
-
-        expected_data = {'reason': 'upload workspace not found'}
-        self.assertDictEqual(json.loads(response.data), expected_data)

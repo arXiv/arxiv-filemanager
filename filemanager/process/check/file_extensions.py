@@ -22,7 +22,8 @@ class FixFileExtensions(BaseChecker):
         base_name, _ = os.path.splitext(name)
         new_name = f'{base_name}.{extension}'
         workspace.rename(u_file, os.path.join(base_dir, new_name))
-        workspace.add_warning(u_file, f"Renamed '{prev_name}' to {new_name}.")
+        workspace.add_warning(u_file, f"Renamed '{prev_name}' to {new_name}.",
+                              is_persistant=False)
         return u_file
 
     def check_POSTSCRIPT(self, workspace: UploadWorkspace,

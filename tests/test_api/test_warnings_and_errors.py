@@ -37,7 +37,7 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
         self.workdir = tempfile.mkdtemp()
         self.server_name = 'fooserver.localdomain'
         self.app = create_web_app()
-        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory'
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
         self.app.config['SERVER_NAME'] = self.server_name
         self.app.config['STORAGE_BASE_PATH'] = self.workdir
 
@@ -133,7 +133,7 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
                       info_errors['core'])
         self.assertNotIn('core', files, 'File was removed')
 
-        self.assertIn("REMOVING standard style files for Paul", 
+        self.assertIn("Removed standard style files for Paul", 
                       ' '.join(info_errors['diagrams.sty']))
         self.assertNotIn('diagrams.sty', files, 'File was removed')
 
@@ -162,7 +162,7 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
         self.assertNotIn('final.bib', files, 'File was removed')
 
         self.assertIn(
-            "Removing file 'aa.dem' on the assumption that it is the example "
+            "Removed file 'aa.dem' on the assumption that it is the example "
             "file for the Astronomy and Astrophysics macro package aa.cls.",
             info_errors['aa.dem']
         )

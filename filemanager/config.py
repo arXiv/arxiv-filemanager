@@ -3,6 +3,7 @@
 import os
 import warnings
 import tempfile
+from arxiv.util.serialize import dumps, loads
 
 VERSION = '0.2'
 APP_VERSION = VERSION
@@ -25,6 +26,10 @@ SQLALCHEMY_DATABASE_URI = os.environ.get(
     'sqlite:///filemanager.db'
 )
 SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+if 'mysql' in SQLALCHEMY_DATABASE_URI:
+    SQLALCHEMY_ENGINE_OPTIONS = {'json_serializer': dumps, 
+                                 'json_deserializer': loads}
 
 JWT_SECRET = os.environ.get('JWT_SECRET', 'foosecret')
 
@@ -109,5 +114,5 @@ if STORAGE_BASE_PATH is None:
     STORAGE_BASE_PATH = tempfile.mkdtemp()
     warnings.warn('STORAGE_BASE_PATH is not set. Using temp directory: %s' %
                   STORAGE_BASE_PATH)
-                  
+
 STORAGE_QUARANTINE_PATH = os.environ.get('STORAGE_QUARANTINE_PATH', None)

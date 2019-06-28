@@ -39,7 +39,7 @@ class TestReleasedWorkspace(TestCase):
         self.workdir = tempfile.mkdtemp()
         self.server_name = 'fooserver.localdomain'
         self.app = create_web_app()
-        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory'
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
         self.app.config['SERVER_NAME'] = self.server_name
         self.app.config['STORAGE_BASE_PATH'] = self.workdir
 
@@ -141,7 +141,7 @@ class TestReleasedWorkspace(TestCase):
         self.assertEqual(response.status_code, status.OK, 
                          "Request upload summary on released workspace (OK)")
         response_data = json.loads(response.data)
-        self.assertEqual(response_data['status'], 
+        self.assertEqual(response_data['upload_status'], 
                          UploadWorkspace.Status.RELEASED.value)
 
     def test_attempt_to_delete_a_file_in_released_workspace(self):
@@ -181,7 +181,7 @@ class TestUnReleasedWorkspace(TestCase):
         self.workdir = tempfile.mkdtemp()
         self.server_name = 'fooserver.localdomain'
         self.app = create_web_app()
-        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory'
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
         self.app.config['SERVER_NAME'] = self.server_name
         self.app.config['STORAGE_BASE_PATH'] = self.workdir
 
@@ -289,7 +289,7 @@ class TestUnReleasedWorkspace(TestCase):
         self.assertEqual(response.status_code, status.OK, 
                          "Request upload summary on unreleased workspace (OK)")
         response_data = json.loads(response.data)
-        self.assertEqual(response_data['status'], 
+        self.assertEqual(response_data['upload_status'], 
                          UploadWorkspace.Status.ACTIVE.value)
 
     def test_attempt_to_delete_a_file_in_unreleased_workspace(self):

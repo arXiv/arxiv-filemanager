@@ -47,7 +47,8 @@ def file_to_dict(u_file: UploadedFile) -> dict:
         'is_system': u_file.is_system,
         'last_modified': u_file.last_modified,
         'reason_for_removal': u_file.reason_for_removal,
-        'errors': [error_to_dict(error) for error in u_file.errors]
+        'errors': [error_to_dict(error) for error in u_file.errors
+                   if error.is_persistant]
     }
 
 
@@ -62,6 +63,7 @@ def dict_to_file(data: dict, workspace: UploadWorkspace) -> UploadedFile:
         is_checked=data.get('is_checked', False),
         is_persisted=data.get('is_persisted', False),
         is_system=data.get('is_system', False),
+        is_directory=data.get('is_directory', False),
         last_modified=data['last_modified'],
         reason_for_removal=data.get('reason_for_removal'),
         _errors=[dict_to_error(error) for error in data.get('errors', [])],

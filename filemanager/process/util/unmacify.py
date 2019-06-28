@@ -123,7 +123,8 @@ def check_file_termination(workspace: UploadWorkspace,
                 workspace.log.info(f"{u_file.path} [stripped newline] ")
 
             workspace.add_warning(u_file,
-                                  f"{msg} stripped from {u_file.path}.")
+                                  f"{msg} stripped from {u_file.path}.",
+                                  is_persistant=False)
 
         # Check of last character of file is newline character
         # Seek to last two bytes of file

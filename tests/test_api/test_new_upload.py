@@ -31,7 +31,7 @@ class TestNewUpload(TestCase):
         self.workdir = tempfile.mkdtemp()
         self.server_name = 'fooserver.localdomain'
         self.app = create_web_app()
-        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory'
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
         self.app.config['SERVER_NAME'] = self.server_name
         self.app.config['STORAGE_BASE_PATH'] = self.workdir
 
@@ -198,10 +198,9 @@ class TestNewUpload(TestCase):
         created = datetime.now(UTC)
         modified = datetime.now(UTC)
         expected_data = {'upload_id': 5,
-                         'status': "SUCCEEDED",
+                         'upload_status': "SUCCEEDED",
                          'create_datetime': created.isoformat(),
-                         'modify_datetime': modified.isoformat()
-                         }
+                         'modify_datetime': modified.isoformat()}
 
         filepath = os.path.join(self.DATA_PATH,
                                 'test_files_upload/1801.03879-1.tar.gz')
@@ -246,7 +245,7 @@ class TestNewUpload(TestCase):
                          'Upload size is consistent between requests')
         self.assertEqual(post_data['lock_state'], get_data['lock_state'],
                          'Lock state is consistent between requests')
-        self.assertEqual(post_data['status'], get_data['status'],
+        self.assertEqual(post_data['upload_status'], get_data['upload_status'],
                          'Status is consistent between requests')
         self.assertEqual(post_data['checksum'], get_data['checksum'],
                          'Checksum is consistent between requests')

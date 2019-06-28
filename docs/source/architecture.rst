@@ -133,7 +133,7 @@ Operations on files
 '''''''''''''''''''
 The workspace abstracts away the underlying storage model, providing an API
 that focuses on common transformations on files (e.g. adding, removing,
-renaming, etc). It provides a slot, :attr:`.UploadWorkspace.storage` into which
+renamed, etc). It provides a slot, :attr:`.UploadWorkspace.storage` into which
 can be fitted a storage adapter that implements the :class:`.IStorageAdapter`
 protocol.
 

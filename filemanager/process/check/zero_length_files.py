@@ -20,7 +20,8 @@ class ZeroLengthFileChecker(BaseChecker):
             -> UploadedFile:
         """Determine wether a file is zero-length, and remove it if so."""
         if u_file.is_empty:
-            workspace.add_warning(u_file, self.ZERO_LENGTH_MSG % u_file.name)
+            workspace.add_warning(u_file, self.ZERO_LENGTH_MSG % u_file.name,
+                                  is_persistant=False)
             workspace.remove(u_file,
                              f"Removed file '{u_file.name}' [file is empty].")
         return u_file

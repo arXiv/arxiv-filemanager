@@ -104,7 +104,7 @@ class RemoveDiagramsPackage(BaseChecker):
     """
 
     DIAGRAMS_WARNING = (
-        "REMOVING standard style files for Paul Taylor's "
+        "Removed standard style files for Paul Taylor's "
         "diagrams package. This package is supported in arXiv's TeX "
         "tree and the style files are thus unnecessary. Furthermore, they "
         "include 'time-bomb' code which will render submissions that include "
@@ -129,7 +129,7 @@ class RemoveAADemoFile(BaseChecker):
     """
 
     AA_DEM_MSG = (
-         "Removing file 'aa.dem' on the assumption that it is "
+         "Removed file 'aa.dem' on the assumption that it is "
          'the example file for the Astronomy and Astrophysics '
          'macro package aa.cls.'
     )
@@ -200,7 +200,7 @@ class FixTGZFileName(BaseChecker):
             new_path = os.path.join(base_path, new_name)
             workspace.rename(u_file, new_path)
             workspace.add_warning(u_file,
-                                  f"Renaming '{prev_name}' to '{new_name}'.")
+                                  f"Renamed '{prev_name}' to '{new_name}'.")
         return u_file
 
 

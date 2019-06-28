@@ -33,11 +33,12 @@ class RemoveTopLevelDirectory(BaseChecker):
         if len(entries) == 1 \
                 and entries[0].is_directory and not entries[0].is_ancillary:
 
-            workspace.add_warning(entries[0], "Removing top level directory")
+            workspace.add_warning(entries[0], "Removed top level directory",
+                                  is_persistant=False)
             for _, child in workspace.iter_children(entries[0], max_depth=1):
                 _, new_path = child.path.split(entries[0].path, 1)
                 workspace.rename(child, new_path)
-            workspace.remove(entries[0], "Removing top level directory")
+            workspace.remove(entries[0], "Removed top level directory")
             #
             # # Set permissions
             # self.set_file_permissions()

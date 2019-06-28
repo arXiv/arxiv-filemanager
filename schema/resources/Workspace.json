@@ -6,7 +6,7 @@
     "upload_id",
     "upload_total_size",
     "readiness",
-    "status",
+    "upload_status",
     "created_datetime",
     "modified_datetime",
     "files"
@@ -33,7 +33,7 @@
       "description": "Total compressed size of uploaded content.",
       "type": "integer"
     },
-    "status": {
+    "upload_status": {
       "description": "State of the upload workspace.",
       "type": "string",
       "enum": [

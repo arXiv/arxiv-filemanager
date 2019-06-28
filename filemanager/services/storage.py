@@ -242,8 +242,13 @@ class SimpleStorageAdapter:
     def get_last_modified(self, workspace: UploadWorkspace,
                           u_file: UploadedFile) -> str:
         _path = self.get_path(workspace, u_file)
-        ts = datetime.utcfromtimestamp(os.path.getmtime(_path)).replace(tzinfo=UTC)
-        return ts
+        ts = datetime.utcfromtimestamp(os.path.getmtime(_path))
+        return ts.replace(tzinfo=UTC)
+    
+    def set_last_modified(self, workspace: UploadWorkspace, 
+                          u_file: UploadedFile, modified: datetime) -> None:
+        mtime = modified.timestamp()
+        os.utime(self.get_path(workspace, u_file), (mtime, mtime))
 
     def pack_source(self, workspace: UploadWorkspace,
                     u_file: UploadedFile) -> UploadedFile:
