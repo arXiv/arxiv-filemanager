@@ -61,6 +61,7 @@ def check_upload_content_exists(upload_id: int) -> Response:
                'ETag': workspace.source_package.checksum,
                'Content-Length': workspace.source_package.size_bytes,
                'Last-Modified': workspace.source_package.last_modified}
+    logger.debug('Respond with headers %s', headers)
     return {}, status.OK, headers
 
 
@@ -107,4 +108,5 @@ def get_upload_content(upload_id: int) -> Response:
         'Last-Modified': workspace.source_package.last_modified,
         "Content-disposition": f"filename={workspace.source_package.name}"
     }
+    logger.debug('Respond with headers %s', headers)
     return filepointer, status.OK, headers

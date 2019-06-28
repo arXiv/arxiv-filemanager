@@ -192,6 +192,8 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
             'ETag': workspace.source_package.checksum,
             'Last-Modified': workspace.source_package.last_modified
         })
+        logger.debug('Response checksum: %s', response_data['checksum'])
+        logger.debug('Responding with headers %s', headers)
         # print('done at', time.time() - start)
 
         # TODO: this should only be 201 Created if it's a new workspace; 

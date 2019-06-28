@@ -350,7 +350,7 @@ class PathsMixin:
             is_ancillary: Optional[bool] = None, is_removed: bool = False, 
             is_system: bool = False) -> UploadedFile:
         """Get a file at ``path``."""
-        if is_system:
+        if is_system and not self.exists(path, is_system=is_system):
             # Create a description of the file, since system files are not part
             # of the source package.
             return self.create(path, is_system=is_system, touch=True)
