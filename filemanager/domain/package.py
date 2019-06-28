@@ -28,7 +28,8 @@ class SourcePackage:
         """Indicates whether or not the source package is out of date."""
         if self.workspace.last_modified is None:
             return True
-        return self.last_modified < self.workspace.last_modified
+        stale = self.last_modified < self.workspace.last_modified
+        return stale
 
     @property
     def size_bytes(self) -> int:

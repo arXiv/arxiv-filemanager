@@ -1,13 +1,15 @@
 """Provides a struct for indexing file metadata."""
 
-from typing import Iterable, Tuple, Optional
+from typing import Iterable, Tuple, Optional, Dict
 from itertools import chain
+from dataclasses import dataclass, field
 
 
 class NoSuchFile(Exception):
     """An operation has been attempted on a non-existant file."""
 
 
+@dataclass
 class FileIndex:
     """
     Indexing struct for :class:`.UploadedFile`s.
@@ -16,13 +18,14 @@ class FileIndex:
     and source files without committing to an underlying path/filesystem
     structure. This helps us maintain flexibility around how we store files.
     """
+    source: Dict[str, 'UploadedFile'] = field(default_factory=dict)
+    ancillary: Dict[str, 'UploadedFile'] = field(default_factory=dict)
+    removed: Dict[str, 'UploadedFile'] = field(default_factory=dict)
+    system: Dict[str, 'UploadedFile'] = field(default_factory=dict)
 
-    def __init__(self) -> None:
-        """Initialize with separate mappings for ancillary, system, etc."""
-        self.source = {}
-        self.ancillary = {}
-        self.removed = {}
-        self.system = {}
+    # def __post_init__(self) -> None:
+    #     """Initialize with separate mappings for ancillary, system, etc."""
+        
 
     def set(self, path: str, u_file: 'UploadedFile') -> None:
         """Add a :class:`.UploadedFile` to the index."""

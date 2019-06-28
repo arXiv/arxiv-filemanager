@@ -6,6 +6,7 @@ from datetime import datetime
 from pytz import UTC
 from contextlib import contextmanager
 from functools import wraps
+from pprint import pprint
 
 from flask import Flask, current_app
 from werkzeug.local import LocalProxy
@@ -15,7 +16,7 @@ from retry import retry
 from arxiv.base.globals import get_application_global
 from arxiv.base import logging
 
-from filemanager.domain import UploadWorkspace
+from filemanager.domain import UploadWorkspace, FileIndex
 from .models import db, DBUpload
 from ..storage import create_adapter
 from . import translate
@@ -146,29 +147,21 @@ def retrieve(upload_id: int, skip_cache: bool = False) \
     workspace = UploadWorkspace(**args)
 
     if upload_data.files:
-        workspace.files.source.clear()
-        workspace.files.source.update({
-            p: translate.dict_to_file(d, workspace)
-            for p, d in upload_data.files['source'].items()
-        })
-        workspace.files.ancillary.clear()
-        workspace.files.ancillary.update({
-            p: translate.dict_to_file(d, workspace)
-            for p, d in upload_data.files['ancillary'].items()
-        })
-        workspace.files.removed.clear()
-        workspace.files.removed.update({
-            p: translate.dict_to_file(d, workspace)
-            for p, d in upload_data.files['removed'].items()
-        })
-        workspace.files.system.clear()
-        workspace.files.system.update({
-            p: translate.dict_to_file(d, workspace)
-            for p, d in upload_data.files['system'].items()
-        })
+        workspace.files = FileIndex(
+            source={p: translate.dict_to_file(d, workspace)
+                    for p, d in upload_data.files['source'].items()},
+            ancillary={p: translate.dict_to_file(d, workspace)
+                    for p, d in upload_data.files['ancillary'].items()},
+            removed={p: translate.dict_to_file(d, workspace)
+                    for p, d in upload_data.files['removed'].items()},
+            system={p: translate.dict_to_file(d, workspace)
+                    for p, d in upload_data.files['system'].items()
+            }
+        )
     if upload_data.errors:
         for datum in upload_data.errors:
             workspace._errors.append(translate.dict_to_error(datum))
+    workspace.initialize()
     return workspace
 
 
@@ -245,14 +238,17 @@ def update(workspace: UploadWorkspace) -> None:
 
     # We won't let client update created_datetime
 
-    upload_data.lastupload_start_datetime = workspace.lastupload_start_datetime
-    upload_data.lastupload_completion_datetime = workspace.lastupload_completion_datetime
+    upload_data.lastupload_start_datetime = \
+        workspace.lastupload_start_datetime
+    upload_data.lastupload_completion_datetime = \
+        workspace.lastupload_completion_datetime
     upload_data.lastupload_logs = workspace.lastupload_logs
     upload_data.lastupload_file_summary = workspace.lastupload_file_summary
     upload_data.lastupload_readiness = workspace.lastupload_readiness.value
     upload_data.status = workspace.status.value
     upload_data.lock_state = workspace.lock_state.value
     upload_data.source_type = workspace.source_type.value
+    upload_data.modified_datetime = workspace.modified_datetime
 
     upload_data.files = {
         'source': {p: translate.file_to_dict(f)
@@ -264,15 +260,21 @@ def update(workspace: UploadWorkspace) -> None:
         'system': {p: translate.file_to_dict(f)
                    for p, f in workspace.files.system.items()},
     }
-
-    upload_data.errors = [translate.error_to_dict(e) for e in workspace._errors
+    upload_data.errors = [translate.error_to_dict(e) 
+                          for e in workspace._errors
                           if e.is_persistant]
 
-    # Always set this when workspace DB entry is updated
-    upload_data.modified_datetime = datetime.now(UTC)
-
-    # TODO: Would user ever need to set the modification time manually?
-    # upload_data.modified_datetime = workspace.modified_datetime
+    # 2019-06-28: In earlier versions, the ``modified_datetime`` of the
+    # workspace was set here. This would make sense when we think about the
+    # upload workspace and the database entry about the upload workspace as
+    # separate concepts. But in this iteration, the database entry (as data)
+    # *represents* the upload workspace (concept). Attaching the notion of
+    # modification directly to its representation confuses the representational
+    # relationship, leading to odd behavior. 
+    #
+    # TL;DR: the ``modified_datetime`` is managed in the domain.
+    #
+    # --Erick
 
     db.session.add(upload_data)
     db.session.commit()

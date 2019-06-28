@@ -120,6 +120,7 @@ class FileMutationsMixin:
                is_directory: bool = False,
                is_ancillary: Optional[bool] = None,
                is_system: bool = False,
+               is_persisted: bool = False,
                touch: bool = True) -> UploadedFile:
         """Create a new :class:`.UploadedFile` at ``path``."""
         path = self.LEADING_DOTSLASH.sub('', path)
@@ -140,7 +141,8 @@ class FileMutationsMixin:
                               file_type=file_type,
                               is_directory=is_directory,
                               is_ancillary=is_ancillary,
-                              is_system=is_system)
+                              is_system=is_system,
+                              is_persisted=is_persisted)
 
         # if not is_system:   # System files are not part of the source package.
         self.files.set(u_file.path, u_file)
@@ -352,8 +354,11 @@ class PathsMixin:
         """Get a file at ``path``."""
         if is_system and not self.exists(path, is_system=is_system):
             # Create a description of the file, since system files are not part
-            # of the source package.
-            return self.create(path, is_system=is_system, touch=True)
+            # of the source package. We will create this directly as a
+            # persisted file (if supported by the storage adapter).
+            logger.debug('system file does not already exist: %s', path)
+            return self.create(path, is_system=is_system, is_persisted=True,
+                               touch=True)
         if is_ancillary is None:
             path, is_ancillary = self._check_is_ancillary_path(path)
         return self.files.get(path, is_ancillary=is_ancillary,
@@ -808,8 +813,15 @@ class UploadWorkspace(ErrorsAndWarningsMixin, PathsMixin, CountsMixin,
         field(default=ReadinessMixin.Readiness.READY)
     """Content readiness status after last upload event."""
 
-    def __post_init__(self) -> None:
-        """Make sure that we have all of the required directories."""
+    def initialize(self) -> None:
+        """
+        Make sure that we have all of the required directories.
+        
+        This is performed on demand, rather than as a ``__post_init__`` hook, 
+        so that we have an opportunity to attach an updated :class:`.FileIndex`
+        after the :class:`.UploadWorkspace` is instantiated but before any
+        system files are created.
+        """
         self.storage.makedirs(self, self.source_path)
         self.storage.makedirs(self, self.ancillary_path)
         self.storage.makedirs(self, self.removed_path)

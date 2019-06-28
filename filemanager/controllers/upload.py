@@ -37,6 +37,7 @@ def _create_workspace(file: FileStorage, user_id: str) -> UploadWorkspace:
                     file.filename)
         current_time = datetime.now(UTC)
         workspace = database.create(user_id)
+        workspace.initialize()
     except IOError as e:
         logger.info("Error creating new workspace: %s", e)
         raise InternalServerError(f'{messages.UPLOAD_IO_ERROR}: {e}')
@@ -170,7 +171,6 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         workspace.lastupload_completion_datetime = completion_datetime
         workspace.lastupload_readiness = workspace.readiness
         workspace.status = UploadWorkspace.Status.ACTIVE
-
         if workspace.source_package.is_stale:
             workspace.source_package.pack()
         database.update(workspace)    # Store in DB
@@ -275,7 +275,9 @@ def upload_summary(upload_id: int) -> Response:
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
 
-    headers = {'ARXIV-OWNER': workspace.owner_user_id}
+    headers = {'ARXIV-OWNER': workspace.owner_user_id,
+               'ETag': workspace.source_package.checksum,
+               'Last-Modified': workspace.source_package.last_modified}
     return response_data, status_code, headers
 
 

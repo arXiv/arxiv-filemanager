@@ -5,6 +5,5 @@ from filemanager.services import database
 
 app = create_web_app()
 
-app.app_context().push()
-
-database.db.create_all()
+with app.app_context():
+    database.db.create_all()
