@@ -96,13 +96,14 @@ class TestSerializeWorkspace(TestCase):
         expected = {'upload_id': 5432, 'upload_total_size': 0, 
                     'upload_compressed_size': 1234, 
                     'created_datetime': workspace.created_datetime, 
-                    'modified_datetime': workspace.modified_datetime, 
                     'start_datetime': None, 'completion_datetime': None, 
                     'files': [], 'errors': [], 
                     'readiness': 'READY', 'upload_status': 'ACTIVE', 
                     'lock_state': 'UNLOCKED', 'source_format': 'unknown', 
                     'checksum': 'rL0Y20zC-Fzt72VPzMSk2A=='}
-        self.assertDictEqual(serialize_workspace(workspace), expected)
+        data = serialize_workspace(workspace)
+        for key, value in expected.items():
+            self.assertEqual(data.get(key), value, f'{key} should match')
     
     def test_serialize_workspace_with_files_and_errors(self):
         """Serialize an :class:`.UploadWorkspace."""

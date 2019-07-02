@@ -4,7 +4,7 @@ import os
 import io
 import logging
 from http import HTTPStatus as status
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union, IO
 from datetime import datetime
 
 from flask import current_app
@@ -20,7 +20,7 @@ from ..serialize import serialize_workspace
 from .service_log import logger
 from . import _messages as messages
 
-Response = Tuple[Optional[dict], status, dict]
+Response = Tuple[Optional[Union[dict, IO]], status, dict]
 
 
 def check_upload_content_exists(upload_id: int) -> Response:

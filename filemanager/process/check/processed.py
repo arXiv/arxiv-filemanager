@@ -22,7 +22,7 @@ from typing import Callable, Optional
 
 from arxiv.base import logging
 
-from ...domain import FileType, UploadedFile, UploadWorkspace
+from ...domain import FileType, UploadedFile, CheckableWorkspace
 from .base import BaseChecker
 
 
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 class WarnAboutProcessedDirectory(BaseChecker):
     """Check for and warn about processed directory."""
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         if u_file.is_directory and u_file.name.strip('/') == 'processed':
             workspace.add_warning(u_file,

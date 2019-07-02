@@ -2,7 +2,7 @@
 
 from arxiv.base import logging
 
-from ...domain import FileType, UploadedFile, UploadWorkspace
+from ...domain import FileType, UploadedFile, CheckableWorkspace
 from .base import BaseChecker
 
 
@@ -31,35 +31,35 @@ class FlagInvalidSourceTypes(BaseChecker):
         "This file appears to be a single auxiliary TeX file."
     )
 
-    def check_DOCX(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check_DOCX(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """We no longer support DOCX."""
         if workspace.file_count == 1:
-            workspace.source_type = UploadWorkspace.SourceType.INVALID
+            workspace.source_type = CheckableWorkspace.SourceType.INVALID
             workspace.add_error(u_file, self.DOCX_ERROR_MESSAGE)
         return u_file
 
-    def check_ODF(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check_ODF(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """We no longer support ODF."""
         if workspace.file_count == 1:
-            workspace.source_type = UploadWorkspace.SourceType.INVALID
+            workspace.source_type = CheckableWorkspace.SourceType.INVALID
             workspace.add_error(u_file, self.DOCX_ERROR_MESSAGE)
         return u_file
 
-    def check_EPS(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check_EPS(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """Encapsulated postscript format is not supported."""
         if workspace.file_count == 1:
-            workspace.source_type = UploadWorkspace.SourceType.INVALID
+            workspace.source_type = CheckableWorkspace.SourceType.INVALID
             workspace.add_error(u_file, self.EPS_ERROR_MESSAGE)
         return u_file
 
-    def check_TEXAUX(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check_TEXAUX(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """Auxiliary TeX files are not allowed."""
         if workspace.file_count == 1:
-            workspace.source_type = UploadWorkspace.SourceType.INVALID
+            workspace.source_type = CheckableWorkspace.SourceType.INVALID
             workspace.add_error(u_file, self.TEXAUX_ERROR_MESSAGE)
         return u_file
 
@@ -67,7 +67,7 @@ class FlagInvalidSourceTypes(BaseChecker):
 class FlagInvalidFileTypes(BaseChecker):
     """Flag any invalid file types."""
 
-    def check_RAR(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check_RAR(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """Disallow rar files."""
         workspace.add_error(u_file,

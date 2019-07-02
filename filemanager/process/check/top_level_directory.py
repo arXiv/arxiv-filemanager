@@ -4,7 +4,7 @@ import os
 
 from arxiv.base import logging
 
-from ...domain import FileType, UploadedFile, UploadWorkspace
+from ...domain import FileType, UploadedFile, CheckableWorkspace
 from .base import BaseChecker, StopCheck
 
 
@@ -20,7 +20,7 @@ class RemoveTopLevelDirectory(BaseChecker):
     files in a subdirectory.
     """
 
-    def check_workspace(self, workspace: UploadWorkspace) -> None:
+    def check_workspace(self, workspace: CheckableWorkspace) -> None:
         """Eliminate single top-level directory."""
         # source_directory = self.source_path
 

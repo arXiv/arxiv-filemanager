@@ -4,7 +4,7 @@ from typing import Optional, Callable
 from flask import Flask
 from arxiv.base import logging
 from .check.base import StopCheck
-from ..domain import UploadWorkspace, IChecker, ICheckingStrategy
+from ..domain import CheckableWorkspace, IChecker, ICheckingStrategy
 
 logger = logging.getLogger(__name__)
 logger.propagate = False
@@ -13,7 +13,8 @@ logger.propagate = False
 class SynchronousCheckingStrategy:
     """Runs checks one file at a time."""
 
-    def check(self, workspace: 'UploadWorkspace', *checkers: IChecker) -> None:
+    def check(self, workspace: 'CheckableWorkspace', 
+              *checkers: IChecker) -> None:
         """Run checks one file at a time."""
         # This may take a few passes, as we may be unpacking compressed files.
         while workspace.has_unchecked_files:

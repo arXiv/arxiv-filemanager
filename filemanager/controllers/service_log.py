@@ -28,7 +28,8 @@ def _get_service_logs_directory() -> str:
 
     """
     config = get_application_config()
-    return config.get('UPLOAD_SERVICE_LOG_DIRECTORY', '')
+    _log_dir: str = config.get('UPLOAD_SERVICE_LOG_DIRECTORY', '')
+    return _log_dir
 
 
 service_log_path = os.path.join(_get_service_logs_directory(), 'upload.log')
@@ -60,7 +61,7 @@ def __checksum(filepath: str) -> str:
     return ""
 
 
-def __last_modified(filepath: str) -> str:
+def __last_modified(filepath: str) -> datetime:
     """Return last modified time of file.
 
     Perameters
@@ -115,10 +116,10 @@ def check_upload_service_log_exists() -> Response:
     checksum = __checksum(service_log_path)
     size = os.path.getsize(service_log_path)
     modified = __last_modified(service_log_path)
-    return {}, status.OK, {'ETag': checksum,
-                                    'Content-Length': size,
-                                    'Last-Modified': modified
-                                    }
+    headers = {'ETag': checksum, 
+               'Content-Length': size,
+               'Last-Modified': modified}
+    return {}, status.OK, headers
 
 
 def get_upload_service_log() -> Response:

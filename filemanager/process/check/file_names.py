@@ -4,7 +4,7 @@ import os
 import re
 from arxiv.base import logging
 
-from ...domain import FileType, UploadedFile, UploadWorkspace
+from ...domain import FileType, UploadedFile, CheckableWorkspace
 from .base import BaseChecker
 
 
@@ -16,7 +16,7 @@ class FixWindowsFileNames(BaseChecker):
 
     WINDOWS_FILE_PREFIX = re.compile(r'^[A-Za-z]:\\(.*\\)?')
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """Find Windows-style filenames and fix them."""
         if self.WINDOWS_FILE_PREFIX.search(u_file.path):
@@ -45,7 +45,7 @@ class WarnAboutTeXBackupFiles(BaseChecker):
                    " extraneous backup files.")
     TEX_BACKUP_FILE = re.compile(r'(.+)\.(tex_|tex.bak|tex\~)$', re.IGNORECASE)
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """Check for and warn about possible backup files."""
         if not u_file.is_ancillary \
@@ -60,7 +60,7 @@ class ReplaceIllegalCharacters(BaseChecker):
     ILLEGAL = re.compile(r'[^\w\+\-\.\=\,\_]')
     """Filename contains illegal characters ``+-/=,``."""
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """Check for illegal characters and replace them with underscores."""
 
@@ -90,7 +90,7 @@ class PanicOnIllegalCharacters(BaseChecker):
         'a-z A-Z 0-9 _ + - . , ='
     )
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """Check for illegal characters and generate error if found."""
         if u_file.is_directory:
@@ -103,7 +103,7 @@ class PanicOnIllegalCharacters(BaseChecker):
 class ReplaceLeadingHyphen(BaseChecker):
     """Checks for a leading hyphen, and replaces it with an underscore."""
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """Check for a leading hyphen, and replace it with an underscore."""
 

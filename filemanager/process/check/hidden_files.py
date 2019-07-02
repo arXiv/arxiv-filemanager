@@ -7,7 +7,7 @@ from typing import Callable, Optional
 
 from arxiv.base import logging
 
-from ...domain import FileType, UploadedFile, UploadWorkspace
+from ...domain import FileType, UploadedFile, CheckableWorkspace
 from .base import BaseChecker
 
 
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class RemoveMacOSXHiddenFiles(BaseChecker):
     """Removes ``__MACOSX`` directories."""
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """Remove ``__MACOSX`` directories."""
         if u_file.is_directory and u_file.name.strip('/') == '__MACOSX':
@@ -30,7 +30,7 @@ class RemoveMacOSXHiddenFiles(BaseChecker):
 class RemoveFilesWithLeadingDot(BaseChecker):
     """Removes files and directories that start with a dot."""
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """Removes files and directories that start with a dot."""
         if u_file.name.startswith('.') or u_file.path.startswith('.'):

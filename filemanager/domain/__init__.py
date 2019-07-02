@@ -1,7 +1,8 @@
 """Core concepts and constraints of the file manager service."""
 
-from .uploads import UploadedFile, UploadWorkspace, IChecker, IStorageAdapter
+from .uploads import UploadedFile, UploadWorkspace, CheckableWorkspace, \
+    StoredWorkspace, IChecker, IStorageAdapter, SourceLog, SourcePackage
 from .file_type import FileType
-from .checks import ICheckingStrategy
+from .uploads import ICheckingStrategy
 from .error import Error
 from .index import NoSuchFile, FileIndex

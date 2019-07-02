@@ -4,7 +4,7 @@ import os
 import io
 import logging
 from http import HTTPStatus as status
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union, IO
 from datetime import datetime
 
 from flask import current_app
@@ -20,7 +20,7 @@ from ..serialize import serialize_workspace
 from .service_log import logger
 from . import _messages as messages
 
-Response = Tuple[Optional[dict], status, dict]
+Response = Tuple[Optional[Union[dict, IO]], status, dict]
 
 
 def check_upload_file_content_exists(upload_id: int, public_file_path: str) \
@@ -113,7 +113,7 @@ def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
         workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
     except IOError:
         logger.error("%s: ContentFileDownload: There was a problem connecting"
-                     " to database.", workspace.upload_id)
+                     " to database.", upload_id)
         raise InternalServerError(messages.UPLOAD_DB_CONNECT_ERROR)
 
     if workspace is None:

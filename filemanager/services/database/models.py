@@ -19,17 +19,20 @@ class SQLiteJSON(types.TypeDecorator):
 
     impl = types.TEXT
 
-    def process_bind_param(self, value: Optional[dict], dialect: str) -> str:
+    def process_bind_param(self, obj: Optional[dict], dialect: str) \
+            -> Optional[str]:
         """Serialize a dict to JSON."""
-        if value is not None:
-            value = dumps(value)
-        return value
+        if obj is not None:
+            value: str = dumps(obj)
+            return value
+        return obj
 
     def process_result_value(self, value: str, dialect: str) -> Optional[dict]:
         """Deserialize JSON content to a dict."""
         if value is not None:
-            value = loads(value)
-        return value
+            obj: dict = loads(value)
+            return obj
+        return None
 
 
 # SQLite does not support JSON, so we extend JSON to use our custom data type

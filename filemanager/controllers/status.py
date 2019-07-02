@@ -1,16 +1,16 @@
 """Provides the status endpoint for the filemanager service."""
 
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Any
 
 from http import HTTPStatus as status
 
 from ..services import database
 # from ..process import upload as filesystem
 
-Response = Tuple[Optional[dict], int, dict]
+Response = Tuple[Optional[dict], status, dict]
 
 
-def service_status(*args, **kwargs) -> Response:
+def service_status(*args: Any, **kwargs: Any) -> Response:
     """Exercise dependencies and verify operational status."""
     response_data = {}
     response_data['database'] = database.is_available()

@@ -8,7 +8,7 @@ from typing import Union, Tuple
 
 from arxiv.base import logging
 
-from ...domain import FileType, UploadedFile, UploadWorkspace
+from ...domain import FileType, UploadedFile, CheckableWorkspace
 from ..util.unmacify import unmacify
 from .base import BaseChecker
 from .file_type import InferFileType
@@ -40,25 +40,26 @@ PS_BEGIN = re.compile(b'^%!PS-')
 class UnMacify(BaseChecker):
     """UnMac-ifies files."""
 
-    def check_HTML(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check_HTML(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """UnMac-ify HTML files."""
         unmacify(workspace, u_file)
         return u_file
 
-    def check_PC(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check_PC(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """UnMac-ify PC files."""
         unmacify(workspace, u_file)
         return u_file
 
-    def check_MAC(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check_MAC(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """UnMac-ify mac files."""
         unmacify(workspace, u_file)
         return u_file
 
-    def check(self, workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
+            -> UploadedFile:
         """If file is identified as core TeX type then we need to unmacify."""
         if u_file.file_type.is_tex_type:
             unmacify(workspace, u_file)
@@ -71,7 +72,7 @@ class UnMacify(BaseChecker):
 class RepairDOSEPSFiles(BaseChecker):
     """Repair DOS EPS files."""
 
-    def check_DOS_EPS(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check_DOS_EPS(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """[ needs info ]"""
         u_file, fixed = _repair_dos_eps(workspace, u_file)
@@ -97,7 +98,7 @@ class CleanupPostScript(BaseChecker):
 
     PS = re.compile(r'\.e?psi?$', re.IGNORECASE)
 
-    def check_POSTSCRIPT(self, workspace: UploadWorkspace,
+    def check_POSTSCRIPT(self, workspace: CheckableWorkspace,
                          u_file: UploadedFile) -> UploadedFile:
         """
         [ needs info ]
@@ -108,7 +109,7 @@ class CleanupPostScript(BaseChecker):
         unmacify(workspace, u_file)
         return _check_postscript(workspace, u_file, "")
 
-    def check_PS_PC(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check_PS_PC(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """
         Repair poscript for PS PC files.
@@ -119,7 +120,7 @@ class CleanupPostScript(BaseChecker):
         u_file, _ = _repair_postscript(workspace, u_file)
         return u_file
 
-    def check_FAILED(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check_FAILED(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         if self.PS.search(u_file.name):
             u_file = _check_postscript(workspace, u_file, "")
@@ -128,7 +129,7 @@ class CleanupPostScript(BaseChecker):
 
 # TODO: looks like the strip_tiff case is not fully implemented here.
 # -- Erick 2019-06-07
-def _check_postscript(workspace: UploadWorkspace, u_file: UploadedFile,
+def _check_postscript(workspace: CheckableWorkspace, u_file: UploadedFile,
                       tiff_flag: Union[str, None]) -> UploadedFile:
     """
     Check Postscript file for unwanted inclusions.
@@ -194,7 +195,7 @@ CASE_3 = re.compile(rb'.*(%!PS-Adobe-)')
 HEADER_END = re.compile(b'^%!')
 
 
-def _repair_postscript(workspace: UploadWorkspace, u_file: UploadedFile) \
+def _repair_postscript(workspace: CheckableWorkspace, u_file: UploadedFile) \
         -> Tuple[UploadedFile, str]:
     """
     Repair simple corruptions at the beginning of Postscript file.
@@ -224,20 +225,20 @@ def _repair_postscript(workspace: UploadWorkspace, u_file: UploadedFile) \
             # Attempt to identify problems and repair.
             if CASE_1.search(line):  # Special character 004.
                 fixed = True
-                line = CASE_1.sub(br'%!', line)
+                line = CASE_1.sub(br'%!', line)    # type: ignore
                 message = ' '.join([message,
                                     "Removed carriage return from PS"
                                     "header."])
 
             if CASE_2.search(line):  # Extra '%' in header.
                 fixed = True
-                line = CASE_2.sub(br'%!', line)
+                line = CASE_2.sub(br'%!', line)    # type: ignore
                 message = ' '.join([message,
                                     "Removed extra '%' from PS header."])
 
             if CASE_3.search(line):  # Characters in front of PS tag.
                 fixed = True
-                line = CASE_3.sub(br'\1', line)
+                line = CASE_3.sub(br'\1', line)    # type: ignore
                 message = ' '.join([message,
                                     "Removed extraneous characters before"
                                     " PS header."])
@@ -295,15 +296,17 @@ def _repair_postscript(workspace: UploadWorkspace, u_file: UploadedFile) \
     return u_file, first_line[0:75]
 
 
-def _strip_preview(workspace: UploadWorkspace, u_file: UploadedFile,
+def _strip_preview(workspace: CheckableWorkspace, u_file: UploadedFile,
                    what_to_strip: str) -> UploadedFile:
     """
     Remove embedded preview from Postscript file.
 
     Parameters
     ----------
-
-
+    workspace : :class:`.CheckableWorkspace`
+        The upload workspace in which we are working.
+    u_file : :class:`.UploadedFile`
+        The file from which to strip embedded TIFF bitmaps.
     what_to_strip : str
         The type of inclusion that we are seeking to remove [Thumbnail,
         Preview, Photoshop]
@@ -382,17 +385,21 @@ def _strip_preview(workspace: UploadWorkspace, u_file: UploadedFile,
     return u_file
 
 
-def _strip_tiff(workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+def _strip_tiff(workspace: CheckableWorkspace, u_file: UploadedFile) \
+        -> UploadedFile:
     """
     Strip non-compliant embedded TIFF bitmaps from Postscript file.
 
     Parameters
     ----------
-
+    workspace : :class:`.CheckableWorkspace`
+        The upload workspace in which we are working.
+    u_file : :class:`.UploadedFile`
+        The file from which to strip embedded TIFF bitmaps.
 
     Returns
     -------
-
+    :class:`.UploadedFile`
 
     """
     workspace.log.info(f"checking '{u_file.path}' for TIFF")
@@ -432,14 +439,15 @@ def _strip_tiff(workspace: UploadWorkspace, u_file: UploadedFile) -> None:
 
         if end:     # Truncate file after EOF marker
             infile.truncate(end)
-            workspace.add_warning(u_file.name,
+            workspace.add_warning(u_file,
                                   f"Non-compliant attached TIFF removed"
-                                  f" from '{file_obj.name}'")
+                                  f" from '{u_file.name}'")
+    return u_file
 
 
 # TODO: this is a pretty big method; could use some refactoring.
 # -- Erick 2019-06-07
-def _repair_dos_eps(workspace: UploadWorkspace,
+def _repair_dos_eps(workspace: CheckableWorkspace,
                     u_file: UploadedFile) -> Tuple[UploadedFile, str]:
     """
     Look for leading/trailing TIFF bitmaps and remove them.
@@ -553,8 +561,8 @@ def _repair_dos_eps(workspace: UploadWorkspace,
             fixed_file = workspace.replace(u_file, fixed_file)
 
             # Add warning about backup file we created.
-            msg = (f"Modified file {u_file.public_filepath}."
-                   f"Saving original to {backup_file.public_filepath}."
+            msg = (f"Modified file {u_file.public_path}."
+                   f"Saving original to {backup_file.public_path}."
                    f"You may delete this file.")
             workspace.add_warning(backup_file, msg)
 
@@ -562,10 +570,11 @@ def _repair_dos_eps(workspace: UploadWorkspace,
             ret_msg = (f"stripped trailing tiff at {tiffoffset} bytes "
                        f"and {psoffset} leading bytes")
             return fixed_file, ret_msg
+        return u_file, ""
 
 
 # TODO: implement this!
-def _extract_uu(workspace: UploadWorkspace, u_file: UploadedFile) -> None:
+def _extract_uu(workspace: CheckableWorkspace, u_file: UploadedFile) -> None:
     """Extract uuencode content from file."""
     workspace.log.info(f'Looking for uu attachment in {u_file.name} of type'
                   f' {u_file.file_type.value}.')

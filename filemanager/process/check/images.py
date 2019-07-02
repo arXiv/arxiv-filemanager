@@ -4,7 +4,7 @@ import os
 import re
 from arxiv.base import logging
 
-from ...domain import FileType, UploadedFile, UploadWorkspace
+from ...domain import FileType, UploadedFile, CheckableWorkspace
 from .base import BaseChecker
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class CheckForUnacceptableImages(BaseChecker):
         "any graphical web browser) -- for more information."
     )
 
-    def check_IMAGE(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def check_IMAGE(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """Check and warn about image types that are not accepted."""
         match = self.UNACCEPTABLE.search(u_file.name)

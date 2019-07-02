@@ -1,6 +1,6 @@
 """Transform domain objects to JSON-friendly structs."""
 
-from typing import Tuple
+from typing import Tuple, Optional
 from .domain import UploadWorkspace, UploadedFile, Error, FileType
 
 
@@ -36,5 +36,6 @@ def serialize_file(u_file: UploadedFile) -> dict:
     }
     
 
-def serialize_error(error: Error) -> Tuple[str, str, str]:
-    return (error.severity.value, error.path, error.message)
+def serialize_error(error: Error) -> Tuple[str, Optional[str], str]:
+    severity: str = error.severity.value
+    return (severity, error.path, error.message)

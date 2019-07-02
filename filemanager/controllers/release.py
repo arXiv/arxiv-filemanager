@@ -143,8 +143,9 @@ def upload_unrelease(upload_id: int) -> Response:
             raise NotFound(messages.UPLOAD_WORKSPACE_ALREADY_DELETED)
 
         if workspace.is_active:
-            logger.info("%s: Unrelease: Workspace is already active.", upload_id)
-            response_data = {'reason': UPLOAD_UNRELEASED_WORKSPACE}  
+            logger.info("%s: Unrelease: Workspace is already active.", 
+                        upload_id)
+            response_data = {'reason': messages.UPLOAD_UNRELEASED_WORKSPACE}  
             status_code = status.OK     # Should this be an error?
         elif workspace.is_released:
             logger.info("%s: Unrelease upload workspace.", upload_id)

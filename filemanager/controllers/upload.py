@@ -26,10 +26,6 @@ from . import _messages as messages
 
 Response = Tuple[Optional[dict], status, dict]
 
-# End logging configuration
-
-Response = Tuple[Optional[dict], int, dict]
-
 
 def _create_workspace(file: FileStorage, user_id: str) -> UploadWorkspace:
     try:

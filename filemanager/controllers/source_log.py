@@ -4,7 +4,7 @@ import os
 import io
 import logging
 from http import HTTPStatus as status
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union, IO
 from datetime import datetime
 
 from werkzeug.exceptions import NotFound, InternalServerError
@@ -16,7 +16,7 @@ from ..services import database
 from .service_log import logger
 from . import _messages as messages
 
-Response = Tuple[Optional[dict], status, dict]
+Response = Tuple[Optional[Union[dict, IO]], status, dict]
 
 
 def check_upload_source_log_exists(upload_id: int) -> Response:
@@ -43,7 +43,7 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
         workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
     except IOError:
         logger.error("%s: SourceLogExistCheck: There was a problem connecting"
-                     " to database.", workspace.upload_id)
+                     " to database.", upload_id)
         raise InternalServerError(messages.UPLOAD_DB_CONNECT_ERROR)
 
     if workspace is None:
@@ -79,7 +79,7 @@ def get_upload_source_log(upload_id: int) -> Response:
         workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
     except IOError:
         logger.error("%s: GetSourceLog: There was a problem connecting to"
-                     " database.", workspace.upload_id)
+                     " database.", upload_id)
         raise InternalServerError(messages.UPLOAD_DB_CONNECT_ERROR)
 
     if workspace is None:

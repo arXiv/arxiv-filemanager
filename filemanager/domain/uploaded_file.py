@@ -5,6 +5,8 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 from functools import partial
 
+from typing_extensions import Protocol
+
 from pytz import UTC
 from dataclasses import dataclass, field
 
@@ -12,11 +14,27 @@ from .file_type import FileType
 from .error import Error
 
 
+class _IUploadWorkspace(Protocol):
+    """Interface for an upload workspace, from the perspective of the file."""
+    
+    def get_public_path(self, u_file: 'UploadedFile') -> str:
+        """Get the public path (key) of a :class:`.UploadedFile`."""
+        ...
+    
+    def get_full_path(self, u_file: 'UploadedFile') -> str:
+        """Get the full path (key) of a :class:`.UploadedFile`."""
+        ...
+    
+    def get_checksum(self, u_file: 'UploadedFile') -> str:
+        """Get the URL-safe base64-encoded MD5 hash of file contents."""
+        ...
+
+
 @dataclass
 class UploadedFile:
     """Represents a single file in an upload workspace."""
 
-    workspace: 'UploadWorkspace'
+    workspace: _IUploadWorkspace
     """The workspace to which this file belongs."""
 
     path: str
@@ -93,7 +111,8 @@ class UploadedFile:
     def name(self) -> str:
         """File name without path/directory info."""
         if '/' in self.path.strip('/'):
-            return os.path.basename(self.path)
+            basename: str = os.path.basename(self.path)
+            return basename
         return self.path
 
     @property
@@ -125,7 +144,7 @@ class UploadedFile:
             if self.path == 'anc/':
                 return 'Ancillary files directory'
             return 'Directory'
-        return self.file_type.name
+        return self.file_type.label
 
     @property
     def is_always_ignore(self) -> bool:

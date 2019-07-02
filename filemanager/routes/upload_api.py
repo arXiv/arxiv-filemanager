@@ -25,11 +25,11 @@ logger = logging.getLogger(__name__)
 blueprint = Blueprint('upload_api', __name__, url_prefix='/filemanager/api')
 
 
-def is_owner(session: auth_domain.Session, upload_id: str,
+def is_owner(session: auth_domain.Session, upload_id: int,
              **kwargs: Any) -> bool:
     """User must be the upload owner, or an admin."""
-    upload_obj = database.retrieve(upload_id)
-    if upload_obj is None:
+    workspace = database.retrieve(upload_id)
+    if workspace is None:
         return True
 
     if session.user:
@@ -39,11 +39,11 @@ def is_owner(session: auth_domain.Session, upload_id: str,
     else:
         raise Unauthorized('No user or client on authenticated session')
 
-    return owner_id == str(database.retrieve(upload_id).owner_user_id)
+    return owner_id == str(workspace.owner_user_id)
 
 
 @blueprint.route('/status', methods=['GET'])
-def service_status() -> tuple:
+def service_status() -> Response:
     """
     Readiness endpoint.
 
@@ -52,12 +52,15 @@ def service_status() -> tuple:
     returns 503 Service Unavailable.
     """
     response_data, code, headers = status.service_status()
-    return jsonify(response_data), code, headers
+    response: Response = make_response(jsonify(response_data))
+    response = _update_headers(response, headers)
+    response.status_code = code
+    return response
 
 
 @blueprint.route('/', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD)
-def new_upload() -> tuple:
+def new_upload() -> Response:
     """
     Create workspace and upload files.
 
@@ -96,7 +99,7 @@ def new_upload() -> tuple:
 
 @blueprint.route('<int:upload_id>', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
-def upload_files(upload_id: int) -> tuple:
+def upload_files(upload_id: int) -> Response:
     """
     Upload files to existing workspace.
 
@@ -125,8 +128,9 @@ def upload_files(upload_id: int) -> tuple:
 # Separated this out so that we can support auth granularity. -E
 @blueprint.route('<int:upload_id>', methods=['GET'])
 @scoped(scopes.READ_UPLOAD, authorizer=is_owner)
-def get_upload_files(upload_id: int) -> tuple:
-    """Upload summary.
+def get_upload_files(upload_id: int) -> Response:
+    """
+    Upload summary.
 
     Parameters
     ----------
@@ -135,12 +139,15 @@ def get_upload_files(upload_id: int) -> tuple:
 
     """
     data, status_code, headers = upload.upload_summary(upload_id)
-    return jsonify(data), status_code, headers
+    response: Response = make_response(jsonify(data))
+    response = _update_headers(response, headers)
+    response.status_code = status_code
+    return response
 
 
 @blueprint.route('<int:upload_id>/<path:public_file_path>', methods=['DELETE'])
 @scoped(scopes.DELETE_UPLOAD_FILE, authorizer=is_owner)
-def delete_file(upload_id: int, public_file_path: str) -> tuple:
+def delete_file(upload_id: int, public_file_path: str) -> Response:
     """
     Delete individual file.
 
@@ -154,13 +161,16 @@ def delete_file(upload_id: int, public_file_path: str) -> tuple:
     """
     data, status_code, headers = files.client_delete_file(upload_id,
                                                           public_file_path)
-    return jsonify(data), status_code, headers
+    response: Response = make_response(jsonify(data))
+    response = _update_headers(response, headers)
+    response.status_code = status_code
+    return response
 
 # File and workspace deletion
 
 @blueprint.route('<int:upload_id>/delete_all', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
-def delete_all_files(upload_id: int) -> tuple:
+def delete_all_files(upload_id: int) -> Response:
     """
     Delete all files in specified workspace.
 
@@ -171,12 +181,15 @@ def delete_all_files(upload_id: int) -> tuple:
 
     """
     data, status_code, headers = files.client_delete_all_files(upload_id)
-    return jsonify(data), status_code, headers
+    response: Response = make_response(jsonify(data))
+    response = _update_headers(response, headers)
+    response.status_code = status_code
+    return response
 
 
 @blueprint.route('<int:upload_id>', methods=['DELETE'])
 @scoped(scopes.DELETE_UPLOAD_WORKSPACE)
-def workspace_delete(upload_id: int) -> tuple:
+def workspace_delete(upload_id: int) -> Response:
     """
     Delete the specified workspace.
 
@@ -187,14 +200,17 @@ def workspace_delete(upload_id: int) -> tuple:
 
     """
     data, status_code, headers = upload.delete_workspace(upload_id)
-    return jsonify(data), status_code, headers
+    response: Response = make_response(jsonify(data))
+    response = _update_headers(response, headers)
+    response.status_code = status_code
+    return response
 
 
 # Lock and unlock upload workspace
 
 @blueprint.route('/<int:upload_id>/lock', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
-def lock_workspace(upload_id: int) -> tuple:
+def lock_workspace(upload_id: int) -> Response:
     """
     Lock submission workspace.
 
@@ -208,22 +224,28 @@ def lock_workspace(upload_id: int) -> tuple:
 
     """
     data, status_code, headers = lock.upload_lock(upload_id)
-    return jsonify(data), status_code, headers
+    response: Response = make_response(jsonify(data))
+    response = _update_headers(response, headers)
+    response.status_code = status_code
+    return response
 
 
 # This could be thaw or release instead of unlock
 @blueprint.route('/<int:upload_id>/unlock', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
-def unlock_workspace(upload_id: int) -> tuple:
+def unlock_workspace(upload_id: int) -> Response:
     """Unlock submission workspace and allow updates."""
     data, status_code, headers = lock.upload_unlock(upload_id)
-    return jsonify(data), status_code, headers
+    response: Response = make_response(jsonify(data))
+    response = _update_headers(response, headers)
+    response.status_code = status_code
+    return response
 
 
 # This could be remove or delete instead of release
 @blueprint.route('/<int:upload_id>/release', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
-def release_workspace(upload_id: int) -> tuple:
+def release_workspace(upload_id: int) -> Response:
     """
     Client indicates they are finished with submission.
 
@@ -231,13 +253,16 @@ def release_workspace(upload_id: int) -> tuple:
     or schedule workspace for removal.
     """
     data, status_code, headers = release.upload_release(upload_id)
-    return jsonify(data), status_code, headers
+    response: Response = make_response(jsonify(data))
+    response = _update_headers(response, headers)
+    response.status_code = status_code
+    return response
 
 
 # This could be remove or delete instead of release
 @blueprint.route('/<int:upload_id>/unrelease', methods=['POST'])
 @scoped(scopes.WRITE_UPLOAD, authorizer=is_owner)
-def unrelease_workspace(upload_id: int) -> tuple:
+def unrelease_workspace(upload_id: int) -> Response:
     """
     Client indicates they are NOT finished with submission.
 
@@ -245,7 +270,10 @@ def unrelease_workspace(upload_id: int) -> tuple:
     mind and does not want to remove workspace.
     """
     data, status_code, headers = release.upload_unrelease(upload_id)
-    return jsonify(data), status_code, headers
+    response: Response = make_response(jsonify(data))
+    response = _update_headers(response, headers)
+    response.status_code = status_code
+    return response
 
 
 # Get content
@@ -259,7 +287,8 @@ def check_upload_content_exists(upload_id: int) -> Response:
     Returns an ``ETag`` header with the current source package checksum.
     """
     data, status_code, headers = package.check_upload_content_exists(upload_id)
-    response = _update_headers(jsonify(data), headers)
+    response: Response = make_response(jsonify(data))
+    response = _update_headers(response, headers)
     response.status_code = status_code
     return response
 
@@ -276,9 +305,10 @@ def get_upload_content(upload_id: int) -> Response:
     logger.debug('Request for upload content: %s (%s)',
                  upload_id, type(upload_id))
     # Note: status_code is not used
-    data, _, headers = package.get_upload_content(upload_id)
-    response = send_file(data, mimetype="application/tar+gzip")
+    data, status_code, headers = package.get_upload_content(upload_id)
+    response: Response = send_file(data, mimetype="application/tar+gzip")
     response = _update_headers(response, headers)
+    response.status_code = status_code
     return response
 
 @blueprint.route('/<int:upload_id>/<path:public_file_path>/content',
@@ -293,7 +323,8 @@ def check_file_exists(upload_id: int, public_file_path: str) -> Response:
     data, status_code, headers = \
         files.check_upload_file_content_exists(upload_id, public_file_path)
 
-    response = _update_headers(jsonify(data), headers)
+    response: Response = make_response(jsonify(data))
+    response = _update_headers(response, headers)
     response.status_code = status_code
     return response
 
@@ -308,11 +339,11 @@ def get_file_content(upload_id: int, public_file_path: str) -> Response:
     :param public_file_path:
     :return: File content.
     """
-    # Note: status_code not used
-    data, _, headers = \
+    data, status_code, headers = \
         files.get_upload_file_content(upload_id, public_file_path)
-    response = send_file(data, mimetype="application/*")
-    response.set_etag(headers.get('ETag'))
+    response: Response = send_file(data, mimetype="application/*")
+    response = _update_headers(response, headers)
+    response.status_code = status_code
     return response
 
 
@@ -335,7 +366,8 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
     """
     data, status_code, headers = \
         source_log.check_upload_source_log_exists(upload_id)
-    response = _update_headers(jsonify(data), headers)
+    response: Response = make_response(jsonify(data))
+    response = _update_headers(response, headers)
     response.status_code = status_code
     return response
 
@@ -358,10 +390,10 @@ def get_upload_source_log(upload_id: int) -> Response:
     The source.log for specified upload workspace.
 
     """
-    # Note: status_code not used
-    data, _, headers = source_log.get_upload_source_log(upload_id)
-    response = send_file(data, mimetype="application/tar+gzip")
-    response.set_etag(headers.get('ETag'))
+    data, status_code, headers = source_log.get_upload_source_log(upload_id)
+    response: Response = send_file(data, mimetype="application/tar+gzip")
+    response = _update_headers(response, headers)
+    response.status_code = status_code
     return response
 
 
@@ -377,7 +409,8 @@ def check_upload_service_log_exists() -> Response:
 
     """
     data, status_code, headers = service_log.check_upload_service_log_exists()
-    response = _update_headers(jsonify(data), headers)
+    response: Response = make_response(jsonify(data))
+    response = _update_headers(response, headers)
     response.status_code = status_code
     return response
 
@@ -400,7 +433,7 @@ def get_upload_service_log() -> Response:
     """
     # Note: status_code not used
     data, _, headers = service_log.get_upload_service_log()
-    response = send_file(data, mimetype="application/tar+gzip")
+    response: Response = send_file(data, mimetype="application/tar+gzip")
     response = _update_headers(response, headers)
     # response.set_etag(headers.get('ETag'))
     return response
@@ -427,13 +460,13 @@ def handle_exception(error: HTTPException) -> Response:
 
     # Each Werkzeug HTTP exception has a class attribute called ``code``; we
     # can use that to set the status code on the response.
-    response = make_response(content, error.code)
+    response: Response = make_response(content, error.code)
     return response
 
 
 def _update_headers(response: Response, headers: Dict[str, Any]) -> Response:
     for key, value in headers.items():
         if key in response.headers:     # Avoid duplicate headers.
-            response.headers.remove(key)
-        response.headers.add(key, value)
+            response.headers.remove(key)   # type: ignore
+        response.headers.add(key, value)   # type: ignore
     return response

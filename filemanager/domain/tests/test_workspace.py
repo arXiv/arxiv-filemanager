@@ -1,7 +1,10 @@
 """Tests for :class:`.domain.UploadWorkspace`."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest import TestCase, mock
+
+from pytz import UTC
+
 from ..uploads import UploadWorkspace, UploadedFile
 from ..file_type import FileType
 
@@ -121,6 +124,8 @@ class TestAddRemoveFiles(TestCase):
         self.mock_strategy = mock.MagicMock()
         self.mock_storage = mock.MagicMock()
         self.mock_storage.get_path.return_value = '/tmp/foo'
+        last_modified = datetime.now(UTC) - timedelta(days=1)
+        self.mock_storage.get_last_modified.return_value = last_modified
         self.wks = UploadWorkspace(
             upload_id=1234,
             owner_user_id='98765',
@@ -129,14 +134,17 @@ class TestAddRemoveFiles(TestCase):
             strategy=self.mock_strategy,
             storage=self.mock_storage
         )
+        self.wks.initialize()
 
     def test_add_single_file(self):
         """Adding a file to to the workspace."""
+        last_modified = datetime.now(UTC) - timedelta(days=1)
         mock_file = mock.MagicMock(spec=UploadedFile,
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
                                    is_system=False,
+                                   last_modified=last_modified,
                                    path='path/to/file')
         self.assertEqual(self.wks.file_count, 0,
                          'There are no files in the workspace')
@@ -149,11 +157,13 @@ class TestAddRemoveFiles(TestCase):
 
     def test_add_ancillary_file(self):
         """Adding an ancillary file to to the workspace."""
+        last_modified = datetime.now(UTC) - timedelta(days=1)
         mock_file = mock.MagicMock(spec=UploadedFile,
                                    is_ancillary=True,
                                    is_removed=False,
                                    is_directory=False,
                                    is_system=False,
+                                   last_modified=last_modified,
                                    path='path/to/file')
         self.assertEqual(self.wks.file_count, 0,
                          'There are no files in the workspace')
@@ -166,11 +176,13 @@ class TestAddRemoveFiles(TestCase):
 
     def test_remove_file(self):
         """Remove a file from the workspace."""
+        last_modified = datetime.now(UTC) - timedelta(days=1)
         mock_file = mock.MagicMock(spec=UploadedFile,
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
                                    is_system=False,
+                                   last_modified=last_modified,
                                    path='path/to/file')
         self.assertEqual(self.wks.file_count, 0,
                          'There are no files in the workspace')
@@ -190,17 +202,20 @@ class TestAddRemoveFiles(TestCase):
 
     def test_add_files(self):
         """Add multiple files."""
+        last_modified = datetime.now(UTC) - timedelta(days=1)
         mock_file = mock.MagicMock(spec=UploadedFile,
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
                                    is_system=False,
+                                   last_modified=last_modified,
                                    path='path/to/file')
         mock_file2 = mock.MagicMock(spec=UploadedFile,
                                     is_ancillary=False,
                                     is_removed=False,
                                     is_directory=False,
                                     is_system=False,
+                                    last_modified=last_modified,
                                     path='path/to/file2')
         self.assertEqual(self.wks.file_count, 0,
                          'There are no files in the workspace')
@@ -214,17 +229,20 @@ class TestAddRemoveFiles(TestCase):
 
     def test_remove_directory(self):
         """Remove a directory."""
+        last_modified = datetime.now(UTC) - timedelta(days=1)
         mock_dir = mock.MagicMock(spec=UploadedFile,
                                   is_ancillary=False,
                                   is_removed=False,
                                   is_directory=True,
                                   is_system=False,
+                                  last_modified=last_modified,
                                   path='path/to/dir')
         mock_file = mock.MagicMock(spec=UploadedFile,
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
                                    is_system=False,
+                                   last_modified=last_modified,
                                    path='path/to/dir/file')
         self.wks.add_files(mock_dir, mock_file)
         self.assertEqual(self.wks.file_count, 1,
@@ -238,11 +256,13 @@ class TestAddRemoveFiles(TestCase):
 
     def test_add_file_at_subpath(self):
         """Add a file where the containing directories do not exist."""
+        last_modified = datetime.now(UTC) - timedelta(days=1)
         mock_file = mock.MagicMock(spec=UploadedFile,
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
                                    is_system=False,
+                                   last_modified=last_modified,
                                    path='path/to/dir/file')
         self.wks.add_files(mock_file)
         self.assertTrue(self.wks.exists('path/'),
@@ -254,11 +274,13 @@ class TestAddRemoveFiles(TestCase):
 
     def test_delete_files(self):
         """Delete a file completely."""
+        last_modified = datetime.now(UTC) - timedelta(days=1)
         mock_file = mock.MagicMock(spec=UploadedFile,
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
                                    is_system=False,
+                                   last_modified=last_modified,
                                    path='path/to/dir/file')
         self.wks.add_files(mock_file)
         self.wks.delete(mock_file)
@@ -272,23 +294,27 @@ class TestAddRemoveFiles(TestCase):
 
     def test_delete_directory(self):
         """Delete a directory completely."""
+        last_modified = datetime.now(UTC) - timedelta(days=1)
         mock_dir = mock.MagicMock(spec=UploadedFile,
                                   is_ancillary=False,
                                   is_removed=False,
                                   is_directory=True,
                                   is_system=False,
+                                  last_modified=last_modified,
                                   path='path/to/dir')
         mock_file = mock.MagicMock(spec=UploadedFile,
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
                                    is_system=False,
+                                   last_modified=last_modified,
                                    path='path/to/dir/file')
         mock_other_file = mock.MagicMock(spec=UploadedFile,
                                          is_ancillary=False,
                                          is_removed=False,
                                          is_directory=False,
                                          is_system=False,
+                                         last_modified=last_modified,
                                          path='path/to/other/file')
         self.wks.add_files(mock_dir, mock_file, mock_other_file)
         self.assertEqual(self.wks.file_count, 2,
@@ -311,19 +337,23 @@ class TestOperations(TestCase):
         self.mock_strategy = mock.MagicMock()
         self.mock_storage = mock.MagicMock()
         self.mock_storage.get_path.return_value = '/tmp/foo'
+        last_modified = datetime.now(UTC) - timedelta(days=-1)
+        self.mock_storage.get_last_modified.return_value = last_modified
         self.wks = UploadWorkspace(
             upload_id=1234,
             owner_user_id='98765',
             created_datetime=datetime.now(),
-            modified_datetime=datetime.now(),
+            modified_datetime=last_modified,
             strategy=self.mock_strategy,
             storage=self.mock_storage
         )
+        self.wks.initialize()
         self.mock_file = mock.MagicMock(spec=UploadedFile,
                                         is_ancillary=False,
                                         is_removed=False,
                                         is_directory=False,
                                         is_system=False,
+                                        last_modified=last_modified,
                                         path='path/to/file')
         self.wks.add_files(self.mock_file)
 
@@ -338,12 +368,14 @@ class TestOperations(TestCase):
 
     def test_open_nonexistant(self):
         """Try to get a file pointer for a file not in this workspace."""
+        last_modified = datetime.now(UTC) - timedelta(days=-1)
         mock_other_file = mock.MagicMock(spec=UploadedFile,
                                          is_ancillary=False,
                                          is_removed=False,
                                          is_directory=False,
                                          is_system=False,
                                          is_active=True,
+                                         last_modified=last_modified,
                                          path='path/to/other/file')
         with self.assertRaises(ValueError):
             with self.wks.open(mock_other_file) as f:
@@ -351,12 +383,14 @@ class TestOperations(TestCase):
 
     def test_compare_files(self):
         """Test comparing the contents of two files via workspace API."""
+        last_modified = datetime.now(UTC) - timedelta(days=-1)
         mock_other_file = mock.MagicMock(spec=UploadedFile,
                                          is_ancillary=False,
                                          is_removed=False,
                                          is_directory=False,
                                          is_system=False,
                                          is_active=True,
+                                         last_modified=last_modified,
                                          path='path/to/other/file')
         self.wks.add_files(mock_other_file)
         self.wks.cmp(self.mock_file, mock_other_file)
@@ -384,6 +418,8 @@ class TestMoveFiles(TestCase):
         self.mock_strategy = mock.MagicMock()
         self.mock_storage = mock.MagicMock()
         self.mock_storage.get_path.return_value = '/tmp/foo'
+        last_modified = datetime.now(UTC) - timedelta(days=-1)
+        self.mock_storage.get_last_modified.return_value = last_modified
         self.wks = UploadWorkspace(
             upload_id=1234,
             owner_user_id='98765',
@@ -392,6 +428,7 @@ class TestMoveFiles(TestCase):
             strategy=self.mock_strategy,
             storage=self.mock_storage
         )
+        self.wks.initialize()
         self.path = 'path/to/file'
         self.path2 = 'path/to/file2'
         self.mock_file = mock.MagicMock(spec=UploadedFile,
@@ -401,6 +438,7 @@ class TestMoveFiles(TestCase):
                                         is_system=False,
                                         is_active=True,
                                         errors=[],
+                                        last_modified=last_modified,
                                         path=self.path)
         self.mock_file2 = mock.MagicMock(spec=UploadedFile,
                                          is_ancillary=False,
@@ -409,6 +447,7 @@ class TestMoveFiles(TestCase):
                                          is_system=False,
                                          is_active=True,
                                          errors=[],
+                                         last_modified=last_modified,
                                          path=self.path2)
         self.wks.add_files(self.mock_file, self.mock_file2)
 

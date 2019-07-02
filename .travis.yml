@@ -15,6 +15,9 @@ script:
   - pipenv run nose2 --with-coverage --coverage-report=term-missing
 after_success:
   - coveralls
+  - "./tests/lint.sh filemanager"
+  - "./tests/style.sh filemanager"
+  - "./tests/type-check.sh filemanager"
 
 deploy:
 - provider: script

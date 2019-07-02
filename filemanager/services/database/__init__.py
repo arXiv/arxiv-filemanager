@@ -24,7 +24,7 @@ from . import translate
 logger = logging.getLogger(__name__)
 
 
-def init_app(app: Optional[LocalProxy]) -> None:
+def init_app(app: Flask) -> None:
     """Set configuration defaults and attach session to the application."""
     db.init_app(app)
 

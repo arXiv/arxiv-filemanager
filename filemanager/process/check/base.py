@@ -4,7 +4,8 @@ from typing import Callable, Optional
 
 from arxiv.base import logging
 
-from ...domain import FileType, UploadedFile, UploadWorkspace
+from ...domain import FileType, UploadedFile, CheckableWorkspace, \
+    CheckableWorkspace
 
 logger = logging.getLogger(__name__)
 logger.propagate = False
@@ -27,7 +28,7 @@ class BaseChecker:
     ``check_{file_type}(self, u_file: UploadedFile) -> None:``.
     """
 
-    def __call__(self, workspace: UploadWorkspace, u_file: UploadedFile) \
+    def __call__(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """Perform file checks."""
         logger.debug('%s: check %s', self.__class__.__name__, u_file.path)
@@ -44,3 +45,7 @@ class BaseChecker:
         if final_check is not None:
             u_file = final_check(workspace, u_file)
         return u_file
+
+    def check_workspace(self, workspace: CheckableWorkspace) -> None:
+        """Dummy stub for workspace check, to be implemented by child class."""
+        return

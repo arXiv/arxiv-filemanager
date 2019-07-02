@@ -66,7 +66,7 @@ class FileType(Enum):
     INCLUDE = 'INCLUDE'
 
     @property
-    def name(self) -> str:
+    def label(self) -> str:
         """Human-readable name of the file type."""
         return FILE_NAMES.get(self, 'unknown')
 
