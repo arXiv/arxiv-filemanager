@@ -1,0 +1,234 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.domain.uploads.paths module &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="filemanager.domain.uploads.readiness module" href="filemanager.domain.uploads.readiness.html" />
+    <link rel="prev" title="filemanager.domain.uploads.lock module" href="filemanager.domain.uploads.lock.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-filemanager.domain.uploads.paths">
+<span id="filemanager-domain-uploads-paths-module"></span><h1>filemanager.domain.uploads.paths module<a class="headerlink" href="#module-filemanager.domain.uploads.paths" title="Permalink to this headline">¶</a></h1>
+<p>Provides <code class="xref py py-class docutils literal notranslate"><span class="pre">PathsMixin</span></code>.</p>
+<dl class="class">
+<dt id="filemanager.domain.uploads.paths.FilePathsWorkspace">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.paths.</code><code class="sig-name descname">FilePathsWorkspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em>, <em class="sig-param">owner_user_id</em>, <em class="sig-param">created_datetime</em>, <em class="sig-param">modified_datetime</em>, <em class="sig-param">files=&lt;factory&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/paths.html#FilePathsWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.paths.FilePathsWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace" title="filemanager.domain.uploads.base.BaseWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.base.BaseWorkspace</span></code></a></p>
+<p>Implements methods related to paths in :class:<a href="#id1"><span class="problematic" id="id2">`</span></a>.UploadWorkspace.</p>
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.paths.FilePathsWorkspace.ANCILLARY_PREFIX">
+<code class="sig-name descname">ANCILLARY_PREFIX</code><em class="property"> = 'anc'</em><a class="headerlink" href="#filemanager.domain.uploads.paths.FilePathsWorkspace.ANCILLARY_PREFIX" title="Permalink to this definition">¶</a></dt>
+<dd><p>The directory within source directory where ancillary files are kept.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.paths.FilePathsWorkspace.REMOVED_PREFIX">
+<code class="sig-name descname">REMOVED_PREFIX</code><em class="property"> = 'removed'</em><a class="headerlink" href="#filemanager.domain.uploads.paths.FilePathsWorkspace.REMOVED_PREFIX" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the removed directory within the upload workspace.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.paths.FilePathsWorkspace.SOURCE_PREFIX">
+<code class="sig-name descname">SOURCE_PREFIX</code><em class="property"> = 'src'</em><a class="headerlink" href="#filemanager.domain.uploads.paths.FilePathsWorkspace.SOURCE_PREFIX" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the source directory within the upload workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.paths.FilePathsWorkspace.ancillary_path">
+<em class="property">property </em><code class="sig-name descname">ancillary_path</code><a class="headerlink" href="#filemanager.domain.uploads.paths.FilePathsWorkspace.ancillary_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the path where ancillary files are stored.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.paths.FilePathsWorkspace.base_path">
+<em class="property">property </em><code class="sig-name descname">base_path</code><a class="headerlink" href="#filemanager.domain.uploads.paths.FilePathsWorkspace.base_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Relative base path for this workspace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.paths.FilePathsWorkspace.exists">
+<code class="sig-name descname">exists</code><span class="sig-paren">(</span><em class="sig-param">path</em>, <em class="sig-param">is_ancillary=False</em>, <em class="sig-param">is_removed=False</em>, <em class="sig-param">is_system=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/paths.html#FilePathsWorkspace.exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.paths.FilePathsWorkspace.exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether or not a file exists in this workspace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.paths.FilePathsWorkspace.get">
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param">path</em>, <em class="sig-param">is_ancillary=None</em>, <em class="sig-param">is_removed=False</em>, <em class="sig-param">is_system=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/paths.html#FilePathsWorkspace.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.paths.FilePathsWorkspace.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a file at <code class="docutils literal notranslate"><span class="pre">path</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.paths.FilePathsWorkspace.get_path">
+<code class="sig-name descname">get_path</code><span class="sig-paren">(</span><em class="sig-param">u_file_or_path</em>, <em class="sig-param">is_ancillary=False</em>, <em class="sig-param">is_removed=False</em>, <em class="sig-param">is_system=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/paths.html#FilePathsWorkspace.get_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.paths.FilePathsWorkspace.get_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the path to an <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a> in this workspace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.paths.FilePathsWorkspace.get_public_path">
+<code class="sig-name descname">get_public_path</code><span class="sig-paren">(</span><em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/paths.html#FilePathsWorkspace.get_public_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.paths.FilePathsWorkspace.get_public_path" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.paths.FilePathsWorkspace.removed_path">
+<em class="property">property </em><code class="sig-name descname">removed_path</code><a class="headerlink" href="#filemanager.domain.uploads.paths.FilePathsWorkspace.removed_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get path where source archive files get moved when unpacked.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.paths.FilePathsWorkspace.source_path">
+<em class="property">property </em><code class="sig-name descname">source_path</code><a class="headerlink" href="#filemanager.domain.uploads.paths.FilePathsWorkspace.source_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the path where source files are deposited.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">filemanager</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="filemanager.html">filemanager package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">filemanager</a><ul>
+  <li><a href="filemanager.html">filemanager package</a><ul>
+  <li><a href="filemanager.domain.html">filemanager.domain package</a><ul>
+  <li><a href="filemanager.domain.uploads.html">filemanager.domain.uploads package</a><ul>
+      <li>Previous: <a href="filemanager.domain.uploads.lock.html" title="previous chapter">filemanager.domain.uploads.lock module</a></li>
+      <li>Next: <a href="filemanager.domain.uploads.readiness.html" title="next chapter">filemanager.domain.uploads.readiness module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/api/filemanager.domain.uploads.paths.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

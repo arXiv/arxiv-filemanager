@@ -15,7 +15,7 @@
     <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="filemanager.domain.storage module" href="filemanager.domain.storage.html" />
+    <link rel="next" title="filemanager.domain.uploaded_file module" href="filemanager.domain.uploaded_file.html" />
     <link rel="prev" title="filemanager.domain.log module" href="filemanager.domain.log.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
@@ -38,7 +38,7 @@
 <p>Provides the content package.</p>
 <dl class="class">
 <dt id="filemanager.domain.package.SourcePackage">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.package.</code><code class="sig-name descname">SourcePackage</code><span class="sig-paren">(</span><em class="sig-param">workspace</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/package.html#SourcePackage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.package.SourcePackage" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.package.</code><code class="sig-name descname">SourcePackage</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/package.html#SourcePackage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.package.SourcePackage" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>An archive containing an entire submission source package.</p>
 <dl class="method">
@@ -53,8 +53,19 @@
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.package.SourcePackage.full_path">
-<em class="property">property </em><code class="sig-name descname">full_path</code><a class="headerlink" href="#filemanager.domain.package.SourcePackage.full_path" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.package.SourcePackage.file">
+<em class="property">property </em><code class="sig-name descname">file</code><a class="headerlink" href="#filemanager.domain.package.SourcePackage.file" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>rtype</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.package.SourcePackage.fullpath">
+<em class="property">property </em><code class="sig-name descname">fullpath</code><a class="headerlink" href="#filemanager.domain.package.SourcePackage.fullpath" title="Permalink to this definition">¶</a></dt>
 <dd><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -86,13 +97,24 @@
 </dd></dl>
 
 <dl class="method">
+<dt id="filemanager.domain.package.SourcePackage.name">
+<em class="property">property </em><code class="sig-name descname">name</code><a class="headerlink" href="#filemanager.domain.package.SourcePackage.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Source package file name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
 <dt id="filemanager.domain.package.SourcePackage.open">
 <code class="sig-name descname">open</code><span class="sig-paren">(</span><em class="sig-param">flags='r'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/package.html#SourcePackage.open"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.package.SourcePackage.open" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get an open file pointer to the source package.</p>
 <p>To be used as a context manager.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Iterator" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/io.html#io.IOBase" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">IOBase</span></code></a>]</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Iterator" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Io</span></code>[<a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.AnyStr" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">AnyStr</span></code></a>]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -102,7 +124,7 @@
 <code class="sig-name descname">open_pointer</code><span class="sig-paren">(</span><em class="sig-param">flags='r'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/package.html#SourcePackage.open_pointer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.package.SourcePackage.open_pointer" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/io.html#io.IOBase" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">IOBase</span></code></a></p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Io</span></code>[<a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.AnyStr" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">AnyStr</span></code></a>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -172,7 +194,7 @@
   <li><a href="filemanager.html">filemanager package</a><ul>
   <li><a href="filemanager.domain.html">filemanager.domain package</a><ul>
       <li>Previous: <a href="filemanager.domain.log.html" title="previous chapter">filemanager.domain.log module</a></li>
-      <li>Next: <a href="filemanager.domain.storage.html" title="next chapter">filemanager.domain.storage module</a></li>
+      <li>Next: <a href="filemanager.domain.uploaded_file.html" title="next chapter">filemanager.domain.uploaded_file module</a></li>
   </ul></li>
   </ul></li>
   </ul></li>

@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>filemanager.domain.uploads module &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <title>filemanager.domain.uploads package &#8212; arXiv File Manager Service 0.1 documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
@@ -15,8 +15,8 @@
     <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="filemanager.process package" href="filemanager.process.html" />
-    <link rel="prev" title="filemanager.domain.uploaded_file module" href="filemanager.domain.uploaded_file.html" />
+    <link rel="next" title="filemanager.domain.uploads.base module" href="filemanager.domain.uploads.base.html" />
+    <link rel="prev" title="filemanager.domain.tests.test_workspace module" href="filemanager.domain.tests.test_workspace.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -34,805 +34,63 @@
           <div class="body" role="main">
             
   <div class="section" id="module-filemanager.domain.uploads">
-<span id="filemanager-domain-uploads-module"></span><h1>filemanager.domain.uploads module<a class="headerlink" href="#module-filemanager.domain.uploads" title="Permalink to this headline">¶</a></h1>
+<span id="filemanager-domain-uploads-package"></span><h1>filemanager.domain.uploads package<a class="headerlink" href="#module-filemanager.domain.uploads" title="Permalink to this headline">¶</a></h1>
 <p>Provides <a class="reference internal" href="#filemanager.domain.uploads.UploadWorkspace" title="filemanager.domain.uploads.UploadWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadWorkspace</span></code></a>, the organizing concept for this service.</p>
 <p>Because <a class="reference internal" href="#filemanager.domain.uploads.UploadWorkspace" title="filemanager.domain.uploads.UploadWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadWorkspace</span></code></a> has many properties and methods, its
-members are split out into mixins that group related functionality.</p>
-<dl class="class">
-<dt id="filemanager.domain.uploads.ChecksMixin">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.</code><code class="sig-name descname">ChecksMixin</code><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#ChecksMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.ChecksMixin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Implements methods related to file and workspace checks.</p>
-<dl class="method">
-<dt id="filemanager.domain.uploads.ChecksMixin.has_unchecked_files">
-<em class="property">property </em><code class="sig-name descname">has_unchecked_files</code><a class="headerlink" href="#filemanager.domain.uploads.ChecksMixin.has_unchecked_files" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determine whether there are unchecked files in this workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.ChecksMixin.perform_checks">
-<code class="sig-name descname">perform_checks</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#ChecksMixin.perform_checks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.ChecksMixin.perform_checks" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform all checks on this workspace using the assigned strategy.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="filemanager.domain.uploads.CountsMixin">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.</code><code class="sig-name descname">CountsMixin</code><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#CountsMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.CountsMixin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Implements methods related to file counts.</p>
-<dl class="method">
-<dt id="filemanager.domain.uploads.CountsMixin.ancillary_file_count">
-<em class="property">property </em><code class="sig-name descname">ancillary_file_count</code><a class="headerlink" href="#filemanager.domain.uploads.CountsMixin.ancillary_file_count" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the total number of ancillary files in this workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.CountsMixin.file_count">
-<em class="property">property </em><code class="sig-name descname">file_count</code><a class="headerlink" href="#filemanager.domain.uploads.CountsMixin.file_count" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the total number of non-ancillary files in this workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.CountsMixin.get_file_type_counts">
-<code class="sig-name descname">get_file_type_counts</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#CountsMixin.get_file_type_counts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.CountsMixin.get_file_type_counts" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the number of files of each type in the workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Mapping" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Union" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference internal" href="filemanager.domain.file_type.html#filemanager.domain.file_type.FileType" title="filemanager.domain.file_type.FileType"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileType</span></code></a>, <a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>], <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="filemanager.domain.uploads.ErrorsAndWarningsMixin">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.</code><code class="sig-name descname">ErrorsAndWarningsMixin</code><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#ErrorsAndWarningsMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.ErrorsAndWarningsMixin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Implements properties and methods for errors and warnings.</p>
-<dl class="method">
-<dt id="filemanager.domain.uploads.ErrorsAndWarningsMixin.active_warnings">
-<em class="property">property </em><code class="sig-name descname">active_warnings</code><a class="headerlink" href="#filemanager.domain.uploads.ErrorsAndWarningsMixin.active_warnings" title="Permalink to this definition">¶</a></dt>
-<dd><p>Warnings for active files only.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Mapping" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.List" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.ErrorsAndWarningsMixin.add_error">
-<code class="sig-name descname">add_error</code><span class="sig-paren">(</span><em class="sig-param">u_file</em>, <em class="sig-param">msg</em>, <em class="sig-param">severity=&lt;Severity.FATAL: 'fatal'&gt;</em>, <em class="sig-param">is_persistant=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#ErrorsAndWarningsMixin.add_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.ErrorsAndWarningsMixin.add_error" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add an error for a specific file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.ErrorsAndWarningsMixin.add_non_file_error">
-<code class="sig-name descname">add_non_file_error</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">severity=&lt;Severity.FATAL: 'fatal'&gt;</em>, <em class="sig-param">is_persistant=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#ErrorsAndWarningsMixin.add_non_file_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.ErrorsAndWarningsMixin.add_non_file_error" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add an error for the workspace that is not specific to a file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.ErrorsAndWarningsMixin.add_non_file_warning">
-<code class="sig-name descname">add_non_file_warning</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">is_persistant=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#ErrorsAndWarningsMixin.add_non_file_warning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.ErrorsAndWarningsMixin.add_non_file_warning" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add a warning for the workspace that is not specific to a file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.ErrorsAndWarningsMixin.add_warning">
-<code class="sig-name descname">add_warning</code><span class="sig-paren">(</span><em class="sig-param">u_file</em>, <em class="sig-param">msg</em>, <em class="sig-param">is_persistant=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#ErrorsAndWarningsMixin.add_warning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.ErrorsAndWarningsMixin.add_warning" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add a warning for a specific file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.ErrorsAndWarningsMixin.errors">
-<em class="property">property </em><code class="sig-name descname">errors</code><a class="headerlink" href="#filemanager.domain.uploads.ErrorsAndWarningsMixin.errors" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.List" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="filemanager.domain.error.html#filemanager.domain.error.Error" title="filemanager.domain.error.Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></a>]</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>rtype</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.ErrorsAndWarningsMixin.fatal_errors">
-<em class="property">property </em><code class="sig-name descname">fatal_errors</code><a class="headerlink" href="#filemanager.domain.uploads.ErrorsAndWarningsMixin.fatal_errors" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.List" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="filemanager.domain.error.html#filemanager.domain.error.Error" title="filemanager.domain.error.Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></a>]</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>rtype</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.ErrorsAndWarningsMixin.get_warnings_for_path">
-<code class="sig-name descname">get_warnings_for_path</code><span class="sig-paren">(</span><em class="sig-param">path</em>, <em class="sig-param">is_ancillary=False</em>, <em class="sig-param">is_system=False</em>, <em class="sig-param">is_removed=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#ErrorsAndWarningsMixin.get_warnings_for_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.ErrorsAndWarningsMixin.get_warnings_for_path" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.List" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.ErrorsAndWarningsMixin.has_active_warnings">
-<em class="property">property </em><code class="sig-name descname">has_active_warnings</code><a class="headerlink" href="#filemanager.domain.uploads.ErrorsAndWarningsMixin.has_active_warnings" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determine whether this workspace has warnings for active files.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.ErrorsAndWarningsMixin.has_errors">
-<em class="property">property </em><code class="sig-name descname">has_errors</code><a class="headerlink" href="#filemanager.domain.uploads.ErrorsAndWarningsMixin.has_errors" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determine whether or not this workspace has errors.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.ErrorsAndWarningsMixin.has_fatal_errors">
-<em class="property">property </em><code class="sig-name descname">has_fatal_errors</code><a class="headerlink" href="#filemanager.domain.uploads.ErrorsAndWarningsMixin.has_fatal_errors" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>rtype</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.ErrorsAndWarningsMixin.has_warnings">
-<em class="property">property </em><code class="sig-name descname">has_warnings</code><a class="headerlink" href="#filemanager.domain.uploads.ErrorsAndWarningsMixin.has_warnings" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determine whether or not this workspace has warnings.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.ErrorsAndWarningsMixin.warnings">
-<em class="property">property </em><code class="sig-name descname">warnings</code><a class="headerlink" href="#filemanager.domain.uploads.ErrorsAndWarningsMixin.warnings" title="Permalink to this definition">¶</a></dt>
-<dd><p>Warnings for all files in the workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Mapping" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.List" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="filemanager.domain.uploads.FileMutationsMixin">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.</code><code class="sig-name descname">FileMutationsMixin</code><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#FileMutationsMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.FileMutationsMixin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Implements methods that alter files.</p>
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.FileMutationsMixin.LEADING_DOTSLASH">
-<code class="sig-name descname">LEADING_DOTSLASH</code><em class="property"> = re.compile('^\\./')</em><a class="headerlink" href="#filemanager.domain.uploads.FileMutationsMixin.LEADING_DOTSLASH" title="Permalink to this definition">¶</a></dt>
-<dd><p>Pattern to match leading <code class="docutils literal notranslate"><span class="pre">./</span></code> in relative paths.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.FileMutationsMixin.add_files">
-<code class="sig-name descname">add_files</code><span class="sig-paren">(</span><em class="sig-param">*u_files</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#FileMutationsMixin.add_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.FileMutationsMixin.add_files" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add new :class:<a href="#id1"><span class="problematic" id="id2">`</span></a>.UploadedFile`s to this workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.FileMutationsMixin.copy">
-<code class="sig-name descname">copy</code><span class="sig-paren">(</span><em class="sig-param">u_file</em>, <em class="sig-param">new_path</em>, <em class="sig-param">replace=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#FileMutationsMixin.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.FileMutationsMixin.copy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Make a copy of a file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.FileMutationsMixin.create">
-<code class="sig-name descname">create</code><span class="sig-paren">(</span><em class="sig-param">path</em>, <em class="sig-param">file_type=&lt;FileType.UNKNOWN: 'UNKNOWN'&gt;</em>, <em class="sig-param">replace=False</em>, <em class="sig-param">is_directory=False</em>, <em class="sig-param">is_ancillary=None</em>, <em class="sig-param">is_system=False</em>, <em class="sig-param">touch=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#FileMutationsMixin.create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.FileMutationsMixin.create" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a new <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a> at <code class="docutils literal notranslate"><span class="pre">path</span></code>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.FileMutationsMixin.delete">
-<code class="sig-name descname">delete</code><span class="sig-paren">(</span><em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#FileMutationsMixin.delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.FileMutationsMixin.delete" title="Permalink to this definition">¶</a></dt>
-<dd><p>Completely delete a file.</p>
-<p>See also <code class="xref py py-func docutils literal notranslate"><span class="pre">UploadWorkspace.remove()</span></code>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.FileMutationsMixin.delete_all_files">
-<code class="sig-name descname">delete_all_files</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#FileMutationsMixin.delete_all_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.FileMutationsMixin.delete_all_files" title="Permalink to this definition">¶</a></dt>
-<dd><p>Delete all source and ancillary files in the workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.FileMutationsMixin.persist">
-<code class="sig-name descname">persist</code><span class="sig-paren">(</span><em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#FileMutationsMixin.persist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.FileMutationsMixin.persist" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.FileMutationsMixin.remove">
-<code class="sig-name descname">remove</code><span class="sig-paren">(</span><em class="sig-param">u_file</em>, <em class="sig-param">reason=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#FileMutationsMixin.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.FileMutationsMixin.remove" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mark a file as removed, and quarantine.</p>
-<p>This is not the same as deletion.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.FileMutationsMixin.rename">
-<code class="sig-name descname">rename</code><span class="sig-paren">(</span><em class="sig-param">u_file</em>, <em class="sig-param">new_path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#FileMutationsMixin.rename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.FileMutationsMixin.rename" title="Permalink to this definition">¶</a></dt>
-<dd><p>Rename a file in this workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.FileMutationsMixin.replace">
-<code class="sig-name descname">replace</code><span class="sig-paren">(</span><em class="sig-param">to_replace</em>, <em class="sig-param">replace_with</em>, <em class="sig-param">keep_refs=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#FileMutationsMixin.replace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.FileMutationsMixin.replace" title="Permalink to this definition">¶</a></dt>
-<dd><p>Replace a file with another file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="filemanager.domain.uploads.FileStaticOperationsMixin">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.</code><code class="sig-name descname">FileStaticOperationsMixin</code><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#FileStaticOperationsMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.FileStaticOperationsMixin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Implements methods for non-mutating operations on individual files.</p>
-<dl class="method">
-<dt id="filemanager.domain.uploads.FileStaticOperationsMixin.cmp">
-<code class="sig-name descname">cmp</code><span class="sig-paren">(</span><em class="sig-param">a_file</em>, <em class="sig-param">b_file</em>, <em class="sig-param">shallow=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#FileStaticOperationsMixin.cmp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.FileStaticOperationsMixin.cmp" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compare the contents of two files.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.FileStaticOperationsMixin.get_checksum">
-<code class="sig-name descname">get_checksum</code><span class="sig-paren">(</span><em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#FileStaticOperationsMixin.get_checksum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.FileStaticOperationsMixin.get_checksum" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.FileStaticOperationsMixin.get_last_modified">
-<code class="sig-name descname">get_last_modified</code><span class="sig-paren">(</span><em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#FileStaticOperationsMixin.get_last_modified"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.FileStaticOperationsMixin.get_last_modified" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/datetime.html#datetime.datetime" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">datetime</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.FileStaticOperationsMixin.get_size_bytes">
-<code class="sig-name descname">get_size_bytes</code><span class="sig-paren">(</span><em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#FileStaticOperationsMixin.get_size_bytes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.FileStaticOperationsMixin.get_size_bytes" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get (and update) the size in bytes of a file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.FileStaticOperationsMixin.is_tarfile">
-<code class="sig-name descname">is_tarfile</code><span class="sig-paren">(</span><em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#FileStaticOperationsMixin.is_tarfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.FileStaticOperationsMixin.is_tarfile" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determine whether or not a file is a tarfile.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="filemanager.domain.uploads.LockMixin">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.</code><code class="sig-name descname">LockMixin</code><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#LockMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.LockMixin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Implements methods and properties related to locking/unlocking.</p>
-<dl class="class">
-<dt id="filemanager.domain.uploads.LockMixin.LockState">
-<em class="property">class </em><code class="sig-name descname">LockState</code><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#LockMixin.LockState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.LockMixin.LockState" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/enum.html#enum.Enum" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
-<p>Upload workspace lock states.</p>
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.LockMixin.LockState.LOCKED">
-<code class="sig-name descname">LOCKED</code><em class="property"> = 'LOCKED'</em><a class="headerlink" href="#filemanager.domain.uploads.LockMixin.LockState.LOCKED" title="Permalink to this definition">¶</a></dt>
-<dd><p>Indicates upload workspace is locked and cannot be updated.</p>
-<p>The workspace might be locked during publish or when admins are
-updating uploaded files.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.LockMixin.LockState.UNLOCKED">
-<code class="sig-name descname">UNLOCKED</code><em class="property"> = 'UNLOCKED'</em><a class="headerlink" href="#filemanager.domain.uploads.LockMixin.LockState.UNLOCKED" title="Permalink to this definition">¶</a></dt>
-<dd><p>Workspace is unlocked, updates are allowed.</p>
-<p>Workspace is normally in this state.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.LockMixin.is_locked">
-<em class="property">property </em><code class="sig-name descname">is_locked</code><a class="headerlink" href="#filemanager.domain.uploads.LockMixin.is_locked" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>rtype</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="filemanager.domain.uploads.OpenFilesMixin">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.</code><code class="sig-name descname">OpenFilesMixin</code><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#OpenFilesMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.OpenFilesMixin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Implements methods for opening files.</p>
-<dl class="method">
-<dt id="filemanager.domain.uploads.OpenFilesMixin.open">
-<code class="sig-name descname">open</code><span class="sig-paren">(</span><em class="sig-param">u_file</em>, <em class="sig-param">flags='r'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#OpenFilesMixin.open"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.OpenFilesMixin.open" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get a file pointer for a <code class="xref py py-class docutils literal notranslate"><span class="pre">UploadFile</span></code>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Iterator" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/io.html#io.IOBase" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">IOBase</span></code></a>]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.OpenFilesMixin.open_pointer">
-<code class="sig-name descname">open_pointer</code><span class="sig-paren">(</span><em class="sig-param">u_file</em>, <em class="sig-param">flags='r'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#OpenFilesMixin.open_pointer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.OpenFilesMixin.open_pointer" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/io.html#io.IOBase" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">IOBase</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="filemanager.domain.uploads.PathsMixin">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.</code><code class="sig-name descname">PathsMixin</code><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#PathsMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.PathsMixin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Implements methods related to paths in :class:<a href="#id3"><span class="problematic" id="id4">`</span></a>.UploadWorkspace.</p>
-<dl class="method">
-<dt id="filemanager.domain.uploads.PathsMixin.ancillary_path">
-<em class="property">property </em><code class="sig-name descname">ancillary_path</code><a class="headerlink" href="#filemanager.domain.uploads.PathsMixin.ancillary_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the path where ancillary files are stored.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.PathsMixin.base_path">
-<em class="property">property </em><code class="sig-name descname">base_path</code><a class="headerlink" href="#filemanager.domain.uploads.PathsMixin.base_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Relative base path for this workspace.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.PathsMixin.exists">
-<code class="sig-name descname">exists</code><span class="sig-paren">(</span><em class="sig-param">path</em>, <em class="sig-param">is_ancillary=False</em>, <em class="sig-param">is_removed=False</em>, <em class="sig-param">is_system=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#PathsMixin.exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.PathsMixin.exists" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determine whether or not a file exists in this workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.PathsMixin.get">
-<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param">path</em>, <em class="sig-param">is_ancillary=None</em>, <em class="sig-param">is_removed=False</em>, <em class="sig-param">is_system=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#PathsMixin.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.PathsMixin.get" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get a file at <code class="docutils literal notranslate"><span class="pre">path</span></code>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.PathsMixin.get_full_path">
-<code class="sig-name descname">get_full_path</code><span class="sig-paren">(</span><em class="sig-param">u_file_or_path</em>, <em class="sig-param">is_ancillary=False</em>, <em class="sig-param">is_removed=False</em>, <em class="sig-param">is_persisted=False</em>, <em class="sig-param">is_system=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#PathsMixin.get_full_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.PathsMixin.get_full_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the absolute path to a <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.PathsMixin.get_path">
-<code class="sig-name descname">get_path</code><span class="sig-paren">(</span><em class="sig-param">u_file_or_path</em>, <em class="sig-param">is_ancillary=False</em>, <em class="sig-param">is_removed=False</em>, <em class="sig-param">is_system=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#PathsMixin.get_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.PathsMixin.get_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the path to an <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a> in this workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.PathsMixin.get_public_path">
-<code class="sig-name descname">get_public_path</code><span class="sig-paren">(</span><em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#PathsMixin.get_public_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.PathsMixin.get_public_path" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.PathsMixin.is_safe">
-<code class="sig-name descname">is_safe</code><span class="sig-paren">(</span><em class="sig-param">path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#PathsMixin.is_safe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.PathsMixin.is_safe" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determine whether or not a path is safe to use in this workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.PathsMixin.removed_path">
-<em class="property">property </em><code class="sig-name descname">removed_path</code><a class="headerlink" href="#filemanager.domain.uploads.PathsMixin.removed_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get path where source archive files get moved when unpacked.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.PathsMixin.source_path">
-<em class="property">property </em><code class="sig-name descname">source_path</code><a class="headerlink" href="#filemanager.domain.uploads.PathsMixin.source_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the path where source files are deposited.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="filemanager.domain.uploads.ReadinessMixin">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.</code><code class="sig-name descname">ReadinessMixin</code><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#ReadinessMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.ReadinessMixin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Implements methods and properties releated to source readiness.</p>
-<dl class="class">
-<dt id="filemanager.domain.uploads.ReadinessMixin.Readiness">
-<em class="property">class </em><code class="sig-name descname">Readiness</code><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#ReadinessMixin.Readiness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.ReadinessMixin.Readiness" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/enum.html#enum.Enum" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
-<p>Upload workspace readiness states.</p>
-<p>Provides an indication (but not the final word) on whether the
-workspace is suitable for incorporating into a submission to arXiv.</p>
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.ReadinessMixin.Readiness.ERRORS">
-<code class="sig-name descname">ERRORS</code><em class="property"> = 'ERRORS'</em><a class="headerlink" href="#filemanager.domain.uploads.ReadinessMixin.Readiness.ERRORS" title="Permalink to this definition">¶</a></dt>
-<dd><p>There were errors reported while processing upload files.</p>
-<p>Subsequent steps [compilation, submit, publish] should reject working
-with such an upload package.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.ReadinessMixin.Readiness.READY">
-<code class="sig-name descname">READY</code><em class="property"> = 'READY'</em><a class="headerlink" href="#filemanager.domain.uploads.ReadinessMixin.Readiness.READY" title="Permalink to this definition">¶</a></dt>
-<dd><p>Overall state of workspace is good; no warnings/errors reported.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.ReadinessMixin.Readiness.READY_WITH_WARNINGS">
-<code class="sig-name descname">READY_WITH_WARNINGS</code><em class="property"> = 'READY_WITH_WARNINGS'</em><a class="headerlink" href="#filemanager.domain.uploads.ReadinessMixin.Readiness.READY_WITH_WARNINGS" title="Permalink to this definition">¶</a></dt>
-<dd><p>Workspace is ready, but there are warnings for the user.</p>
-<p>Upload processing reported warnings which do not prohibit client
-from continuing on to compilation and submit steps.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.ReadinessMixin.readiness">
-<em class="property">property </em><code class="sig-name descname">readiness</code><a class="headerlink" href="#filemanager.domain.uploads.ReadinessMixin.readiness" title="Permalink to this definition">¶</a></dt>
-<dd><p>Readiness state of the upload workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#filemanager.domain.uploads.ReadinessMixin.Readiness" title="filemanager.domain.uploads.ReadinessMixin.Readiness">Readiness</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="filemanager.domain.uploads.SingleFileMixin">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.</code><code class="sig-name descname">SingleFileMixin</code><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#SingleFileMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.SingleFileMixin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Implements methods related to single-file source packages.</p>
-<dl class="method">
-<dt id="filemanager.domain.uploads.SingleFileMixin.get_single_file">
-<code class="sig-name descname">get_single_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#SingleFileMixin.get_single_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.SingleFileMixin.get_single_file" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return File object for single-file submission.</p>
-<p>This routine is intended for submission that are composed of a single
-content file.</p>
-<p>Single file can’t be type ‘ancillary’. Single ancillary file is invalid
-submission and generates an error.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>Single file. Returns None when submission has more than one file.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a> or <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Optional" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.SingleFileMixin.is_single_file_submission">
-<em class="property">property </em><code class="sig-name descname">is_single_file_submission</code><a class="headerlink" href="#filemanager.domain.uploads.SingleFileMixin.is_single_file_submission" title="Permalink to this definition">¶</a></dt>
-<dd><p>Indicate whether or not this is a valid single-file submission.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="filemanager.domain.uploads.StatusMixin">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.</code><code class="sig-name descname">StatusMixin</code><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#StatusMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.StatusMixin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Implements status-related methods and properties.</p>
-<dl class="class">
-<dt id="filemanager.domain.uploads.StatusMixin.Status">
-<em class="property">class </em><code class="sig-name descname">Status</code><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#StatusMixin.Status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.StatusMixin.Status" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/enum.html#enum.Enum" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
-<p>Upload workspace statuses.</p>
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.StatusMixin.Status.ACTIVE">
-<code class="sig-name descname">ACTIVE</code><em class="property"> = 'ACTIVE'</em><a class="headerlink" href="#filemanager.domain.uploads.StatusMixin.Status.ACTIVE" title="Permalink to this definition">¶</a></dt>
-<dd><p>Upload workspace is actively being used.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.StatusMixin.Status.DELETED">
-<code class="sig-name descname">DELETED</code><em class="property"> = 'DELETED'</em><a class="headerlink" href="#filemanager.domain.uploads.StatusMixin.Status.DELETED" title="Permalink to this definition">¶</a></dt>
-<dd><p>Workspace is deleted (no files on disk).</p>
-<p>After upload workspace files are deleted the state of workspace in
-database is set to deleted. Database entry is retained indefinitely.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.StatusMixin.Status.RELEASED">
-<code class="sig-name descname">RELEASED</code><em class="property"> = 'RELEASED'</em><a class="headerlink" href="#filemanager.domain.uploads.StatusMixin.Status.RELEASED" title="Permalink to this definition">¶</a></dt>
-<dd><p>Workspace is released and can be removed.</p>
-<p>Client/Admin/System indicate release to indicate upload workspace is no
-longer in use.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.StatusMixin.is_active">
-<em class="property">property </em><code class="sig-name descname">is_active</code><a class="headerlink" href="#filemanager.domain.uploads.StatusMixin.is_active" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>rtype</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.StatusMixin.is_deleted">
-<em class="property">property </em><code class="sig-name descname">is_deleted</code><a class="headerlink" href="#filemanager.domain.uploads.StatusMixin.is_deleted" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>rtype</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.StatusMixin.is_released">
-<em class="property">property </em><code class="sig-name descname">is_released</code><a class="headerlink" href="#filemanager.domain.uploads.StatusMixin.is_released" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>rtype</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
+members are split out into separate classes.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace" title="filemanager.domain.uploads.base.BaseWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseWorkspace</span></code></a> provides the file index, and foundational methods.</p></li>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.paths.html#filemanager.domain.uploads.paths.FilePathsWorkspace" title="filemanager.domain.uploads.paths.FilePathsWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">FilePathsWorkspace</span></code></a> adds methods for working with paths inside
+the workspace.</p></li>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.StoredWorkspace" title="filemanager.domain.uploads.stored.StoredWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">StoredWorkspace</span></code></a> adds integration with a storage adapter.</p></li>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace" title="filemanager.domain.uploads.file_mutations.FileMutationsWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileMutationsWorkspace</span></code></a> adds methods for manipulating individual
+files.</p></li>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.CheckableWorkspace" title="filemanager.domain.uploads.checkable.CheckableWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">CheckableWorkspace</span></code></a> adds slots for checkers and checking strategy,
+and methods for performing checks. It also adds:</p>
+<ul>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.source_type.html#filemanager.domain.uploads.source_type.SourceTypeMixin" title="filemanager.domain.uploads.source_type.SourceTypeMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceTypeMixin</span></code></a>, which adds a representation of the submission
+source upload type.</p></li>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.countable.html#filemanager.domain.uploads.countable.CountableWorkspace" title="filemanager.domain.uploads.countable.CountableWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">CountableWorkspace</span></code></a>, which adds methods for counting files and
+types of files.</p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#filemanager.domain.uploads.UploadWorkspace" title="filemanager.domain.uploads.UploadWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadWorkspace</span></code></a> extends <a class="reference internal" href="filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.CheckableWorkspace" title="filemanager.domain.uploads.checkable.CheckableWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">CheckableWorkspace</span></code></a> to add an
+initialization method, and also incorporates:</p>
+<ul>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.readiness.html#filemanager.domain.uploads.readiness.ReadinessWorkspace" title="filemanager.domain.uploads.readiness.ReadinessWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReadinessWorkspace</span></code></a>, which adds semantics around the “readiness”
+of the workspace for use in a submission.</p></li>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.single_file.html#filemanager.domain.uploads.single_file.SingleFileWorkspace" title="filemanager.domain.uploads.single_file.SingleFileWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">SingleFileWorkspace</span></code></a>, which adds the concept of a “single file
+submission.”</p></li>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.lock.html#filemanager.domain.uploads.lock.LockMixin" title="filemanager.domain.uploads.lock.LockMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">LockMixin</span></code></a>, which adds support for locking/unlocking the
+workspace.</p></li>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.status.html#filemanager.domain.uploads.status.StatusMixin" title="filemanager.domain.uploads.status.StatusMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">StatusMixin</span></code></a>, which adds the concept of a workspace status.</p></li>
+</ul>
+</li>
+</ul>
 <dl class="class">
 <dt id="filemanager.domain.uploads.UploadWorkspace">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.</code><code class="sig-name descname">UploadWorkspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em>, <em class="sig-param">owner_user_id</em>, <em class="sig-param">created_datetime</em>, <em class="sig-param">modified_datetime</em>, <em class="sig-param">storage</em>, <em class="sig-param">status=&lt;Status.ACTIVE: 'ACTIVE'&gt;</em>, <em class="sig-param">lock_state=&lt;LockState.UNLOCKED: 'UNLOCKED'&gt;</em>, <em class="sig-param">checkers=&lt;factory&gt;</em>, <em class="sig-param">strategy=None</em>, <em class="sig-param">source_type=&lt;SourceType.UNKNOWN: 'unknown'&gt;</em>, <em class="sig-param">_errors=&lt;factory&gt;</em>, <em class="sig-param">files=&lt;factory&gt;</em>, <em class="sig-param">lastupload_start_datetime=None</em>, <em class="sig-param">lastupload_completion_datetime=None</em>, <em class="sig-param">lastupload_logs=&lt;factory&gt;</em>, <em class="sig-param">lastupload_file_summary=&lt;factory&gt;</em>, <em class="sig-param">lastupload_readiness=&lt;Readiness.READY: 'READY'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#UploadWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#filemanager.domain.uploads.ErrorsAndWarningsMixin" title="filemanager.domain.uploads.ErrorsAndWarningsMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.ErrorsAndWarningsMixin</span></code></a>, <a class="reference internal" href="#filemanager.domain.uploads.PathsMixin" title="filemanager.domain.uploads.PathsMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.PathsMixin</span></code></a>, <a class="reference internal" href="#filemanager.domain.uploads.CountsMixin" title="filemanager.domain.uploads.CountsMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.CountsMixin</span></code></a>, <a class="reference internal" href="#filemanager.domain.uploads.FileStaticOperationsMixin" title="filemanager.domain.uploads.FileStaticOperationsMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.FileStaticOperationsMixin</span></code></a>, <a class="reference internal" href="#filemanager.domain.uploads.FileMutationsMixin" title="filemanager.domain.uploads.FileMutationsMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.FileMutationsMixin</span></code></a>, <a class="reference internal" href="#filemanager.domain.uploads.OpenFilesMixin" title="filemanager.domain.uploads.OpenFilesMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.OpenFilesMixin</span></code></a>, <a class="reference internal" href="#filemanager.domain.uploads.StatusMixin" title="filemanager.domain.uploads.StatusMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.StatusMixin</span></code></a>, <a class="reference internal" href="#filemanager.domain.uploads.ReadinessMixin" title="filemanager.domain.uploads.ReadinessMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.ReadinessMixin</span></code></a>, <a class="reference internal" href="#filemanager.domain.uploads.LockMixin" title="filemanager.domain.uploads.LockMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.LockMixin</span></code></a>, <a class="reference internal" href="#filemanager.domain.uploads.SingleFileMixin" title="filemanager.domain.uploads.SingleFileMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.SingleFileMixin</span></code></a>, <a class="reference internal" href="#filemanager.domain.uploads.ChecksMixin" title="filemanager.domain.uploads.ChecksMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.ChecksMixin</span></code></a></p>
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.</code><code class="sig-name descname">UploadWorkspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em>, <em class="sig-param">owner_user_id</em>, <em class="sig-param">created_datetime</em>, <em class="sig-param">modified_datetime</em>, <em class="sig-param">files=&lt;factory&gt;</em>, <em class="sig-param">storage=None</em>, <em class="sig-param">lastupload_start_datetime=None</em>, <em class="sig-param">lastupload_completion_datetime=None</em>, <em class="sig-param">lastupload_logs=&lt;factory&gt;</em>, <em class="sig-param">lastupload_file_summary=&lt;factory&gt;</em>, <em class="sig-param">_errors=&lt;factory&gt;</em>, <em class="sig-param">source_type=&lt;SourceType.UNKNOWN: 'unknown'&gt;</em>, <em class="sig-param">checkers=&lt;factory&gt;</em>, <em class="sig-param">strategy=None</em>, <em class="sig-param">status=&lt;Status.ACTIVE: 'ACTIVE'&gt;</em>, <em class="sig-param">lock_state=&lt;LockState.UNLOCKED: 'UNLOCKED'&gt;</em>, <em class="sig-param">lastupload_readiness=&lt;Readiness.READY: 'READY'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#UploadWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.domain.uploads.readiness.html#filemanager.domain.uploads.readiness.ReadinessWorkspace" title="filemanager.domain.uploads.readiness.ReadinessWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.readiness.ReadinessWorkspace</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.single_file.html#filemanager.domain.uploads.single_file.SingleFileWorkspace" title="filemanager.domain.uploads.single_file.SingleFileWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.single_file.SingleFileWorkspace</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.lock.html#filemanager.domain.uploads.lock.LockMixin" title="filemanager.domain.uploads.lock.LockMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.lock.LockMixin</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.status.html#filemanager.domain.uploads.status.StatusMixin" title="filemanager.domain.uploads.status.StatusMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.status.StatusMixin</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.CheckableWorkspace" title="filemanager.domain.uploads.checkable.CheckableWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.checkable.CheckableWorkspace</span></code></a></p>
 <p>An upload workspace contains a set of submission source files.</p>
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.ANCILLARY_PREFIX">
-<code class="sig-name descname">ANCILLARY_PREFIX</code><em class="property"> = 'anc'</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.ANCILLARY_PREFIX" title="Permalink to this definition">¶</a></dt>
-<dd><p>The directory within source directory where ancillary files are kept.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.REMOVED_PREFIX">
-<code class="sig-name descname">REMOVED_PREFIX</code><em class="property"> = 'removed'</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.REMOVED_PREFIX" title="Permalink to this definition">¶</a></dt>
-<dd><p>The name of the removed directory within the upload workspace.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.SOURCE_PREFIX">
-<code class="sig-name descname">SOURCE_PREFIX</code><em class="property"> = 'src'</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.SOURCE_PREFIX" title="Permalink to this definition">¶</a></dt>
-<dd><p>The name of the source directory within the upload workspace.</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="filemanager.domain.uploads.UploadWorkspace.SourceType">
-<em class="property">class </em><code class="sig-name descname">SourceType</code><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#UploadWorkspace.SourceType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.SourceType" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/enum.html#enum.Enum" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
-<p>High-level type of the submission source as a whole.</p>
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.SourceType.HTML">
-<code class="sig-name descname">HTML</code><em class="property"> = 'html'</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.SourceType.HTML" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.SourceType.INVALID">
-<code class="sig-name descname">INVALID</code><em class="property"> = 'invalid'</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.SourceType.INVALID" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.SourceType.PDF">
-<code class="sig-name descname">PDF</code><em class="property"> = 'pdf'</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.SourceType.PDF" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.SourceType.POSTSCRIPT">
-<code class="sig-name descname">POSTSCRIPT</code><em class="property"> = 'ps'</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.SourceType.POSTSCRIPT" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.SourceType.TEX">
-<code class="sig-name descname">TEX</code><em class="property"> = 'tex'</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.SourceType.TEX" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.SourceType.UNKNOWN">
-<code class="sig-name descname">UNKNOWN</code><em class="property"> = 'unknown'</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.SourceType.UNKNOWN" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="method">
-<dt id="filemanager.domain.uploads.UploadWorkspace.SourceType.is_invalid">
-<em class="property">property </em><code class="sig-name descname">is_invalid</code><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.SourceType.is_invalid" title="Permalink to this definition">¶</a></dt>
-<dd><p>Indicate whether this is the <code class="xref py py-const docutils literal notranslate"><span class="pre">INVALID</span></code> type.</p>
+<dt id="filemanager.domain.uploads.UploadWorkspace.initialize">
+<code class="sig-name descname">initialize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#UploadWorkspace.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make sure that we have all of the required directories.</p>
+<p>This is performed on demand, rather than as a <code class="docutils literal notranslate"><span class="pre">__post_init__</span></code> hook,
+so that we have an opportunity to attach an updated <a class="reference internal" href="filemanager.domain.index.html#filemanager.domain.index.FileIndex" title="filemanager.domain.index.FileIndex"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileIndex</span></code></a>
+after the <a class="reference internal" href="#filemanager.domain.uploads.UploadWorkspace" title="filemanager.domain.uploads.UploadWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadWorkspace</span></code></a> is instantiated but before any
+system files are created.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.UploadWorkspace.SourceType.is_unknown">
-<em class="property">property </em><code class="sig-name descname">is_unknown</code><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.SourceType.is_unknown" title="Permalink to this definition">¶</a></dt>
-<dd><p>Indicate whether this is the <code class="xref py py-const docutils literal notranslate"><span class="pre">UNKNOWN</span></code> type.</p>
+<dt id="filemanager.domain.uploads.UploadWorkspace.is_initialized">
+<em class="property">property </em><code class="sig-name descname">is_initialized</code><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.is_initialized" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether or not the workspace has been initialized.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
@@ -842,177 +100,26 @@ longer in use.</p>
 
 </dd></dl>
 
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.checkers">
-<code class="sig-name descname">checkers</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.checkers" title="Permalink to this definition">¶</a></dt>
-<dd><p>File checkers that should be applied to all files in the workspace.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.created_datetime">
-<code class="sig-name descname">created_datetime</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.created_datetime" title="Permalink to this definition">¶</a></dt>
-<dd><p>When workspace was created</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.UploadWorkspace.delete_workspace">
-<code class="sig-name descname">delete_workspace</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#UploadWorkspace.delete_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.delete_workspace" title="Permalink to this definition">¶</a></dt>
-<dd><p>Complete delete the upload workspace.</p>
-<p>This completely removes the upload workspace directory. No backup is
-made here (system backups may have files for period of time).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>True if source log was saved and workspace deleted.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)">bool</a></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.files">
-<code class="sig-name descname">files</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.files" title="Permalink to this definition">¶</a></dt>
-<dd><p>Index of all of the files in this workspace.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.UploadWorkspace.iter_children">
-<code class="sig-name descname">iter_children</code><span class="sig-paren">(</span><em class="sig-param">u_file_or_path</em>, <em class="sig-param">max_depth=None</em>, <em class="sig-param">is_ancillary=False</em>, <em class="sig-param">is_removed=False</em>, <em class="sig-param">is_system=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#UploadWorkspace.iter_children"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.iter_children" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get an iterator over path, <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a> tuples.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Iterable" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>]]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.UploadWorkspace.iter_files">
-<code class="sig-name descname">iter_files</code><span class="sig-paren">(</span><em class="sig-param">allow_ancillary=True</em>, <em class="sig-param">allow_removed=False</em>, <em class="sig-param">allow_directories=False</em>, <em class="sig-param">allow_system=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#UploadWorkspace.iter_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.iter_files" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get an iterator over :class:<a href="#id5"><span class="problematic" id="id6">`</span></a>.UploadFile`s in this workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Iterable" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>[<a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.UploadWorkspace.last_modified">
-<em class="property">property </em><code class="sig-name descname">last_modified</code><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.last_modified" title="Permalink to this definition">¶</a></dt>
-<dd><p>Time of the most recent change to a file in the workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Optional" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/datetime.html#datetime.datetime" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">datetime</span></code></a>]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.lastupload_completion_datetime">
-<code class="sig-name descname">lastupload_completion_datetime</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.lastupload_completion_datetime" title="Permalink to this definition">¶</a></dt>
-<dd><p>When we completed processing last upload event.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.lastupload_file_summary">
-<code class="sig-name descname">lastupload_file_summary</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.lastupload_file_summary" title="Permalink to this definition">¶</a></dt>
-<dd><p>Logs associated with last upload event.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.lastupload_logs">
-<code class="sig-name descname">lastupload_logs</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.lastupload_logs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Logs associated with last upload event.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.lastupload_readiness">
-<code class="sig-name descname">lastupload_readiness</code><em class="property"> = 'READY'</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.lastupload_readiness" title="Permalink to this definition">¶</a></dt>
-<dd><p>Content readiness status after last upload event.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.lastupload_start_datetime">
-<code class="sig-name descname">lastupload_start_datetime</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.lastupload_start_datetime" title="Permalink to this definition">¶</a></dt>
-<dd><p>When we started processing last upload event.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.lock_state">
-<code class="sig-name descname">lock_state</code><em class="property"> = 'UNLOCKED'</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.lock_state" title="Permalink to this definition">¶</a></dt>
-<dd><p>Lock state of upload workspace.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.modified_datetime">
-<code class="sig-name descname">modified_datetime</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.modified_datetime" title="Permalink to this definition">¶</a></dt>
-<dd><p>When workspace was last modified</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.owner_user_id">
-<code class="sig-name descname">owner_user_id</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.owner_user_id" title="Permalink to this definition">¶</a></dt>
-<dd><p>User id for owner of workspace.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.UploadWorkspace.size_bytes">
-<em class="property">property </em><code class="sig-name descname">size_bytes</code><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.size_bytes" title="Permalink to this definition">¶</a></dt>
-<dd><p>Total size of the source content (including ancillary files).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.source_type">
-<code class="sig-name descname">source_type</code><em class="property"> = 'unknown'</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.source_type" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.status">
-<code class="sig-name descname">status</code><em class="property"> = 'ACTIVE'</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.status" title="Permalink to this definition">¶</a></dt>
-<dd><p>Status of upload workspace.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.storage">
-<code class="sig-name descname">storage</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.storage" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adapter for persistence.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.strategy">
-<code class="sig-name descname">strategy</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.strategy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Strategy for performing file checks.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.UploadWorkspace.upload_id">
-<code class="sig-name descname">upload_id</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.upload_id" title="Permalink to this definition">¶</a></dt>
-<dd><p>Unique ID for the upload workspace.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="function">
-<dt id="filemanager.domain.uploads.modifies_workspace">
-<code class="sig-prename descclassname">filemanager.domain.uploads.</code><code class="sig-name descname">modifies_workspace</code><span class="sig-paren">(</span><em class="sig-param">func</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#modifies_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.modifies_workspace" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extend an instance method to perform post-modification steps.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Callable" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
-
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.base.html">filemanager.domain.uploads.base module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.checkable.html">filemanager.domain.uploads.checkable module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.countable.html">filemanager.domain.uploads.countable module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.errors_and_warnings.html">filemanager.domain.uploads.errors_and_warnings module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.file_mutations.html">filemanager.domain.uploads.file_mutations module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.lock.html">filemanager.domain.uploads.lock module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.paths.html">filemanager.domain.uploads.paths module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.readiness.html">filemanager.domain.uploads.readiness module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.single_file.html">filemanager.domain.uploads.single_file module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.source_type.html">filemanager.domain.uploads.source_type module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.status.html">filemanager.domain.uploads.status module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.stored.html">filemanager.domain.uploads.stored module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.util.html">filemanager.domain.uploads.util module</a></li>
+</ul>
+</div>
+</div>
 </div>
 
 
@@ -1048,8 +155,8 @@ made here (system backups may have files for period of time).</p>
   <li><a href="modules.html">filemanager</a><ul>
   <li><a href="filemanager.html">filemanager package</a><ul>
   <li><a href="filemanager.domain.html">filemanager.domain package</a><ul>
-      <li>Previous: <a href="filemanager.domain.uploaded_file.html" title="previous chapter">filemanager.domain.uploaded_file module</a></li>
-      <li>Next: <a href="filemanager.process.html" title="next chapter">filemanager.process package</a></li>
+      <li>Previous: <a href="filemanager.domain.tests.test_workspace.html" title="previous chapter">filemanager.domain.tests.test_workspace module</a></li>
+      <li>Next: <a href="filemanager.domain.uploads.base.html" title="next chapter">filemanager.domain.uploads.base module</a></li>
   </ul></li>
   </ul></li>
   </ul></li>

@@ -42,7 +42,7 @@
 
 <span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
 
-<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">UploadWorkspace</span>
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">CheckableWorkspace</span>
 <span class="kn">from</span> <span class="nn">..util.unmacify</span> <span class="k">import</span> <span class="n">unmacify</span>
 <span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseChecker</span>
 <span class="kn">from</span> <span class="nn">.file_type</span> <span class="k">import</span> <span class="n">InferFileType</span>
@@ -74,25 +74,26 @@
 <div class="viewcode-block" id="UnMacify"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.UnMacify">[docs]</a><span class="k">class</span> <span class="nc">UnMacify</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;UnMac-ifies files.&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="UnMacify.check_HTML"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.UnMacify.check_HTML">[docs]</a>    <span class="k">def</span> <span class="nf">check_HTML</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+<div class="viewcode-block" id="UnMacify.check_HTML"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.UnMacify.check_HTML">[docs]</a>    <span class="k">def</span> <span class="nf">check_HTML</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;UnMac-ify HTML files.&quot;&quot;&quot;</span>
         <span class="n">unmacify</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">u_file</span></div>
 
-<div class="viewcode-block" id="UnMacify.check_PC"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.UnMacify.check_PC">[docs]</a>    <span class="k">def</span> <span class="nf">check_PC</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+<div class="viewcode-block" id="UnMacify.check_PC"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.UnMacify.check_PC">[docs]</a>    <span class="k">def</span> <span class="nf">check_PC</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;UnMac-ify PC files.&quot;&quot;&quot;</span>
         <span class="n">unmacify</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">u_file</span></div>
 
-<div class="viewcode-block" id="UnMacify.check_MAC"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.UnMacify.check_MAC">[docs]</a>    <span class="k">def</span> <span class="nf">check_MAC</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+<div class="viewcode-block" id="UnMacify.check_MAC"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.UnMacify.check_MAC">[docs]</a>    <span class="k">def</span> <span class="nf">check_MAC</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;UnMac-ify mac files.&quot;&quot;&quot;</span>
         <span class="n">unmacify</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">u_file</span></div>
 
-<div class="viewcode-block" id="UnMacify.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.UnMacify.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="UnMacify.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.UnMacify.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;If file is identified as core TeX type then we need to unmacify.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">file_type</span><span class="o">.</span><span class="n">is_tex_type</span><span class="p">:</span>
             <span class="n">unmacify</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
@@ -105,7 +106,7 @@
 <div class="viewcode-block" id="RepairDOSEPSFiles"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.RepairDOSEPSFiles">[docs]</a><span class="k">class</span> <span class="nc">RepairDOSEPSFiles</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Repair DOS EPS files.&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="RepairDOSEPSFiles.check_DOS_EPS"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.RepairDOSEPSFiles.check_DOS_EPS">[docs]</a>    <span class="k">def</span> <span class="nf">check_DOS_EPS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+<div class="viewcode-block" id="RepairDOSEPSFiles.check_DOS_EPS"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.RepairDOSEPSFiles.check_DOS_EPS">[docs]</a>    <span class="k">def</span> <span class="nf">check_DOS_EPS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;[ needs info ]&quot;&quot;&quot;</span>
         <span class="n">u_file</span><span class="p">,</span> <span class="n">fixed</span> <span class="o">=</span> <span class="n">_repair_dos_eps</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
@@ -131,7 +132,7 @@
 
     <span class="n">PS</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\.e?psi?$&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
 
-<div class="viewcode-block" id="CleanupPostScript.check_POSTSCRIPT"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.CleanupPostScript.check_POSTSCRIPT">[docs]</a>    <span class="k">def</span> <span class="nf">check_POSTSCRIPT</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+<div class="viewcode-block" id="CleanupPostScript.check_POSTSCRIPT"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.CleanupPostScript.check_POSTSCRIPT">[docs]</a>    <span class="k">def</span> <span class="nf">check_POSTSCRIPT</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span>
                          <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        [ needs info ]</span>
@@ -142,7 +143,7 @@
         <span class="n">unmacify</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">_check_postscript</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="CleanupPostScript.check_PS_PC"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.CleanupPostScript.check_PS_PC">[docs]</a>    <span class="k">def</span> <span class="nf">check_PS_PC</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+<div class="viewcode-block" id="CleanupPostScript.check_PS_PC"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.CleanupPostScript.check_PS_PC">[docs]</a>    <span class="k">def</span> <span class="nf">check_PS_PC</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Repair poscript for PS PC files.</span>
@@ -153,7 +154,7 @@
         <span class="n">u_file</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_repair_postscript</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">u_file</span></div>
 
-<div class="viewcode-block" id="CleanupPostScript.check_FAILED"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.CleanupPostScript.check_FAILED">[docs]</a>    <span class="k">def</span> <span class="nf">check_FAILED</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+<div class="viewcode-block" id="CleanupPostScript.check_FAILED"><a class="viewcode-back" href="../../../../api/filemanager.process.check.cleanup.html#filemanager.process.check.cleanup.CleanupPostScript.check_FAILED">[docs]</a>    <span class="k">def</span> <span class="nf">check_FAILED</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">PS</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
             <span class="n">u_file</span> <span class="o">=</span> <span class="n">_check_postscript</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
@@ -162,7 +163,7 @@
 
 <span class="c1"># TODO: looks like the strip_tiff case is not fully implemented here.</span>
 <span class="c1"># -- Erick 2019-06-07</span>
-<span class="k">def</span> <span class="nf">_check_postscript</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+<span class="k">def</span> <span class="nf">_check_postscript</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
                       <span class="n">tiff_flag</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Check Postscript file for unwanted inclusions.</span>
@@ -228,7 +229,7 @@
 <span class="n">HEADER_END</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;^%!&#39;</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">_repair_postscript</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+<span class="k">def</span> <span class="nf">_repair_postscript</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
         <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">UploadedFile</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Repair simple corruptions at the beginning of Postscript file.</span>
@@ -258,20 +259,20 @@
             <span class="c1"># Attempt to identify problems and repair.</span>
             <span class="k">if</span> <span class="n">CASE_1</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>  <span class="c1"># Special character 004.</span>
                 <span class="n">fixed</span> <span class="o">=</span> <span class="kc">True</span>
-                <span class="n">line</span> <span class="o">=</span> <span class="n">CASE_1</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">br</span><span class="s1">&#39;%!&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">CASE_1</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">br</span><span class="s1">&#39;%!&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>    <span class="c1"># type: ignore</span>
                 <span class="n">message</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">message</span><span class="p">,</span>
                                     <span class="s2">&quot;Removed carriage return from PS&quot;</span>
                                     <span class="s2">&quot;header.&quot;</span><span class="p">])</span>
 
             <span class="k">if</span> <span class="n">CASE_2</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>  <span class="c1"># Extra &#39;%&#39; in header.</span>
                 <span class="n">fixed</span> <span class="o">=</span> <span class="kc">True</span>
-                <span class="n">line</span> <span class="o">=</span> <span class="n">CASE_2</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">br</span><span class="s1">&#39;%!&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">CASE_2</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">br</span><span class="s1">&#39;%!&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>    <span class="c1"># type: ignore</span>
                 <span class="n">message</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">message</span><span class="p">,</span>
                                     <span class="s2">&quot;Removed extra &#39;%&#39; from PS header.&quot;</span><span class="p">])</span>
 
             <span class="k">if</span> <span class="n">CASE_3</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>  <span class="c1"># Characters in front of PS tag.</span>
                 <span class="n">fixed</span> <span class="o">=</span> <span class="kc">True</span>
-                <span class="n">line</span> <span class="o">=</span> <span class="n">CASE_3</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">br</span><span class="s1">&#39;\1&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">CASE_3</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">br</span><span class="s1">&#39;\1&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>    <span class="c1"># type: ignore</span>
                 <span class="n">message</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">message</span><span class="p">,</span>
                                     <span class="s2">&quot;Removed extraneous characters before&quot;</span>
                                     <span class="s2">&quot; PS header.&quot;</span><span class="p">])</span>
@@ -329,15 +330,17 @@
     <span class="k">return</span> <span class="n">u_file</span><span class="p">,</span> <span class="n">first_line</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">75</span><span class="p">]</span>
 
 
-<span class="k">def</span> <span class="nf">_strip_preview</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+<span class="k">def</span> <span class="nf">_strip_preview</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
                    <span class="n">what_to_strip</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Remove embedded preview from Postscript file.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-
-
+<span class="sd">    workspace : :class:`.CheckableWorkspace`</span>
+<span class="sd">        The upload workspace in which we are working.</span>
+<span class="sd">    u_file : :class:`.UploadedFile`</span>
+<span class="sd">        The file from which to strip embedded TIFF bitmaps.</span>
 <span class="sd">    what_to_strip : str</span>
 <span class="sd">        The type of inclusion that we are seeking to remove [Thumbnail,</span>
 <span class="sd">        Preview, Photoshop]</span>
@@ -416,17 +419,21 @@
     <span class="k">return</span> <span class="n">u_file</span>
 
 
-<span class="k">def</span> <span class="nf">_strip_tiff</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">_strip_tiff</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+        <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Strip non-compliant embedded TIFF bitmaps from Postscript file.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-
+<span class="sd">    workspace : :class:`.CheckableWorkspace`</span>
+<span class="sd">        The upload workspace in which we are working.</span>
+<span class="sd">    u_file : :class:`.UploadedFile`</span>
+<span class="sd">        The file from which to strip embedded TIFF bitmaps.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-
+<span class="sd">    :class:`.UploadedFile`</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;checking &#39;</span><span class="si">{u_file.path}</span><span class="s2">&#39; for TIFF&quot;</span><span class="p">)</span>
@@ -466,14 +473,15 @@
 
         <span class="k">if</span> <span class="n">end</span><span class="p">:</span>     <span class="c1"># Truncate file after EOF marker</span>
             <span class="n">infile</span><span class="o">.</span><span class="n">truncate</span><span class="p">(</span><span class="n">end</span><span class="p">)</span>
-            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span>
                                   <span class="n">f</span><span class="s2">&quot;Non-compliant attached TIFF removed&quot;</span>
-                                  <span class="n">f</span><span class="s2">&quot; from &#39;</span><span class="si">{file_obj.name}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+                                  <span class="n">f</span><span class="s2">&quot; from &#39;</span><span class="si">{u_file.name}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">u_file</span>
 
 
 <span class="c1"># TODO: this is a pretty big method; could use some refactoring.</span>
 <span class="c1"># -- Erick 2019-06-07</span>
-<span class="k">def</span> <span class="nf">_repair_dos_eps</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+<span class="k">def</span> <span class="nf">_repair_dos_eps</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span>
                     <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">UploadedFile</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Look for leading/trailing TIFF bitmaps and remove them.</span>
@@ -587,8 +595,8 @@
             <span class="n">fixed_file</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">fixed_file</span><span class="p">)</span>
 
             <span class="c1"># Add warning about backup file we created.</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s2">&quot;Modified file </span><span class="si">{u_file.public_filepath}</span><span class="s2">.&quot;</span>
-                   <span class="n">f</span><span class="s2">&quot;Saving original to </span><span class="si">{backup_file.public_filepath}</span><span class="s2">.&quot;</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s2">&quot;Modified file </span><span class="si">{u_file.public_path}</span><span class="s2">.&quot;</span>
+                   <span class="n">f</span><span class="s2">&quot;Saving original to </span><span class="si">{backup_file.public_path}</span><span class="s2">.&quot;</span>
                    <span class="n">f</span><span class="s2">&quot;You may delete this file.&quot;</span><span class="p">)</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">backup_file</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
 
@@ -596,10 +604,11 @@
             <span class="n">ret_msg</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s2">&quot;stripped trailing tiff at </span><span class="si">{tiffoffset}</span><span class="s2"> bytes &quot;</span>
                        <span class="n">f</span><span class="s2">&quot;and </span><span class="si">{psoffset}</span><span class="s2"> leading bytes&quot;</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">fixed_file</span><span class="p">,</span> <span class="n">ret_msg</span>
+        <span class="k">return</span> <span class="n">u_file</span><span class="p">,</span> <span class="s2">&quot;&quot;</span>
 
 
 <span class="c1"># TODO: implement this!</span>
-<span class="k">def</span> <span class="nf">_extract_uu</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">_extract_uu</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Extract uuencode content from file.&quot;&quot;&quot;</span>
     <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Looking for uu attachment in </span><span class="si">{u_file.name}</span><span class="s1"> of type&#39;</span>
                   <span class="n">f</span><span class="s1">&#39; </span><span class="si">{u_file.file_type.value}</span><span class="s1">.&#39;</span><span class="p">)</span>

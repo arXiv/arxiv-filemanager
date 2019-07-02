@@ -1,0 +1,197 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.domain.uploads.status module &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="filemanager.domain.uploads.stored module" href="filemanager.domain.uploads.stored.html" />
+    <link rel="prev" title="filemanager.domain.uploads.source_type module" href="filemanager.domain.uploads.source_type.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-filemanager.domain.uploads.status">
+<span id="filemanager-domain-uploads-status-module"></span><h1>filemanager.domain.uploads.status module<a class="headerlink" href="#module-filemanager.domain.uploads.status" title="Permalink to this headline">¶</a></h1>
+<p>Provides <a class="reference internal" href="#filemanager.domain.uploads.status.StatusMixin" title="filemanager.domain.uploads.status.StatusMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">StatusMixin</span></code></a>.</p>
+<dl class="class">
+<dt id="filemanager.domain.uploads.status.StatusMixin">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.status.</code><code class="sig-name descname">StatusMixin</code><span class="sig-paren">(</span><em class="sig-param">status=&lt;Status.ACTIVE: 'ACTIVE'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/status.html#StatusMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.status.StatusMixin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Implements status-related methods and properties.</p>
+<dl class="class">
+<dt id="filemanager.domain.uploads.status.StatusMixin.Status">
+<em class="property">class </em><code class="sig-name descname">Status</code><a class="reference internal" href="../_modules/filemanager/domain/uploads/status.html#StatusMixin.Status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.status.StatusMixin.Status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/enum.html#enum.Enum" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
+<p>Upload workspace statuses.</p>
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.status.StatusMixin.Status.ACTIVE">
+<code class="sig-name descname">ACTIVE</code><em class="property"> = 'ACTIVE'</em><a class="headerlink" href="#filemanager.domain.uploads.status.StatusMixin.Status.ACTIVE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Upload workspace is actively being used.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.status.StatusMixin.Status.DELETED">
+<code class="sig-name descname">DELETED</code><em class="property"> = 'DELETED'</em><a class="headerlink" href="#filemanager.domain.uploads.status.StatusMixin.Status.DELETED" title="Permalink to this definition">¶</a></dt>
+<dd><p>Workspace is deleted (no files on disk).</p>
+<p>After upload workspace files are deleted the state of workspace in
+database is set to deleted. Database entry is retained indefinitely.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.status.StatusMixin.Status.RELEASED">
+<code class="sig-name descname">RELEASED</code><em class="property"> = 'RELEASED'</em><a class="headerlink" href="#filemanager.domain.uploads.status.StatusMixin.Status.RELEASED" title="Permalink to this definition">¶</a></dt>
+<dd><p>Workspace is released and can be removed.</p>
+<p>Client/Admin/System indicate release to indicate upload workspace is no
+longer in use.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.status.StatusMixin.is_active">
+<em class="property">property </em><code class="sig-name descname">is_active</code><a class="headerlink" href="#filemanager.domain.uploads.status.StatusMixin.is_active" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>rtype</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.status.StatusMixin.is_deleted">
+<em class="property">property </em><code class="sig-name descname">is_deleted</code><a class="headerlink" href="#filemanager.domain.uploads.status.StatusMixin.is_deleted" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>rtype</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.status.StatusMixin.is_released">
+<em class="property">property </em><code class="sig-name descname">is_released</code><a class="headerlink" href="#filemanager.domain.uploads.status.StatusMixin.is_released" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>rtype</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.status.StatusMixin.status">
+<code class="sig-name descname">status</code><em class="property"> = 'ACTIVE'</em><a class="headerlink" href="#filemanager.domain.uploads.status.StatusMixin.status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Status of upload workspace.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">filemanager</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="filemanager.html">filemanager package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">filemanager</a><ul>
+  <li><a href="filemanager.html">filemanager package</a><ul>
+  <li><a href="filemanager.domain.html">filemanager.domain package</a><ul>
+  <li><a href="filemanager.domain.uploads.html">filemanager.domain.uploads package</a><ul>
+      <li>Previous: <a href="filemanager.domain.uploads.source_type.html" title="previous chapter">filemanager.domain.uploads.source_type module</a></li>
+      <li>Next: <a href="filemanager.domain.uploads.stored.html" title="next chapter">filemanager.domain.uploads.stored module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/api/filemanager.domain.uploads.status.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

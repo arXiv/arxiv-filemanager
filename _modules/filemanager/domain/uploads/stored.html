@@ -1,0 +1,377 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.domain.uploads.stored &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.domain.uploads.stored</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Provides :class:`.FileBaseWorkspace`.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">IO</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span> 
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">hashlib</span> <span class="k">import</span> <span class="n">md5</span>
+<span class="kn">from</span> <span class="nn">base64</span> <span class="k">import</span> <span class="n">urlsafe_b64encode</span>
+
+<span class="kn">from</span> <span class="nn">pytz</span> <span class="k">import</span> <span class="n">UTC</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="k">import</span> <span class="n">Protocol</span>
+
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+
+<span class="kn">from</span> <span class="nn">..uploaded_file</span> <span class="k">import</span> <span class="n">UploadedFile</span>
+<span class="kn">from</span> <span class="nn">.paths</span> <span class="k">import</span> <span class="n">FilePathsWorkspace</span>
+<span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">modifies_workspace</span>
+
+
+<div class="viewcode-block" id="IStorageAdapter"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter">[docs]</a><span class="k">class</span> <span class="nc">IStorageAdapter</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Responsible for providing a data access interface.&quot;&quot;&quot;</span>
+
+    <span class="n">PARAMS</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">deleted_logs_path</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Initialize with implementation-specific configuration params.&quot;&quot;&quot;</span>
+        <span class="o">...</span>
+
+<div class="viewcode-block" id="IStorageAdapter.create"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.create">[docs]</a>    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a file.</span>
+
+<span class="sd">        Creates any non-existant directories in the path.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.makedirs"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.makedirs">[docs]</a>    <span class="k">def</span> <span class="nf">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Make directories recursively for ``path`` if they don&#39;t exist.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.is_safe"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.is_safe">[docs]</a>    <span class="k">def</span> <span class="nf">is_safe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="n">is_persisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not a path is safe to use.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.set_permissions"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.set_permissions">[docs]</a>    <span class="k">def</span> <span class="nf">set_permissions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span>
+                        <span class="n">file_mode</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mo">0o664</span><span class="p">,</span> <span class="n">dir_mode</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mo">0o775</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Set permissions for files and directories in a workspace.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.get_last_modified"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.get_last_modified">[docs]</a>    <span class="k">def</span> <span class="nf">get_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span>
+                          <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the datetime when a file was last modified.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.set_last_modified"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.set_last_modified">[docs]</a>    <span class="k">def</span> <span class="nf">set_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span> 
+                          <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">modified</span><span class="p">:</span> <span class="n">datetime</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Set the modification datetime on a file.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.remove"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.remove">[docs]</a>    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span>
+               <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Remove a file.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.copy"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+             <span class="n">new_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Copy the contents of ``u_file`` into ``new_file``.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.move"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.move">[docs]</a>    <span class="k">def</span> <span class="nf">move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+             <span class="n">from_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">to_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Move a file from one path to another.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.delete"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span>
+               <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Permanently delete a file or directory.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+    
+<div class="viewcode-block" id="IStorageAdapter.delete_all"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.delete_all">[docs]</a>    <span class="k">def</span> <span class="nf">delete_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Delete all files in the workspace.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+    
+<div class="viewcode-block" id="IStorageAdapter.delete_workspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.delete_workspace">[docs]</a>    <span class="k">def</span> <span class="nf">delete_workspace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Completely delete a workspace and all of its contents.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.persist"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.persist">[docs]</a>    <span class="k">def</span> <span class="nf">persist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span>
+                <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Persist a file.</span>
+
+<span class="sd">        The file should be available on subsequent requests.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.get_full_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.get_full_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_full_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span>
+                      <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.open"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.open">[docs]</a>    <span class="nd">@contextmanager</span>
+    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+             <span class="n">flags</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">IO</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get an open file pointer to a file on disk.</span>
+
+<span class="sd">        To be used as a context manager. For example:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           with storage.open(workspace, u_file) as f:</span>
+<span class="sd">               f.read()</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.open_pointer"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.open_pointer">[docs]</a>    <span class="k">def</span> <span class="nf">open_pointer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span> 
+                     <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">flags</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">IO</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get an open file pointer to a file on disk.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.is_tarfile"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.is_tarfile">[docs]</a>    <span class="k">def</span> <span class="nf">is_tarfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span>
+                   <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not a file can be opened with ``tarfile``.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.get_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.get_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span>
+                 <span class="n">u_file_or_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">],</span>
+                 <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">is_persisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the absolute path to an :class:`.UploadedFile`.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.cmp"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.cmp">[docs]</a>    <span class="k">def</span> <span class="nf">cmp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span> <span class="n">a_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span>
+            <span class="n">b_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">shallow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Compare the contents of two files.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.getsize"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.getsize">[docs]</a>    <span class="k">def</span> <span class="nf">getsize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span>
+                <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the size in bytes of a file.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+    
+<div class="viewcode-block" id="IStorageAdapter.stash_deleted_log"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.stash_deleted_log">[docs]</a>    <span class="k">def</span> <span class="nf">stash_deleted_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span> 
+                          <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="o">...</span></div>
+    
+<div class="viewcode-block" id="IStorageAdapter.pack_tarfile"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.IStorageAdapter.pack_tarfile">[docs]</a>    <span class="k">def</span> <span class="nf">pack_tarfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;StoredWorkspace&#39;</span><span class="p">,</span>
+                    <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Pack ``path`` into ``u_file`` as a tarball.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div></div>
+
+
+<div class="viewcode-block" id="StoredWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.StoredWorkspace">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">StoredWorkspace</span><span class="p">(</span><span class="n">FilePathsWorkspace</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Adds basic storage-backed file operations.&quot;&quot;&quot;</span>
+
+    <span class="n">storage</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">IStorageAdapter</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Adapter for persistence.&quot;&quot;&quot;</span>
+
+    <span class="n">lastupload_start_datetime</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;When we started processing last upload event.&quot;&quot;&quot;</span>
+
+    <span class="n">lastupload_completion_datetime</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;When we completed processing last upload event.&quot;&quot;&quot;</span>
+
+    <span class="n">lastupload_logs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Logs associated with last upload event.&quot;&quot;&quot;</span>
+
+    <span class="n">lastupload_file_summary</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Logs associated with last upload event.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="StoredWorkspace.open"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.StoredWorkspace.open">[docs]</a>    <span class="nd">@contextmanager</span>
+    <span class="nd">@modifies_workspace</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">flags</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">IO</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get a file pointer for a :class:`.UploadFile`.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+                                   <span class="n">is_ancillary</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">,</span>
+                                   <span class="n">is_system</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_system</span><span class="p">,</span>
+                                   <span class="n">is_removed</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;No such file&#39;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">f</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_size_bytes</span><span class="p">(</span><span class="n">u_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_last_modified</span><span class="p">(</span><span class="n">u_file</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StoredWorkspace.open_pointer"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.StoredWorkspace.open_pointer">[docs]</a>    <span class="k">def</span> <span class="nf">open_pointer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">flags</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> 
+                     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IO</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">open_pointer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StoredWorkspace.cmp"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.StoredWorkspace.cmp">[docs]</a>    <span class="k">def</span> <span class="nf">cmp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> 
+            <span class="n">b_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">shallow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Compare the contents of two files.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">cmp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a_file</span><span class="p">,</span> <span class="n">b_file</span><span class="p">,</span> <span class="n">shallow</span><span class="o">=</span><span class="n">shallow</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="StoredWorkspace.is_tarfile"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.StoredWorkspace.is_tarfile">[docs]</a>    <span class="k">def</span> <span class="nf">is_tarfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not a file is a tarfile.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">is_tarfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="StoredWorkspace.get_size_bytes"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.StoredWorkspace.get_size_bytes">[docs]</a>    <span class="k">def</span> <span class="nf">get_size_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get (and update) the size in bytes of a file.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+        <span class="n">size_bytes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">get_size_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="n">u_file</span><span class="o">.</span><span class="n">size_bytes</span> <span class="o">=</span> <span class="n">size_bytes</span>
+        <span class="k">return</span> <span class="n">size_bytes</span></div>
+
+<div class="viewcode-block" id="StoredWorkspace.get_last_modified"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.StoredWorkspace.get_last_modified">[docs]</a>    <span class="k">def</span> <span class="nf">get_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the datetime when a :class:`.UploadedFile` was last modified.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+        <span class="n">u_file</span><span class="o">.</span><span class="n">last_modified</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">get_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span><span class="o">.</span><span class="n">last_modified</span></div>
+    
+<div class="viewcode-block" id="StoredWorkspace.set_last_modified"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.StoredWorkspace.set_last_modified">[docs]</a>    <span class="k">def</span> <span class="nf">set_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> 
+                          <span class="n">modified</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Set the last modified time on a :class:`UploadedFile`.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">modified</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">modified</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">UTC</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">set_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="n">modified</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="StoredWorkspace.get_checksum"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.StoredWorkspace.get_checksum">[docs]</a>    <span class="k">def</span> <span class="nf">get_checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the urlsafe base64-encoded MD5 hash of the file contents.&quot;&quot;&quot;</span>
+        <span class="n">hash_md5</span> <span class="o">=</span> <span class="n">md5</span><span class="p">()</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">iter</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">4096</span><span class="p">),</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+                <span class="n">hash_md5</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">urlsafe_b64encode</span><span class="p">(</span><span class="n">hash_md5</span><span class="o">.</span><span class="n">digest</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="StoredWorkspace.is_safe"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.StoredWorkspace.is_safe">[docs]</a>    <span class="k">def</span> <span class="nf">is_safe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> 
+                <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_persisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> 
+                <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not a path is safe to use in this workspace.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;No storage adapter set on workspace&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">is_safe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span> 
+                                    <span class="n">is_removed</span><span class="o">=</span><span class="n">is_removed</span><span class="p">,</span> 
+                                    <span class="n">is_persisted</span><span class="o">=</span><span class="n">is_persisted</span><span class="p">,</span>
+                                    <span class="n">is_system</span><span class="o">=</span><span class="n">is_system</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="n">strict</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="StoredWorkspace.get_full_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.StoredWorkspace.get_full_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_full_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file_or_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">],</span>
+                      <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                      <span class="n">is_persisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the absolute path to a :class:`.UploadedFile`.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;No storage adapter set on workspace&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file_or_path</span><span class="p">,</span>
+                                     <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
+                                     <span class="n">is_removed</span><span class="o">=</span><span class="n">is_removed</span><span class="p">,</span>
+                                     <span class="n">is_persisted</span><span class="o">=</span><span class="n">is_persisted</span><span class="p">,</span>
+                                     <span class="n">is_system</span><span class="o">=</span><span class="n">is_system</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="StoredWorkspace.pack_source"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.StoredWorkspace.pack_source">[docs]</a>    <span class="k">def</span> <span class="nf">pack_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Pack the source + ancillary content of a workspace as a tarball.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">pack_tarfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_path</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  <li><a href="../uploads.html">filemanager.domain.uploads</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

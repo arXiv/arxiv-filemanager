@@ -39,6 +39,8 @@
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
 
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="k">import</span> <span class="n">Protocol</span>
+
 <span class="kn">from</span> <span class="nn">pytz</span> <span class="k">import</span> <span class="n">UTC</span>
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 
@@ -46,11 +48,27 @@
 <span class="kn">from</span> <span class="nn">.error</span> <span class="k">import</span> <span class="n">Error</span>
 
 
+<span class="k">class</span> <span class="nc">_IUploadWorkspace</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for an upload workspace, from the perspective of the file.&quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">get_public_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="s1">&#39;UploadedFile&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the public path (key) of a :class:`.UploadedFile`.&quot;&quot;&quot;</span>
+        <span class="o">...</span>
+    
+    <span class="k">def</span> <span class="nf">get_full_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="s1">&#39;UploadedFile&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the full path (key) of a :class:`.UploadedFile`.&quot;&quot;&quot;</span>
+        <span class="o">...</span>
+    
+    <span class="k">def</span> <span class="nf">get_checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="s1">&#39;UploadedFile&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the URL-safe base64-encoded MD5 hash of file contents.&quot;&quot;&quot;</span>
+        <span class="o">...</span>
+
+
 <div class="viewcode-block" id="UploadedFile"><a class="viewcode-back" href="../../../api/filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile">[docs]</a><span class="nd">@dataclass</span>
 <span class="k">class</span> <span class="nc">UploadedFile</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Represents a single file in an upload workspace.&quot;&quot;&quot;</span>
 
-    <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;UploadWorkspace&#39;</span>
+    <span class="n">workspace</span><span class="p">:</span> <span class="n">_IUploadWorkspace</span>
     <span class="sd">&quot;&quot;&quot;The workspace to which this file belongs.&quot;&quot;&quot;</span>
 
     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
@@ -115,6 +133,8 @@
         <span class="c1"># May have inherited errors with a different path.</span>
         <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="p">:</span>
             <span class="n">error</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_removed</span><span class="p">:</span>     <span class="c1"># Mark all of our errors as non-persistant.</span>
+                <span class="n">error</span><span class="o">.</span><span class="n">is_persistant</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span>
 
 <div class="viewcode-block" id="UploadedFile.add_error"><a class="viewcode-back" href="../../../api/filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile.add_error">[docs]</a>    <span class="k">def</span> <span class="nf">add_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">:</span> <span class="n">Error</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -125,7 +145,8 @@
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;File name without path/directory info.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="s1">&#39;/&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="n">basename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">basename</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span>
 
     <span class="nd">@property</span>
@@ -157,7 +178,7 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s1">&#39;anc/&#39;</span><span class="p">:</span>
                 <span class="k">return</span> <span class="s1">&#39;Ancillary files directory&#39;</span>
             <span class="k">return</span> <span class="s1">&#39;Directory&#39;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_type</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_type</span><span class="o">.</span><span class="n">label</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_always_ignore</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>

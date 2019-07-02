@@ -59,11 +59,11 @@
 <span class="n">blueprint</span> <span class="o">=</span> <span class="n">Blueprint</span><span class="p">(</span><span class="s1">&#39;upload_api&#39;</span><span class="p">,</span> <span class="vm">__name__</span><span class="p">,</span> <span class="n">url_prefix</span><span class="o">=</span><span class="s1">&#39;/filemanager/api&#39;</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="is_owner"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.is_owner">[docs]</a><span class="k">def</span> <span class="nf">is_owner</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">Session</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<div class="viewcode-block" id="is_owner"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.is_owner">[docs]</a><span class="k">def</span> <span class="nf">is_owner</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">Session</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
              <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;User must be the upload owner, or an admin.&quot;&quot;&quot;</span>
-    <span class="n">upload_obj</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">upload_obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">workspace</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">if</span> <span class="n">session</span><span class="o">.</span><span class="n">user</span><span class="p">:</span>
@@ -73,11 +73,11 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">Unauthorized</span><span class="p">(</span><span class="s1">&#39;No user or client on authenticated session&#39;</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">owner_id</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">owner_id</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="service_status"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.service_status">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/status&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GET&#39;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">service_status</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">service_status</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Readiness endpoint.</span>
 
@@ -86,12 +86,15 @@
 <span class="sd">    returns 503 Service Unavailable.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">response_data</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">service_status</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">response_data</span><span class="p">),</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span></div>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">response_data</span><span class="p">))</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">code</span>
+    <span class="k">return</span> <span class="n">response</span></div>
 
 
 <div class="viewcode-block" id="new_upload"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.new_upload">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
 <span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">WRITE_UPLOAD</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">new_upload</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">new_upload</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create workspace and upload files.</span>
 
@@ -121,13 +124,16 @@
     <span class="c1"># Collect arguments and call main upload controller</span>
     <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">upload</span><span class="o">.</span><span class="n">upload</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span> <span class="n">archive_arg</span><span class="p">,</span>
                                                <span class="n">user_or_client</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span></div>
+    
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
+    <span class="k">return</span> <span class="n">response</span></div>
 
 
 <div class="viewcode-block" id="upload_files"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.upload_files">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;&lt;int:upload_id&gt;&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
 <span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">WRITE_UPLOAD</span><span class="p">,</span> <span class="n">authorizer</span><span class="o">=</span><span class="n">is_owner</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">upload_files</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">upload_files</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Upload files to existing workspace.</span>
 
@@ -147,14 +153,18 @@
     <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">upload</span><span class="o">.</span><span class="n">upload</span><span class="p">(</span><span class="n">upload_id</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span> <span class="n">archive_arg</span><span class="p">,</span>
                                                <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span><span class="p">,</span>
                                                <span class="n">ancillary</span><span class="o">=</span><span class="n">ancillary</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span></div>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
+    <span class="k">return</span> <span class="n">response</span></div>
 
 
 <span class="c1"># Separated this out so that we can support auth granularity. -E</span>
 <div class="viewcode-block" id="get_upload_files"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.get_upload_files">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;&lt;int:upload_id&gt;&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GET&#39;</span><span class="p">])</span>
 <span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">READ_UPLOAD</span><span class="p">,</span> <span class="n">authorizer</span><span class="o">=</span><span class="n">is_owner</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">get_upload_files</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Upload summary.</span>
+<span class="k">def</span> <span class="nf">get_upload_files</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Upload summary.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -163,12 +173,15 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">upload</span><span class="o">.</span><span class="n">upload_summary</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span></div>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
+    <span class="k">return</span> <span class="n">response</span></div>
 
 
 <div class="viewcode-block" id="delete_file"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.delete_file">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;&lt;int:upload_id&gt;/&lt;path:public_file_path&gt;&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;DELETE&#39;</span><span class="p">])</span>
 <span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">DELETE_UPLOAD_FILE</span><span class="p">,</span> <span class="n">authorizer</span><span class="o">=</span><span class="n">is_owner</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">delete_file</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">public_file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">delete_file</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">public_file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Delete individual file.</span>
 
@@ -182,13 +195,16 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">files</span><span class="o">.</span><span class="n">client_delete_file</span><span class="p">(</span><span class="n">upload_id</span><span class="p">,</span>
                                                           <span class="n">public_file_path</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span></div>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
+    <span class="k">return</span> <span class="n">response</span></div>
 
 <span class="c1"># File and workspace deletion</span>
 
 <div class="viewcode-block" id="delete_all_files"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.delete_all_files">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;&lt;int:upload_id&gt;/delete_all&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
 <span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">WRITE_UPLOAD</span><span class="p">,</span> <span class="n">authorizer</span><span class="o">=</span><span class="n">is_owner</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">delete_all_files</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">delete_all_files</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Delete all files in specified workspace.</span>
 
@@ -199,12 +215,15 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">files</span><span class="o">.</span><span class="n">client_delete_all_files</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span></div>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
+    <span class="k">return</span> <span class="n">response</span></div>
 
 
 <div class="viewcode-block" id="workspace_delete"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.workspace_delete">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;&lt;int:upload_id&gt;&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;DELETE&#39;</span><span class="p">])</span>
 <span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">DELETE_UPLOAD_WORKSPACE</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">workspace_delete</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">workspace_delete</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Delete the specified workspace.</span>
 
@@ -215,14 +234,17 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">upload</span><span class="o">.</span><span class="n">delete_workspace</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span></div>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
+    <span class="k">return</span> <span class="n">response</span></div>
 
 
 <span class="c1"># Lock and unlock upload workspace</span>
 
 <div class="viewcode-block" id="lock_workspace"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.lock_workspace">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/&lt;int:upload_id&gt;/lock&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
 <span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">WRITE_UPLOAD</span><span class="p">,</span> <span class="n">authorizer</span><span class="o">=</span><span class="n">is_owner</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">lock_workspace</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">lock_workspace</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Lock submission workspace.</span>
 
@@ -236,22 +258,28 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">lock</span><span class="o">.</span><span class="n">upload_lock</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span></div>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
+    <span class="k">return</span> <span class="n">response</span></div>
 
 
 <span class="c1"># This could be thaw or release instead of unlock</span>
 <div class="viewcode-block" id="unlock_workspace"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.unlock_workspace">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/&lt;int:upload_id&gt;/unlock&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
 <span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">WRITE_UPLOAD</span><span class="p">,</span> <span class="n">authorizer</span><span class="o">=</span><span class="n">is_owner</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">unlock_workspace</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">unlock_workspace</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Unlock submission workspace and allow updates.&quot;&quot;&quot;</span>
     <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">lock</span><span class="o">.</span><span class="n">upload_unlock</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span></div>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
+    <span class="k">return</span> <span class="n">response</span></div>
 
 
 <span class="c1"># This could be remove or delete instead of release</span>
 <div class="viewcode-block" id="release_workspace"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.release_workspace">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/&lt;int:upload_id&gt;/release&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
 <span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">WRITE_UPLOAD</span><span class="p">,</span> <span class="n">authorizer</span><span class="o">=</span><span class="n">is_owner</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">release_workspace</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">release_workspace</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Client indicates they are finished with submission.</span>
 
@@ -259,13 +287,16 @@
 <span class="sd">    or schedule workspace for removal.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">release</span><span class="o">.</span><span class="n">upload_release</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span></div>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
+    <span class="k">return</span> <span class="n">response</span></div>
 
 
 <span class="c1"># This could be remove or delete instead of release</span>
 <div class="viewcode-block" id="unrelease_workspace"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.unrelease_workspace">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/&lt;int:upload_id&gt;/unrelease&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
 <span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">WRITE_UPLOAD</span><span class="p">,</span> <span class="n">authorizer</span><span class="o">=</span><span class="n">is_owner</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">unrelease_workspace</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">unrelease_workspace</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Client indicates they are NOT finished with submission.</span>
 
@@ -273,7 +304,10 @@
 <span class="sd">    mind and does not want to remove workspace.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">release</span><span class="o">.</span><span class="n">upload_unrelease</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span></div>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
+    <span class="k">return</span> <span class="n">response</span></div>
 
 
 <span class="c1"># Get content</span>
@@ -287,7 +321,8 @@
 <span class="sd">    Returns an ``ETag`` header with the current source package checksum.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">package</span><span class="o">.</span><span class="n">check_upload_content_exists</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
     <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
     <span class="k">return</span> <span class="n">response</span></div>
 
@@ -304,9 +339,10 @@
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Request for upload content: </span><span class="si">%s</span><span class="s1"> (</span><span class="si">%s</span><span class="s1">)&#39;</span><span class="p">,</span>
                  <span class="n">upload_id</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">upload_id</span><span class="p">))</span>
     <span class="c1"># Note: status_code is not used</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">package</span><span class="o">.</span><span class="n">get_upload_content</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">send_file</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mimetype</span><span class="o">=</span><span class="s2">&quot;application/tar+gzip&quot;</span><span class="p">)</span>
-    <span class="n">response</span><span class="o">.</span><span class="n">set_etag</span><span class="p">(</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ETag&#39;</span><span class="p">))</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">package</span><span class="o">.</span><span class="n">get_upload_content</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">send_file</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mimetype</span><span class="o">=</span><span class="s2">&quot;application/tar+gzip&quot;</span><span class="p">)</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
     <span class="k">return</span> <span class="n">response</span></div>
 
 <div class="viewcode-block" id="check_file_exists"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.check_file_exists">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/&lt;int:upload_id&gt;/&lt;path:public_file_path&gt;/content&#39;</span><span class="p">,</span>
@@ -321,7 +357,8 @@
     <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> \
         <span class="n">files</span><span class="o">.</span><span class="n">check_upload_file_content_exists</span><span class="p">(</span><span class="n">upload_id</span><span class="p">,</span> <span class="n">public_file_path</span><span class="p">)</span>
 
-    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
     <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
     <span class="k">return</span> <span class="n">response</span></div>
 
@@ -336,11 +373,11 @@
 <span class="sd">    :param public_file_path:</span>
 <span class="sd">    :return: File content.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Note: status_code not used</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> \
+    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> \
         <span class="n">files</span><span class="o">.</span><span class="n">get_upload_file_content</span><span class="p">(</span><span class="n">upload_id</span><span class="p">,</span> <span class="n">public_file_path</span><span class="p">)</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">send_file</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mimetype</span><span class="o">=</span><span class="s2">&quot;application/*&quot;</span><span class="p">)</span>
-    <span class="n">response</span><span class="o">.</span><span class="n">set_etag</span><span class="p">(</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ETag&#39;</span><span class="p">))</span>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">send_file</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mimetype</span><span class="o">=</span><span class="s2">&quot;application/*&quot;</span><span class="p">)</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
     <span class="k">return</span> <span class="n">response</span></div>
 
 
@@ -363,7 +400,8 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> \
         <span class="n">source_log</span><span class="o">.</span><span class="n">check_upload_source_log_exists</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
     <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
     <span class="k">return</span> <span class="n">response</span></div>
 
@@ -386,10 +424,10 @@
 <span class="sd">    The source.log for specified upload workspace.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Note: status_code not used</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">source_log</span><span class="o">.</span><span class="n">get_upload_source_log</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">send_file</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mimetype</span><span class="o">=</span><span class="s2">&quot;application/tar+gzip&quot;</span><span class="p">)</span>
-    <span class="n">response</span><span class="o">.</span><span class="n">set_etag</span><span class="p">(</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ETag&#39;</span><span class="p">))</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">source_log</span><span class="o">.</span><span class="n">get_upload_source_log</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">send_file</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mimetype</span><span class="o">=</span><span class="s2">&quot;application/tar+gzip&quot;</span><span class="p">)</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
     <span class="k">return</span> <span class="n">response</span></div>
 
 
@@ -405,7 +443,8 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">service_log</span><span class="o">.</span><span class="n">check_upload_service_log_exists</span><span class="p">()</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
     <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
     <span class="k">return</span> <span class="n">response</span></div>
 
@@ -428,8 +467,9 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Note: status_code not used</span>
     <span class="n">data</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">service_log</span><span class="o">.</span><span class="n">get_upload_service_log</span><span class="p">()</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">send_file</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mimetype</span><span class="o">=</span><span class="s2">&quot;application/tar+gzip&quot;</span><span class="p">)</span>
-    <span class="n">response</span><span class="o">.</span><span class="n">set_etag</span><span class="p">(</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ETag&#39;</span><span class="p">))</span>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">send_file</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mimetype</span><span class="o">=</span><span class="s2">&quot;application/tar+gzip&quot;</span><span class="p">)</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="c1"># response.set_etag(headers.get(&#39;ETag&#39;))</span>
     <span class="k">return</span> <span class="n">response</span></div>
 
 <span class="c1"># Exception handling</span>
@@ -454,15 +494,15 @@
 
     <span class="c1"># Each Werkzeug HTTP exception has a class attribute called ``code``; we</span>
     <span class="c1"># can use that to set the status code on the response.</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="n">error</span><span class="o">.</span><span class="n">code</span><span class="p">)</span>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="n">error</span><span class="o">.</span><span class="n">code</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">response</span></div>
 
 
 <span class="k">def</span> <span class="nf">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">:</span> <span class="n">Response</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
-    <span class="k">if</span> <span class="s1">&#39;Content-Length&#39;</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">:</span>
-        <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;Content-Length&#39;</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">headers</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">:</span>     <span class="c1"># Avoid duplicate headers.</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>   <span class="c1"># type: ignore</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>   <span class="c1"># type: ignore</span>
     <span class="k">return</span> <span class="n">response</span>
 </pre></div>
 

@@ -38,7 +38,7 @@
 <span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
 
-<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">UploadWorkspace</span>
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">CheckableWorkspace</span>
 <span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseChecker</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -77,14 +77,14 @@
         <span class="s2">&quot; remember to verify references).&quot;</span>
     <span class="p">)</span>
 
-<div class="viewcode-block" id="CheckForMissingReferences.check_workspace"><a class="viewcode-back" href="../../../../api/filemanager.process.check.missing_references.html#filemanager.process.check.missing_references.CheckForMissingReferences.check_workspace">[docs]</a>    <span class="k">def</span> <span class="nf">check_workspace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="CheckForMissingReferences.check_workspace"><a class="viewcode-back" href="../../../../api/filemanager.process.check.missing_references.html#filemanager.process.check.missing_references.CheckForMissingReferences.check_workspace">[docs]</a>    <span class="k">def</span> <span class="nf">check_workspace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Check for a .bib file, and remove if a .bbl file is present.&quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="n">workspace</span><span class="o">.</span><span class="n">iter_files</span><span class="p">():</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">BIB_FILE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_check_for_missing_bbl_file</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span></div>
 
     
-    <span class="k">def</span> <span class="nf">_check_for_missing_bbl_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> 
+    <span class="k">def</span> <span class="nf">_check_for_missing_bbl_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> 
                                     <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Look for a sibling .bbl file. </span>
@@ -102,10 +102,11 @@
         <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">bbl_path</span><span class="p">):</span>
             <span class="c1"># If .bbl exists we go ahead and delete .bib file and warn</span>
             <span class="c1"># submitter of this action.</span>
-            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">BIB_WITH_BBL_WARNING</span><span class="p">)</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">BIB_WITH_BBL_WARNING</span><span class="p">,</span>
+                                  <span class="n">is_persistant</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span>
-                                <span class="n">f</span><span class="s2">&quot;Removed the file &#39;</span><span class="si">{u_file.name}</span><span class="s2">&#39;. Using&quot;</span>
-                                <span class="n">f</span><span class="s2">&quot; &#39;</span><span class="si">{bbl_file}</span><span class="s2">&#39; for references.&quot;</span><span class="p">)</span>
+                             <span class="n">f</span><span class="s2">&quot;Removed the file &#39;</span><span class="si">{u_file.name}</span><span class="s2">&#39;. Using&quot;</span>
+                             <span class="n">f</span><span class="s2">&quot; &#39;</span><span class="si">{bbl_file}</span><span class="s2">&#39; for references.&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># Missing .bbl (potential missing references). Generate an</span>
             <span class="c1"># error and DO NOT DELETE .bib file. Note: We are using .bib as</span>

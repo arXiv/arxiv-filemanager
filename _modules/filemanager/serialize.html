@@ -34,7 +34,7 @@
   <h1>Source code for filemanager.serialize</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Transform domain objects to JSON-friendly structs.&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span>
 <span class="kn">from</span> <span class="nn">.domain</span> <span class="k">import</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">Error</span><span class="p">,</span> <span class="n">FileType</span>
 
 
@@ -51,7 +51,7 @@
         <span class="s1">&#39;files&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">serialize_file</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">workspace</span><span class="o">.</span><span class="n">iter_files</span><span class="p">()],</span>
         <span class="s1">&#39;errors&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">serialize_error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">workspace</span><span class="o">.</span><span class="n">errors</span><span class="p">],</span>
         <span class="s1">&#39;readiness&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">readiness</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-        <span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="s1">&#39;upload_status&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
         <span class="s1">&#39;lock_state&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">lock_state</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
         <span class="s1">&#39;source_format&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
         <span class="s1">&#39;checksum&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">checksum</span>
@@ -65,12 +65,14 @@
         <span class="s1">&#39;public_filepath&#39;</span><span class="p">:</span> <span class="n">u_file</span><span class="o">.</span><span class="n">public_path</span><span class="p">,</span>
         <span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="n">u_file</span><span class="o">.</span><span class="n">size_bytes</span><span class="p">,</span>
         <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">u_file</span><span class="o">.</span><span class="n">file_type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-        <span class="s1">&#39;modified_datetime&#39;</span><span class="p">:</span> <span class="n">u_file</span><span class="o">.</span><span class="n">last_modified</span>
+        <span class="s1">&#39;modified_datetime&#39;</span><span class="p">:</span> <span class="n">u_file</span><span class="o">.</span><span class="n">last_modified</span><span class="p">,</span>
+        <span class="s1">&#39;errors&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">serialize_error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">u_file</span><span class="o">.</span><span class="n">errors</span><span class="p">]</span>
     <span class="p">}</span></div>
     
 
-<div class="viewcode-block" id="serialize_error"><a class="viewcode-back" href="../../api/filemanager.serialize.html#filemanager.serialize.serialize_error">[docs]</a><span class="k">def</span> <span class="nf">serialize_error</span><span class="p">(</span><span class="n">error</span><span class="p">:</span> <span class="n">Error</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">severity</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">error</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">error</span><span class="o">.</span><span class="n">message</span><span class="p">)</span></div>
+<div class="viewcode-block" id="serialize_error"><a class="viewcode-back" href="../../api/filemanager.serialize.html#filemanager.serialize.serialize_error">[docs]</a><span class="k">def</span> <span class="nf">serialize_error</span><span class="p">(</span><span class="n">error</span><span class="p">:</span> <span class="n">Error</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="n">severity</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">error</span><span class="o">.</span><span class="n">severity</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">severity</span><span class="p">,</span> <span class="n">error</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">error</span><span class="o">.</span><span class="n">message</span><span class="p">)</span></div>
 </pre></div>
 
           </div>

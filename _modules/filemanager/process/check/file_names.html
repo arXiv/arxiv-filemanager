@@ -38,7 +38,7 @@
 <span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
 
-<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">UploadWorkspace</span>
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">CheckableWorkspace</span>
 <span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseChecker</span>
 
 
@@ -50,7 +50,7 @@
 
     <span class="n">WINDOWS_FILE_PREFIX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^[A-Za-z]:</span><span class="se">\\</span><span class="s1">(.*</span><span class="se">\\</span><span class="s1">)?&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="FixWindowsFileNames.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.FixWindowsFileNames.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+<div class="viewcode-block" id="FixWindowsFileNames.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.FixWindowsFileNames.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Find Windows-style filenames and fix them.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">WINDOWS_FILE_PREFIX</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
@@ -61,7 +61,8 @@
             <span class="n">new_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="n">new_name</span><span class="p">)</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">new_path</span><span class="p">)</span>
 
-            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;Renamed </span><span class="si">{prev_name}</span><span class="s1"> to </span><span class="si">{new_name}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;Renamed </span><span class="si">{prev_name}</span><span class="s1"> to </span><span class="si">{new_name}</span><span class="s1">&#39;</span><span class="p">,</span>
+                                  <span class="n">is_persistant</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">u_file</span></div></div>
 
 
@@ -78,7 +79,7 @@
                    <span class="s2">&quot; extraneous backup files.&quot;</span><span class="p">)</span>
     <span class="n">TEX_BACKUP_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(.+)\.(tex_|tex.bak|tex\~)$&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
 
-<div class="viewcode-block" id="WarnAboutTeXBackupFiles.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.WarnAboutTeXBackupFiles.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+<div class="viewcode-block" id="WarnAboutTeXBackupFiles.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.WarnAboutTeXBackupFiles.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Check for and warn about possible backup files.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span> \
@@ -93,7 +94,7 @@
     <span class="n">ILLEGAL</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[^\w\+\-\.\=\,\_]&#39;</span><span class="p">)</span>
     <span class="sd">&quot;&quot;&quot;Filename contains illegal characters ``+-/=,``.&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="ReplaceIllegalCharacters.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.ReplaceIllegalCharacters.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+<div class="viewcode-block" id="ReplaceIllegalCharacters.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.ReplaceIllegalCharacters.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Check for illegal characters and replace them with underscores.&quot;&quot;&quot;</span>
 
@@ -107,8 +108,10 @@
 
             <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span>
                                   <span class="s2">&quot;We only accept file names containing the&quot;</span>
-                                  <span class="s2">&quot; characters: a-z A-Z 0-9 _ + - . =&quot;</span><span class="p">)</span>
-            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;Renamed </span><span class="si">{prev_name}</span><span class="s1"> to </span><span class="si">{new_name}</span><span class="s1">&#39;</span><span class="p">)</span>
+                                  <span class="s2">&quot; characters: a-z A-Z 0-9 _ + - . =&quot;</span><span class="p">,</span>
+                                  <span class="n">is_persistant</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;Renamed </span><span class="si">{prev_name}</span><span class="s1"> to </span><span class="si">{new_name}</span><span class="s1">&#39;</span><span class="p">,</span>
+                                  <span class="n">is_persistant</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">u_file</span></div></div>
 
 
@@ -121,7 +124,7 @@
         <span class="s1">&#39;a-z A-Z 0-9 _ + - . , =&#39;</span>
     <span class="p">)</span>
 
-<div class="viewcode-block" id="PanicOnIllegalCharacters.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.PanicOnIllegalCharacters.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+<div class="viewcode-block" id="PanicOnIllegalCharacters.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.PanicOnIllegalCharacters.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Check for illegal characters and generate error if found.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_directory</span><span class="p">:</span>
@@ -134,7 +137,7 @@
 <div class="viewcode-block" id="ReplaceLeadingHyphen"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.ReplaceLeadingHyphen">[docs]</a><span class="k">class</span> <span class="nc">ReplaceLeadingHyphen</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Checks for a leading hyphen, and replaces it with an underscore.&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="ReplaceLeadingHyphen.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.ReplaceLeadingHyphen.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+<div class="viewcode-block" id="ReplaceLeadingHyphen.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_names.html#filemanager.process.check.file_names.ReplaceLeadingHyphen.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Check for a leading hyphen, and replace it with an underscore.&quot;&quot;&quot;</span>
 
@@ -148,7 +151,7 @@
             <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span>
                                   <span class="s1">&#39;We do not accept files starting with a&#39;</span>
                                   <span class="n">f</span><span class="s1">&#39; hyphen. Renamed </span><span class="si">{prev_name}</span><span class="s1"> to&#39;</span>
-                                  <span class="n">f</span><span class="s1">&#39; </span><span class="si">{new_name}</span><span class="s1">.&#39;</span><span class="p">)</span>
+                                  <span class="n">f</span><span class="s1">&#39; </span><span class="si">{new_name}</span><span class="s1">.&#39;</span><span class="p">,</span> <span class="n">is_persistant</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">u_file</span></div></div>
 </pre></div>
 

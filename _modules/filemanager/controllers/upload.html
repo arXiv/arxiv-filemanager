@@ -60,10 +60,6 @@
 
 <span class="n">Response</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="n">status</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span>
 
-<span class="c1"># End logging configuration</span>
-
-<span class="n">Response</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span>
-
 
 <span class="k">def</span> <span class="nf">_create_workspace</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n">FileStorage</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadWorkspace</span><span class="p">:</span>
     <span class="k">try</span><span class="p">:</span>
@@ -71,6 +67,7 @@
                     <span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
         <span class="n">current_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">UTC</span><span class="p">)</span>
         <span class="n">workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
     <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Error creating new workspace: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{messages.UPLOAD_IO_ERROR}</span><span class="s1">: </span><span class="si">{e}</span><span class="s1">&#39;</span><span class="p">)</span>
@@ -191,6 +188,7 @@
 
         <span class="n">workspace</span><span class="o">.</span><span class="n">perform_checks</span><span class="p">()</span>      <span class="c1"># Runs sanitization, fixes, etc.</span>
         <span class="c1"># print(&#39;workspace finished processing upload at&#39;, time.time() - start)</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">persist_all</span><span class="p">()</span>
 
         <span class="n">completion_datetime</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">UTC</span><span class="p">)</span>
 
@@ -203,7 +201,6 @@
         <span class="n">workspace</span><span class="o">.</span><span class="n">lastupload_completion_datetime</span> <span class="o">=</span> <span class="n">completion_datetime</span>
         <span class="n">workspace</span><span class="o">.</span><span class="n">lastupload_readiness</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">readiness</span>
         <span class="n">workspace</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">ACTIVE</span>
-
         <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">is_stale</span><span class="p">:</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
         <span class="n">database</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>    <span class="c1"># Store in DB</span>
@@ -220,7 +217,13 @@
                                        <span class="n">upload_id</span><span class="o">=</span><span class="n">workspace</span><span class="o">.</span><span class="n">upload_id</span><span class="p">)}</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Generating upload summary.&quot;</span><span class="p">,</span> <span class="n">workspace</span><span class="o">.</span><span class="n">upload_id</span><span class="p">)</span>
-        <span class="n">headers</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;ARXIV-OWNER&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">})</span>
+        <span class="n">headers</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+            <span class="s1">&#39;ARXIV-OWNER&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">,</span>
+            <span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">checksum</span><span class="p">,</span>
+            <span class="s1">&#39;Last-Modified&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">last_modified</span>
+        <span class="p">})</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Response checksum: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">response_data</span><span class="p">[</span><span class="s1">&#39;checksum&#39;</span><span class="p">])</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Responding with headers </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
         <span class="c1"># print(&#39;done at&#39;, time.time() - start)</span>
 
         <span class="c1"># TODO: this should only be 201 Created if it&#39;s a new workspace; </span>
@@ -302,7 +305,9 @@
                     <span class="s2">&quot; Add except clauses for &#39;</span><span class="si">%s</span><span class="s2">&#39;. DO IT NOW!&quot;</span><span class="p">,</span> <span class="n">ue</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_UNKNOWN_ERROR</span><span class="p">)</span>
 
-    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ARXIV-OWNER&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">}</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ARXIV-OWNER&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">,</span>
+               <span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">checksum</span><span class="p">,</span>
+               <span class="s1">&#39;Last-Modified&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">last_modified</span><span class="p">}</span>
     <span class="k">return</span> <span class="n">response_data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span></div>
 
 

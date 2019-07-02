@@ -124,7 +124,10 @@
                     <span class="s2">&quot; Add except clauses for &#39;</span><span class="si">%s</span><span class="s2">&#39;. DO IT NOW!&quot;</span><span class="p">,</span> <span class="n">ue</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_UNKNOWN_ERROR</span><span class="p">)</span>
 
-    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ARXIV-OWNER&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">}</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ARXIV-OWNER&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">,</span>
+               <span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">checksum</span><span class="p">,</span>
+               <span class="s1">&#39;Last-Modified&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">last_modified</span><span class="p">}</span>
+            
     <span class="k">return</span> <span class="n">response_data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span></div>
 
 
@@ -174,8 +177,9 @@
             <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_WORKSPACE_ALREADY_DELETED</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">is_active</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Unrelease: Workspace is already active.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
-            <span class="n">response_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="n">UPLOAD_UNRELEASED_WORKSPACE</span><span class="p">}</span>  
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Unrelease: Workspace is already active.&quot;</span><span class="p">,</span> 
+                        <span class="n">upload_id</span><span class="p">)</span>
+            <span class="n">response_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_UNRELEASED_WORKSPACE</span><span class="p">}</span>  
             <span class="n">status_code</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span>     <span class="c1"># Should this be an error?</span>
         <span class="k">elif</span> <span class="n">workspace</span><span class="o">.</span><span class="n">is_released</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Unrelease upload workspace.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
@@ -199,7 +203,9 @@
                     <span class="s2">&quot; Add except clauses for &#39;</span><span class="si">%s</span><span class="s2">&#39;. DO IT NOW!&quot;</span><span class="p">,</span> <span class="n">ue</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_UNKNOWN_ERROR</span><span class="p">)</span>
 
-    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ARXIV-OWNER&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">}</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ARXIV-OWNER&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">,</span>
+               <span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">checksum</span><span class="p">,</span>
+               <span class="s1">&#39;Last-Modified&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">last_modified</span><span class="p">}</span>
     <span class="k">return</span> <span class="n">response_data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span></div>
 </pre></div>
 

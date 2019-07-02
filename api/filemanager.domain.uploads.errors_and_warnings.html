@@ -1,0 +1,271 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.domain.uploads.errors_and_warnings module &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="filemanager.domain.uploads.file_mutations module" href="filemanager.domain.uploads.file_mutations.html" />
+    <link rel="prev" title="filemanager.domain.uploads.countable module" href="filemanager.domain.uploads.countable.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-filemanager.domain.uploads.errors_and_warnings">
+<span id="filemanager-domain-uploads-errors-and-warnings-module"></span><h1>filemanager.domain.uploads.errors_and_warnings module<a class="headerlink" href="#module-filemanager.domain.uploads.errors_and_warnings" title="Permalink to this headline">¶</a></h1>
+<p>Provides <code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorsAndWarningsMixin</span></code>.</p>
+<dl class="class">
+<dt id="filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.errors_and_warnings.</code><code class="sig-name descname">ErrorsAndWarningsWorkspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em>, <em class="sig-param">owner_user_id</em>, <em class="sig-param">created_datetime</em>, <em class="sig-param">modified_datetime</em>, <em class="sig-param">files=&lt;factory&gt;</em>, <em class="sig-param">storage=None</em>, <em class="sig-param">lastupload_start_datetime=None</em>, <em class="sig-param">lastupload_completion_datetime=None</em>, <em class="sig-param">lastupload_logs=&lt;factory&gt;</em>, <em class="sig-param">lastupload_file_summary=&lt;factory&gt;</em>, <em class="sig-param">_errors=&lt;factory&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/errors_and_warnings.html#ErrorsAndWarningsWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.StoredWorkspace" title="filemanager.domain.uploads.stored.StoredWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.stored.StoredWorkspace</span></code></a></p>
+<p>Adds methods for handling errors and warnings.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.active_warnings">
+<em class="property">property </em><code class="sig-name descname">active_warnings</code><a class="headerlink" href="#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.active_warnings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Warnings for active files only.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.List" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="filemanager.domain.error.html#filemanager.domain.error.Error" title="filemanager.domain.error.Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.add_error">
+<code class="sig-name descname">add_error</code><span class="sig-paren">(</span><em class="sig-param">u_file</em>, <em class="sig-param">msg</em>, <em class="sig-param">severity=&lt;Severity.FATAL: 'fatal'&gt;</em>, <em class="sig-param">is_persistant=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/errors_and_warnings.html#ErrorsAndWarningsWorkspace.add_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.add_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an error for a specific file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.add_non_file_error">
+<code class="sig-name descname">add_non_file_error</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">severity=&lt;Severity.FATAL: 'fatal'&gt;</em>, <em class="sig-param">is_persistant=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/errors_and_warnings.html#ErrorsAndWarningsWorkspace.add_non_file_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.add_non_file_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an error for the workspace that is not specific to a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.add_non_file_warning">
+<code class="sig-name descname">add_non_file_warning</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">is_persistant=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/errors_and_warnings.html#ErrorsAndWarningsWorkspace.add_non_file_warning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.add_non_file_warning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a warning for the workspace that is not specific to a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.add_warning">
+<code class="sig-name descname">add_warning</code><span class="sig-paren">(</span><em class="sig-param">u_file</em>, <em class="sig-param">msg</em>, <em class="sig-param">is_persistant=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/errors_and_warnings.html#ErrorsAndWarningsWorkspace.add_warning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.add_warning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a warning for a specific file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.errors">
+<em class="property">property </em><code class="sig-name descname">errors</code><a class="headerlink" href="#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.errors" title="Permalink to this definition">¶</a></dt>
+<dd><p>All of the errors + warnings in the workspace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.List" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="filemanager.domain.error.html#filemanager.domain.error.Error" title="filemanager.domain.error.Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.fatal_errors">
+<em class="property">property </em><code class="sig-name descname">fatal_errors</code><a class="headerlink" href="#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.fatal_errors" title="Permalink to this definition">¶</a></dt>
+<dd><p>All of the fatal errors on active files in the workspace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.List" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="filemanager.domain.error.html#filemanager.domain.error.Error" title="filemanager.domain.error.Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.get_warnings_for_path">
+<code class="sig-name descname">get_warnings_for_path</code><span class="sig-paren">(</span><em class="sig-param">path</em>, <em class="sig-param">is_ancillary=False</em>, <em class="sig-param">is_system=False</em>, <em class="sig-param">is_removed=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/errors_and_warnings.html#ErrorsAndWarningsWorkspace.get_warnings_for_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.get_warnings_for_path" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.List" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.has_active_warnings">
+<em class="property">property </em><code class="sig-name descname">has_active_warnings</code><a class="headerlink" href="#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.has_active_warnings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether this workspace has warnings for active files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.has_errors">
+<em class="property">property </em><code class="sig-name descname">has_errors</code><a class="headerlink" href="#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.has_errors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether or not this workspace has errors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.has_fatal_errors">
+<em class="property">property </em><code class="sig-name descname">has_fatal_errors</code><a class="headerlink" href="#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.has_fatal_errors" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>rtype</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.has_warnings">
+<em class="property">property </em><code class="sig-name descname">has_warnings</code><a class="headerlink" href="#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.has_warnings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether or not this workspace has warnings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.warnings">
+<em class="property">property </em><code class="sig-name descname">warnings</code><a class="headerlink" href="#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.warnings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Warnings for all files in the workspace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.List" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="filemanager.domain.error.html#filemanager.domain.error.Error" title="filemanager.domain.error.Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">filemanager</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="filemanager.html">filemanager package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">filemanager</a><ul>
+  <li><a href="filemanager.html">filemanager package</a><ul>
+  <li><a href="filemanager.domain.html">filemanager.domain package</a><ul>
+  <li><a href="filemanager.domain.uploads.html">filemanager.domain.uploads package</a><ul>
+      <li>Previous: <a href="filemanager.domain.uploads.countable.html" title="previous chapter">filemanager.domain.uploads.countable module</a></li>
+      <li>Next: <a href="filemanager.domain.uploads.file_mutations.html" title="next chapter">filemanager.domain.uploads.file_mutations module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/api/filemanager.domain.uploads.errors_and_warnings.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

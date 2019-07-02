@@ -1,0 +1,191 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.domain.uploads.source_type module &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="filemanager.domain.uploads.status module" href="filemanager.domain.uploads.status.html" />
+    <link rel="prev" title="filemanager.domain.uploads.single_file module" href="filemanager.domain.uploads.single_file.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-filemanager.domain.uploads.source_type">
+<span id="filemanager-domain-uploads-source-type-module"></span><h1>filemanager.domain.uploads.source_type module<a class="headerlink" href="#module-filemanager.domain.uploads.source_type" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.source_type.</code><code class="sig-name descname">SourceTypeMixin</code><span class="sig-paren">(</span><em class="sig-param">source_type=&lt;SourceType.UNKNOWN: 'unknown'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/source_type.html#SourceTypeMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="class">
+<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType">
+<em class="property">class </em><code class="sig-name descname">SourceType</code><a class="reference internal" href="../_modules/filemanager/domain/uploads/source_type.html#SourceTypeMixin.SourceType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/enum.html#enum.Enum" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
+<p>High-level type of the submission source as a whole.</p>
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.HTML">
+<code class="sig-name descname">HTML</code><em class="property"> = 'html'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.HTML" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.INVALID">
+<code class="sig-name descname">INVALID</code><em class="property"> = 'invalid'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.INVALID" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.PDF">
+<code class="sig-name descname">PDF</code><em class="property"> = 'pdf'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.PDF" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.POSTSCRIPT">
+<code class="sig-name descname">POSTSCRIPT</code><em class="property"> = 'ps'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.POSTSCRIPT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.TEX">
+<code class="sig-name descname">TEX</code><em class="property"> = 'tex'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.TEX" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.UNKNOWN">
+<code class="sig-name descname">UNKNOWN</code><em class="property"> = 'unknown'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.UNKNOWN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.is_invalid">
+<em class="property">property </em><code class="sig-name descname">is_invalid</code><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.is_invalid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicate whether this is the <code class="xref py py-const docutils literal notranslate"><span class="pre">INVALID</span></code> type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.is_unknown">
+<em class="property">property </em><code class="sig-name descname">is_unknown</code><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.is_unknown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicate whether this is the <code class="xref py py-const docutils literal notranslate"><span class="pre">UNKNOWN</span></code> type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.source_type">
+<code class="sig-name descname">source_type</code><em class="property"> = 'unknown'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.source_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">filemanager</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="filemanager.html">filemanager package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">filemanager</a><ul>
+  <li><a href="filemanager.html">filemanager package</a><ul>
+  <li><a href="filemanager.domain.html">filemanager.domain package</a><ul>
+  <li><a href="filemanager.domain.uploads.html">filemanager.domain.uploads package</a><ul>
+      <li>Previous: <a href="filemanager.domain.uploads.single_file.html" title="previous chapter">filemanager.domain.uploads.single_file module</a></li>
+      <li>Next: <a href="filemanager.domain.uploads.status.html" title="next chapter">filemanager.domain.uploads.status module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/api/filemanager.domain.uploads.source_type.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

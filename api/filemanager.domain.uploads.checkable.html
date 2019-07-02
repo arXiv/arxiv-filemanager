@@ -1,0 +1,208 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.domain.uploads.checkable module &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="filemanager.domain.uploads.countable module" href="filemanager.domain.uploads.countable.html" />
+    <link rel="prev" title="filemanager.domain.uploads.base module" href="filemanager.domain.uploads.base.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-filemanager.domain.uploads.checkable">
+<span id="filemanager-domain-uploads-checkable-module"></span><h1>filemanager.domain.uploads.checkable module<a class="headerlink" href="#module-filemanager.domain.uploads.checkable" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="filemanager.domain.uploads.checkable.CheckableWorkspace">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.checkable.</code><code class="sig-name descname">CheckableWorkspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em>, <em class="sig-param">owner_user_id</em>, <em class="sig-param">created_datetime</em>, <em class="sig-param">modified_datetime</em>, <em class="sig-param">files=&lt;factory&gt;</em>, <em class="sig-param">storage=None</em>, <em class="sig-param">lastupload_start_datetime=None</em>, <em class="sig-param">lastupload_completion_datetime=None</em>, <em class="sig-param">lastupload_logs=&lt;factory&gt;</em>, <em class="sig-param">lastupload_file_summary=&lt;factory&gt;</em>, <em class="sig-param">_errors=&lt;factory&gt;</em>, <em class="sig-param">source_type=&lt;SourceType.UNKNOWN: 'unknown'&gt;</em>, <em class="sig-param">checkers=&lt;factory&gt;</em>, <em class="sig-param">strategy=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/checkable.html#CheckableWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkable.CheckableWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.domain.uploads.source_type.html#filemanager.domain.uploads.source_type.SourceTypeMixin" title="filemanager.domain.uploads.source_type.SourceTypeMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.source_type.SourceTypeMixin</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.countable.html#filemanager.domain.uploads.countable.CountableWorkspace" title="filemanager.domain.uploads.countable.CountableWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.countable.CountableWorkspace</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace" title="filemanager.domain.uploads.file_mutations.FileMutationsWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.file_mutations.FileMutationsWorkspace</span></code></a></p>
+<p>Adds checking functionality.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkable.CheckableWorkspace.add_files">
+<code class="sig-name descname">add_files</code><span class="sig-paren">(</span><em class="sig-param">*u_files</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/checkable.html#CheckableWorkspace.add_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkable.CheckableWorkspace.add_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>When files are added to the workspace, perform checks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.checkable.CheckableWorkspace.checkers">
+<code class="sig-name descname">checkers</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.checkable.CheckableWorkspace.checkers" title="Permalink to this definition">¶</a></dt>
+<dd><p>File checkers that should be applied to all files in the workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkable.CheckableWorkspace.has_unchecked_files">
+<em class="property">property </em><code class="sig-name descname">has_unchecked_files</code><a class="headerlink" href="#filemanager.domain.uploads.checkable.CheckableWorkspace.has_unchecked_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether there are unchecked files in this workspace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkable.CheckableWorkspace.perform_checks">
+<code class="sig-name descname">perform_checks</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/checkable.html#CheckableWorkspace.perform_checks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkable.CheckableWorkspace.perform_checks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform all checks on this workspace using the assigned strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.checkable.CheckableWorkspace.strategy">
+<code class="sig-name descname">strategy</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.checkable.CheckableWorkspace.strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Strategy for performing file checks.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.checkable.IChecker">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.checkable.</code><code class="sig-name descname">IChecker</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/checkable.html#IChecker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkable.IChecker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>A visitor that performs a check on an <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkable.IChecker.check_workspace">
+<code class="sig-name descname">check_workspace</code><span class="sig-paren">(</span><em class="sig-param">workspace</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/checkable.html#IChecker.check_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkable.IChecker.check_workspace" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.checkable.ICheckingStrategy">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.checkable.</code><code class="sig-name descname">ICheckingStrategy</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/checkable.html#ICheckingStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkable.ICheckingStrategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Strategy for checking files in an <a class="reference internal" href="#filemanager.domain.uploads.checkable.CheckableWorkspace" title="filemanager.domain.uploads.checkable.CheckableWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">CheckableWorkspace</span></code></a>.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkable.ICheckingStrategy.check">
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">*checkers</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/checkable.html#ICheckingStrategy.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkable.ICheckingStrategy.check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform checks on all files in the workspace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">filemanager</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="filemanager.html">filemanager package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">filemanager</a><ul>
+  <li><a href="filemanager.html">filemanager package</a><ul>
+  <li><a href="filemanager.domain.html">filemanager.domain package</a><ul>
+  <li><a href="filemanager.domain.uploads.html">filemanager.domain.uploads package</a><ul>
+      <li>Previous: <a href="filemanager.domain.uploads.base.html" title="previous chapter">filemanager.domain.uploads.base module</a></li>
+      <li>Next: <a href="filemanager.domain.uploads.countable.html" title="next chapter">filemanager.domain.uploads.countable module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/api/filemanager.domain.uploads.checkable.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -62,7 +62,8 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">config</span> <span class="o">=</span> <span class="n">get_application_config</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;UPLOAD_SERVICE_LOG_DIRECTORY&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">_log_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;UPLOAD_SERVICE_LOG_DIRECTORY&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_log_dir</span>
 
 
 <span class="n">service_log_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_get_service_logs_directory</span><span class="p">(),</span> <span class="s1">&#39;upload.log&#39;</span><span class="p">)</span>
@@ -94,7 +95,7 @@
     <span class="k">return</span> <span class="s2">&quot;&quot;</span>
 
 
-<span class="k">def</span> <span class="nf">__last_modified</span><span class="p">(</span><span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">__last_modified</span><span class="p">(</span><span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Return last modified time of file.</span>
 
 <span class="sd">    Perameters</span>
@@ -149,10 +150,10 @@
     <span class="n">checksum</span> <span class="o">=</span> <span class="n">__checksum</span><span class="p">(</span><span class="n">service_log_path</span><span class="p">)</span>
     <span class="n">size</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">service_log_path</span><span class="p">)</span>
     <span class="n">modified</span> <span class="o">=</span> <span class="n">__last_modified</span><span class="p">(</span><span class="n">service_log_path</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">{},</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">checksum</span><span class="p">,</span>
-                                    <span class="s1">&#39;Content-Length&#39;</span><span class="p">:</span> <span class="n">size</span><span class="p">,</span>
-                                    <span class="s1">&#39;Last-Modified&#39;</span><span class="p">:</span> <span class="n">modified</span>
-                                    <span class="p">}</span></div>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">checksum</span><span class="p">,</span> 
+               <span class="s1">&#39;Content-Length&#39;</span><span class="p">:</span> <span class="n">size</span><span class="p">,</span>
+               <span class="s1">&#39;Last-Modified&#39;</span><span class="p">:</span> <span class="n">modified</span><span class="p">}</span>
+    <span class="k">return</span> <span class="p">{},</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span><span class="p">,</span> <span class="n">headers</span></div>
 
 
 <div class="viewcode-block" id="get_upload_service_log"><a class="viewcode-back" href="../../../api/filemanager.controllers.service_log.html#filemanager.controllers.service_log.get_upload_service_log">[docs]</a><span class="k">def</span> <span class="nf">get_upload_service_log</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
@@ -172,8 +173,9 @@
     <span class="n">size</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">service_log_path</span><span class="p">)</span>
     <span class="n">modified</span> <span class="o">=</span> <span class="n">__last_modified</span><span class="p">(</span><span class="n">service_log_path</span><span class="p">)</span>
     <span class="n">filepointer</span> <span class="o">=</span> <span class="n">__content_pointer</span><span class="p">(</span><span class="n">service_log_path</span><span class="p">)</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">service_log_path</span><span class="p">)</span>
     <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;Content-disposition&quot;</span><span class="p">:</span> <span class="n">f</span><span class="s2">&quot;filename=</span><span class="si">{filepointer.name}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Content-disposition&quot;</span><span class="p">:</span> <span class="n">f</span><span class="s2">&quot;filename=</span><span class="si">{filename}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">checksum</span><span class="p">,</span>
         <span class="s1">&#39;Content-Length&#39;</span><span class="p">:</span> <span class="n">size</span><span class="p">,</span>
         <span class="s1">&#39;Last-Modified&#39;</span><span class="p">:</span> <span class="n">modified</span>

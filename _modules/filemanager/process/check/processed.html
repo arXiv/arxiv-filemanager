@@ -56,7 +56,7 @@
 
 <span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
 
-<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">UploadWorkspace</span>
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">CheckableWorkspace</span>
 <span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseChecker</span>
 
 
@@ -66,7 +66,7 @@
 <div class="viewcode-block" id="WarnAboutProcessedDirectory"><a class="viewcode-back" href="../../../../api/filemanager.process.check.processed.html#filemanager.process.check.processed.WarnAboutProcessedDirectory">[docs]</a><span class="k">class</span> <span class="nc">WarnAboutProcessedDirectory</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Check for and warn about processed directory.&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="WarnAboutProcessedDirectory.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.processed.html#filemanager.process.check.processed.WarnAboutProcessedDirectory.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+<div class="viewcode-block" id="WarnAboutProcessedDirectory.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.processed.html#filemanager.process.check.processed.WarnAboutProcessedDirectory.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_directory</span> <span class="ow">and</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;processed&#39;</span><span class="p">:</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span>

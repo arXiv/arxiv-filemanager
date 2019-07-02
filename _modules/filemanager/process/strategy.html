@@ -38,7 +38,7 @@
 <span class="kn">from</span> <span class="nn">flask</span> <span class="k">import</span> <span class="n">Flask</span>
 <span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
 <span class="kn">from</span> <span class="nn">.check.base</span> <span class="k">import</span> <span class="n">StopCheck</span>
-<span class="kn">from</span> <span class="nn">..domain</span> <span class="k">import</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">IChecker</span><span class="p">,</span> <span class="n">ICheckingStrategy</span>
+<span class="kn">from</span> <span class="nn">..domain</span> <span class="k">import</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">IChecker</span><span class="p">,</span> <span class="n">ICheckingStrategy</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 <span class="n">logger</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="kc">False</span>
@@ -47,7 +47,8 @@
 <div class="viewcode-block" id="SynchronousCheckingStrategy"><a class="viewcode-back" href="../../../api/filemanager.process.strategy.html#filemanager.process.strategy.SynchronousCheckingStrategy">[docs]</a><span class="k">class</span> <span class="nc">SynchronousCheckingStrategy</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Runs checks one file at a time.&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="SynchronousCheckingStrategy.check"><a class="viewcode-back" href="../../../api/filemanager.process.strategy.html#filemanager.process.strategy.SynchronousCheckingStrategy.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;UploadWorkspace&#39;</span><span class="p">,</span> <span class="o">*</span><span class="n">checkers</span><span class="p">:</span> <span class="n">IChecker</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="SynchronousCheckingStrategy.check"><a class="viewcode-back" href="../../../api/filemanager.process.strategy.html#filemanager.process.strategy.SynchronousCheckingStrategy.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;CheckableWorkspace&#39;</span><span class="p">,</span> 
+              <span class="o">*</span><span class="n">checkers</span><span class="p">:</span> <span class="n">IChecker</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Run checks one file at a time.&quot;&quot;&quot;</span>
         <span class="c1"># This may take a few passes, as we may be unpacking compressed files.</span>
         <span class="k">while</span> <span class="n">workspace</span><span class="o">.</span><span class="n">has_unchecked_files</span><span class="p">:</span>

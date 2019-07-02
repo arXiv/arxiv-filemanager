@@ -41,7 +41,7 @@
 
 <span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
 
-<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">UploadWorkspace</span>
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">CheckableWorkspace</span>
 <span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseChecker</span>
 
 
@@ -51,11 +51,12 @@
 <div class="viewcode-block" id="RemoveMacOSXHiddenFiles"><a class="viewcode-back" href="../../../../api/filemanager.process.check.hidden_files.html#filemanager.process.check.hidden_files.RemoveMacOSXHiddenFiles">[docs]</a><span class="k">class</span> <span class="nc">RemoveMacOSXHiddenFiles</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Removes ``__MACOSX`` directories.&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="RemoveMacOSXHiddenFiles.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.hidden_files.html#filemanager.process.check.hidden_files.RemoveMacOSXHiddenFiles.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+<div class="viewcode-block" id="RemoveMacOSXHiddenFiles.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.hidden_files.html#filemanager.process.check.hidden_files.RemoveMacOSXHiddenFiles.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Remove ``__MACOSX`` directories.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_directory</span> <span class="ow">and</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;__MACOSX&#39;</span><span class="p">:</span>
-            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s2">&quot;Removed &#39;__MACOSX&#39; directory.&quot;</span><span class="p">)</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s2">&quot;Removed &#39;__MACOSX&#39; directory.&quot;</span><span class="p">,</span>
+                                  <span class="n">is_persistant</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">u_file</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">u_file</span></div></div>
 
@@ -63,11 +64,12 @@
 <div class="viewcode-block" id="RemoveFilesWithLeadingDot"><a class="viewcode-back" href="../../../../api/filemanager.process.check.hidden_files.html#filemanager.process.check.hidden_files.RemoveFilesWithLeadingDot">[docs]</a><span class="k">class</span> <span class="nc">RemoveFilesWithLeadingDot</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Removes files and directories that start with a dot.&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="RemoveFilesWithLeadingDot.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.hidden_files.html#filemanager.process.check.hidden_files.RemoveFilesWithLeadingDot.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+<div class="viewcode-block" id="RemoveFilesWithLeadingDot.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.hidden_files.html#filemanager.process.check.hidden_files.RemoveFilesWithLeadingDot.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Removes files and directories that start with a dot.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">):</span>
-            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s1">&#39;Hidden file are not allowed.&#39;</span><span class="p">)</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s1">&#39;Hidden file are not allowed.&#39;</span><span class="p">,</span>
+                                  <span class="n">is_persistant</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span>
                              <span class="n">f</span><span class="s2">&quot;Removed file &#39;</span><span class="si">{u_file.name}</span><span class="s2">&#39; [File not&quot;</span>
                              <span class="s2">&quot; allowed].&quot;</span><span class="p">)</span>

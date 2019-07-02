@@ -36,7 +36,7 @@
 <span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
 
-<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">UploadWorkspace</span>
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">CheckableWorkspace</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -46,7 +46,8 @@
 <span class="n">MAC</span> <span class="o">=</span> <span class="s1">&#39;mac&#39;</span>
 
 
-<div class="viewcode-block" id="unmacify"><a class="viewcode-back" href="../../../../api/filemanager.process.util.unmacify.html#filemanager.process.util.unmacify.unmacify">[docs]</a><span class="k">def</span> <span class="nf">unmacify</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">uploaded_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="unmacify"><a class="viewcode-back" href="../../../../api/filemanager.process.util.unmacify.html#filemanager.process.util.unmacify.unmacify">[docs]</a><span class="k">def</span> <span class="nf">unmacify</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">uploaded_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+        <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Cleans up files containing carriage returns and line feeds.</span>
 
@@ -96,7 +97,7 @@
     <span class="n">workspace</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">new_file</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="check_file_termination"><a class="viewcode-back" href="../../../../api/filemanager.process.util.unmacify.html#filemanager.process.util.unmacify.check_file_termination">[docs]</a><span class="k">def</span> <span class="nf">check_file_termination</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span>
+<div class="viewcode-block" id="check_file_termination"><a class="viewcode-back" href="../../../../api/filemanager.process.util.unmacify.html#filemanager.process.util.unmacify.check_file_termination">[docs]</a><span class="k">def</span> <span class="nf">check_file_termination</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span>
                            <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Check for unwanted characters at end of file.</span>
@@ -157,7 +158,8 @@
                 <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;</span><span class="si">{u_file.path}</span><span class="s2"> [stripped newline] &quot;</span><span class="p">)</span>
 
             <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span>
-                                  <span class="n">f</span><span class="s2">&quot;</span><span class="si">{msg}</span><span class="s2"> stripped from </span><span class="si">{u_file.path}</span><span class="s2">.&quot;</span><span class="p">)</span>
+                                  <span class="n">f</span><span class="s2">&quot;</span><span class="si">{msg}</span><span class="s2"> stripped from </span><span class="si">{u_file.path}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                                  <span class="n">is_persistant</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
         <span class="c1"># Check of last character of file is newline character</span>
         <span class="c1"># Seek to last two bytes of file</span>

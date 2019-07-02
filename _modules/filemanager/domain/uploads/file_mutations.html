@@ -1,0 +1,513 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.domain.uploads.file_mutations &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.domain.uploads.file_mutations</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Provides :class:`.FileMutationsMixin`.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">IO</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Any</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="k">import</span> <span class="n">accumulate</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
+
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span> <span class="nn">..index</span> <span class="k">import</span> <span class="n">FileIndex</span>
+
+<span class="kn">from</span> <span class="nn">..uploaded_file</span> <span class="k">import</span> <span class="n">UploadedFile</span>
+<span class="kn">from</span> <span class="nn">..error</span> <span class="k">import</span> <span class="n">Error</span>
+<span class="kn">from</span> <span class="nn">..file_type</span> <span class="k">import</span> <span class="n">FileType</span>
+
+<span class="kn">from</span> <span class="nn">.stored</span> <span class="k">import</span> <span class="n">IStorageAdapter</span>
+<span class="kn">from</span> <span class="nn">.errors_and_warnings</span> <span class="k">import</span> <span class="n">ErrorsAndWarningsWorkspace</span>
+<span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">modifies_workspace</span><span class="p">,</span> <span class="n">logger</span>
+
+
+<div class="viewcode-block" id="FileMutationsWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">FileMutationsWorkspace</span><span class="p">(</span><span class="n">ErrorsAndWarningsWorkspace</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Adds methods that alter files. </span>
+
+<span class="sd">    Introduces the source package.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">LEADING_DOTSLASH</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^\./&#39;</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Pattern to match leading ``./`` in relative paths.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="FileMutationsWorkspace.initialize"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source_package</span> <span class="o">=</span> <span class="n">SourcePackage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.upload_id}</span><span class="s1">.tar.gz&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span> <span class="o">=</span> <span class="n">SourceLog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;source.log&#39;</span><span class="p">)</span></div>
+
+        
+<div class="viewcode-block" id="FileMutationsWorkspace.create"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.create">[docs]</a>    <span class="nd">@modifies_workspace</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file_type</span><span class="p">:</span> <span class="n">FileType</span> <span class="o">=</span> <span class="n">FileType</span><span class="o">.</span><span class="n">UNKNOWN</span><span class="p">,</span>
+               <span class="n">replace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_directory</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+               <span class="n">is_ancillary</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+               <span class="n">is_persisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">touch</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Create a new :class:`.UploadedFile` at ``path``.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;No storage adapter available&#39;</span><span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LEADING_DOTSLASH</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_ancillary</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">path</span><span class="p">,</span> <span class="n">is_ancillary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_is_ancillary_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
+                               <span class="n">is_system</span><span class="o">=</span><span class="n">is_system</span><span class="p">):</span>
+            <span class="n">e_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
+                                    <span class="n">is_system</span><span class="o">=</span><span class="n">is_system</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">e_file</span><span class="o">.</span><span class="n">is_directory</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Directory exists at that path&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">is_ancillary</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>    <span class="c1"># Infer whether this is an ancillary file.</span>
+            <span class="n">path</span><span class="p">,</span> <span class="n">is_ancillary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_is_ancillary_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="n">u_file</span> <span class="o">=</span> <span class="n">UploadedFile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">size_bytes</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                              <span class="n">file_type</span><span class="o">=</span><span class="n">file_type</span><span class="p">,</span>
+                              <span class="n">is_directory</span><span class="o">=</span><span class="n">is_directory</span><span class="p">,</span>
+                              <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
+                              <span class="n">is_system</span><span class="o">=</span><span class="n">is_system</span><span class="p">,</span>
+                              <span class="n">is_persisted</span><span class="o">=</span><span class="n">is_persisted</span><span class="p">)</span>
+
+        <span class="c1"># if not is_system:   # System files are not part of the source package.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">touch</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_last_modified</span><span class="p">(</span><span class="n">u_file</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_size_bytes</span><span class="p">(</span><span class="n">u_file</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_last_modified</span><span class="p">(</span><span class="n">u_file</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span></div>
+
+<div class="viewcode-block" id="FileMutationsWorkspace.delete"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.delete">[docs]</a>    <span class="nd">@modifies_workspace</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Completely delete a file.</span>
+
+<span class="sd">        See also :func:`UploadWorkspace.remove`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Delete file </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_drop_refs</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">,</span>
+                        <span class="n">is_system</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_system</span><span class="p">,</span>
+                        <span class="n">is_removed</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_directory</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">child_path</span><span class="p">,</span> <span class="n">child_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_children</span><span class="p">(</span><span class="n">u_file</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_drop_refs</span><span class="p">(</span><span class="n">child_path</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="FileMutationsWorkspace.delete_all_files"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.delete_all_files">[docs]</a>    <span class="nd">@modifies_workspace</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">delete_all_files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Delete all source and ancillary files in the workspace.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">delete_all</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">ancillary</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ancillary_path</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="FileMutationsWorkspace.copy"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.copy">[docs]</a>    <span class="nd">@modifies_workspace</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">new_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+             <span class="n">replace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Make a copy of a file.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">new_path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">,</span>
+                               <span class="n">is_removed</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">,</span>
+                               <span class="n">is_system</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_system</span><span class="p">):</span>
+            <span class="n">existing_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">new_path</span><span class="p">,</span>
+                                           <span class="n">is_ancillary</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">,</span>
+                                           <span class="n">is_removed</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">,</span>
+                                           <span class="n">is_system</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_system</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">existing_file</span><span class="o">.</span><span class="n">is_directory</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Directory exists at that path&#39;</span><span class="p">)</span>
+            <span class="c1"># if not replace:</span>
+            <span class="c1">#     raise ValueError(&#39;File at that path already exists&#39;)</span>
+        <span class="n">new_file</span> <span class="o">=</span> <span class="n">UploadedFile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">new_path</span><span class="p">,</span>
+                                <span class="n">size_bytes</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">size_bytes</span><span class="p">,</span>
+                                <span class="n">file_type</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">file_type</span><span class="p">,</span>
+                                <span class="n">is_ancillary</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">,</span>
+                                <span class="n">is_removed</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">,</span>
+                                <span class="n">is_checked</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_checked</span><span class="p">,</span>
+                                <span class="n">is_system</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_system</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="n">new_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">new_path</span><span class="p">,</span> <span class="n">new_file</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_file</span></div>
+
+<div class="viewcode-block" id="FileMutationsWorkspace.replace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.replace">[docs]</a>    <span class="nd">@modifies_workspace</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">to_replace</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> 
+                <span class="n">replace_with</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">keep_refs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Replace a file with another file.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replace_with</span><span class="p">,</span> <span class="n">replace_with</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+                          <span class="n">to_replace</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">keep_refs</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">to_replace</span><span class="o">.</span><span class="n">errors</span><span class="p">:</span>
+                <span class="n">replace_with</span><span class="o">.</span><span class="n">add_error</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_drop_refs</span><span class="p">(</span><span class="n">to_replace</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">old_path</span> <span class="o">=</span> <span class="n">replace_with</span><span class="o">.</span><span class="n">path</span>
+        <span class="n">replace_with</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">to_replace</span><span class="o">.</span><span class="n">path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_refs</span><span class="p">(</span><span class="n">replace_with</span><span class="p">,</span> <span class="n">old_path</span><span class="p">)</span>
+
+        <span class="c1"># If the file is a directory, we are counting on storage to have moved</span>
+        <span class="c1"># both the directory itself along with all of its children. But we must</span>
+        <span class="c1"># still update all of our path-based references to reflect this change.</span>
+        <span class="k">if</span> <span class="n">replace_with</span><span class="o">.</span><span class="n">is_directory</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">_former_path</span><span class="p">,</span> <span class="n">_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_children</span><span class="p">(</span><span class="n">replace_with</span><span class="p">):</span>
+                <span class="n">_new_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">to_replace</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">),</span>
+                                         <span class="n">_former_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">old_path</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">_file</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">_new_path</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">keep_refs</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_drop_refs</span><span class="p">(</span><span class="n">_new_path</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_update_refs</span><span class="p">(</span><span class="n">_file</span><span class="p">,</span> <span class="n">_former_path</span><span class="p">)</span>
+        
+        <span class="c1"># TODO: update info for target children if target was a directory.</span>
+        <span class="k">return</span> <span class="n">replace_with</span></div>
+    
+<div class="viewcode-block" id="FileMutationsWorkspace.remove"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.remove">[docs]</a>    <span class="nd">@modifies_workspace</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> 
+               <span class="n">reason</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Mark a file as removed, and quarantine.</span>
+
+<span class="sd">        This is not the same as deletion.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">reason</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">reason</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;Removed file &#39;</span><span class="si">{u_file.name}</span><span class="s2">&#39;.&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Remove file </span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">reason</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_directory</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">former_path</span><span class="p">,</span> <span class="n">_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_children</span><span class="p">(</span><span class="n">u_file</span><span class="p">):</span>
+                <span class="n">_file</span><span class="o">.</span><span class="n">is_removed</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_drop_refs</span><span class="p">(</span><span class="n">_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">,</span>
+                                <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">is_system</span><span class="o">=</span><span class="n">_file</span><span class="o">.</span><span class="n">is_system</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">_file</span><span class="p">)</span>
+
+        <span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">u_file</span><span class="o">.</span><span class="n">reason_for_removal</span> <span class="o">=</span> <span class="n">reason</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_error</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">reason</span><span class="p">,</span> <span class="n">severity</span><span class="o">=</span><span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> 
+                       <span class="n">is_persistant</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_drop_refs</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">,</span>
+                        <span class="n">is_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">is_system</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_system</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FileMutationsWorkspace.persist"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.persist">[docs]</a>    <span class="nd">@modifies_workspace</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">persist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">persist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="FileMutationsWorkspace.persist_all"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.persist_all">[docs]</a>    <span class="nd">@modifies_workspace</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">persist_all</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_files</span><span class="p">(</span><span class="n">allow_system</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_persisted</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">persist</span><span class="p">(</span><span class="n">u_file</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="FileMutationsWorkspace.rename"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.rename">[docs]</a>    <span class="nd">@modifies_workspace</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">rename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> 
+               <span class="n">new_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Rename a file in this workspace.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Rename </span><span class="si">%s</span><span class="s1"> to </span><span class="si">%s</span><span class="s1"> (ancillary = </span><span class="si">%s</span><span class="s1">)&#39;</span><span class="p">,</span>
+                     <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">new_path</span><span class="p">,</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">)</span>
+        <span class="n">former_path</span> <span class="o">=</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span>
+        <span class="n">u_file</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">new_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="n">former_path</span><span class="p">,</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_refs</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">former_path</span><span class="p">)</span>
+
+        <span class="c1"># If the file is a directory, we are counting on storage to have moved</span>
+        <span class="c1"># both the directory itself along with all of its children. But we must</span>
+        <span class="c1"># still update all of our path-based references to reflect this change.</span>
+        <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_directory</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">_former_path</span><span class="p">,</span> <span class="n">_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_children</span><span class="p">(</span><span class="n">u_file</span><span class="p">):</span>
+                <span class="n">_new_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">new_path</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">),</span>
+                                         <span class="n">_former_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">former_path</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">_file</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">_new_path</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_update_refs</span><span class="p">(</span><span class="n">_file</span><span class="p">,</span> <span class="n">_former_path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FileMutationsWorkspace.add_files"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.add_files">[docs]</a>    <span class="nd">@modifies_workspace</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">add_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">u_files</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Add new :class:`.UploadedFile`s to this workspace.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="n">u_files</span><span class="p">:</span>
+            <span class="n">parts</span> <span class="o">=</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">accumulate</span><span class="p">(</span><span class="n">parts</span><span class="p">,</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">p</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="p">)):</span>
+                <span class="n">parent</span> <span class="o">+=</span> <span class="s1">&#39;/&#39;</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">parent</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">FileType</span><span class="o">.</span><span class="n">DIRECTORY</span><span class="p">,</span> <span class="n">is_directory</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="FileMutationsWorkspace.delete_workspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.delete_workspace">[docs]</a>    <span class="nd">@modifies_workspace</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">delete_workspace</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Complete delete the upload workspace.</span>
+
+<span class="sd">        This completely removes the upload workspace directory. No backup is</span>
+<span class="sd">        made here (system backups may have files for period of time).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">            True if source log was saved and workspace deleted.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Think about stashing source.log, otherwise any logging is fruitless</span>
+        <span class="c1"># since we are deleting all files under workspace.</span>
+        <span class="c1"># Let&#39;s stash a copy of the source.log file (if it exists)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stash_log</span><span class="p">()</span>
+
+        <span class="c1"># Now blow away the workspace</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">delete_workspace</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+    
+    <span class="k">def</span> <span class="nf">_stash_log</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Copy the workspace log to the deleted logs directory.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Move source log for </span><span class="si">{self.upload_id}</span><span class="s2"> to&quot;</span>
+                      <span class="n">f</span><span class="s2">&quot; &#39;</span><span class="si">{self.storage.deleted_logs_path}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Delete workspace &#39;</span><span class="si">{self.upload_id}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">stash_deleted_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">file</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Saving source.log failed: </span><span class="si">{e}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+    
+    
+<span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">_SpecialSystemFile</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Some system files have specific and unique semantics.&quot;&quot;&quot;</span>
+
+    <span class="n">workspace</span><span class="p">:</span> <span class="n">FileMutationsWorkspace</span>
+    <span class="sd">&quot;&quot;&quot;Workspace to which the special system file belongs.&quot;&quot;&quot;</span>
+
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="sd">&quot;&quot;&quot;Relative path to the system file within the containing workspace.&quot;&quot;&quot;</span>
+
+    <span class="n">_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UploadedFile</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Create the underlying file if it does not already exist.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">is_system</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">is_system</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_file</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">is_system</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
+                                                <span class="n">is_persisted</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">touch</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_file</span>
+                            
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;File name.&quot;&quot;&quot;</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">return</span> <span class="n">name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">size_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the size of the file in bytes.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">get_size_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the datetime when the file was last modified.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">get_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the Base64-encoded MD5 hash of the file.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">get_checksum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="p">)</span>
+
+    <span class="nd">@contextmanager</span>
+    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flags</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">IO</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get an open file pointer to the file.</span>
+
+<span class="sd">        To be used as a context manager.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">f</span>
+
+    <span class="k">def</span> <span class="nf">open_pointer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flags</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IO</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">open_pointer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">full_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">get_full_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SourceLog"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.SourceLog">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">SourceLog</span><span class="p">(</span><span class="n">_SpecialSystemFile</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Record of upload and processing events for a source workspace.&quot;&quot;&quot;</span>
+
+    <span class="n">DEFAULT_LOG_FORMAT</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
+    <span class="n">DEFAULT_TIME_FORMAT</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%d</span><span class="s1">/%b/%Y:%H:%M:%S %z&#39;</span>
+
+    <span class="n">log_format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_LOG_FORMAT</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Format string for log messages.&quot;&quot;&quot;</span>
+
+    <span class="n">time_format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_TIME_FORMAT</span><span class="p">)</span>
+
+    <span class="n">level</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Log level.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># super(SourceLog, self).__post_init__()</span>
+        <span class="c1"># Grab standard logger and customize it.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;source:</span><span class="si">{self.workspace.upload_id}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_f_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">get_full_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="p">,</span> <span class="n">is_system</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_f_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">level</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_formatter</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_format</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_format</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_formatter</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">handlers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_handler</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">level</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="SourceLog.debug"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.SourceLog.debug">[docs]</a>    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SourceLog.info"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.SourceLog.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SourceLog.error"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.SourceLog.error">[docs]</a>    <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SourcePackage"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.SourcePackage">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">SourcePackage</span><span class="p">(</span><span class="n">_SpecialSystemFile</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An archive containing an entire submission source package.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_stale</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Indicates whether or not the source package is out of date.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">last_modified</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="n">stale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_modified</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">last_modified</span>
+        <span class="k">return</span> <span class="n">stale</span>
+
+<div class="viewcode-block" id="SourcePackage.pack"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.SourcePackage.pack">[docs]</a>    <span class="k">def</span> <span class="nf">pack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">pack_source</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  <li><a href="../uploads.html">filemanager.domain.uploads</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

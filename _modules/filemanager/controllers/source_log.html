@@ -38,7 +38,7 @@
 <span class="kn">import</span> <span class="nn">io</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">http</span> <span class="k">import</span> <span class="n">HTTPStatus</span> <span class="k">as</span> <span class="n">status</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">IO</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
 
 <span class="kn">from</span> <span class="nn">werkzeug.exceptions</span> <span class="k">import</span> <span class="n">NotFound</span><span class="p">,</span> <span class="n">InternalServerError</span>
@@ -50,7 +50,7 @@
 <span class="kn">from</span> <span class="nn">.service_log</span> <span class="k">import</span> <span class="n">logger</span>
 <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">_messages</span> <span class="k">as</span> <span class="n">messages</span>
 
-<span class="n">Response</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="n">status</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span>
+<span class="n">Response</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">IO</span><span class="p">]],</span> <span class="n">status</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="check_upload_source_log_exists"><a class="viewcode-back" href="../../../api/filemanager.controllers.source_log.html#filemanager.controllers.source_log.check_upload_source_log_exists">[docs]</a><span class="k">def</span> <span class="nf">check_upload_source_log_exists</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
@@ -77,7 +77,7 @@
         <span class="n">workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UploadWorkspace</span><span class="p">]</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: SourceLogExistCheck: There was a problem connecting&quot;</span>
-                     <span class="s2">&quot; to database.&quot;</span><span class="p">,</span> <span class="n">workspace</span><span class="o">.</span><span class="n">upload_id</span><span class="p">)</span>
+                     <span class="s2">&quot; to database.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_DB_CONNECT_ERROR</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">workspace</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -113,7 +113,7 @@
         <span class="n">workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UploadWorkspace</span><span class="p">]</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: GetSourceLog: There was a problem connecting to&quot;</span>
-                     <span class="s2">&quot; database.&quot;</span><span class="p">,</span> <span class="n">workspace</span><span class="o">.</span><span class="n">upload_id</span><span class="p">)</span>
+                     <span class="s2">&quot; database.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_DB_CONNECT_ERROR</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">workspace</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -121,13 +121,13 @@
 
 
     <span class="n">filepointer</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">open_pointer</span><span class="p">(</span><span class="s1">&#39;rb&#39;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">filepointer</span><span class="p">:</span>
-        <span class="n">name</span> <span class="o">=</span> <span class="n">filepointer</span><span class="o">.</span><span class="n">name</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="c1"># if filepointer:</span>
+    <span class="c1">#     name = filepointer.name</span>
+    <span class="c1"># else:</span>
+    <span class="c1">#     name = &quot;&quot;</span>
 
     <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;Content-disposition&quot;</span><span class="p">:</span> <span class="n">f</span><span class="s2">&quot;filename=</span><span class="si">{name}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Content-disposition&quot;</span><span class="p">:</span> <span class="n">f</span><span class="s2">&quot;filename=</span><span class="si">{workspace.log.name}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">checksum</span><span class="p">,</span>
         <span class="s1">&#39;Content-Length&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">size_bytes</span><span class="p">,</span>
         <span class="s1">&#39;Last-Modified&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">last_modified</span><span class="p">,</span>

@@ -38,7 +38,7 @@
 
 <span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
 
-<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">UploadWorkspace</span>
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">CheckableWorkspace</span>
 <span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseChecker</span>
 
 
@@ -50,11 +50,12 @@
 
     <span class="n">ZERO_LENGTH_MSG</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;File &#39;</span><span class="si">%s</span><span class="s2">&#39; is empty (size is zero).&quot;</span>
 
-<div class="viewcode-block" id="ZeroLengthFileChecker.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.zero_length_files.html#filemanager.process.check.zero_length_files.ZeroLengthFileChecker.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
+<div class="viewcode-block" id="ZeroLengthFileChecker.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.zero_length_files.html#filemanager.process.check.zero_length_files.ZeroLengthFileChecker.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Determine wether a file is zero-length, and remove it if so.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_empty</span><span class="p">:</span>
-            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ZERO_LENGTH_MSG</span> <span class="o">%</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">add_warning</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ZERO_LENGTH_MSG</span> <span class="o">%</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                  <span class="n">is_persistant</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span>
                              <span class="n">f</span><span class="s2">&quot;Removed file &#39;</span><span class="si">{u_file.name}</span><span class="s2">&#39; [file is empty].&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">u_file</span></div></div>
