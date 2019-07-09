@@ -12,6 +12,8 @@ from ..file_type import FileType
 class TestPaths(TestCase):
     """Workspace is responsible for managing several relative paths."""
 
+    @mock.patch('filemanager.domain.uploads.file_mutations.logging',
+                mock.MagicMock())
     def setUp(self):
         """We have a vanilla workspace."""
         self.mock_strategy = mock.MagicMock()
@@ -119,6 +121,8 @@ class TestPaths(TestCase):
 class TestAddRemoveFiles(TestCase):
     """Test adding and removing files to/from the workspace."""
 
+    @mock.patch('filemanager.domain.uploads.file_mutations.logging',
+                mock.MagicMock())
     def setUp(self):
         """We have a vanilla workspace."""
         self.mock_strategy = mock.MagicMock()
@@ -332,6 +336,8 @@ class TestAddRemoveFiles(TestCase):
 class TestOperations(TestCase):
     """Test file operations via the workspace API."""
 
+    @mock.patch('filemanager.domain.uploads.file_mutations.logging',
+                mock.MagicMock())
     def setUp(self):
         """We have a vanilla workspace."""
         self.mock_strategy = mock.MagicMock()
@@ -413,6 +419,8 @@ class TestOperations(TestCase):
 class TestMoveFiles(TestCase):
     """Move/replace files in a workspace."""
 
+    @mock.patch('filemanager.domain.uploads.file_mutations.logging',
+                mock.MagicMock())
     def setUp(self):
         """We have a vanilla workspace."""
         self.mock_strategy = mock.MagicMock()

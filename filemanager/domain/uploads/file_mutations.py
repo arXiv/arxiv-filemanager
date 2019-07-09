@@ -24,7 +24,7 @@ from .util import modifies_workspace, logger
 @dataclass
 class FileMutationsWorkspace(ErrorsAndWarningsWorkspace):
     """
-    Adds methods that alter files. 
+    Adds methods that alter files.
 
     Introduces the source package.
     """
@@ -36,7 +36,7 @@ class FileMutationsWorkspace(ErrorsAndWarningsWorkspace):
         self.source_package = SourcePackage(self, f'{self.upload_id}.tar.gz')
         self.log = SourceLog(self, 'source.log')
 
-        
+
     @modifies_workspace()
     def create(self, path: str, file_type: FileType = FileType.UNKNOWN,
                replace: bool = False, is_directory: bool = False,
@@ -66,7 +66,21 @@ class FileMutationsWorkspace(ErrorsAndWarningsWorkspace):
                               is_system=is_system,
                               is_persisted=is_persisted)
 
-        # if not is_system:   # System files are not part of the source package.
+        # Make sure that we have references for the parent director(y|ies).
+        parts = u_file.path.split('/')
+        for parent in accumulate(parts[:-1], lambda *p: os.path.join(*p)):
+            parent += '/'
+            if not self.exists(parent):
+                parent_file = UploadedFile(self, path=parent, size_bytes=0,
+                                           file_type=FileType.DIRECTORY,
+                                           is_directory=True,
+                                           is_ancillary=is_ancillary,
+                                           is_system=is_system,
+                                           is_persisted=is_persisted)
+                self.files.set(parent_file.path, parent_file)
+                if touch:
+                    self.storage.create(self, parent_file)
+
         self.files.set(u_file.path, u_file)
 
         if touch:
@@ -94,7 +108,7 @@ class FileMutationsWorkspace(ErrorsAndWarningsWorkspace):
         if u_file.is_directory:
             for child_path, child_file in self.iter_children(u_file):
                 self._drop_refs(child_path)
-    
+
     @modifies_workspace()
     def delete_all_files(self) -> None:
         """Delete all source and ancillary files in the workspace."""
@@ -105,7 +119,7 @@ class FileMutationsWorkspace(ErrorsAndWarningsWorkspace):
         self.files.ancillary.clear()
         self.storage.makedirs(self, self.source_path)
         self.storage.makedirs(self, self.ancillary_path)
-    
+
     @modifies_workspace()
     def copy(self, u_file: UploadedFile, new_path: str,
              replace: bool = False) -> UploadedFile:
@@ -135,7 +149,7 @@ class FileMutationsWorkspace(ErrorsAndWarningsWorkspace):
         return new_file
 
     @modifies_workspace()
-    def replace(self, to_replace: UploadedFile, 
+    def replace(self, to_replace: UploadedFile,
                 replace_with: UploadedFile, keep_refs: bool = True) \
             -> UploadedFile:
         """Replace a file with another file."""
@@ -164,12 +178,12 @@ class FileMutationsWorkspace(ErrorsAndWarningsWorkspace):
                 if not keep_refs:
                     self._drop_refs(_new_path)
                 self._update_refs(_file, _former_path)
-        
+
         # TODO: update info for target children if target was a directory.
         return replace_with
-    
+
     @modifies_workspace()
-    def remove(self, u_file: UploadedFile, 
+    def remove(self, u_file: UploadedFile,
                reason: Optional[str] = None) -> None:
         """
         Mark a file as removed, and quarantine.
@@ -193,7 +207,7 @@ class FileMutationsWorkspace(ErrorsAndWarningsWorkspace):
         u_file.is_removed = True
         u_file.reason_for_removal = reason
 
-        self.add_error(u_file, reason, severity=Error.Severity.INFO, 
+        self.add_error(u_file, reason, severity=Error.Severity.INFO,
                        is_persistant=False)
 
         self._drop_refs(u_file.path, is_ancillary=u_file.is_ancillary,
@@ -205,15 +219,15 @@ class FileMutationsWorkspace(ErrorsAndWarningsWorkspace):
         if self.storage is None:
             raise RuntimeError('Storage adapter is not set')
         self.storage.persist(self, u_file)
-    
+
     @modifies_workspace()
     def persist_all(self) -> None:
         for u_file in self.iter_files(allow_system=True):
             if not u_file.is_persisted:
                 self.persist(u_file)
-    
+
     @modifies_workspace()
-    def rename(self, u_file: UploadedFile, 
+    def rename(self, u_file: UploadedFile,
                new_path: str) -> None:
         """Rename a file in this workspace."""
         if self.storage is None:
@@ -242,12 +256,12 @@ class FileMutationsWorkspace(ErrorsAndWarningsWorkspace):
             raise RuntimeError('Storage adapter is not set')
         for u_file in u_files:
             parts = u_file.path.split('/')
-            for parent in accumulate(parts, lambda *p: os.path.join(*p)):
+            for parent in accumulate(parts[:-1], lambda *p: os.path.join(*p)):
                 parent += '/'
                 if not self.exists(parent):
                     self.create(parent, FileType.DIRECTORY, is_directory=True)
             self.files.set(u_file.path, u_file)
-    
+
     @modifies_workspace()
     def delete_workspace(self) -> bool:
         """
@@ -273,7 +287,7 @@ class FileMutationsWorkspace(ErrorsAndWarningsWorkspace):
         # Now blow away the workspace
         self.storage.delete_workspace(self)
         return True
-    
+
     def _stash_log(self) -> None:
         """Copy the workspace log to the deleted logs directory."""
         if self.storage is None:
@@ -285,8 +299,8 @@ class FileMutationsWorkspace(ErrorsAndWarningsWorkspace):
             self.storage.stash_deleted_log(self, self.log.file)
         except Exception as e:
             self.log.info(f'Saving source.log failed: {e}')
-    
-    
+
+
 @dataclass
 class _SpecialSystemFile:
     """Some system files have specific and unique semantics."""
@@ -306,11 +320,11 @@ class _SpecialSystemFile:
             if self.workspace.exists(self.path, is_system=True):
                 self._file = self.workspace.get(self.path, is_system=True)
             else:
-                self._file  = self.workspace.create(self.path, is_system=True, 
+                self._file  = self.workspace.create(self.path, is_system=True,
                                                 is_persisted=True, touch=True)
         return self._file
-                            
-    
+
+
     @property
     def name(self) -> str:
         """File name."""
@@ -344,7 +358,7 @@ class _SpecialSystemFile:
 
     def open_pointer(self, flags: str = 'r', **kwargs: Any) -> IO:
         return self.workspace.open_pointer(self.file, flags, **kwargs)
-    
+
     @property
     def full_path(self) -> str:
         return self.workspace.get_full_path(self.file)

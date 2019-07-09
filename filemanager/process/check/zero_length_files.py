@@ -19,7 +19,7 @@ class ZeroLengthFileChecker(BaseChecker):
     def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         """Determine wether a file is zero-length, and remove it if so."""
-        if u_file.is_empty:
+        if u_file.is_empty and not u_file.is_directory:
             workspace.add_warning(u_file, self.ZERO_LENGTH_MSG % u_file.name,
                                   is_persistant=False)
             workspace.remove(u_file,

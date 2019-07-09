@@ -167,7 +167,7 @@ class TestDeleteAnotherWorkspace(TestCase):
 
         self.original_upload_data = json.loads(response.data)
         self.upload_id = self.original_upload_data['upload_id']
-    
+
     def tearDown(self):
         """Delete the workspace."""
         self.client.delete(
@@ -190,7 +190,7 @@ class TestDeleteAnotherWorkspace(TestCase):
         )
         logger.debug("Delete Response:\n" + str(response.data) + '\n')
 
-        self.assertEqual(response.status_code, status.NOT_FOUND, 
+        self.assertEqual(response.status_code, status.NOT_FOUND,
                          "Delete non-existent workspace.")
 
     def test_delete_nonsense_workspace_id(self):
@@ -200,7 +200,7 @@ class TestDeleteAnotherWorkspace(TestCase):
             headers={'Authorization': self.admin_token}
         )
 
-        self.assertEqual(response.status_code, status.NOT_FOUND, 
+        self.assertEqual(response.status_code, status.NOT_FOUND,
                          "Delete workspace using bogus upload_id.")
 
     def test_delete_malicious_workspace_id(self):
@@ -210,5 +210,5 @@ class TestDeleteAnotherWorkspace(TestCase):
             headers={'Authorization': self.admin_token}
         )
 
-        self.assertEqual(response.status_code, status.NOT_FOUND, 
+        self.assertEqual(response.status_code, status.NOT_FOUND,
                          "Delete workspace using bogus upload_id.")
