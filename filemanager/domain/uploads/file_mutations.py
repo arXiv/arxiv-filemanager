@@ -49,12 +49,12 @@ class FileMutationsWorkspace(ErrorsAndWarningsWorkspace):
         if is_ancillary is None:
             path, is_ancillary = self._check_is_ancillary_path(path)
 
-        if self.files.contains(path, is_ancillary=is_ancillary,
-                               is_system=is_system):
-            e_file = self.files.get(path, is_ancillary=is_ancillary,
-                                    is_system=is_system)
-            if e_file.is_directory:
-                raise ValueError('Directory exists at that path')
+        # if self.files.contains(path, is_ancillary=is_ancillary,
+        #                        is_system=is_system):
+        #     e_file = self.files.get(path, is_ancillary=is_ancillary,
+        #                             is_system=is_system)
+        #     if e_file.is_directory:
+        #         raise ValueError('Directory exists at that path')
 
         if is_ancillary is None:    # Infer whether this is an ancillary file.
             path, is_ancillary = self._check_is_ancillary_path(path)

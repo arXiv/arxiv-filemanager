@@ -110,10 +110,21 @@ class SimpleStorageAdapter(IStorageAdapter):
         )
         self._check_safe(workspace, src_path, is_ancillary=u_file.is_ancillary)
         self._check_safe(workspace, dest_path, is_removed=True)
+        self._make_way(dest_path)
+        shutil.move(src_path, dest_path)
+
+    def _make_way(self, dest_path: str) -> None:
+        """Prepare a path to receive moved/copied files."""
+        logger.debug('make way at path: %s', dest_path)
         parent, _ = os.path.split(dest_path)
         if not os.path.exists(parent):
             os.makedirs(parent)
-        shutil.move(src_path, dest_path)
+
+        if os.path.exists(dest_path):
+            if os.path.isdir(dest_path):
+                shutil.rmtree(dest_path)
+            else:
+                os.unlink(dest_path)
 
     def stash_deleted_log(self, workspace: StoredWorkspace,
                           u_file: UploadedFile) -> None:
@@ -148,9 +159,7 @@ class SimpleStorageAdapter(IStorageAdapter):
                          is_ancillary=u_file.is_ancillary,
                          is_removed=u_file.is_removed)
         parent, _ = os.path.split(dest_path)
-        if not os.path.exists(parent):
-            os.makedirs(parent)
-        dest_parent, _ = os.path.split(dest_path)
+        self._make_way(dest_path)
         shutil.move(src_path, dest_path)
 
     @contextmanager
@@ -304,8 +313,8 @@ class QuarantineStorageAdapter(SimpleStorageAdapter):
 
     def get_path_bare(self, path: str, is_persisted: bool = True) -> str:
         if is_persisted:
-            return self._get_permanent_path(path)
-        return self._get_quarantine_path(path)
+            return os.path.normpath(self._get_permanent_path(path))
+        return os.path.normpath(self._get_quarantine_path(path))
 
     def set_permissions(self, workspace: StoredWorkspace,
                         file_mode: int = 0o664, dir_mode: int = 0o775) -> None:

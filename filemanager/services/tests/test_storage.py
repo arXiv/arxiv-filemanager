@@ -158,6 +158,28 @@ class TestSimpleStorage(TestCase):
         with self.adapter.open(self.mock_workspace, mock_file) as f:
             self.assertEqual(f.read(), 'Thanks for all the fish')
 
+    def test_move_overwrite_file(self):
+        """Move a file to a new path, where a file already exists."""
+        _, fpath = tempfile.mkstemp(dir=self.source_path)
+        rel_path = fpath.split(self.source_path, 1)[1].lstrip('/')
+        with open(fpath, 'w') as f:
+            f.write('Thanks for all the fish')
+        mock_file = mock.MagicMock(path=rel_path,
+                                   is_directory=False,
+                                   is_ancillary=False,
+                                   is_removed=False)
+
+        new_path = os.path.join(self.source_path, 'new')
+        with open(new_path, 'w') as f:
+            f.write('Oh dear...')
+
+        new_r_path = new_path.split(self.source_path, 1)[1].lstrip('/')
+        self.adapter.move(self.mock_workspace, mock_file, rel_path, new_r_path)
+
+        mock_file.path = new_r_path
+        with self.adapter.open(self.mock_workspace, mock_file) as f:
+            self.assertEqual(f.read(), 'Thanks for all the fish')
+
     def test_create_file(self):
         """Create a new (empty) file."""
         mock_file = mock.MagicMock(path='foo.txt', is_directory=False)
