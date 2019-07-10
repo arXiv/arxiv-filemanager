@@ -78,7 +78,7 @@ class TestDeleteFiles(TestCase):
 
         self.original_upload_data = json.loads(response.data)
         self.upload_id = self.original_upload_data['upload_id']
-    
+
     def tearDown(self):
         """Delete the workspace."""
         # Create admin token for deleting upload workspace
@@ -94,9 +94,9 @@ class TestDeleteFiles(TestCase):
         # This cleans out the workspace. Comment out if you want to inspect
         # files in workspace. Source log is saved to 'deleted_workspace_logs'
         # directory.
-        self.assertEqual(response.status_code, status.OK, 
+        self.assertEqual(response.status_code, status.OK,
                          "Accepted request to delete workspace.")
-    
+
     def test_delete_a_file(self):
         """Try a few valid deletions."""
 
@@ -114,7 +114,7 @@ class TestDeleteFiles(TestCase):
         self.assertEqual(response.status_code, status.OK,
                          "Delete an individual file: '{public_file_path}'.")
         self.assertEqual(json.loads(response.data)['reason'], 'deleted file')
-    
+
     def test_delete_file_outside_workspace(self):
         """
         Attempt to delete a file outside the workspace.
@@ -135,11 +135,11 @@ class TestDeleteFiles(TestCase):
                          f" '{public_file_path}'.")
         expected_data = {'reason': 'file not found'}
         self.assertDictEqual(json.loads(response.data), expected_data)
-    
+
     def test_sneakily_delete_file_outside_workspace(self):
         """
-        Another file path is a potential security threat. 
-        
+        Another file path is a potential security threat.
+
         Attempt to detect such deviant file deletions without alerting the
         client.
         """
@@ -158,7 +158,7 @@ class TestDeleteFiles(TestCase):
     def test_delete_important_system_file(self):
         """
         Attempt to delete an important system file.
-        
+
         This generates an illegal URL so this doesn't make it to our code.
         """
         public_file_path = "/etc/passwd"
@@ -195,7 +195,7 @@ class TestDeleteFiles(TestCase):
               f" '{public_file_path}'\n" + str(response.data) + '\n')
         self.assertEqual(response.status_code, status.OK,
                          f"Delete file in subdirectory: '{public_file_path}'.")
-        
+
         # Try an delete file a second time...we'll know if first delete really
         # worked.
         public_file_path = "anc/manuscript_Na2.7Ru4O9.tex"
@@ -226,7 +226,7 @@ class TestDeleteFiles(TestCase):
         """
         Try a path that is not hacky but that we know secure_filename() will
         filter out characters.
-        
+
         Reject these filenames for now (because they're a little funny).
         """
         #
@@ -246,7 +246,7 @@ class TestDeleteFiles(TestCase):
     def test_delete_dot_path(self):
         """
         Delete a file that starts with ``./``
-        
+
         Technically a legal file path, but where is client coming up with this
         path? Manually?
         """

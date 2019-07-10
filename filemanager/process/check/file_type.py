@@ -35,7 +35,7 @@ class InferFileType(BaseChecker):
 
         for check_content_type in _content_type_checkers:
             file_type = check_content_type(workspace, u_file, content)
-            logger.debug('Tried %s, got %s', 
+            logger.debug('Tried %s, got %s',
                          check_content_type.__name__, file_type)
             if file_type is not None:
                 u_file.file_type = file_type
@@ -275,7 +275,7 @@ def _check_tiff(workspace: CheckableWorkspace, u_file: UploadedFile,
         if content[0] == 0x49 and content[1] == 0x49:
             return FileType.IMAGE    # , '', ''
     return None
-    
+
 
 
 def _check_jpeg(workspace: CheckableWorkspace, u_file: UploadedFile,

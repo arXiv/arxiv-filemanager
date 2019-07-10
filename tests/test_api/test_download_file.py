@@ -76,7 +76,7 @@ class TestIndividualFileContentDownload(TestCase):
 
         self.original_upload_data = json.loads(response.data)
         self.upload_id = self.original_upload_data['upload_id']
-    
+
     def tearDown(self):
         """Delete the workspace."""
         # Create admin token for deleting upload workspace
@@ -92,9 +92,9 @@ class TestIndividualFileContentDownload(TestCase):
         # This cleans out the workspace. Comment out if you want to inspect
         # files in workspace. Source log is saved to 'deleted_workspace_logs'
         # directory.
-        self.assertEqual(response.status_code, status.OK, 
+        self.assertEqual(response.status_code, status.OK,
                          "Accepted request to delete workspace.")
-    
+
     def test_file_exists(self):
         """Check if content file exists."""
         response = self.client.head(
@@ -123,7 +123,7 @@ class TestIndividualFileContentDownload(TestCase):
 
         logger.debug(f'List downloaded content directory: {self.workdir}\n')
         logger.debug(os.listdir(self.workdir))
-    
+
     def test_head_nonexistant_content_file(self):
         """Test HEAD for file that doesn't exist."""
         response = self.client.head(
@@ -132,7 +132,7 @@ class TestIndividualFileContentDownload(TestCase):
         )
         self.assertEqual(response.status_code, status.NOT_FOUND,
                          "Trying to check non-existent should fail.")
-    
+
     def test_download_nonexistant_content_file(self):
         """Test for file that doesn't exist."""
 
@@ -142,7 +142,7 @@ class TestIndividualFileContentDownload(TestCase):
             headers={'Authorization': self.token}
         )
         self.assertEqual(response.status_code, status.NOT_FOUND)
-    
+
     def test_download_file_outside_workspace(self):
         """Try to be naughty and download something outside of workspace."""
         # Assume these crazy developers stick their workspaces in an obvious

@@ -123,7 +123,7 @@ def upload_unlock(upload_id: int) -> Response:
 
         # Lock upload workspace
         if not workspace.is_locked:
-            logger.info("%s: Unlock: Workspace is already unlocked.", 
+            logger.info("%s: Unlock: Workspace is already unlocked.",
                         upload_id)
         else:
             workspace.lock_state = UploadWorkspace.LockState.UNLOCKED
@@ -131,7 +131,7 @@ def upload_unlock(upload_id: int) -> Response:
                 workspace.source_package.pack()
             database.update(workspace)
 
-        response_data = {'reason': messages.UPLOAD_UNLOCKED_WORKSPACE} 
+        response_data = {'reason': messages.UPLOAD_UNLOCKED_WORKSPACE}
         status_code = status.OK
 
     except IOError:

@@ -43,7 +43,7 @@ class UnpackCompressedTarFiles(BaseChecker):
         # Tarfiles may contain relative paths! We must ensure that each file is
         # not going to escape the upload source directory _before_ we extract
         # it.
-        if not workspace.is_safe(dest, is_ancillary=u_file.is_ancillary, 
+        if not workspace.is_safe(dest, is_ancillary=u_file.is_ancillary,
                                  is_persisted=u_file.is_persisted):
             logger.error('Member of %s tried to escape workspace', u_file.path)
             workspace.log.info(f'Member of file {u_file.name} tried to escape'
@@ -81,8 +81,8 @@ class UnpackCompressedTarFiles(BaseChecker):
             logger.debug('Unpacked to %s', parent)
 
             os.utime(parent)  # Update access and modified times to now.
-            # If the parent is not explicitly an ancillary file, leave it up 
-            # to the workspace to infer whether or not the new file is 
+            # If the parent is not explicitly an ancillary file, leave it up
+            # to the workspace to infer whether or not the new file is
             # ancillary or not.
             is_ancillary = True if u_file.is_ancillary else None
             if tarinfo.isdir():
@@ -171,8 +171,8 @@ class UnpackCompressedZIPFiles(BaseChecker):
                           ' to escape workspace.')
             return
 
-        # If the parent is not explicitly an ancillary file, leave it up 
-        # to the workspace to infer whether or not the new file is 
+        # If the parent is not explicitly an ancillary file, leave it up
+        # to the workspace to infer whether or not the new file is
         # ancillary or not.
         is_ancillary = True if u_file.is_ancillary else None
 

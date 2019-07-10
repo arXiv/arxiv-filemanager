@@ -58,7 +58,7 @@ class TestUploadAncillaryFile(TestCase):
         self.token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
                                                auth.scopes.WRITE_UPLOAD,
                                                auth.scopes.DELETE_UPLOAD_FILE])
-    
+
     def tearDown(self):
         """Delete the workspace."""
         shutil.rmtree(self.workdir)
@@ -86,17 +86,17 @@ class TestUploadAncillaryFile(TestCase):
                                           'ancillary': 'True'},
                                     headers={'Authorization': self.token},
                                     content_type='multipart/form-data')
-        self.assertEqual(response.status_code, status.CREATED, 
+        self.assertEqual(response.status_code, status.CREATED,
                          "Accepted and processed uploaded Submission Contents")
         self.maxDiff = None
-        
+
         response_data = json.loads(response.data)
         upload_id = response_data['upload_id']
         try:
             jsonschema.validate(response_data, self.schema)
         except jsonschema.exceptions.SchemaError as e:
             self.fail(e)
-        
+
         file_paths = [f['public_filepath'] for f  in response_data['files']]
         self.assertIn(f'anc/{fname}', file_paths,
                       'File should be stored in the ancillary directory')

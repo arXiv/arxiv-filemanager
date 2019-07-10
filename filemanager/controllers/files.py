@@ -39,7 +39,7 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) \
     -------
     dict
         Response content
-    int 
+    int
         HTTP status
     dict
         HTTP headers.
@@ -62,7 +62,7 @@ def check_upload_file_content_exists(upload_id: int, public_file_path: str) \
             raise NotFound(f"File '{public_file_path}' not found.")
         u_file = workspace.get(public_file_path)
     except IOError:
-        logger.error("%s: Content file exists request failed ", 
+        logger.error("%s: Content file exists request failed ",
                      workspace.upload_id)
         raise InternalServerError(messages.CANT_DELETE_FILE)
     except NotFound as nf:
@@ -125,7 +125,7 @@ def get_upload_file_content(upload_id: int, public_file_path: str) -> Response:
         u_file = workspace.get(public_file_path)
         filepointer = workspace.open_pointer(u_file, 'rb')
     except IOError:
-        logger.error("%s: Get file content request failed ", 
+        logger.error("%s: Get file content request failed ",
                      workspace.upload_id)
         raise InternalServerError(messages.CANT_DELETE_FILE)
     except NotFound as nf:
@@ -252,15 +252,15 @@ def client_delete_all_files(upload_id: int) -> Response:
         Some extra headers to add to the response.
 
     """
-    logger.info("%s: Deleting all uploaded files from this workspace.", 
+    logger.info("%s: Deleting all uploaded files from this workspace.",
                 upload_id)
 
     try:
         workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
 
         if workspace is None:
-            raise NotFound(messages.UPLOAD_NOT_FOUND)   
-        if not workspace.is_active: 
+            raise NotFound(messages.UPLOAD_NOT_FOUND)
+        if not workspace.is_active:
             raise Forbidden(messages.UPLOAD_NOT_ACTIVE)
         if workspace.is_locked:
             raise Forbidden(messages.UPLOAD_WORKSPACE_LOCKED)
@@ -284,7 +284,7 @@ def client_delete_all_files(upload_id: int) -> Response:
         logger.info("Unknown error in delete all files. "
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
-    
+
     response_data = serialize_workspace(workspace)
     response_data.update({'reason': messages.UPLOAD_DELETED_ALL_FILES})
     headers = {'ARXIV-OWNER': workspace.owner_user_id,

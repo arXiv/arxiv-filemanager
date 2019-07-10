@@ -90,11 +90,11 @@ class TestLockedWorkspace(TestCase):
             f"/filemanager/api/{self.upload_id}/lock",
             headers={'Authorization': self.admin_token}
         )
-        self.assertEqual(response.status_code, status.OK, 
+        self.assertEqual(response.status_code, status.OK,
                          f"Lock workspace '{self.upload_id}'.")
 
         logger.debug("Lock:\n" + str(response.data) + '\n')
-    
+
     def tearDown(self):
         """Delete the workspace."""
         # Create admin token for deleting upload workspace
@@ -110,9 +110,9 @@ class TestLockedWorkspace(TestCase):
         # This cleans out the workspace. Comment out if you want to inspect
         # files in workspace. Source log is saved to 'deleted_workspace_logs'
         # directory.
-        self.assertEqual(response.status_code, status.OK, 
+        self.assertEqual(response.status_code, status.OK,
                          "Accepted request to delete workspace.")
-    
+
     def test_upload_files_to_locked_workspace(self):
         """Try to upload files to a locked workspace."""
         filepath = os.path.join(
@@ -128,19 +128,19 @@ class TestLockedWorkspace(TestCase):
                                     #        content_type='application/gzip')
                                     content_type='multipart/form-data')
 
-        self.assertEqual(response.status_code, status.FORBIDDEN, 
+        self.assertEqual(response.status_code, status.FORBIDDEN,
                          "Cannot upload files to a locked workspace")
         logger.debug("Upload files to locked workspace:\n{response.data}\n")
-    
+
     def test_get_status_locked_workspace(self):
         """Get the status of a locked workspace."""
         response = self.client.get(f"/filemanager/api/{self.upload_id}",
                                    headers={'Authorization': self.token})
 
-        self.assertEqual(response.status_code, status.OK, 
+        self.assertEqual(response.status_code, status.OK,
                          "Request upload summary on locked workspace (OK)")
         response_data = json.loads(response.data)
-        self.assertEqual(response_data['lock_state'], 
+        self.assertEqual(response_data['lock_state'],
                          UploadWorkspace.LockState.LOCKED.value)
 
     def test_attempt_to_delete_a_file_in_locked_workspace(self):
@@ -154,7 +154,7 @@ class TestLockedWorkspace(TestCase):
               f" {response.data}\n")
         self.assertEqual(response.status_code, status.FORBIDDEN,
                          "Cannot delete a file from a locked workspace")
-    
+
     def test_delete_all_files_in_locked_workspace(self):
         """Attempt to delete all files in my workspace (normal)."""
         response = self.client.post(
@@ -163,7 +163,7 @@ class TestLockedWorkspace(TestCase):
             content_type='multipart/form-data'
         )
         logger.debug("Delete All Files Response(locked):\n{response.data}\n")
-        self.assertEqual(response.status_code, status.FORBIDDEN, 
+        self.assertEqual(response.status_code, status.FORBIDDEN,
                          'Cannot delete files from a locked workspace')
 
 class TestUnLockedWorkspace(TestCase):
@@ -231,7 +231,7 @@ class TestUnLockedWorkspace(TestCase):
             f"/filemanager/api/{self.upload_id}/lock",
             headers={'Authorization': self.admin_token}
         )
-        self.assertEqual(response.status_code, status.OK, 
+        self.assertEqual(response.status_code, status.OK,
                          f"Lock workspace '{self.upload_id}'.")
 
         logger.debug("Lock:\n" + str(response.data) + '\n')
@@ -241,11 +241,11 @@ class TestUnLockedWorkspace(TestCase):
             f"/filemanager/api/{self.upload_id}/unlock",
             headers={'Authorization': self.admin_token}
         )
-        self.assertEqual(response.status_code, status.OK, 
+        self.assertEqual(response.status_code, status.OK,
                          f"Unlock workspace '{self.upload_id}'.")
 
         logger.debug("Unlock:\n{response.data}\n")
-    
+
     def tearDown(self):
         """Delete the workspace."""
         # Create admin token for deleting upload workspace
@@ -261,7 +261,7 @@ class TestUnLockedWorkspace(TestCase):
         # This cleans out the workspace. Comment out if you want to inspect
         # files in workspace. Source log is saved to 'deleted_workspace_logs'
         # directory.
-        self.assertEqual(response.status_code, status.OK, 
+        self.assertEqual(response.status_code, status.OK,
                          "Accepted request to delete workspace.")
 
     def test_upload_files_to_unlocked_workspace(self):
@@ -279,19 +279,19 @@ class TestUnLockedWorkspace(TestCase):
                                     #        content_type='application/gzip')
                                     content_type='multipart/form-data')
 
-        self.assertEqual(response.status_code, status.CREATED, 
+        self.assertEqual(response.status_code, status.CREATED,
                          "Can upload files to a locked workspace")
         logger.debug("Upload files to unlocked workspace:\n{response.data}\n")
-    
+
     def test_get_status_unlocked_workspace(self):
         """Get the status of a unlocked workspace."""
         response = self.client.get(f"/filemanager/api/{self.upload_id}",
                                    headers={'Authorization': self.token})
 
-        self.assertEqual(response.status_code, status.OK, 
+        self.assertEqual(response.status_code, status.OK,
                          "Request upload summary on unlocked workspace (OK)")
         response_data = json.loads(response.data)
-        self.assertEqual(response_data['lock_state'], 
+        self.assertEqual(response_data['lock_state'],
                          UploadWorkspace.LockState.UNLOCKED.value)
 
     def test_attempt_to_delete_a_file_in_unlocked_workspace(self):
@@ -305,7 +305,7 @@ class TestUnLockedWorkspace(TestCase):
               f" {response.data}\n")
         self.assertEqual(response.status_code, status.NOT_FOUND,
                          "Get a normal 404 when the workspace is unlocked")
-    
+
     def test_delete_all_files_in_unlocked_workspace(self):
         """Attempt to delete all files in my workspace (normal)."""
         response = self.client.post(
@@ -314,5 +314,5 @@ class TestUnLockedWorkspace(TestCase):
             content_type='multipart/form-data'
         )
         logger.debug("Delete All Files Response (unlocked):\n{response.data}\n")
-        self.assertEqual(response.status_code, status.OK, 
+        self.assertEqual(response.status_code, status.OK,
                          'Can delete files from an unlocked workspace')

@@ -74,7 +74,7 @@ class TestSourcePackage(TestCase):
         self.original_upload_data = json.loads(response.data)
         self.upload_id = self.original_upload_data['upload_id']
         self.original_checksum = response.headers.get('ETag')
-    
+
     def tearDown(self):
         """Delete the workspace."""
         # Create admin token for deleting upload workspace
@@ -90,7 +90,7 @@ class TestSourcePackage(TestCase):
         # This cleans out the workspace. Comment out if you want to inspect
         # files in workspace. Source log is saved to 'deleted_workspace_logs'
         # directory.
-        self.assertEqual(response.status_code, status.OK, 
+        self.assertEqual(response.status_code, status.OK,
                          "Accepted request to delete workspace.")
 
     def test_source_package_exists(self):
@@ -100,7 +100,7 @@ class TestSourcePackage(TestCase):
             headers={'Authorization': self.token}
         )
         self.assertEqual(response.status_code, status.OK)
-    
+
     def test_source_package_checksum_is_stable(self):
         """Checksum should not change while the workspace does not change."""
         response = self.client.head(
@@ -124,7 +124,7 @@ class TestSourcePackage(TestCase):
         )
         third_checksum = response.headers.get('ETag')
         self.assertEqual(first_checksum, third_checksum)
-    
+
     def test_source_package_checksum_changes(self):
         """When the workspace changes, so does the checksum."""
         response = self.client.head(
@@ -153,4 +153,4 @@ class TestSourcePackage(TestCase):
         third_checksum = response.headers.get('ETag')
         self.assertIsNotNone(third_checksum)
         self.assertEqual(second_checksum, third_checksum)
-        
+

@@ -6,6 +6,7 @@ import os
 import tarfile
 import zipfile
 import shutil
+import subprocess
 import filecmp
 from pathlib import Path
 from contextlib import contextmanager
@@ -108,8 +109,10 @@ class SimpleStorageAdapter(IStorageAdapter):
             workspace.get_path(u_file.path, is_removed=True),
             is_persisted=u_file.is_persisted
         )
-        self._check_safe(workspace, src_path, is_ancillary=u_file.is_ancillary)
-        self._check_safe(workspace, dest_path, is_removed=True)
+        self._check_safe(workspace, src_path, is_ancillary=u_file.is_ancillary,
+                         is_persisted=u_file.is_persisted)
+        self._check_safe(workspace, dest_path, is_removed=True,
+                         is_persisted=u_file.is_persisted)
         self._make_way(dest_path)
         shutil.move(src_path, dest_path)
 
@@ -180,8 +183,38 @@ class SimpleStorageAdapter(IStorageAdapter):
 
     def pack_tarfile(self, workspace: StoredWorkspace,
                     u_file: UploadedFile, path: str) -> UploadedFile:
-        with tarfile.open(self.get_path(workspace, u_file), 'w:gz') as tar:
-            tar.add(self.get_path_bare(path), arcname=os.path.sep)
+        """
+        Pack the contents of ``path`` into a gzipped tarball ``u_file``.
+
+        Parameters
+        ----------
+        workspace : :class:`.StoredWorkspace`
+            The workspace in which the contents and tarball reside.
+        u_file : :class:`.UploadedFile`
+            A file in ``workspace`` into which the contents of ``path`` should
+            be packed.
+        path : str
+            Workspace path to contents that should be packed into ``u_file``.
+
+        Returns
+        -------
+        :class:`.UploadedFile`
+            The passed ``u_file``, with size and time properties updated.
+
+        """
+        # This uses the system ``tar`` command for performance reasons. The
+        # built-in Python ``tarfile`` library is a pure-Python implementation.
+        # It relies on the ``gzip`` library, which is also implemented in
+        # Python. These are already far less performant than the system tar and
+        # gzip routines, and this is further exascerbated by slower I/O on
+        # networked filesystems. This is around 10x faster than the original
+        # ``tarfile``-based implementation. --Erick 2019-07-10
+        result = subprocess.Popen(['tar', '-czf',
+                                   self.get_path(workspace, u_file),
+                                   '-C', self.get_path_bare(path),
+                                   '.']).wait()
+        if result != 0:
+            raise RuntimeError('tar exited with %i', result)
         u_file.size_bytes = self.get_size_bytes(workspace, u_file)
         u_file.last_modified = self.get_last_modified(workspace, u_file)
         return u_file

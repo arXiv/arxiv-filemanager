@@ -10,6 +10,7 @@ from datetime import datetime
 from contextlib import contextmanager
 
 from dataclasses import dataclass, field
+
 from ..index import FileIndex
 
 from ..uploaded_file import UploadedFile
@@ -46,8 +47,6 @@ class FileMutationsWorkspace(ErrorsAndWarningsWorkspace):
         if self.storage is None:
             raise RuntimeError('No storage adapter available')
         path = self.LEADING_DOTSLASH.sub('', path)
-        if is_ancillary is None:
-            path, is_ancillary = self._check_is_ancillary_path(path)
 
         # if self.files.contains(path, is_ancillary=is_ancillary,
         #                        is_system=is_system):

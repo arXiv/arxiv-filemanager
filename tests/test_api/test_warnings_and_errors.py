@@ -64,7 +64,7 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
         )
         fname = os.path.basename(filepath)
 
-        fpath = os.path.join(self.DATA_PATH, 
+        fpath = os.path.join(self.DATA_PATH,
                              'test_files_upload/UploadRemoveFiles.tar')
         fname = os.path.basename(fpath)
         response = self.client.post('/filemanager/api/',
@@ -73,7 +73,7 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
                                     },
                                     headers={'Authorization': self.token},
                                     content_type='multipart/form-data')
-        self.assertEqual(response.status_code, status.CREATED, 
+        self.assertEqual(response.status_code, status.CREATED,
                          "Accepted and processed uploaded Submission Contents")
         self.maxDiff = None
 
@@ -101,7 +101,7 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
         # ``process/checks/errata/RemoveDOCFiles.py``).
         #  -- Erick 2019-06-25
         #
-        self.assertEqual(self.response_data['readiness'], 
+        self.assertEqual(self.response_data['readiness'],
                          UploadWorkspace.Readiness.ERRORS.value,
                          'Workspace has errors')
         self.assertEqual(self.response_data['source_format'], 'tex')
@@ -121,42 +121,42 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
                 info_errors[name].append(msg)
         files = {f['name']: f for f in self.response_data['files']}
 
-        self.assertIn("Removed file 'remove.desc' [File not allowed].", 
+        self.assertIn("Removed file 'remove.desc' [File not allowed].",
                       info_errors['remove.desc'])
         self.assertNotIn('remove.desc', files, 'File ware removed')
 
-        self.assertIn("Removed file '.junk' [File not allowed].", 
+        self.assertIn("Removed file '.junk' [File not allowed].",
                       info_errors['.junk'])
         self.assertNotIn('.junk', files, 'File was removed')
 
-        self.assertIn("Removed file 'core' [File not allowed].", 
+        self.assertIn("Removed file 'core' [File not allowed].",
                       info_errors['core'])
         self.assertNotIn('core', files, 'File was removed')
 
-        self.assertIn("Removed standard style files for Paul", 
+        self.assertIn("Removed standard style files for Paul",
                       ' '.join(info_errors['diagrams.sty']))
         self.assertNotIn('diagrams.sty', files, 'File was removed')
 
-        self.assertIn("Removed file 'zero.txt' [file is empty].", 
+        self.assertIn("Removed file 'zero.txt' [file is empty].",
                       info_errors['zero.txt'])
         self.assertNotIn('zero.txt', files, 'File was removed')
 
-        self.assertIn("Removed file 'xxx.cshrc' [File not allowed].", 
+        self.assertIn("Removed file 'xxx.cshrc' [File not allowed].",
                       info_errors['xxx.cshrc'])
         self.assertNotIn('xxx.cshrc', files, 'File was removed')
 
-        self.assertIn("Removed file 'uufiles' [File not allowed].", 
+        self.assertIn("Removed file 'uufiles' [File not allowed].",
                       info_errors['uufiles'])
         self.assertNotIn('uufiles', files, 'File was removed')
 
-        self.assertIn("Removed file 'final.aux' due to name conflict.", 
+        self.assertIn("Removed file 'final.aux' due to name conflict.",
                       info_errors['final.aux'])
         self.assertNotIn('final.aux', files, 'File was removed')
-        
-        self.assertIn("We do not run bibtex in the auto", 
+
+        self.assertIn("We do not run bibtex in the auto",
                       ' '.join(warnings['final.bib']))
         self.assertIn(
-            "Removed the file 'final.bib'. Using 'final.bbl' for references.", 
+            "Removed the file 'final.bib'. Using 'final.bbl' for references.",
             info_errors['final.bib']
         )
         self.assertNotIn('final.bib', files, 'File was removed')
@@ -168,22 +168,22 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
         )
         self.assertNotIn('aa.dem', files, 'File was removed')
 
-        self.assertIn("WILL REMOVE standard revtex4 style", 
+        self.assertIn("WILL REMOVE standard revtex4 style",
                       ' '.join(info_errors['revtex4.cls']))
         self.assertNotIn('revtex4.cls', files, 'File was removed')
 
-        self.assertIn("Found hyperlink-compatible package 'espcrc2.sty'.", 
+        self.assertIn("Found hyperlink-compatible package 'espcrc2.sty'.",
                       ' '.join(info_errors['espcrc2.sty']))
         self.assertNotIn('espcrc2.sty', files, 'File was removed')
 
-        self.assertIn("Your submission has been rejected because", 
+        self.assertIn("Your submission has been rejected because",
                       ' '.join(fatal_errors['something.doc']))
-        
-        self.assertIn("Removed file 'final.synctex'.", 
+
+        self.assertIn("Removed file 'final.synctex'.",
                       ' '.join(info_errors['final.synctex']))
         self.assertNotIn('final.synctex', files, 'File was removed')
 
-        self.assertIn("Removed file 'final.out' due to name conflict", 
+        self.assertIn("Removed file 'final.out' due to name conflict",
                       ' '.join(info_errors['final.out']))
         self.assertNotIn('final.out', files, 'File was removed')
 
@@ -201,7 +201,7 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
         #                             },
         #                             headers={'Authorization': self.token},
         #                             content_type='multipart/form-data')
-        # self.assertEqual(response.status_code, status.CREATED, 
+        # self.assertEqual(response.status_code, status.CREATED,
         #                  "Accepted and processed uploaded Submission Contents")
         response = self.client.delete(
             f"/filemanager/api/{self.upload_id}/something.doc",
@@ -217,15 +217,15 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
         )
         response_data = json.loads(response.data)
         self.assertEqual(response_data['source_format'], 'tex')
-        self.assertEqual(response_data['readiness'],    
-                         UploadWorkspace.Readiness.READY.value, 
+        self.assertEqual(response_data['readiness'],
+                         UploadWorkspace.Readiness.READY.value,
                          'Status returned to `READY`; removed file causing'
                          ' fatal error.')
-    
+
     def test_upload_files_that_we_will_warn_about_but_not_remove(self):
         """Upload files that we will warn about - but not remove."""
 
-        fpath2 = os.path.join(self.DATA_PATH, 
+        fpath2 = os.path.join(self.DATA_PATH,
                               'test_files_upload/FilesToWarnAbout.tar')
         fname2 = os.path.basename(fpath2)
         response = self.client.post(f"/filemanager/api/{self.upload_id}",
@@ -253,7 +253,7 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
         self.assertIn("File 'submission.tex~' may be a backup file. "
                       "Please inspect and remove extraneous backup files.",
                       warnings['submission.tex_'])
-        
+
         self.assertIn("Renamed submission.tex~ to submission.tex_",
                       warnings['submission.tex_'])
 

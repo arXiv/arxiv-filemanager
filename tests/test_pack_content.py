@@ -82,7 +82,7 @@ class TestPackContent(TestCase):
                         "Created file is a tarball")
 
         tar = tarfile.open(content_path)
-        self.assertIn('upload5.pdf', [ti.name for ti in tar],
+        self.assertIn('./upload5.pdf', [ti.name for ti in tar],
                       "Includes content from original file")
 
     def test_content_checksum(self):

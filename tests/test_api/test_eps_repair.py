@@ -29,13 +29,13 @@ logger.setLevel(int(os.environ.get('LOGLEVEL', '20')))
 
 
 # TODO: I'm a bit unclear about why this is an API test. Some of these are not
-# working correctly -- unsure whether this is because it's actually not 
-# working, or there is something wonky with the tests. 
+# working correctly -- unsure whether this is because it's actually not
+# working, or there is something wonky with the tests.
 class TestEPSRepair(TestCase):
     """Test repair of EPS files."""
 
     DATA_PATH = os.path.join(os.path.split(os.path.abspath(__file__))[0], '..')
-    TEST_FILES_STRIP_PS = os.path.join(DATA_PATH, 
+    TEST_FILES_STRIP_PS = os.path.join(DATA_PATH,
                                        'test_files_strip_postscript')
 
     def setUp(self) -> None:
@@ -62,7 +62,7 @@ class TestEPSRepair(TestCase):
         self.token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
                                                auth.scopes.WRITE_UPLOAD,
                                                auth.scopes.DELETE_UPLOAD_FILE])
-    
+
     def tearDown(self):
         """Delete the workspace."""
         shutil.rmtree(self.workdir)
@@ -78,7 +78,7 @@ class TestEPSRepair(TestCase):
                                     headers={'Authorization': self.token},
                                     content_type='multipart/form-data')
 
-        self.assertEqual(response.status_code, status.CREATED, 
+        self.assertEqual(response.status_code, status.CREATED,
                           "Accepted and processed uploaded Submission Contents")
         self.maxDiff = None
         response_data = json.loads(response.data)
@@ -89,8 +89,8 @@ class TestEPSRepair(TestCase):
             self.fail(e)
 
         self.assertIn('readiness', response_data, 'Readiness is indicated')
-        
-        # self.assertEqual(response_data['readiness'], 
+
+        # self.assertEqual(response_data['readiness'],
                         #  UploadWorkspace.Readiness.READY_WITH_WARNINGS.value,
                         #  "Expect warnings from stripping TIFF from EPS file.")
 
@@ -128,10 +128,10 @@ class TestEPSRepair(TestCase):
             fileH.write(response.data)
 
         logger.debug(content_file_path)
-        # Compare downloaded file (content_file_path) against reference_path 
+        # Compare downloaded file (content_file_path) against reference_path
         # file.
         reference_filename = 'dos_eps_1_stripped.eps'
-        reference_path = os.path.join(self.TEST_FILES_STRIP_PS, 
+        reference_path = os.path.join(self.TEST_FILES_STRIP_PS,
                                       reference_filename)
         # Compared fixed file to a reference_path stripped version of file.
         is_same = filecmp.cmp(content_file_path, reference_path, shallow=False)

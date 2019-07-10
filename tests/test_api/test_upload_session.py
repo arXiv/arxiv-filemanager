@@ -67,7 +67,7 @@ class TestUploadNormalFiles(TestCase):
     def tearDown(self):
         """Delete the workspace."""
         shutil.rmtree(self.workdir)
-    
+
     def test_submission_workflow(self):
         """Post a test submission to upload API."""
         logger.debug(f"Token (for possible use in manual browser tests):"
@@ -77,7 +77,7 @@ class TestUploadNormalFiles(TestCase):
               "\t[Warnings and errors are currently printed to console.\n"
               "\tLogs coming soon.]\n")
 
-        fpath = os.path.join(self.DATA_PATH, 
+        fpath = os.path.join(self.DATA_PATH,
                              'test_files_upload/1801.03879-1.tar.gz')
         fname = os.path.basename(fpath)
 
@@ -114,7 +114,7 @@ class TestUploadNormalFiles(TestCase):
         self.assertEqual(response_data["source_format"], "tex",
                          "Check source format of TeX submission."
                          f" [ID={upload_id}]")
-        
+
         # Get summary of upload
         response = self.client.get(f"/filemanager/api/{upload_id}",
                                    headers={'Authorization': self.token})
@@ -125,15 +125,15 @@ class TestUploadNormalFiles(TestCase):
             jsonschema.validate(summary_data, self.schema)
         except jsonschema.exceptions.SchemaError as e:
             self.fail(e)
-        
+
         # Check for file in upload result
         file_list = summary_data['files']
         file_names = [f['name'] for f in file_list]
-        self.assertIn('lipics-v2016.cls', file_names,   
+        self.assertIn('lipics-v2016.cls', file_names,
                       'Uploaded file should exist in resulting file list.')
-    
+
         # Download content before we start deleting files
-        
+
         # Check if content exists
         response = self.client.head(
             f"/filemanager/api/{upload_id}/content",
@@ -146,7 +146,7 @@ class TestUploadNormalFiles(TestCase):
         response = self.client.get(
             f"/filemanager/api/{upload_id}/content",
             headers={'Authorization': self.admin_token}
-        )  
+        )
         self.assertEqual(response.status_code, status.OK)
         self.assertIn('ETag', response.headers, "Returns an ETag header")
         workdir = tempfile.mkdtemp(dir=self.workdir)
@@ -168,7 +168,7 @@ class TestUploadNormalFiles(TestCase):
             f"/filemanager/api/{upload_id}/{public_file_path}",
             headers={'Authorization': self.token}
         )
-        self.assertEqual(response.status_code, status.OK, 
+        self.assertEqual(response.status_code, status.OK,
                          "Can delete an individual file.")
 
         # Delete another file
@@ -179,18 +179,18 @@ class TestUploadNormalFiles(TestCase):
             f"/filemanager/api/{upload_id}/{public_file_path}",
             headers={'Authorization': self.token}
         )
-        self.assertEqual(response.status_code, status.OK, 
+        self.assertEqual(response.status_code, status.OK,
                          "Can delete an individual file.")
-        
+
         # Get summary after deletions
         response = self.client.get(
             f"/filemanager/api/{upload_id}",
             headers={'Authorization': self.token}
         )
 
-        self.assertEqual(response.status_code, status.OK, 
+        self.assertEqual(response.status_code, status.OK,
                          "File summary after deletions.")
-        
+
         response_data = json.loads(response.data)
         try:
             jsonschema.validate(response_data, self.schema)
@@ -214,9 +214,9 @@ class TestUploadNormalFiles(TestCase):
             jsonschema.validate(response_data, self.schema)
         except jsonschema.exceptions.SchemaError as e:
             self.fail(e)
-        
+
         # Check that upload_total_size is in summary response
-        self.assertIn('upload_total_size', response_data, 
+        self.assertIn('upload_total_size', response_data,
                       "Returns total upload size.")
         self.assertNotEqual(response_data['upload_total_size'], 275_781,
                             "Expected total upload size should not match "
@@ -233,9 +233,9 @@ class TestUploadNormalFiles(TestCase):
                                     headers={'Authorization': self.token},
                                     content_type='multipart/form-data')
 
-        self.assertEqual(response.status_code, status.OK, 
+        self.assertEqual(response.status_code, status.OK,
                          "Delete all user-uploaded files.")
-        
+
         # Finally, after deleting all files, check the total upload size
 
         # Get summary and check upload_total_size
@@ -266,7 +266,7 @@ class TestUploadNormalFiles(TestCase):
                          " all files.")
 
         # Let's try to upload a different source format type - HTML
-        fpath = os.path.join(self.DATA_PATH, 
+        fpath = os.path.join(self.DATA_PATH,
                              'test_files_sub_type/sampleB_html.tar.gz')
         fname = os.path.basename(fpath)
         response = self.client.post(f"/filemanager/api/{upload_id}",
@@ -283,7 +283,7 @@ class TestUploadNormalFiles(TestCase):
             jsonschema.validate(response_data, self.schema)
         except jsonschema.exceptions.SchemaError as e:
             self.fail(e)
-        
+
         self.assertEqual(response_data['source_format'], "html",
                          "Check source format of HTML submission."
                          f" [ID={upload_id}]")

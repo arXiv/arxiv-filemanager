@@ -60,13 +60,13 @@ def upload_release(upload_id: int) -> Response:
             raise NotFound(messages.UPLOAD_NOT_FOUND)
 
         if workspace.is_released:
-            logger.info("%s: Release: Workspace has already been released.", 
+            logger.info("%s: Release: Workspace has already been released.",
                         upload_id)
-            response_data = {'reason': messages.UPLOAD_RELEASED_WORKSPACE}  
-            
+            response_data = {'reason': messages.UPLOAD_RELEASED_WORKSPACE}
+
             status_code = status.OK # Should this be an error?
         elif workspace.is_deleted:
-            logger.info("%s: Release failed: Workspace has been deleted.", 
+            logger.info("%s: Release failed: Workspace has been deleted.",
                         upload_id)
             raise NotFound(messages.UPLOAD_WORKSPACE_ALREADY_DELETED)
         elif workspace.is_active:
@@ -76,7 +76,7 @@ def upload_release(upload_id: int) -> Response:
                 workspace.source_package.pack()
             database.update(workspace)
 
-            response_data = {'reason': messages.UPLOAD_RELEASED_WORKSPACE} 
+            response_data = {'reason': messages.UPLOAD_RELEASED_WORKSPACE}
             status_code = status.OK
 
     except IOError:
@@ -93,7 +93,7 @@ def upload_release(upload_id: int) -> Response:
     headers = {'ARXIV-OWNER': workspace.owner_user_id,
                'ETag': workspace.source_package.checksum,
                'Last-Modified': workspace.source_package.last_modified}
-            
+
     return response_data, status_code, headers
 
 
@@ -143,9 +143,9 @@ def upload_unrelease(upload_id: int) -> Response:
             raise NotFound(messages.UPLOAD_WORKSPACE_ALREADY_DELETED)
 
         if workspace.is_active:
-            logger.info("%s: Unrelease: Workspace is already active.", 
+            logger.info("%s: Unrelease: Workspace is already active.",
                         upload_id)
-            response_data = {'reason': messages.UPLOAD_UNRELEASED_WORKSPACE}  
+            response_data = {'reason': messages.UPLOAD_UNRELEASED_WORKSPACE}
             status_code = status.OK     # Should this be an error?
         elif workspace.is_released:
             logger.info("%s: Unrelease upload workspace.", upload_id)

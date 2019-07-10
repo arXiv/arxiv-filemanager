@@ -36,7 +36,7 @@ def check_upload_content_exists(upload_id: int) -> Response:
     -------
     dict
         Response content
-    int 
+    int
         HTTP status
     dict
         HTTP headers.
@@ -51,13 +51,10 @@ def check_upload_content_exists(upload_id: int) -> Response:
 
     if workspace is None:
         raise NotFound(messages.UPLOAD_NOT_FOUND)
-    
-    if workspace.source_package.is_stale:
-        workspace.source_package.pack()
 
     logger.info("%s: Upload content summary request.", upload_id)
 
-    headers = {'ARXIV-OWNER': workspace.owner_user_id, 
+    headers = {'ARXIV-OWNER': workspace.owner_user_id,
                'ETag': workspace.source_package.checksum,
                'Content-Length': workspace.source_package.size_bytes,
                'Last-Modified': workspace.source_package.last_modified}
@@ -78,7 +75,7 @@ def get_upload_content(upload_id: int) -> Response:
     -------
     dict
         Response content
-    int 
+    int
         HTTP status
     dict
         HTTP headers.
@@ -93,16 +90,13 @@ def get_upload_content(upload_id: int) -> Response:
 
     if workspace is None:
         raise NotFound(messages.UPLOAD_NOT_FOUND)
-    
-    if workspace.source_package.is_stale:
-        workspace.source_package.pack()
 
     try:
         filepointer = workspace.source_package.open_pointer('rb')
     except FileNotFoundError as e:
         raise NotFound("No content in workspace") from e
     headers = {
-        'ARXIV-OWNER': workspace.owner_user_id, 
+        'ARXIV-OWNER': workspace.owner_user_id,
         'ETag': workspace.source_package.checksum,
         'Content-Length': workspace.source_package.size_bytes,
         'Last-Modified': workspace.source_package.last_modified,

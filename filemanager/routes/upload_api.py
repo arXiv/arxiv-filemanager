@@ -90,7 +90,7 @@ def new_upload() -> Response:
     # Collect arguments and call main upload controller
     data, status_code, headers = upload.upload(None, file, archive_arg,
                                                user_or_client)
-    
+
     response: Response = make_response(jsonify(data))
     response = _update_headers(jsonify(data), headers)
     response.status_code = status_code

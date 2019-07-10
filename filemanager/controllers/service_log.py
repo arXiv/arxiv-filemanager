@@ -40,7 +40,7 @@ file_handler = logging.FileHandler(service_log_path, 'a')
 # fmt = ("application %(asctime)s - %(name)s - %(requestid)s"
 #          " - [arxiv:%(paperid)s] - %(levelname)s: \"%(message)s\"")
 datefmt = '%d/%b/%Y:%H:%M:%S %z'  # Used to format asctime.
-formatter = logging.Formatter('%(asctime)s %(message)s', 
+formatter = logging.Formatter('%(asctime)s %(message)s',
                               '%d/%b/%Y:%H:%M:%S %z')
 file_handler.setFormatter(formatter)
 # logger.handlers = []
@@ -116,7 +116,7 @@ def check_upload_service_log_exists() -> Response:
     checksum = __checksum(service_log_path)
     size = os.path.getsize(service_log_path)
     modified = __last_modified(service_log_path)
-    headers = {'ETag': checksum, 
+    headers = {'ETag': checksum,
                'Content-Length': size,
                'Last-Modified': modified}
     return {}, status.OK, headers

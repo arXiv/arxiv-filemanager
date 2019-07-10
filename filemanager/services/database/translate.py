@@ -7,8 +7,12 @@ a subset of the information, and the naming/structure of the response documents
 in somewhat different from our internal representation. In contrast, the goal
 here is fidelity.
 """
+from datetime import datetime
+from backports.datetime_fromisoformat import MonkeyPatch
 
 from ...domain import Error, UploadedFile, UploadWorkspace, FileType
+
+MonkeyPatch.patch_fromisoformat()
 
 
 def error_to_dict(error: Error) -> dict:
@@ -45,7 +49,7 @@ def file_to_dict(u_file: UploadedFile) -> dict:
         'is_checked': u_file.is_checked,
         'is_persisted': u_file.is_persisted,
         'is_system': u_file.is_system,
-        'last_modified': u_file.last_modified,
+        'last_modified': u_file.last_modified.isoformat(),
         'reason_for_removal': u_file.reason_for_removal,
         'errors': [error_to_dict(error) for error in u_file.errors
                    if error.is_persistant]
@@ -54,6 +58,9 @@ def file_to_dict(u_file: UploadedFile) -> dict:
 
 def dict_to_file(data: dict, workspace: UploadWorkspace) -> UploadedFile:
     """Translate a dict to an :class:`.UploadedFile`."""
+    last_modified = data['last_modified']
+    if not isinstance(last_modified, datetime):
+        last_modified = datetime.fromisoformat(last_modified)
     return UploadedFile(
         workspace=workspace,
         path=data['path'],
@@ -64,7 +71,7 @@ def dict_to_file(data: dict, workspace: UploadWorkspace) -> UploadedFile:
         is_persisted=data.get('is_persisted', False),
         is_system=data.get('is_system', False),
         is_directory=data.get('is_directory', False),
-        last_modified=data['last_modified'],
+        last_modified=last_modified,
         reason_for_removal=data.get('reason_for_removal'),
         _errors=[dict_to_error(error) for error in data.get('errors', [])],
         file_type=FileType(data['file_type'])

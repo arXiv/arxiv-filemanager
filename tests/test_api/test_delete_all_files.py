@@ -78,7 +78,7 @@ class TestDeleteAllFiles(TestCase):
 
         self.original_upload_data = json.loads(response.data)
         self.upload_id = self.original_upload_data['upload_id']
-    
+
     def tearDown(self):
         """Delete the workspace."""
         # Create admin token for deleting upload workspace
@@ -94,7 +94,7 @@ class TestDeleteAllFiles(TestCase):
         # This cleans out the workspace. Comment out if you want to inspect
         # files in workspace. Source log is saved to 'deleted_workspace_logs'
         # directory.
-        self.assertEqual(response.status_code, status.OK, 
+        self.assertEqual(response.status_code, status.OK,
                          "Accepted request to delete workspace.")
 
     def test_delete_all_files(self):
@@ -105,7 +105,7 @@ class TestDeleteAllFiles(TestCase):
             content_type='multipart/form-data'
         )
 
-        self.assertEqual(response.status_code, status.OK, 
+        self.assertEqual(response.status_code, status.OK,
                          "Delete all user-uploaded files.")
 
         response = self.client.get(f"/filemanager/api/{self.upload_id}",
@@ -115,7 +115,7 @@ class TestDeleteAllFiles(TestCase):
         response_data = json.loads(response.data)
         self.assertEqual(len(response_data['files']), 0,
                          'All of the files are deleted')
-        
+
         # Try an delete an individual file ...we'll know if delete all files really worked.
         public_file_path = "anc/manuscript_Na2.7Ru4O9.tex"
         public_file_path = quote(public_file_path, safe='')
@@ -141,7 +141,7 @@ class TestDeleteAllFiles(TestCase):
         remove all files and directories under src directory. At this point I
         don't anticipate generating exception when src directory is already
         empty.
-        
+
         """
         # Delete all files in my workspace (that doesn't exist)
         response = self.client.post(f"/filemanager/api/999999/delete_all",

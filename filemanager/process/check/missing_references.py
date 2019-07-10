@@ -49,16 +49,15 @@ class CheckForMissingReferences(BaseChecker):
             if self.BIB_FILE.search(u_file.name):
                 self._check_for_missing_bbl_file(workspace, u_file)
 
-    
-    def _check_for_missing_bbl_file(self, workspace: CheckableWorkspace, 
+
+    def _check_for_missing_bbl_file(self, workspace: CheckableWorkspace,
                                     u_file: UploadedFile) -> None:
         """
-        Look for a sibling .bbl file. 
-        
-        If found, delete the .bib file. Otherwise, add an error, as this is 
+        Look for a sibling .bbl file.
+
+        If found, delete the .bib file. Otherwise, add an error, as this is
         very likely indicative of missing references.
         """
-        
         # Create path to bbl file - assume uses same basename as .bib.
         base_path, name = os.path.split(u_file.path)
         base, _ = os.path.splitext(name)

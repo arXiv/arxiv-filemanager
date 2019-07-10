@@ -54,14 +54,14 @@ class TestMissingReferences(TestCase):
         self.token = generate_token(self.app, [auth.scopes.READ_UPLOAD,
                                                auth.scopes.WRITE_UPLOAD,
                                                auth.scopes.DELETE_UPLOAD_FILE])
-    
+
     def tearDown(self):
         """Delete the workspace."""
         shutil.rmtree(self.workdir)
 
     def test_missing_bbl_upload(self):
         """Upload source with missing required bbl file."""
-        fpath = os.path.join(self.DATA_PATH, 
+        fpath = os.path.join(self.DATA_PATH,
                              'test_files_upload/bad_bib_but_no_bbl.tar')
         fname = os.path.basename(fpath)
         response = self.client.post('/filemanager/api/',
@@ -71,7 +71,7 @@ class TestMissingReferences(TestCase):
                                     headers={'Authorization': self.token},
                                     content_type='multipart/form-data')
 
-        self.assertEqual(response.status_code, status.CREATED, 
+        self.assertEqual(response.status_code, status.CREATED,
                          "Upload should be successful")
         self.maxDiff = None
 
@@ -84,15 +84,15 @@ class TestMissingReferences(TestCase):
         # IMPORTANT: readiness of 'ERRORS' should stop submission from
         # proceeding until missing .bbl is provided OR .bib is removed.
 
-        self.assertIn('readiness', response_data, 
+        self.assertIn('readiness', response_data,
                       "Returns total upload status.")
-        self.assertEqual(response_data['readiness'], 
+        self.assertEqual(response_data['readiness'],
                          UploadWorkspace.Readiness.ERRORS.value,
                          'Workspace has readiness: `ERRORS`')
 
         # Get upload_id from previous file upload
         test_id = response_data['upload_id']
-        
+
         # Upload missing .bbl
         fpath = os.path.join(self.DATA_PATH, 'test_files_upload/final.bbl')
         fname = os.path.basename(fpath)
@@ -116,8 +116,7 @@ class TestMissingReferences(TestCase):
         # IMPORTANT: After we upload compiled .bbl file 'update_status' changes
         # from ERRORS to READY.
         self.assertIn('readiness', response_data, 'Readiness is provided')
-        self.assertEqual(response_data['readiness'], 
+        self.assertEqual(response_data['readiness'],
                          UploadWorkspace.Readiness.READY.value,
                          'Workspace is ready with warnings')
 
-    

@@ -260,7 +260,7 @@ def update(workspace: UploadWorkspace) -> None:
         'system': {p: translate.file_to_dict(f)
                    for p, f in workspace.files.system.items()},
     }
-    upload_data.errors = [translate.error_to_dict(e) 
+    upload_data.errors = [translate.error_to_dict(e)
                           for e in workspace._errors
                           if e.is_persistant]
 
@@ -270,7 +270,7 @@ def update(workspace: UploadWorkspace) -> None:
     # separate concepts. But in this iteration, the database entry (as data)
     # *represents* the upload workspace (concept). Attaching the notion of
     # modification directly to its representation confuses the representational
-    # relationship, leading to odd behavior. 
+    # relationship, leading to odd behavior.
     #
     # TL;DR: the ``modified_datetime`` is managed in the domain.
     #

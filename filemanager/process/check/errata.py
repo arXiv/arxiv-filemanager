@@ -204,7 +204,7 @@ class FixTGZFileName(BaseChecker):
         return u_file
 
 
-# TODO: it's unclear why we have a fatal error that discusses rejection here 
+# TODO: it's unclear why we have a fatal error that discusses rejection here
 # when we are also removing the file. -- Erick 2019-06-25
 class RemoveDOCFiles(BaseChecker):
     """Removes .doc files that fail type checks."""
@@ -227,12 +227,12 @@ class RemoveDOCFiles(BaseChecker):
     def check_FAILED(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
         if u_file.name.endswith('.doc'):
-            # TODO: The original code did indeed include removal here; and 
-            # yet we are issuing a warning that pre-supposes the presence of 
-            # the file after processing. Disabling removal for now, but we 
-            # should get clear on what the desired behavior is. 
+            # TODO: The original code did indeed include removal here; and
+            # yet we are issuing a warning that pre-supposes the presence of
+            # the file after processing. Disabling removal for now, but we
+            # should get clear on what the desired behavior is.
             # -- Erick 2019-06-25
             #
-            # workspace.remove(u_file)  
+            # workspace.remove(u_file)
             workspace.add_error(u_file, self.DOC_WARNING)
         return u_file

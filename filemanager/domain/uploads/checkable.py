@@ -17,7 +17,7 @@ class IChecker(Protocol):
                  u_file: UploadedFile) -> UploadedFile:
         """Check an :class:`.UploadedFile`."""
         ...
-    
+
     def check_workspace(self, workspace: 'CheckableWorkspace') -> None:
         ...
 
@@ -25,17 +25,17 @@ class IChecker(Protocol):
 class ICheckingStrategy(Protocol):
     """Strategy for checking files in an :class:`.CheckableWorkspace`."""
 
-    def check(self, workspace: 'CheckableWorkspace', 
+    def check(self, workspace: 'CheckableWorkspace',
               *checkers: IChecker) -> None:
         """Perform checks on all files in the workspace."""
         ...
 
 
 @dataclass
-class CheckableWorkspace(SourceTypeMixin, CountableWorkspace, 
+class CheckableWorkspace(SourceTypeMixin, CountableWorkspace,
                          FileMutationsWorkspace):
     """Adds checking functionality."""
-    
+
     checkers: List[IChecker] = field(default_factory=list)
     """File checkers that should be applied to all files in the workspace."""
 
@@ -49,14 +49,12 @@ class CheckableWorkspace(SourceTypeMixin, CountableWorkspace,
             if not u_file.is_checked:
                 return True
         return False
-    
+
     def perform_checks(self) -> None:
         """Perform all checks on this workspace using the assigned strategy."""
         if self.strategy is None:
             raise RuntimeError('No checking strategy set')
         self.strategy.check(self, *self.checkers)
-        if self.source_package.is_stale:
-            self.source_package.pack()
 
     @modifies_workspace()
     def add_files(self, *u_files: UploadedFile) -> None:

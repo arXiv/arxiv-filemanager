@@ -13,6 +13,7 @@ jsonschema = "==3.0.1"
 arxiv-auth = "==0.3.2rc6"
 mysqlclient = "==1.4.2"
 arxiv-vault = "==0.1.1rc15"
+multiprocessing-logging = "*"
 
 [dev-packages]
 "nose2" = "==0.9.1"

@@ -14,7 +14,7 @@ from ...domain import UploadWorkspace
 db: SQLAlchemy = SQLAlchemy()
 
 
-class SQLiteJSON(types.TypeDecorator):
+class FriendlyJSONType(types.TypeDecorator):
     """A SQLite-friendly JSON data type."""
 
     impl = types.TEXT
@@ -37,7 +37,7 @@ class SQLiteJSON(types.TypeDecorator):
 
 # SQLite does not support JSON, so we extend JSON to use our custom data type
 # as a variant for the 'sqlite' dialect.
-FriendlyJSON = types.JSON().with_variant(SQLiteJSON, 'sqlite')
+FriendlyJSON = JSON().with_variant(FriendlyJSONType, 'sqlite')
 
 
 class DBUpload(db.Model):
@@ -78,9 +78,9 @@ class DBUpload(db.Model):
     status = Column(String(30), default=UploadWorkspace.Status.ACTIVE.value)
     """State of upload. ACTIVE, RELEASED, DELETED"""
 
-    lock_state = Column(String(30), 
+    lock_state = Column(String(30),
                         default=UploadWorkspace.LockState.UNLOCKED.value)
     """Lock state of upload workspace. UNLOCKED or LOCKED."""
 
-    source_type = Column(String(30), 
+    source_type = Column(String(30),
                          default=UploadWorkspace.SourceType.UNKNOWN.value)

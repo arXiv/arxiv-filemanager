@@ -15,12 +15,19 @@ from filemanager.services import database
 from arxiv.users import auth
 from arxiv.util.serialize import ISO8601JSONEncoder
 
+from werkzeug.contrib.profiler import ProfilerMiddleware
+
 
 def create_web_app() -> Flask:
     """Initialize and configure the filemanager application."""
     app = Flask('filemanager')
     app.config.from_pyfile('config.py')
     app.json_encoder = ISO8601JSONEncoder
+
+    # This is here for profiling, if needed.
+    # app.config['PROFILE'] = True
+    # app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[30],
+    #                                   sort_by=('cumtime', 'calls'))
 
     # Initialize file management app
     database.init_app(app)
