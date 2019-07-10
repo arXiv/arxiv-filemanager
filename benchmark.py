@@ -15,7 +15,7 @@ workspace = UploadWorkspace(
     owner_user_id='98765',
     created_datetime=datetime.now(),
     modified_datetime=datetime.now(),
-    strategy=AsynchronousCheckingStrategy(),
+    strategy=SynchronousCheckingStrategy(),
     checkers=get_default_checkers(),
     storage=storage
 )

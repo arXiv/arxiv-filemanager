@@ -170,12 +170,14 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         workspace.status = UploadWorkspace.Status.ACTIVE
         if workspace.source_package.is_stale:
             workspace.source_package.pack()
+        print('source packed at', time.time() - start)
         database.update(workspace)    # Store in DB
         print('db updated at', time.time() - start)
 
         logger.info("%s: Processed upload. Saved to DB. Preparing upload "
                     "summary.", workspace.upload_id)
         response_data = serialize_workspace(workspace)
+        print('workspace serialized at', time.time() - start)
         # Do we want affirmative log messages after processing each request
         # or maybe just report errors like:
         #  logger.info(f"{workspace.upload_id}: Finished processing ...")
