@@ -1,7 +1,7 @@
 """Provides :class:`.FileBaseWorkspace`."""
 
 from typing import Optional, Any, IO, Iterator, Tuple, Union
-from contextlib import contextmanager 
+from contextlib import contextmanager
 from datetime import datetime
 from hashlib import md5
 from base64 import urlsafe_b64encode
@@ -56,7 +56,7 @@ class IStorageAdapter(Protocol):
         """Get the datetime when a file was last modified."""
         ...
 
-    def set_last_modified(self, workspace: 'StoredWorkspace', 
+    def set_last_modified(self, workspace: 'StoredWorkspace',
                           u_file: UploadedFile, modified: datetime) -> None:
         """Set the modification datetime on a file."""
         ...
@@ -80,11 +80,11 @@ class IStorageAdapter(Protocol):
                u_file: UploadedFile) -> None:
         """Permanently delete a file or directory."""
         ...
-    
+
     def delete_all(self, workspace: 'StoredWorkspace') -> None:
         """Delete all files in the workspace."""
         ...
-    
+
     def delete_workspace(self, workspace: 'StoredWorkspace') -> None:
         """Completely delete a workspace and all of its contents."""
         ...
@@ -118,7 +118,7 @@ class IStorageAdapter(Protocol):
         """
         ...
 
-    def open_pointer(self, workspace: 'StoredWorkspace', 
+    def open_pointer(self, workspace: 'StoredWorkspace',
                      u_file: UploadedFile, flags: str = 'r', **kwargs: Any) \
             -> IO[Any]:
         """Get an open file pointer to a file on disk."""
@@ -145,14 +145,19 @@ class IStorageAdapter(Protocol):
                 u_file: UploadedFile) -> int:
         """Get the size in bytes of a file."""
         ...
-    
-    def stash_deleted_log(self, workspace: 'StoredWorkspace', 
+
+    def stash_deleted_log(self, workspace: 'StoredWorkspace',
                           u_file: UploadedFile) -> None:
         ...
-    
+
     def pack_tarfile(self, workspace: 'StoredWorkspace',
                     u_file: UploadedFile, path: str) -> UploadedFile:
         """Pack ``path`` into ``u_file`` as a tarball."""
+        ...
+
+    def unpack_tarfile(self, workspace: 'StoredWorkspace',
+                       u_file: UploadedFile, path: str) -> None:
+        """Unpack tarfile ``u_file`` into ``path``."""
         ...
 
 
@@ -192,25 +197,25 @@ class StoredWorkspace(FilePathsWorkspace):
         self.get_size_bytes(u_file)
         self.get_last_modified(u_file)
 
-    def open_pointer(self, u_file: UploadedFile, flags: str = 'r', 
+    def open_pointer(self, u_file: UploadedFile, flags: str = 'r',
                      **kwargs: Any) -> IO:
         if self.storage is None:
             raise RuntimeError('Storage adapter is not set')
         return self.storage.open_pointer(self, u_file, flags, **kwargs)
 
-    def cmp(self, a_file: UploadedFile, 
+    def cmp(self, a_file: UploadedFile,
             b_file: UploadedFile, shallow: bool = True) -> bool:
         """Compare the contents of two files."""
         if self.storage is None:
             raise RuntimeError('Storage adapter is not set')
         return self.storage.cmp(self, a_file, b_file, shallow=shallow)
-    
+
     def is_tarfile(self, u_file: UploadedFile) -> bool:
         """Determine whether or not a file is a tarfile."""
         if self.storage is None:
             raise RuntimeError('Storage adapter is not set')
         return self.storage.is_tarfile(self, u_file)
-    
+
     def get_size_bytes(self, u_file: UploadedFile) -> int:
         """Get (and update) the size in bytes of a file."""
         if self.storage is None:
@@ -225,8 +230,8 @@ class StoredWorkspace(FilePathsWorkspace):
             raise RuntimeError('Storage adapter is not set')
         u_file.last_modified = self.storage.get_last_modified(self, u_file)
         return u_file.last_modified
-    
-    def set_last_modified(self, u_file: UploadedFile, 
+
+    def set_last_modified(self, u_file: UploadedFile,
                           modified: Optional[datetime] = None) -> None:
         """Set the last modified time on a :class:`UploadedFile`."""
         if self.storage is None:
@@ -234,7 +239,7 @@ class StoredWorkspace(FilePathsWorkspace):
         if modified is None:
             modified = datetime.now(UTC)
         self.storage.set_last_modified(self, u_file, modified)
-        
+
     def get_checksum(self, u_file: UploadedFile) -> str:
         """Get the urlsafe base64-encoded MD5 hash of the file contents."""
         hash_md5 = md5()
@@ -242,18 +247,18 @@ class StoredWorkspace(FilePathsWorkspace):
             for chunk in iter(lambda: f.read(4096), b""):
                 hash_md5.update(chunk)
         return urlsafe_b64encode(hash_md5.digest()).decode('utf-8')
-    
-    def is_safe(self, path: str, is_ancillary: bool = False, 
-                is_removed: bool = False, is_persisted: bool = False, 
+
+    def is_safe(self, path: str, is_ancillary: bool = False,
+                is_removed: bool = False, is_persisted: bool = False,
                 is_system: bool = False, strict: bool = True) -> bool:
         """Determine whether or not a path is safe to use in this workspace."""
         if self.storage is None:
             raise RuntimeError('No storage adapter set on workspace')
-        return self.storage.is_safe(self, path, is_ancillary=is_ancillary, 
-                                    is_removed=is_removed, 
+        return self.storage.is_safe(self, path, is_ancillary=is_ancillary,
+                                    is_removed=is_removed,
                                     is_persisted=is_persisted,
                                     is_system=is_system, strict=strict)
-    
+
     def get_full_path(self, u_file_or_path: Union[str, UploadedFile],
                       is_ancillary: bool = False, is_removed: bool = False,
                       is_persisted: bool = False, is_system: bool = False) \
@@ -266,10 +271,9 @@ class StoredWorkspace(FilePathsWorkspace):
                                      is_removed=is_removed,
                                      is_persisted=is_persisted,
                                      is_system=is_system)
-    
+
     def pack_source(self, u_file: UploadedFile) -> UploadedFile:
         """Pack the source + ancillary content of a workspace as a tarball."""
         if self.storage is None:
             raise RuntimeError('No storage adapter set on workspace')
         return self.storage.pack_tarfile(self, u_file, self.source_path)
-        

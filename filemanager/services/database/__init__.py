@@ -19,9 +19,12 @@ from arxiv.base import logging
 from filemanager.domain import UploadWorkspace, FileIndex
 from .models import db, DBUpload
 from ..storage import create_adapter
-from . import translate
 
 logger = logging.getLogger(__name__)
+
+
+class WorkspaceNotFound(RuntimeError):
+    """Workspace not found in file manager database."""
 
 
 def init_app(app: Flask) -> None:
@@ -38,7 +41,7 @@ def is_available() -> bool:
         db.session.execute('SELECT 1')
         return True
     except Exception as e:
-        logger.error(f'Database not available: %s', e)
+        logger.error('Database not available: %s', e)
         return False
 
 
@@ -66,8 +69,7 @@ def atomic(func: Callable) -> Callable:
     return inner
 
 
-def retrieve(upload_id: int, skip_cache: bool = False) \
-        -> Optional[UploadWorkspace]:
+def retrieve(upload_id: int, skip_cache: bool = False) -> UploadWorkspace:
     """
     Get data about a upload.
 
@@ -111,7 +113,8 @@ def retrieve(upload_id: int, skip_cache: bool = False) \
             raise IOError('Could not query database: %s' % e.detail) from e
 
         if upload_data is None:
-            return None
+            raise WorkspaceNotFound(f"Workspace '{upload_id}' "
+                                    "not found in database.")
 
         if g:
             g.uploads[upload_id] = upload_data  # Cache for next time.
@@ -148,19 +151,19 @@ def retrieve(upload_id: int, skip_cache: bool = False) \
 
     if upload_data.files:
         workspace.files = FileIndex(
-            source={p: translate.dict_to_file(d, workspace)
+            source={p: UploadWorkspace.dict_to_file(d, workspace)
                     for p, d in upload_data.files['source'].items()},
-            ancillary={p: translate.dict_to_file(d, workspace)
+            ancillary={p: UploadWorkspace.dict_to_file(d, workspace)
                     for p, d in upload_data.files['ancillary'].items()},
-            removed={p: translate.dict_to_file(d, workspace)
+            removed={p: UploadWorkspace.dict_to_file(d, workspace)
                     for p, d in upload_data.files['removed'].items()},
-            system={p: translate.dict_to_file(d, workspace)
+            system={p: UploadWorkspace.dict_to_file(d, workspace)
                     for p, d in upload_data.files['system'].items()
             }
         )
     if upload_data.errors:
         for datum in upload_data.errors:
-            workspace._errors.append(translate.dict_to_error(datum))
+            workspace._errors.append(UploadWorkspace.dict_to_error(datum))
     workspace.initialize()
     return workspace
 
@@ -233,7 +236,6 @@ def update(workspace: UploadWorkspace) -> None:
     if upload_data is None:
         raise RuntimeError('Cannot find the thing!')
 
-    # owner_user_id, archive
     upload_data.owner_user_id = workspace.owner_user_id
 
     # We won't let client update created_datetime
@@ -251,16 +253,16 @@ def update(workspace: UploadWorkspace) -> None:
     upload_data.modified_datetime = workspace.modified_datetime
 
     upload_data.files = {
-        'source': {p: translate.file_to_dict(f)
+        'source': {p: UploadWorkspace.file_to_dict(f)
                     for p, f in workspace.files.source.items()},
-        'ancillary': {p: translate.file_to_dict(f)
+        'ancillary': {p: UploadWorkspace.file_to_dict(f)
                       for p, f in workspace.files.ancillary.items()},
-        'removed': {p: translate.file_to_dict(f)
+        'removed': {p: UploadWorkspace.file_to_dict(f)
                     for p, f in workspace.files.removed.items()},
-        'system': {p: translate.file_to_dict(f)
+        'system': {p: UploadWorkspace.file_to_dict(f)
                    for p, f in workspace.files.system.items()},
     }
-    upload_data.errors = [translate.error_to_dict(e)
+    upload_data.errors = [UploadWorkspace.error_to_dict(e)
                           for e in workspace._errors
                           if e.is_persistant]
 

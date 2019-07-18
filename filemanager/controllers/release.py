@@ -11,20 +11,22 @@ from flask import current_app
 from werkzeug.exceptions import NotFound, InternalServerError, SecurityError, \
         Forbidden
 
+from arxiv.users import domain as auth_domain
 from arxiv.base.globals import get_application_config
 
 from ..domain import UploadWorkspace, NoSuchFile
 from ..services import database, storage
 from ..process import strategy, check
-from ..serialize import serialize_workspace
+from .transform import transform_workspace
 from .service_log import logger
 from . import _messages as messages
+from . import util
 
 Response = Tuple[Optional[dict], status, dict]
 
 
 @database.atomic
-def upload_release(upload_id: int) -> Response:
+def upload_release(upload_id: int, user: auth_domain.User) -> Response:
     """
     Release inidcates owner is done with upload workspace.
 
@@ -51,7 +53,7 @@ def upload_release(upload_id: int) -> Response:
     # existence of workspace is verified in route level
 
     # Expect workspace to be in ACTIVE state.
-
+    user_string = util.format_user_information_for_logging(user)
     try:
         workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
 
@@ -60,17 +62,18 @@ def upload_release(upload_id: int) -> Response:
             raise NotFound(messages.UPLOAD_NOT_FOUND)
 
         if workspace.is_released:
-            logger.info("%s: Release: Workspace has already been released.",
-                        upload_id)
+            logger.info("%s: Release: Workspace has already been released "
+                        "[%s].", upload_id, user_string)
             response_data = {'reason': messages.UPLOAD_RELEASED_WORKSPACE}
 
             status_code = status.OK # Should this be an error?
         elif workspace.is_deleted:
-            logger.info("%s: Release failed: Workspace has been deleted.",
-                        upload_id)
+            logger.info("%s: Release failed: Workspace has been deleted [%s].",
+                        upload_id, user_string)
             raise NotFound(messages.UPLOAD_WORKSPACE_ALREADY_DELETED)
         elif workspace.is_active:
-            logger.info("%s: Release upload workspace.", upload_id)
+            logger.info("%s: Release upload workspace [%s].", upload_id,
+                        user_string)
             workspace.status = UploadWorkspace.Status.RELEASED
             if workspace.source_package.is_stale:
                 workspace.source_package.pack()
@@ -82,12 +85,12 @@ def upload_release(upload_id: int) -> Response:
     except IOError:
         logger.error("%s: Release workspace request failed.", upload_id)
         raise InternalServerError(messages.CANT_RELEASE_WORKSPACE)
-    except NotFound as nf:
-        logger.info("%s: Release workspace: %s", upload_id, nf)
-        raise
+    except database.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(messages.UPLOAD_NOT_FOUND)
     except Exception as ue:
-        logger.info("Unknown error in release workspace. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error in release workspace. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
 
     headers = {'ARXIV-OWNER': workspace.owner_user_id,
@@ -98,7 +101,7 @@ def upload_release(upload_id: int) -> Response:
 
 
 @database.atomic
-def upload_unrelease(upload_id: int) -> Response:
+def upload_unrelease(upload_id: int, user: auth_domain.User) -> Response:
     """
     Unrelease returns released workspace to active state.
 
@@ -126,9 +129,10 @@ def upload_unrelease(upload_id: int) -> Response:
     """
     # Again, as with delete workspace, authentication, authorization, and
     # existence of workspace is verified in route level
+    user_string = util.format_user_information_for_logging(user)
 
     # Expect workspace to be in RELEASED state.
-    logger.info("%s: Unrelease upload workspace.", upload_id)
+    logger.info("%s: Unrelease upload workspace [%s].", upload_id, user_string)
 
     try:
         # Make sure we have an upload_db_data to work with
@@ -143,12 +147,13 @@ def upload_unrelease(upload_id: int) -> Response:
             raise NotFound(messages.UPLOAD_WORKSPACE_ALREADY_DELETED)
 
         if workspace.is_active:
-            logger.info("%s: Unrelease: Workspace is already active.",
-                        upload_id)
+            logger.info("%s: Unrelease: Workspace is already active [%s].",
+                        upload_id, user_string)
             response_data = {'reason': messages.UPLOAD_UNRELEASED_WORKSPACE}
             status_code = status.OK     # Should this be an error?
         elif workspace.is_released:
-            logger.info("%s: Unrelease upload workspace.", upload_id)
+            logger.info("%s: Unrelease upload workspace [%s].", upload_id,
+                        user_string)
 
             workspace.status = UploadWorkspace.Status.ACTIVE
             if workspace.source_package.is_stale:
@@ -161,12 +166,12 @@ def upload_unrelease(upload_id: int) -> Response:
     except IOError:
         logger.error("%s: Unrelease workspace request failed.", upload_id)
         raise InternalServerError(messages.CANT_DELETE_FILE)
-    except NotFound as nf:
-        logger.info("%s: Unrelease workspace: '%s'", upload_id, nf)
-        raise
+    except database.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(messages.UPLOAD_NOT_FOUND)
     except Exception as ue:
-        logger.info("Unknown error in unrelease workspace. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error in unrelease workspace. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
 
     headers = {'ARXIV-OWNER': workspace.owner_user_id,

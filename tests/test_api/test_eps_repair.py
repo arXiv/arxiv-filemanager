@@ -96,7 +96,7 @@ class TestEPSRepair(TestCase):
 
         # Make sure we are seeing errors
         warnings = defaultdict(list)
-        for level, name, msg in response_data['errors']:
+        for _, name, msg in response_data['errors']:
             warnings[name].append(msg)
         self.assertIn('leading TIFF preview stripped', warnings[fname])
 

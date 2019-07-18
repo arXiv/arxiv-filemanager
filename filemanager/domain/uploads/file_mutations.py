@@ -18,12 +18,12 @@ from ..error import Error
 from ..file_type import FileType
 
 from .stored import IStorageAdapter
-from .errors_and_warnings import ErrorsAndWarningsWorkspace
+from .translatable import TranslatableWorkspace
 from .util import modifies_workspace, logger
 
 
 @dataclass
-class FileMutationsWorkspace(ErrorsAndWarningsWorkspace):
+class FileMutationsWorkspace(TranslatableWorkspace):
     """
     Adds methods that alter files.
 

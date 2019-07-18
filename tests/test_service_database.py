@@ -8,8 +8,6 @@ from pytz import UTC
 from typing import Any
 import sqlalchemy
 from filemanager.services import database
-from filemanager.services.database.translate import \
-    dict_to_error, error_to_dict, dict_to_file, file_to_dict
 from filemanager.domain import UploadWorkspace, Error, UploadedFile
 from filemanager.services.storage import SimpleStorageAdapter
 
@@ -20,44 +18,44 @@ class TestTranslate(TestCase):
     def test_translate_error(self):
         """Translate an :class:`.Error` to and from a ``dict``."""
         error = Error(severity=Error.Severity.FATAL, path='foo/path.md',
-                               message='This is a message', 
+                               message='This is a message',
                                is_persistant=True)
-        self.assertEqual(error, dict_to_error(error_to_dict(error)),
+        self.assertEqual(error, UploadWorkspace.dict_to_error(UploadWorkspace.error_to_dict(error)),
                          'Error is preserved with fidelity')
         error = Error(severity=Error.Severity.FATAL, path='foo/path.md',
-                               message='This is a message', 
+                               message='This is a message',
                                is_persistant=False)
-        self.assertEqual(error, dict_to_error(error_to_dict(error)),
+        self.assertEqual(error, UploadWorkspace.dict_to_error(UploadWorkspace.error_to_dict(error)),
                          'Error is preserved with fidelity')
-    
+
     def test_translate_file(self):
         """Translate an :class:`.UploadedFile` to and from a ``dict``."""
         workspace = mock.MagicMock(spec=UploadWorkspace)
-        u_file = UploadedFile(workspace=workspace, 
+        u_file = UploadedFile(workspace=workspace,
                               path='foo/path.md', is_ancillary=True,
                               size_bytes=54_022)
-        self.assertEqual(u_file, dict_to_file(file_to_dict(u_file), workspace),
+        self.assertEqual(u_file, UploadWorkspace.dict_to_file(UploadWorkspace.file_to_dict(u_file), workspace),
                          'File is preserved with fidelity')
-    
+
     def test_translate_file_with_errors(self):
         """Translate an :class:`.UploadedFile` with errors."""
         workspace = mock.MagicMock(spec=UploadWorkspace)
-        u_file = UploadedFile(workspace=workspace, 
+        u_file = UploadedFile(workspace=workspace,
                               path='foo/path.md', is_ancillary=True,
                               size_bytes=54_022, _errors=[
-                                  Error(severity=Error.Severity.FATAL, 
+                                  Error(severity=Error.Severity.FATAL,
                                         path='foo/path.md',
-                                        message='This is a fatal error', 
+                                        message='This is a fatal error',
                                         is_persistant=True),
-                                  Error(severity=Error.Severity.WARNING, 
+                                  Error(severity=Error.Severity.WARNING,
                                         path='foo/path.md',
-                                        message='This is a message', 
+                                        message='This is a message',
                                         is_persistant=False),
                               ])
-        translated_file = dict_to_file(file_to_dict(u_file), workspace)
+        translated_file = UploadWorkspace.dict_to_file(UploadWorkspace.file_to_dict(u_file), workspace)
         self.assertEqual(len(translated_file.errors), 1,
                          'Only one file is preserved')
-        self.assertEqual(translated_file.errors[0].severity, 
+        self.assertEqual(translated_file.errors[0].severity,
                          Error.Severity.FATAL,
                          'The persistant error is preserved')
 
@@ -111,7 +109,8 @@ class TestUploadGetter(TestCase):
 
     def test_get_an_upload_that_doesnt_exist(self) -> None:
         """When the upload doesn't exist, returns None."""
-        self.assertIsNone(database.retrieve(666))
+        with self.assertRaises(self.database.WorkspaceNotFound):
+            database.retrieve(666)
 #
     @mock.patch('filemanager.services.database.db.session.query')
     def test_get_upload_when_db_is_unavailable(self, mock_query: Any) -> None:

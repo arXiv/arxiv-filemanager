@@ -185,6 +185,67 @@ paths:
             Forbidden. Client or user is not authorized to delete this
             workspace.
 
+  /{upload_id}/checkpoint_with_upload:
+    parameters:
+      -in: path
+       name: upload_id
+       description: Unique long-lived identifier for the upload.
+       required: true
+       schema:
+         type: string
+    post:
+      operationId: addFilesToPackage
+      summary: |
+        Create a checkpoint prior to unpacking new files being uploaded. Otherwise,
+        this request is identical to file upload to an existing workspace.
+
+        Upload a file or package to an existing upload workspace. If the file
+        is an archive (zip, tar-ball, etc), it will be unpacked. A variety of
+        processing and sanitization routines are performed. Existing files will
+        be overwritten by files of the same name and any errors or warnings
+        (including deleted files) will be included in the response body.
+
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '201':
+          description: |
+            The upload has been accepted and processed, and the upload
+            workspace updated.
+          headers:
+            Location:
+              description: URI of the upload workspace.
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/Result.json'
+        '400':
+          description: |
+            There was an unrecoverable problem when processing the upload. For
+            example, the upload could not be unpacked, or was not in an
+            acceptable format.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/error.json'
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: Forbidden. Client or user is not authorized to upload.
+        '415':
+          description: The uploaded file is not of an acceptable type.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/error.json'
+
+
   /{upload_id}/delete_all:
     summary: Delete all files in the workspace.
     parameters:
@@ -444,3 +505,203 @@ paths:
           description: |
             Forbidden. Client or user is not authorized to access logs for this
             workspace.
+
+  /{upload_id}/checkpoint:
+    parameters:
+      -in: path
+       name: upload_id
+       description: Unique long-lived identifier for the upload.
+       required: true
+       schema:
+         type: string
+    post:
+      operationId: createCheckpoint
+      desription: |
+        Create a checkpoint of existing user-uploaded files for specified workspace.
+      responses:
+        '200':
+          description: Checkpoint was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/Result.json'
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to create checkpoint for this
+            workspace.
+
+  /{upload_id}/checkpoint/{checkpoint_checksum}:
+    parameters:
+      -in: path
+       name: upload_id
+       description: Unique long-lived identifier for the upload.
+       required: true
+       schema:
+         type: string
+      -in: path
+       name: checkpoint_checksum
+       description: Checkpoint checksum that uniquely identifies
+         checkpoint file.
+       required: true
+       schema:
+         type: string
+    head:
+      operationId: checkCheckpointExists
+      summary: Verify that checkpoint file exists.
+      responses:
+        '200':
+          description: Specified checkpoint file exists.
+          headers:
+            ETag:
+              description: |
+                Base64-encoded MD5 checksum of the upload package (as a
+                tarball).
+              schema:
+                type: str
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to create checkpoint for this
+            workspace.
+    get:
+      operationId: getCheckpointContent
+      summary: Retrieve specified checkpoint file.
+      responses:
+        '200':
+          description: Returns gzipped tar checkpoint file.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            ETag:
+              description: |
+                Base64-encoded MD5 checksum of the checksum file (gzipped tarball).
+              schema:
+                type: str
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to download checkpoint file.
+
+  /{upload_id}/list_checkpoints:
+    parameters:
+      -in: path
+       name: upload_id
+       description: Unique long-lived identifier for the upload.
+       required: true
+       schema:
+         type: string
+    get:
+      operationId: getListCheckpoints
+      summary: |
+        Returns list of checkpoints.
+      responses:
+        '200':
+          description: List of checkpoints with checksums.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/ListChecksumResult.json'
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client is not authorized to access this request/workspace.
+
+
+  /{upload_id}/restore_checkpoint/{checkpoint_checksum}:
+    parameters:
+      -in: path
+       name: upload_id
+       description: Unique long-lived identifier for the upload.
+       required: true
+       schema:
+         type: string
+      -in: path
+       name: checkpoint_checksum
+       description: Checkpoint checksum that uniquely identifies
+         checkpoint file.
+       required: true
+       schema:
+         type: string
+    get:
+      operationId: restoreCheckpoint
+      summary: |
+        Restore specified checkpoint.
+      responses:
+        '200':
+          description: Checkpoint was restored successfully.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/Result.json'
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to restore checkpoint for this
+            specified workspace.
+
+  /{upload_id}/delete_all_checkpoints:
+    parameters:
+      -in: path
+       name: upload_id
+       description: Unique long-lived identifier for the upload.
+       required: true
+       schema:
+         type: string
+    post:
+      operationId: deleteAllCheckpoints
+      desription: |
+        Delete all checkpoint files for specified workspace.
+      responses:
+        '200':
+          description: All checkpoint files for specified workspace were
+            deleted successfully.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/Result.json'
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to delete checkpoint files in this
+            workspace.
+
+  /{upload_id}/delete_checkpoint/{checkpoint_checksum}:
+    parameters:
+      -in: path
+       name: upload_id
+       description: Unique long-lived identifier for the upload.
+       required: true
+       schema:
+         type: string
+      -in: path
+       name: checkpoint_checksum
+       description: Checkpoint checksum that uniquely identifies
+         checkpoint file.
+       required: true
+       schema:
+         type: string
+    delete:
+      operationId: deleteCheckpoint
+      summary: Deletes a single checkpoint.
+      responses:
+        '200':
+          description: The checkpoint was deleted successfully.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/Result.json'
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to delete specified checkpoint.

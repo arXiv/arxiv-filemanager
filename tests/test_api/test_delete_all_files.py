@@ -152,5 +152,5 @@ class TestDeleteAllFiles(TestCase):
                          "Delete all user-uploaded files for non-existent"
                          " workspace.")
 
-        expected_data = {'reason': 'upload workspace not found'}
+        expected_data = {'reason': 'workspace not found'}
         self.assertDictEqual(json.loads(response.data), expected_data)

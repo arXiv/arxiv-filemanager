@@ -1,3 +1,4 @@
+"""Generate auth token."""
 import click
 
 from pytz import UTC
@@ -40,6 +41,39 @@ def generate_token(user_id: str, email: str, username: str,
                    endorsements: str = 'astro-ph.CO,astro-ph.GA',
                    scope: str = 'upload:read,upload:write,upload:admin') \
         -> None:
+    """
+    Generate a custom auth token given parameters.
+
+    Parameters
+    ----------
+    user_id : str
+        User id
+    email : str
+        E-mail address
+    username : str
+        Username of token owner
+    first_name : str
+        First name
+    last_name : str
+        Last name
+    suffix_name : str
+        Suffix for name
+    affiliation : str
+        Affiliation of toekn owner
+    rank : str
+        Some kind of rank
+    country : str
+        Country of token owner
+    default_category : str
+        Default category for user
+    submission_groups: str
+        Submission groups token owner belongs to.
+    endorsements : str
+        Comma separated list of groups token owner is endorsed for
+    scope : str
+        Comma separated list of scope permissions for this token owner.
+
+    """
     # Specify the validity period for the session.
     start = datetime.now(tz=UTC)
     end = start + timedelta(seconds=36000)   # Make this as long as you want.

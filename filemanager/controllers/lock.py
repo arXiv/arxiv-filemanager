@@ -11,14 +11,16 @@ from flask import current_app
 from werkzeug.exceptions import NotFound, InternalServerError, SecurityError, \
         Forbidden
 
+from arxiv.users import domain as auth_domain
 from arxiv.base.globals import get_application_config
 
 from ..domain import UploadWorkspace, NoSuchFile
 from ..services import database, storage
 from ..process import strategy, check
-from ..serialize import serialize_workspace
+from .transform import transform_workspace
 from .service_log import logger
 from . import _messages as messages
+from . import util
 
 Response = Tuple[Optional[dict], status, dict]
 
@@ -27,7 +29,7 @@ Response = Tuple[Optional[dict], status, dict]
 # TODO: Is there another flavor of lock? Administrative lock? Or do admin
 # TODO: and submitter coordinate on changes to upload workspace.
 @database.atomic
-def upload_lock(upload_id: int) -> Response:
+def upload_lock(upload_id: int, user: auth_domain.User) -> Response:
     """
     Lock upload workspace.
 
@@ -54,7 +56,8 @@ def upload_lock(upload_id: int) -> Response:
         Some extra headers to add to the response.
 
     """
-    logger.info("%s: Lock upload workspace.", upload_id)
+    user_string = util.format_user_information_for_logging(user)
+    logger.info("%s: Lock upload workspace [%s].", upload_id, user_string)
 
     try:
         workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
@@ -79,11 +82,11 @@ def upload_lock(upload_id: int) -> Response:
     except IOError:
         logger.error("%s: Lock workspace request failed ", upload_id)
         raise InternalServerError(messages.CANT_DELETE_FILE)
-    except NotFound as nf:
-        logger.info("%s: Lock: %s", upload_id, nf)
-        raise
+    except database.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(messages.UPLOAD_NOT_FOUND)
     except Exception as ue:
-        logger.info("Unknown error lock workspace. "
+        logger.error("Unknown error lock workspace. "
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
 
@@ -94,7 +97,7 @@ def upload_lock(upload_id: int) -> Response:
 
 
 @database.atomic
-def upload_unlock(upload_id: int) -> Response:
+def upload_unlock(upload_id: int, user: auth_domain.User) -> Response:
     """
     Unlock upload workspace.
 
@@ -113,7 +116,8 @@ def upload_unlock(upload_id: int) -> Response:
         Some extra headers to add to the response.
 
     """
-    logger.info("%s: Unlock upload workspace.", upload_id)
+    user_string = util.format_user_information_for_logging(user)
+    logger.info("%s: Unlock upload workspace [%s].", upload_id, user_string)
 
     try:
         workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
@@ -137,12 +141,12 @@ def upload_unlock(upload_id: int) -> Response:
     except IOError:
         logger.error("%s: Unlock workspace request failed ", upload_id)
         raise InternalServerError(messages.CANT_DELETE_FILE)
-    except NotFound as nf:
-        logger.info("%s: Unlock workspace: %s", upload_id, nf)
-        raise
+    except database.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(messages.UPLOAD_NOT_FOUND)
     except Exception as ue:
-        logger.info("Unknown error in unlock workspace. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error in unlock workspace. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
 
     headers = {'ARXIV-OWNER': workspace.owner_user_id,

@@ -11,14 +11,16 @@ from flask import current_app
 from werkzeug.exceptions import NotFound, InternalServerError, SecurityError, \
         Forbidden
 
+from arxiv.users import domain as auth_domain
 from arxiv.base.globals import get_application_config
 
 from ..domain import UploadWorkspace, NoSuchFile
 from ..services import database, storage
 from ..process import strategy, check
-from ..serialize import serialize_workspace
+from .transform import transform_workspace
 from .service_log import logger
 from . import _messages as messages
+from . import util
 
 Response = Tuple[Optional[Union[dict, IO]], status, dict]
 
@@ -43,13 +45,13 @@ def check_upload_content_exists(upload_id: int) -> Response:
 
     """
     try:
-        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
+        workspace: UploadWorkspace = database.retrieve(upload_id)
     except IOError:
         logger.error("%s: ContentExistsCheck: There was a problem connecting "
                      "to database.", upload_id)
         raise InternalServerError(messages.UPLOAD_DB_CONNECT_ERROR)
-
-    if workspace is None:
+    except database.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(messages.UPLOAD_NOT_FOUND)
 
     logger.info("%s: Upload content summary request.", upload_id)
@@ -62,7 +64,7 @@ def check_upload_content_exists(upload_id: int) -> Response:
     return {}, status.OK, headers
 
 
-def get_upload_content(upload_id: int) -> Response:
+def get_upload_content(upload_id: int, user: auth_domain.User) -> Response:
     """
     Package up files for downloading as a compressed gzipped tar file.
 
@@ -81,15 +83,20 @@ def get_upload_content(upload_id: int) -> Response:
         HTTP headers.
 
     """
+    user_string = util.format_user_information_for_logging(user)
+    logger.info("%s: Download workspace source content [%s].", upload_id,
+                user_string)
+
     try:
-        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
+        workspace: UploadWorkspace = database.retrieve(upload_id)
     except IOError:
         logger.error("%s: ContentDownload: There was a problem connecting "
                      "to database.", upload_id)
         raise InternalServerError(messages.UPLOAD_DB_CONNECT_ERROR)
-
-    if workspace is None:
-        raise NotFound(messages.UPLOAD_NOT_FOUND)
+    except database.WorkspaceNotFound as nf:
+        logger.error("%s: Download workspace source content: There was a "
+                     "problem connecting to database.", upload_id)
+        raise NotFound(messages.UPLOAD_NOT_FOUND) from nf
 
     try:
         filepointer = workspace.source_package.open_pointer('rb')

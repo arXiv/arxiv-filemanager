@@ -5,33 +5,37 @@ import io
 import logging
 import time
 from http import HTTPStatus as status
-from typing import Optional, Tuple, Union
+from typing import Tuple, Optional, Union, Any, BinaryIO
 from datetime import datetime
 
 from pytz import UTC
 from flask import current_app, url_for
 from werkzeug.exceptions import NotFound, InternalServerError, SecurityError, \
-        Forbidden, BadRequest
+        Forbidden, BadRequest, HTTPException
 from werkzeug.datastructures import FileStorage
 
 from arxiv.users import domain as auth_domain
 from arxiv.base.globals import get_application_config
 
 from ..domain import UploadWorkspace, NoSuchFile
+from ..domain.uploads.exceptions import EmptyUploadContentError, \
+    UploadFileSecurityError, InvalidUploadContentError, \
+        NoSourceFilesToCheckpoint
 from ..services import database, storage
 from ..process import strategy, check
-from ..serialize import serialize_workspace
+from .transform import transform_workspace
 from .service_log import logger
 from . import _messages as messages
+from . import util
 
 Response = Tuple[Optional[dict], status, dict]
 
 
-def _create_workspace(file: FileStorage, user_id: str) -> UploadWorkspace:
+def _create_workspace(file: FileStorage, user_id: str, user_string: str) \
+        -> UploadWorkspace:
     try:
-        logger.info("Create new workspace: Upload request: file='%s'",
-                    file.filename)
-        current_time = datetime.now(UTC)
+        logger.info("Create new workspace: Upload request: "
+                    "file='%s' [%s]", file.filename, user_string)
         workspace = database.create(user_id)
         workspace.initialize()
     except IOError as e:
@@ -41,16 +45,17 @@ def _create_workspace(file: FileStorage, user_id: str) -> UploadWorkspace:
         logger.info("Error adding new workspace to database: '%s'.", dbe)
         raise InternalServerError(messages.UPLOAD_DB_ERROR)
     except Exception as ue:
-        logger.info("Unknown error in upload for new workspace. "
+        logger.error("Unknown error in upload for new workspace. "
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
     return workspace
 
 
 @database.atomic
-def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
-           user: Union[auth_domain.User, auth_domain.Client],
-           ancillary: bool = False) -> Response:
+def upload(upload_id: Union[int, None], file: Union[FileStorage, Any],
+           user: auth_domain.User, ancillary: bool = False,
+           checkpoint: bool = False, clear_source_files: bool = False) \
+        -> Response:
     """
     Upload individual files or compressed archive into specified workspace.
 
@@ -69,6 +74,9 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         If ``True``, the file is to be treated as an ancillary file. This means
         (presently) that the file is stored in a special subdirectory within
         the source package.
+    checkpoint : bool
+        Create a checkpoint (backup) of source files before unpacking and
+        installing file payload for this request.
 
     Returns
     -------
@@ -79,8 +87,18 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
     dict
         Some extra headers to add to the response.
     """
-    start = time.time()
-    workspace: Optional[UploadWorkspace] = None
+    # Log username and upload_id or new.
+    id_string = ""
+    user_string = 'None'
+    if user:
+        user_string = util.format_user_information_for_logging(user)
+
+    id_string = str(upload_id)
+    if upload_id is None:
+        id_string = "New"
+
+    # start = time.time()
+    workspace: UploadWorkspace = None
 
     # TODO: we need better handling for client-only requests here.
     if isinstance(user, auth_domain.User):
@@ -95,23 +113,23 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
     logger.debug('Handling upload request for %s', upload_id)
     if file is None:
         # Crash and burn...not quite...do we need info about client?
-        logger.error('Upload request is missing file/archive payload.')
+        logger.error('%s: Upload request is missing file/archive payload.',
+                     upload_id)
         raise BadRequest(messages.UPLOAD_MISSING_FILE)
 
     if file.filename == '':
         # Client needs to select file, or provide name to upload payload.
-        logger.error('Upload file is missing filename. File to upload may not'
-                     ' be selected.')
+        logger.error('%s: Upload file is missing filename. File to upload may '
+                     'not be selected.', id_string)
         raise BadRequest(messages.UPLOAD_MISSING_FILENAME)
 
     # If this is a new upload then we need to create a workspace.
     if upload_id is None:
-        logger.debug('This is a new upload workspace.')
         # Split this out for clarity. --Erick 2019-06-10
-        workspace = _create_workspace(file, user_id)
+        workspace = _create_workspace(file, user_id, user_string)
         upload_id = workspace.upload_id
 
-    print('upload workspace exists at', time.time() - start)
+    # print('upload workspace exists at', time.time() - start)
     # At this point we expect upload to exist in system
     try:
         if workspace is None:
@@ -119,6 +137,17 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
 
         if workspace is None:   # Invalid workspace identifier
             raise NotFound(messages.UPLOAD_NOT_FOUND)
+
+        if checkpoint:
+            workspace.create_checkpoint(user)
+
+        # Admin may want to clear out existing files so that existing files
+        # do not cause problems or interfere with processing uploaded files.
+        #
+        # Steps are 1) checkpoint 2) clear source files 3) unpack upload
+        #
+        if clear_source_files:
+            workspace.delete_all_files()
 
         workspace.strategy = strategy.create_strategy(current_app)
         workspace.checkers = check.get_default_checkers()
@@ -139,7 +168,7 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         #       database.retrieve
         logger.info("%s: Upload files to existing workspace: file='%s'",
                     workspace.upload_id, file.filename)
-        print('upload workspace retrieved at', time.time() - start)
+        # print('upload workspace retrieved at', time.time() - start)
 
         # Keep track of how long processing workspace takes.
         start_datetime = datetime.now(UTC)
@@ -153,9 +182,9 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
             raise BadRequest(messages.UPLOAD_FILE_EMPTY)
 
         workspace.perform_checks()      # Runs sanitization, fixes, etc.
-        print('workspace finished processing upload at', time.time() - start)
+        # print('workspace finished processing upload at', time.time() - start)
         workspace.persist_all()
-        print('workspace persisted at', time.time() - start)
+        # print('workspace persisted at', time.time() - start)
 
         completion_datetime = datetime.now(UTC)
 
@@ -170,14 +199,15 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         workspace.status = UploadWorkspace.Status.ACTIVE
         if workspace.source_package.is_stale:
             workspace.source_package.pack()
-        print('source packed at', time.time() - start)
+        # print('source packed at', time.time() - start)
         database.update(workspace)    # Store in DB
-        print('db updated at', time.time() - start)
+        # print('db updated at', time.time() - start)
 
         logger.info("%s: Processed upload. Saved to DB. Preparing upload "
                     "summary.", workspace.upload_id)
-        response_data = serialize_workspace(workspace)
-        print('workspace serialized at', time.time() - start)
+        response_data = transform_workspace(workspace)
+        # print('workspace serialized at', time.time() - start)
+
         # Do we want affirmative log messages after processing each request
         # or maybe just report errors like:
         #  logger.info(f"{workspace.upload_id}: Finished processing ...")
@@ -193,37 +223,40 @@ def upload(upload_id: Optional[int], file: Optional[FileStorage], archive: str,
         })
         logger.debug('Response checksum: %s', response_data['checksum'])
         logger.debug('Responding with headers %s', headers)
-        print('done at', time.time() - start)
+        # print('done at', time.time() - start)
 
         # TODO: this should only be 201 Created if it's a new workspace;
         # otherwise just 200 OK. -- Erick
         return response_data, status.CREATED, headers
 
-    except IOError as e:
+    except HTTPException as httpe:
+        # Werkzeug HTTPExceptions are explicitly raised, so these should always
+        # propagate.
+        logger.info("%s: Upload failed: '%s'.", httpe, upload_id)
+        raise httpe
+    except InvalidUploadContentError as breq:
+        logger.info("%s: '%s'.", upload_id, breq)
+        raise BadRequest(messages.UPLOAD_MISSING_FILE) from breq
+    except EmptyUploadContentError as ereq:
+        logger.info("%s: '%s'.", upload_id, ereq)
+        raise BadRequest(messages.UPLOAD_FILE_EMPTY) from ereq
+    except NoSourceFilesToCheckpoint as nsf:
+        logger.info("%s: No source files to checkpoint: %s", upload_id, nsf)
+        raise BadRequest(messages.UPLOAD_WORKSPACE_IS_EMPTY) from nsf
+    except database.WorkspaceNotFound as nf:
+        logger.info("%s: Workspace not found: '%s'", upload_id, nf)
+        raise NotFound(messages.UPLOAD_NOT_FOUND) from nf
+    except (TypeError, ValueError) as dbe:
+        logger.info("%s: Error updating database: '%s'", upload_id, dbe)
+        raise InternalServerError(messages.UPLOAD_DB_ERROR) from dbe
+    except IOError:
         logger.error("%s: File upload request failed "
                      "for file='%s'", upload_id, file.filename)
-        # raise InternalServerError(f'{UPLOAD_IO_ERROR}: {e}') from e
         raise
-    except (TypeError, ValueError) as dbe:
-        logger.info("Error updating database: '%s'", dbe)
-        # raise InternalServerError(messages.UPLOAD_DB_ERROR)
-        raise
-    except BadRequest as breq:
-        logger.info("%s: '%s'.", upload_id, breq)
-        raise
-    except NotFound as nfdb:
-        logger.info("%s: Upload: '{nfdb}'.", upload_id)
-        raise nfdb
-    except Forbidden as forb:
-        logger.info("%s: Upload failed: '{forb}'.", upload_id)
-        raise forb
     except Exception as ue:
-        raise
-        # logger.info("Unknown error with existing workspace."
-        #             " Add except clauses for '%s'. DO IT NOW!", ue)
-        # raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
-
-    return None
+        logger.error("%s: Unknown error in in upload. "
+                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
+        raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
 
 
 @database.atomic
@@ -251,26 +284,23 @@ def upload_summary(upload_id: int) -> Response:
 
     """
     try:
-        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
-        if workspace is None:
-            raise NotFound(messages.UPLOAD_NOT_FOUND)
-
+        workspace: UploadWorkspace = database.retrieve(upload_id)
         logger.info("%s: Upload summary request.", workspace.upload_id)
 
         status_code = status.OK
-        response_data = serialize_workspace(workspace)
+        response_data = transform_workspace(workspace)
         logger.info("%s: Upload summary request.", workspace.upload_id)
 
+    except database.WorkspaceNotFound as nf:
+        logger.info("%s: UploadSummary: '%s'", upload_id, nf)
+        raise NotFound(messages.UPLOAD_NOT_FOUND)
     except IOError:
         raise InternalServerError(messages.ERROR_RETRIEVING_UPLOAD)
     except (TypeError, ValueError) as e:
         logger.info("Error updating database.")
         raise InternalServerError(messages.UPLOAD_DB_ERROR)
-    except NotFound as nf:
-        logger.info("%s: UploadSummary: '%s'", upload_id, nf)
-        raise
     except Exception as ue:
-        logger.info("Unknown error with existing workspace."
+        logger.error("Unknown error with existing workspace."
                     " Add except clauses for '%s'. DO IT NOW!", ue)
         raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
 
@@ -281,7 +311,7 @@ def upload_summary(upload_id: int) -> Response:
 
 
 @database.atomic
-def delete_workspace(upload_id: int) -> Response:
+def delete_workspace(upload_id: int, user: auth_domain.User) -> Response:
     """
     Delete workspace.
 
@@ -300,7 +330,8 @@ def delete_workspace(upload_id: int) -> Response:
         Some extra headers to add to the response.
 
     """
-    logger.info('%s: Deleting upload workspace.', upload_id)
+    user_string = util.format_user_information_for_logging(user)
+    logger.info('%s: Deleting upload workspace [%s].', upload_id, user_string)
 
     # Need to add several checks here
 
@@ -316,7 +347,7 @@ def delete_workspace(upload_id: int) -> Response:
 
     try:
         # Make sure we have an existing upload workspace to work with
-        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
+        workspace: UploadWorkspace = database.retrieve(upload_id)
 
         if workspace is None:
             # invalid workspace identifier
@@ -352,12 +383,12 @@ def delete_workspace(upload_id: int) -> Response:
         logger.error("%s: Delete workspace request failed ", upload_id)
         # raise InternalServerError(messages.CANT_DELETE_FILE)
         raise
-    except NotFound as nf:
+    except (NotFound, database.WorkspaceNotFound) as nf:
         logger.info("%s: Delete Workspace: '%s'", upload_id, nf)
         raise
     except Exception as ue:
-        logger.info("Unknown error in delete workspace. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
+        logger.info("%s: Unknown error in delete workspace. "
+                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
         raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
 
     # API doesn't provide for returning errors resulting from delete.

@@ -42,17 +42,17 @@ class FilePathsWorkspace(BaseWorkspace):
         """Get the path where ancillary files are stored."""
         return os.path.join(self.source_path, self.ANCILLARY_PREFIX)
 
-    def get(self, path: str, is_ancillary: Optional[bool] = None, 
+    def get(self, path: str, is_ancillary: Optional[bool] = None,
             is_removed: bool = False, is_system: bool = False) -> UploadedFile:
         """Get a file at ``path``."""
         if is_ancillary is None:
             path, is_ancillary = self._check_is_ancillary_path(path)
         return self.files.get(path, is_ancillary=is_ancillary,
                               is_removed=is_removed, is_system=is_system)
-    
+
     def get_public_path(self, u_file: UploadedFile) -> str:
-        if u_file.is_system or u_file.is_removed:
-            raise RuntimeError('Not a public file')
+        # if u_file.is_system or u_file.is_removed:
+        #     raise RuntimeError('Not a public file')
         if u_file.is_ancillary:
             return os.path.join(self.ANCILLARY_PREFIX, u_file.path)
         return u_file.path
@@ -69,8 +69,8 @@ class FilePathsWorkspace(BaseWorkspace):
                                   is_removed=is_removed, is_system=is_system)
         return path.lstrip('/')
 
-    def _get_path(self, path: str, 
-                  is_ancillary: bool = False, is_removed: bool = False, 
+    def _get_path(self, path: str,
+                  is_ancillary: bool = False, is_removed: bool = False,
                   is_system: bool = False) -> str:
         path = path.lstrip('/')
         if is_system:
@@ -86,7 +86,7 @@ class FilePathsWorkspace(BaseWorkspace):
         return self._get_path(u_file.path, is_ancillary=u_file.is_ancillary,
                               is_removed=u_file.is_removed,
                               is_system=u_file.is_system)
-    
+
     def exists(self, path: str, is_ancillary: bool = False,
                is_removed: bool = False, is_system: bool = False) -> bool:
         """Determine whether or not a file exists in this workspace."""
@@ -101,4 +101,4 @@ class FilePathsWorkspace(BaseWorkspace):
             logger.debug('Path indicates ancillary file; trimmed to `%s`',
                          path)
             return path, True
-        return path, False  
+        return path, False

@@ -1,6 +1,7 @@
 """Tests for routes that respond to HEAD requests."""
 
 from unittest import TestCase, mock
+from typing import Any
 
 from arxiv.users.helpers import generate_token
 from arxiv.users.auth import scopes
@@ -9,7 +10,6 @@ from arxiv.integration.api import status
 from .. import upload_api
 from ...factory import create_web_app
 
-from typing import Any
 
 OS_ENVIRON = {'JWT_SECRET': 'foosecret'}
 

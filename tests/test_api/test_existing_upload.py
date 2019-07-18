@@ -84,7 +84,7 @@ class TestUploadToExistingWorkspace(TestCase):
 
         self.assertEqual(response.status_code, status.NOT_FOUND,
                          "Accepted uploaded Submission Contents")
-        expected_data = {'reason': 'upload workspace not found'}
+        expected_data = {'reason': 'workspace not found'}
         self.maxDiff = None
         self.assertDictEqual(json.loads(response.data), expected_data)
 
@@ -96,6 +96,6 @@ class TestUploadToExistingWorkspace(TestCase):
 
         self.assertEqual(response.status_code, status.NOT_FOUND,
                          "Accepted uploaded Submission Contents")
-        expected_data = {'reason': 'upload workspace not found'}
+        expected_data = {'reason': 'workspace not found'}
         self.maxDiff = None
         self.assertDictEqual(json.loads(response.data), expected_data)

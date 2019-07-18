@@ -6,7 +6,7 @@ from dataclasses import field, dataclass
 from ..uploaded_file import UploadedFile
 from .source_type import SourceTypeMixin
 from .util import modifies_workspace
-from .file_mutations import FileMutationsWorkspace
+from .checkpoint import CheckpointWorkspace
 from .countable import CountableWorkspace
 
 
@@ -33,7 +33,7 @@ class ICheckingStrategy(Protocol):
 
 @dataclass
 class CheckableWorkspace(SourceTypeMixin, CountableWorkspace,
-                         FileMutationsWorkspace):
+                         CheckpointWorkspace):
     """Adds checking functionality."""
 
     checkers: List[IChecker] = field(default_factory=list)

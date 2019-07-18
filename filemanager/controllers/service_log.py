@@ -4,14 +4,17 @@ import os
 import io
 import logging
 from http import HTTPStatus as status
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union, IO
 from datetime import datetime
 from hashlib import md5
 from base64 import urlsafe_b64encode
 
+from arxiv.users import domain as auth_domain
 from arxiv.base.globals import get_application_config
 
-Response = Tuple[Optional[dict], status, dict]
+from . import util
+
+Response = Tuple[Optional[Union[dict, IO]], status, dict]
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -76,7 +79,7 @@ def __last_modified(filepath: str) -> datetime:
     return datetime.utcfromtimestamp(os.path.getmtime(filepath))
 
 
-def __content_pointer(log_path: str) -> io.BytesIO:
+def __content_pointer(log_path: str) -> IO[bytes]:
     """Get a file-pointer for service log.
 
     Parameters
@@ -122,7 +125,7 @@ def check_upload_service_log_exists() -> Response:
     return {}, status.OK, headers
 
 
-def get_upload_service_log() -> Response:
+def get_upload_service_log(user: auth_domain.User) -> Response:
     """
     Return the service-level file manager service log.
 
@@ -132,8 +135,14 @@ def get_upload_service_log() -> Response:
 
     Returns
     -------
-    Standard Response tuple containing content, HTTP status, and HTTP headers.
+    tuple
+        Standard Response tuple containing content, HTTP status, and HTTP
+        headers.
+
     """
+    user_string = util.format_user_information_for_logging(user)
+    logger.info("sys: Download file manager service log [%s].",
+                user_string)
     # service_log_path is global set during startup log init
     checksum = __checksum(service_log_path)
     size = os.path.getsize(service_log_path)

@@ -182,7 +182,7 @@ class SimpleStorageAdapter(IStorageAdapter):
         return tarfile.is_tarfile(self.get_path(workspace, u_file))
 
     def pack_tarfile(self, workspace: StoredWorkspace,
-                    u_file: UploadedFile, path: str) -> UploadedFile:
+                     u_file: UploadedFile, path: str) -> UploadedFile:
         """
         Pack the contents of ``path`` into a gzipped tarball ``u_file``.
 
@@ -218,6 +218,16 @@ class SimpleStorageAdapter(IStorageAdapter):
         u_file.size_bytes = self.get_size_bytes(workspace, u_file)
         u_file.last_modified = self.get_last_modified(workspace, u_file)
         return u_file
+
+    def unpack_tarfile(self, workspace: StoredWorkspace,
+                       u_file: UploadedFile, path: str) -> None:
+        """Unpack tarfile ``u_file`` into ``path``."""
+        result = subprocess.Popen(['tar', '-xzf',
+                                   self.get_path(workspace, u_file),
+                                   '-C', self.get_path_bare(path)]).wait()
+        if result != 0:
+            raise RuntimeError('tar exited with %i', result)
+
 
     def get_path(self, workspace: StoredWorkspace,
                  u_file_or_path: Union[str, UploadedFile],

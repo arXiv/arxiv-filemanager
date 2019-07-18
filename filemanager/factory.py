@@ -7,6 +7,7 @@ from werkzeug.exceptions import HTTPException, Forbidden, Unauthorized, \
 from arxiv import vault
 from arxiv.base import Base
 from arxiv.base.middleware import wrap
+from arxiv.users import auth
 
 from filemanager import celeryconfig
 from filemanager.routes import upload_api

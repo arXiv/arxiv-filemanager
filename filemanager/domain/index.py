@@ -27,7 +27,7 @@ class FileIndex:
 
     # def __post_init__(self) -> None:
     #     """Initialize with separate mappings for ancillary, system, etc."""
-        
+
 
     def set(self, path: str, u_file: UploadedFile) -> None:
         """Add a :class:`.UploadedFile` to the index."""
