@@ -110,3 +110,4 @@ default.nix
 *.#*
 
 .DS_Store
+.pytest_cache/
