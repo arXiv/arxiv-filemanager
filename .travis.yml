@@ -2,6 +2,9 @@ language: python
 sudo: required
 env:
   MIN_PYLINT_SCORE: 8
+  LOGLEVEL: 40
+  FILE_MANAGEMENT_SQLALCHEMY_DATABASE_URI: "sqlite://"
+  PIPENV_IGNORE_VIRTUALENVS: 1
 os:
   - linux
 python:
@@ -9,9 +12,12 @@ python:
 script:
   - pip install pipenv
   - pipenv install --dev
-  - pipenv run nose2 --with-coverage
+  - pipenv run nose2 --with-coverage --coverage-report=term-missing
 after_success:
   - coveralls
+  - "./tests/lint.sh filemanager"
+  - "./tests/style.sh filemanager"
+  - "./tests/type-check.sh filemanager"
 
 deploy:
 - provider: script

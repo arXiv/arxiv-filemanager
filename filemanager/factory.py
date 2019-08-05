@@ -7,13 +7,16 @@ from werkzeug.exceptions import HTTPException, Forbidden, Unauthorized, \
 from arxiv import vault
 from arxiv.base import Base
 from arxiv.base.middleware import wrap
+from arxiv.users import auth
 
 from filemanager import celeryconfig
-from filemanager.encode import ISO8601JSONEncoder
 from filemanager.routes import upload_api
-from filemanager.services import uploads
+from filemanager.services import database
 
 from arxiv.users import auth
+from arxiv.util.serialize import ISO8601JSONEncoder
+
+from werkzeug.contrib.profiler import ProfilerMiddleware
 
 
 def create_web_app() -> Flask:
@@ -22,8 +25,13 @@ def create_web_app() -> Flask:
     app.config.from_pyfile('config.py')
     app.json_encoder = ISO8601JSONEncoder
 
+    # This is here for profiling, if needed.
+    # app.config['PROFILE'] = True
+    # app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[30],
+    #                                   sort_by=('cumtime', 'calls'))
+
     # Initialize file management app
-    uploads.init_app(app)
+    database.init_app(app)
 
     Base(app)    # Gives us access to the base UI templates and resources.
     auth.Auth(app)

@@ -1,41 +1,88 @@
-# arxiv-filemanager
+# arXiv filemanager service
+
 File management and sanitization service
 
 ### Quick Start Guide
 
-There are multiple ways to run the file management server: docker, docker-compose, and local flask development server. These instructions are derived from the intructions in the arxiv-zero and other repositories.
+There are multiple ways to run the file management server: docker,
+docker-compose, and local flask development server.
+
+### Authentication + authorization
+
+This app uses ``arxiv.users`` to implement authentication and authorization
+requirements. You will need to generate and use an auth token for development
+and manual testiing. Be sure to use the same value for ``JWT_SECRET`` when
+generating the auth token and when running the application.
+
+```bash
+JWT_SECRET=foosecret generate-token
+```
+
+The following scopes are used in this application:
+
+| Scope                           | Description                               |
+|---------------------------------|-------------------------------------------|
+| ``upload:read``                 | View the content of an upload workspace.  |
+| ``upload:create``               | Create a new workspace.                   |
+| ``upload:update``               | Upload files to to a workspace.           |
+| ``upload:release``              | Release a workspace (pre-delete).         |
+| ``upload:delete``               | Can delete files from a workspace.        |
+| ``upload:delete_workspace``     | Delete an entire workspace.               |
+| ``upload:read_logs``            | Can read logs for a workspace.            |
+| ``upload:read_service_logs``    | Can read service logs.                    |
+| ``upload:create_checkpoint``    | Create a checkpoint.                      |
+| ``upload:delete_checkpoint``    | Delete a checkpoint.                      |
+| ``upload:read_checkpoints``     | Read from checkpoints.                    |
+| ``upload:restore_checkpoint``   | Restore workspace to a checkpoint.        |
+
 
 
 ### Docker
 
 Prerequisites: (Docker application, arxiv-base)
 
-1.  Setup [Docker CE using the instructions for your OS](https://docs.docker.com/engine/installation/)
-2.  Build [arxiv-base](https://github.com/cul-it/arxiv-base)
-    (clone repo, then `docker build -t arxiv-base:latest .`) if not using a registry.
-    Also note, if not using a registry, you may need to create the tag manually in some docker
-    installations or versions: `docker tag built_image_id arxiv-base:latest` (seems to be a docker bug).
+1. Setup [Docker CE using the instructions for your
+   OS](https://docs.docker.com/engine/installation/)
 
 Build/Run/Test FileManager Docker image:
 
-3.  Build the Docker image, which will execute all the commands in the
-    [`Dockerfile`](https://github.com/cul-it/arxiv-zero/blob/master/Dockerfile):
-    `docker build -t arxiv-filemanager .`
-4.  `docker run -p 8000:8000 --rm --name container_name arxiv-filemanager`
-     Note: (add a `-d` flag to run in daemon mode)
-5.  Test that the container is working: http://localhost:8000/filemanager/api/status
-6.  To shut down the container: `docker stop container_name`
-7.  Each time you change a file, you will need to rebuild the Docker image in
-    order to import the updated files. Alternatively, volume-mount selected parts
-    of your home directory such has .ssh and .gitconfig in your `docker run` command
-    if you wish to be able to push modifications to github.
+2. Build the Docker image with:
 
-    Note: Local flask development server (described below) detects changed files and reloads them
-          into running development server (debug mode).
+```bash
+docker build . -t arxiv-filemanager \
+    --build-args=BASE_VERSION=[target base version]
+```
+
+where ``[target base version]`` is the tag on ``arxiv/base`` against which you
+wish to build. The default should be the most recent version of ``arxiv/base``
+against which this service has been tested.
+
+3. Run the application with:
+
+```bash
+docker run -p 8000:8000 \
+    --name=filemanager \
+    -e JWT_SECRET=foosecret \
+    arxiv-filemanager
+```
+
+Note: (add a `-d` flag to run in daemon mode)
+
+4. Test that the container is working:
+   http://localhost:8000/filemanager/api/status
+5. To shut down the container, press ``ctrl-c`` (or `docker stop filemanager`
+   if in daemon mode).
+6. Each time you change a file, you will need to rebuild the Docker image
+   in order to import the updated files. Alternatively, volume-mount selected
+   parts of your home directory such has .ssh and .gitconfig in your `docker
+   run` command if you wish to be able to push modifications to github.
+
+Note: Local flask development server (described below) detects changed files
+and reloads them into running development server (debug mode).
 
 #### Docker Cleanup
 
-To purge your container run  `docker rmi arxiv-filemanager`.
+To purge your container run  `docker rmi filemanager`.
 
 If you receive the following error:
 
@@ -46,30 +93,25 @@ forced) - image is being used by stopped container 75bb481b5857
 ```
 
 You will need to issue a remove command for each container that depends on the
-image you are trying to delete. Run `docker rm CONTAINER_ID` for each stopped container
-until the above error clears
+image you are trying to delete. Run `docker rm CONTAINER_ID` for each stopped
+container until the above error clears
 
-Note: There are commands that will remove images and containers en masse. For now I'll
-refer you to the Docker documentation.
+Note: There are commands that will remove images and containers en masse. For
+now I'll refer you to the Docker documentation.
 
-### Docker Compose
+### Local Flask Deployment
 
-
-
-### Local Flask Deployment [This section is almost identical to arxiv-zero documentation]
-
-This section describes launching flask development server and running script to load
-test database.
+This section describes launching flask development server and running script to
+load test database.
 
 Sometimes Docker adds more overhead than you want, especially when making quick
 changes. We assume your developer machine already has a version of Python 3.6
 with `pip`.
 
-1.  `pip install pipenv && pipenv install --dev`
-2.  `pipenv shell`
-3.  `FLASK_APP=app.py python populate_test_database.py`
-4.  `FLASK_APP=app.py FLASK_DEBUG=1 flask run`
-5.  Test that the app is working: http://localhost:5000/filemanager/api/status
+1. `pipenv install --dev`
+2. `FLASK_APP=app.py pipenv run python populate_test_database.py`
+3. `JWT_SECRET=foosecret FLASK_APP=app.py FLASK_DEBUG=1 pipenv run flask run`
+4. Test that the app is working: http://localhost:5000/filemanager/api/status
 
 #### Notes on the development server
 
@@ -80,7 +122,7 @@ project). Flask expects the path to this entrypoint in the environment variable
 ``FLASK_APP``. To run the dev server, try (from the project root):
 
 ```bash
-$ FLASK_APP=app.py FLASK_DEBUG=1 flask run
+$ JWT_SECRET=foosecret FLASK_APP=app.py FLASK_DEBUG=1 pipenv run flask run
 ```
 
 ``FLASK_DEBUG=1`` enables a slew of lovely development and debugging features.
@@ -98,7 +140,7 @@ use this as a starting point for more complex set-up operations (or not). Be
 sure to run this with the ``FLASK_APP`` variable set, e.g.
 
 ```bash
-$ FLASK_APP=app.py python populate_test_database.py
+$ FLASK_APP=app.py pipenv run python populate_test_database.py
 ```
 
 

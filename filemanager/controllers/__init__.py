@@ -1,1 +1,1 @@
-"""Contains arxiv-filemanagement controller sketches."""
+"""Controller modules for the file manager service."""

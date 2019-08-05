@@ -3,7 +3,7 @@
 import time
 from arxiv.base import logging
 from filemanager.factory import create_web_app
-from filemanager.services import uploads
+from filemanager.services import database
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 if __name__ == '__main__':
     app = create_web_app()
     with app.app_context():
-        session = uploads.db.session
+        session = database.db.session
         wait = 2
         while True:
             try:
@@ -23,5 +23,5 @@ if __name__ == '__main__':
                 time.sleep(wait)
                 wait *= 2
         logger.info('Initializing database')
-        uploads.db.create_all()
+        database.db.create_all()
         exit(0)

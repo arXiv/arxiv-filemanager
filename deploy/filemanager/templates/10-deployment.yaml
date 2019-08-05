@@ -71,8 +71,12 @@ spec:
           value: /var/run/secrets/kubernetes.io/serviceaccount/token
         - name: FILEMANAGER_DATABASE_HOST
           value: "{{ .Values.database.host }}"
-        - name: UPLOAD_BASE_DIRECTORY
+        - name: STORAGE_BASE_PATH
           value: /data
+        - name: STORAGE_QUARANTINE_PATH
+          value: /quarantine
+        - name: STORAGE_BACKEND
+          value: quarantine
         - name: APPLICATION_ROOT
           value: "{{ .Values.ingress.path }}"
         - name: NAMESPACE
@@ -81,22 +85,24 @@ spec:
         volumeMounts:
         - mountPath: /data
           name: "{{ default "filemanager" .Values.deployment.name }}-data"
+        - mountPath: /quarantine
+          name: quarantine
         - name: vault-certificate
           mountPath: /etc/vault-certificate
           readOnly: true
         resources:
           limits:
             cpu: 300m
-            memory: 256Mi
+            memory: 512Mi
           requests:
             cpu: 100m
-            memory: 128Mi
-        livenessProbe:
-          initialDelaySeconds: 2
-          periodSeconds: 30
-          httpGet:
-            path: "{{ .Values.ingress.path }}/filemanager/api/status"
-            port: 8000
+            memory: 256Mi
+        # livenessProbe:
+        #   initialDelaySeconds: 2
+        #   periodSeconds: 30
+        #   httpGet:
+        #     path: "{{ .Values.ingress.path }}/filemanager/api/status"
+        #     port: 8000
         readinessProbe:
           periodSeconds: 30
           httpGet:
@@ -110,3 +116,6 @@ spec:
       - name: "{{ default "filemanager" .Values.deployment.name }}-data"
         persistentVolumeClaim:
           claimName: "{{ default "filemanager" .Values.deployment.name }}-data"
+      - name: quarantine
+        emptyDir:
+          medium: Memory

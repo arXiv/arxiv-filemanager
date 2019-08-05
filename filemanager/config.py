@@ -1,8 +1,12 @@
 """Flask configuration."""
 
 import os
+import warnings
+import tempfile
+from arxiv.util.serialize import dumps, loads
 
 VERSION = '0.2'
+APP_VERSION = VERSION
 
 NAMESPACE = os.environ.get('NAMESPACE')
 """Namespace in which this service is deployed; to qualify keys for secrets."""
@@ -17,9 +21,15 @@ AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
 LOGFILE = os.environ.get('LOGFILE')
 LOGLEVEL = os.environ.get('LOGLEVEL', 20)
 
-SQLALCHEMY_DATABASE_URI = os.environ.get('FILE_MANAGEMENT_SQLALCHEMY_DATABASE_URI',
-                                         'sqlite:///filemanager.db')
+SQLALCHEMY_DATABASE_URI = os.environ.get(
+    'FILE_MANAGEMENT_SQLALCHEMY_DATABASE_URI',
+    'sqlite:///filemanager.db'
+)
 SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+if 'mysql' in SQLALCHEMY_DATABASE_URI:
+    SQLALCHEMY_ENGINE_OPTIONS = {'json_serializer': dumps, 
+                                 'json_deserializer': loads}
 
 JWT_SECRET = os.environ.get('JWT_SECRET', 'foosecret')
 
@@ -94,3 +104,15 @@ VAULT_REQUESTS = [
      'role': 'filemanager-write'}
 ]
 """Requests for Vault secrets."""
+
+
+STORAGE_BACKEND = os.environ.get('STORAGE_BACKEND', 'simple')
+"""Name of the storage backend to use. See :mod:`.services.storage`."""
+
+STORAGE_BASE_PATH = os.environ.get('STORAGE_BASE_PATH', None)
+if STORAGE_BASE_PATH is None:
+    STORAGE_BASE_PATH = tempfile.mkdtemp()
+    warnings.warn('STORAGE_BASE_PATH is not set. Using temp directory: %s' %
+                  STORAGE_BASE_PATH)
+
+STORAGE_QUARANTINE_PATH = os.environ.get('STORAGE_QUARANTINE_PATH', None)
