@@ -1,5 +1,5 @@
 %!PS-Adobe-3.0
-%%Title: 
+%%Title:
 %%Creator: PScript5.dll Version 5.2.2
 %%CreationDate: 5/20/2018 10:39:19
 %%For: Hayashi
@@ -30,15 +30,15 @@ rlineto 0 ty neg rlineto closepath fill tox toy moveto 0 setgray show}bind def
 /nl{currentpoint exch pop lmargin exch moveto 0 -10 rmoveto}def/=={/cp 0 def
 typeprint nl}def/typeprint{dup type exec}readonly def/lmargin 72 def/rmargin 72
 def/tprint{dup length cp add rmargin gt{nl/cp 0 def}if dup length cp add/cp
-exch def prnt}readonly def/cvsprint{=string cvs tlogger.debug( )tprint}readonly def
+exch def prnt}readonly def/cvsprint{=string cvs tprint( )tprint}readonly def
 /integertype{cvsprint}readonly def/realtype{cvsprint}readonly def/booleantype
-{cvsprint}readonly def/operatortype{(--)tprint =string cvs tlogger.debug(-- )tprint}
+{cvsprint}readonly def/operatortype{(--)tprint =string cvs tprint(-- )tprint}
 readonly def/marktype{pop(-mark- )tprint}readonly def/dicttype{pop
 (-dictionary- )tprint}readonly def/nulltype{pop(-null- )tprint}readonly def
 /filetype{pop(-filestream- )tprint}readonly def/savetype{pop(-savelevel- )
 tprint}readonly def/fonttype{pop(-fontid- )tprint}readonly def/nametype{dup
 xcheck not{(/)tprint}if cvsprint}readonly def/stringtype{dup rcheck{(\()tprint
-tlogger.debug(\))tprint}{pop(-string- )tprint}ifelse}readonly def/arraytype{dup rcheck
+tprint(\))tprint}{pop(-string- )tprint}ifelse}readonly def/arraytype{dup rcheck
 {dup xcheck{({)tprint{typeprint}forall(})tprint}{([)tprint{typeprint}forall(])
 tprint}ifelse}{pop(-array- )tprint}ifelse}readonly def/packedarraytype{dup
 rcheck{dup xcheck{({)tprint{typeprint}forall(})tprint}{([)tprint{typeprint}
@@ -51,7 +51,7 @@ lmargin 720 moveto errorname(VMerror)eq{userdict/ehsave known{clear userdict
 (ERROR: )prnt errorname prnt nl(OFFENDING COMMAND: )prnt/command load prnt
 $error/ostack known{nl nl(STACK:)prnt nl nl $error/ostack get aload length{==}
 repeat}if}ifelse systemdict/showpage get exec(%%[ Error: )print errorname
-=logger.debug(; OffendingCommand: )print/command load =logger.debug( ]%%)= flush}if end end
+=print(; OffendingCommand: )print/command load =print( ]%%)= flush}if end end
 end}dup 0 systemdict put dup 4 $brkpage put bind readonly put/currentpacking
 where{pop/setpacking where{pop oldpack setpacking}if}if
 %%EndResource
@@ -166,12 +166,12 @@ featurebegin{
 }featurecleanup
 featurebegin{
 %%BeginFeature: *CustomPageSize
- 
+
 251 228 0 0 0 exch pop statusdict /setpageparams get exec
 %%EndFeature
 }featurecleanup
 1 setlinecap 1 setlinejoin
-/mysetup [ 72 600 V 0 0 -72 600 V 0 250.86613 ] def 
+/mysetup [ 72 600 V 0 0 -72 600 V 0 250.86613 ] def
 %%EndSetup
 
 userdict begin /VMsave save def end
@@ -244,7 +244,7 @@ OutputBPP 8 idiv colorimage E}b}? pathbbox fEOFill{eoclip}{clip}?/Top ~ d/Right
 2 copy + & PaintProc neg ~ neg ~ +}bind for !}bind for E ;}b
 %%EndResource
 end reinitialize
-N 18 773 M 18 674 100 592 200 592 -c 300 592 381 674 381 773 -c 381 873 300 954 200 954 -c 100 954 18 873 18 773 -c C 
+N 18 773 M 18 674 100 592 200 592 -c 300 592 381 674 381 773 -c 381 873 300 954 200 954 -c 100 954 18 873 18 773 -c C
 0.199 0.199 0.602 1 scol  O 1 1 1 1 scol Pscript_WinNT_Incr begin
 %%BeginResource: file Pscript_Text 5.0 0
 /TextInit{TextInitialised? not{/Pscript_Windows_Font & d/TextInitialised? T d
@@ -313,83 +313,83 @@ Pscript_WinNT_Incr begin
 end reinitialize
 
 %%IncludeResource: font Helvetica
-F /F0 0 /256 T /Helvetica mF 
+F /F0 0 /256 T /Helvetica mF
 /F0S90YFFFFFF70 F0 [144.207 0 0 -143.582 0 0 ] mFS
-F0S90YFFFFFF70 Ji 
-130 828 M (V)S 
+F0S90YFFFFFF70 Ji
+130 828 M (V)S
 /F0S60YFFFFFFA0 F0 [96.137 0 0 -95.719 0 0 ] mFS
-F0S60YFFFFFFA0 Ji 
-221 860 M (1)S 
-N 771 1220 M 771 1120 853 1039 953 1039 -c 1053 1039 1135 1120 1135 1220 -c 1135 1320 1053 1401 953 1401 -c 853 1401 771 1320 771 1220 -c C 
-0.199 0.199 0.602 1 scol  O 1 1 1 1 scol F0S90YFFFFFF70 Ji 
-902 1277 M (R)S 
-: 1535 592 362 364 rc N 1535 773 M 1535 674 1617 592 1717 592 -c 1817 592 1898 674 1898 773 -c 1898 873 1817 954 1717 954 -c 1617 954 1535 873 1535 773 -c C 
-0.199 0.199 0.602 1 scol  O ; 1650 828 M (V)S 
-F0S60YFFFFFFA0 Ji 
-1741 860 M (2)S 
-0 0 0 1 scol 1 Lj 0 Lc solid N 334 896 M 818 1083 I 812 1098 I 328 911 I C 
-787 1043 M 830 1097 I 761 1108 I 757 1108 753 1105 752 1101 -c 751 1097 754 1092 759 1092 -c 814 1083 I 809 1096 I 774 1052 I 771 1049 772 1044 775 1041 -c 779 1039 784 1039 787 1043 -c C 
-:  L ; : [ 0.332 0 0 0.332 0 0 ] concat K 
-; N 1588 896 M 1096 1083 I 1101 1098 I 1594 911 I C 
-1128 1043 M 1084 1097 I 1152 1108 I 1157 1109 1161 1106 1162 1101 -c 1162 1097 1159 1093 1155 1092 -c 1100 1083 I 1105 1096 I 1140 1053 I 1143 1049 1142 1045 1139 1042 -c 1135 1039 1130 1040 1128 1043 -c C 
-:  L ; : [ 0.332 0 0 0.332 0 0 ] concat K 
-; N 211 276 M 211 324 I 194 324 I 194 276 I C 
-211 340 M 211 388 I 194 388 I 194 340 I C 
-211 404 M 211 452 I 194 452 I 194 404 I C 
-211 468 M 211 515 I 194 515 I 194 468 I C 
-211 531 M 211 576 I 194 576 I 194 531 I C 
-238 532 M 202 592 I 168 532 I 165 528 167 523 170 521 -c 174 519 179 520 181 524 -c 210 572 I 196 572 I 224 524 I 226 520 231 519 235 521 -c 239 523 240 528 238 532 -c C 
-:  L ; : [ 0.332 0 0 0.332 0 0 ] concat K 
-; N 1738 276 M 1738 324 I 1722 324 I 1722 276 I C 
-1738 340 M 1738 388 I 1722 388 I 1722 340 I C 
-1738 404 M 1738 452 I 1722 452 I 1722 404 I C 
-1738 468 M 1738 515 I 1722 515 I 1722 468 I C 
-1738 531 M 1738 576 I 1722 576 I 1722 531 I C 
-1765 532 M 1730 592 I 1695 532 I 1693 528 1694 523 1698 521 -c 1702 519 1707 520 1709 524 -c 1737 572 I 1723 572 I 1751 524 I 1753 520 1758 519 1762 521 -c 1766 523 1767 528 1765 532 -c C 
-:  L ; : [ 0.332 0 0 0.332 0 0 ] concat K 
-; N 964 1403 M 964 1451 I 948 1451 I 948 1403 I C 
-964 1467 M 964 1515 I 948 1515 I 948 1467 I C 
-964 1531 M 964 1579 I 948 1579 I 948 1531 I C 
-964 1595 M 964 1643 I 948 1643 I 948 1595 I C 
-964 1659 M 964 1704 I 948 1704 I 948 1659 I C 
-991 1660 M 956 1720 I 921 1660 I 919 1657 920 1652 924 1649 -c 928 1647 933 1648 935 1652 -c 963 1700 I 949 1700 I 977 1652 I 979 1648 984 1647 988 1649 -c 992 1652 993 1657 991 1660 -c C 
-:  L ; : [ 0.332 0 0 0.332 0 0 ] concat K 
+F0S60YFFFFFFA0 Ji
+221 860 M (1)S
+N 771 1220 M 771 1120 853 1039 953 1039 -c 1053 1039 1135 1120 1135 1220 -c 1135 1320 1053 1401 953 1401 -c 853 1401 771 1320 771 1220 -c C
+0.199 0.199 0.602 1 scol  O 1 1 1 1 scol F0S90YFFFFFF70 Ji
+902 1277 M (R)S
+: 1535 592 362 364 rc N 1535 773 M 1535 674 1617 592 1717 592 -c 1817 592 1898 674 1898 773 -c 1898 873 1817 954 1717 954 -c 1617 954 1535 873 1535 773 -c C
+0.199 0.199 0.602 1 scol  O ; 1650 828 M (V)S
+F0S60YFFFFFFA0 Ji
+1741 860 M (2)S
+0 0 0 1 scol 1 Lj 0 Lc solid N 334 896 M 818 1083 I 812 1098 I 328 911 I C
+787 1043 M 830 1097 I 761 1108 I 757 1108 753 1105 752 1101 -c 751 1097 754 1092 759 1092 -c 814 1083 I 809 1096 I 774 1052 I 771 1049 772 1044 775 1041 -c 779 1039 784 1039 787 1043 -c C
+:  L ; : [ 0.332 0 0 0.332 0 0 ] concat K
+; N 1588 896 M 1096 1083 I 1101 1098 I 1594 911 I C
+1128 1043 M 1084 1097 I 1152 1108 I 1157 1109 1161 1106 1162 1101 -c 1162 1097 1159 1093 1155 1092 -c 1100 1083 I 1105 1096 I 1140 1053 I 1143 1049 1142 1045 1139 1042 -c 1135 1039 1130 1040 1128 1043 -c C
+:  L ; : [ 0.332 0 0 0.332 0 0 ] concat K
+; N 211 276 M 211 324 I 194 324 I 194 276 I C
+211 340 M 211 388 I 194 388 I 194 340 I C
+211 404 M 211 452 I 194 452 I 194 404 I C
+211 468 M 211 515 I 194 515 I 194 468 I C
+211 531 M 211 576 I 194 576 I 194 531 I C
+238 532 M 202 592 I 168 532 I 165 528 167 523 170 521 -c 174 519 179 520 181 524 -c 210 572 I 196 572 I 224 524 I 226 520 231 519 235 521 -c 239 523 240 528 238 532 -c C
+:  L ; : [ 0.332 0 0 0.332 0 0 ] concat K
+; N 1738 276 M 1738 324 I 1722 324 I 1722 276 I C
+1738 340 M 1738 388 I 1722 388 I 1722 340 I C
+1738 404 M 1738 452 I 1722 452 I 1722 404 I C
+1738 468 M 1738 515 I 1722 515 I 1722 468 I C
+1738 531 M 1738 576 I 1722 576 I 1722 531 I C
+1765 532 M 1730 592 I 1695 532 I 1693 528 1694 523 1698 521 -c 1702 519 1707 520 1709 524 -c 1737 572 I 1723 572 I 1751 524 I 1753 520 1758 519 1762 521 -c 1766 523 1767 528 1765 532 -c C
+:  L ; : [ 0.332 0 0 0.332 0 0 ] concat K
+; N 964 1403 M 964 1451 I 948 1451 I 948 1403 I C
+964 1467 M 964 1515 I 948 1515 I 948 1467 I C
+964 1531 M 964 1579 I 948 1579 I 948 1531 I C
+964 1595 M 964 1643 I 948 1643 I 948 1595 I C
+964 1659 M 964 1704 I 948 1704 I 948 1659 I C
+991 1660 M 956 1720 I 921 1660 I 919 1657 920 1652 924 1649 -c 928 1647 933 1648 935 1652 -c 963 1700 I 949 1700 I 977 1652 I 979 1648 984 1647 988 1649 -c 992 1652 993 1657 991 1660 -c C
+:  L ; : [ 0.332 0 0 0.332 0 0 ] concat K
 ; /F0SAAYFFFFFF55 F0 [170.914 0 0 -170.172 0 0 ] mFS
-F0SAAYFFFFFF55 Ji 
-102 218 M (M)S 
+F0SAAYFFFFFF55 Ji
+102 218 M (M)S
 /F0S70YFFFFFF90 F0 [112.16 0 0 -111.676 0 0 ] mFS
-F0S70YFFFFFF90 Ji 
-246 255 M (1)S 
-F0SAAYFFFFFF55 Ji 
-1624 216 M (M)S 
-F0S70YFFFFFF90 Ji 
-1768 253 M (2)S 
-F0SAAYFFFFFF55 Ji 
-704 1957 M (M)S 
-F0S70YFFFFFF90 Ji 
-849 1994 M (1)S 
-F0SAAYFFFFFF55 Ji 
-913 1957 M (+)S 
-1014 1957 M (M)S  
-F0S70YFFFFFF90 Ji 
-1158 1994 M (2)S 
-F0SAAYFFFFFF55 Ji 
-547 901 M (e)S 
-F0S70YFFFFFF90 Ji 
-638 938 M (1)S 
-F0SAAYFFFFFF55 Ji 
-1162 889 M (e)S 
-F0S70YFFFFFF90 Ji 
-1253 926 M (2)S 
+F0S70YFFFFFF90 Ji
+246 255 M (1)S
+F0SAAYFFFFFF55 Ji
+1624 216 M (M)S
+F0S70YFFFFFF90 Ji
+1768 253 M (2)S
+F0SAAYFFFFFF55 Ji
+704 1957 M (M)S
+F0S70YFFFFFF90 Ji
+849 1994 M (1)S
+F0SAAYFFFFFF55 Ji
+913 1957 M (+)S
+1014 1957 M (M)S
+F0S70YFFFFFF90 Ji
+1158 1994 M (2)S
+F0SAAYFFFFFF55 Ji
+547 901 M (e)S
+F0S70YFFFFFF90 Ji
+638 938 M (1)S
+F0SAAYFFFFFF55 Ji
+1162 889 M (e)S
+F0S70YFFFFFF90 Ji
+1253 926 M (2)S
 LH
-(%%[Page: 1]%%) = 
+(%%[Page: 1]%%) =
 %%PageTrailer
 
 %%Trailer
 %%BoundingBox: 0 0 228 251
-%%DocumentNeededResources: 
+%%DocumentNeededResources:
 %%+ font Helvetica
-%%DocumentSuppliedResources: 
+%%DocumentSuppliedResources:
 %%+ procset Pscript_WinNT_ErrorHandler 5.0 0
 %%+ procset Pscript_FatalError 5.0 0
 %%+ procset Pscript_Win_Basic 5.0 0
@@ -401,6 +401,6 @@ LH
 Pscript_WinNT_Incr dup /terminate get exec
 VMsave restore
 %%Pages: 1
-(%%[LastPage]%%) = 
+(%%[LastPage]%%) =
 %%EOF
 
