@@ -23,18 +23,20 @@ Response = Tuple[Optional[Union[dict, IO]], status, dict]
 def create_checkpoint(upload_id: int, user: auth_domain.User) -> Response:
     """
     Create checkpoint.
-    Admins will be able to manage checkpoints.
+
     Parameters
     ----------
     upload_id : int
         The unique identifier for upload workspace.
     use : str
         User making create checkpoint request.
+
     Returns
     -------
     tuple
         Standard Response tuple containing response content, HTTP status, and
         HTTP headers.
+
     """
     user_string = util.format_user_information_for_logging(user)
     logger.info("%s: Create checkpoint [%s].", upload_id, user_string)
@@ -79,19 +81,21 @@ def create_checkpoint(upload_id: int, user: auth_domain.User) -> Response:
 def list_checkpoints(upload_id: int, user: auth_domain.User) -> Response:
     """
     List checkpoints.
-    Admins will be able to manage checkpoints.
+
     Parameters
     ----------
     upload_id : int
         The unique identifier for upload workspace.
     user : str
         User making create checkpoint request.
+
     Returns
     -------
     tuple
         Standard Response tuple containing response content, HTTP status, and
         HTTP headers.
         Response content includes details for each checkpoint.
+
     """
     user_string = util.format_user_information_for_logging(user)
     logger.info("%s: List checkpoints [%s].", upload_id, user_string)
@@ -126,7 +130,7 @@ def restore_checkpoint(upload_id: int, checkpoint_checksum: str,
                        user: auth_domain.User) -> Response:
     """
     Restore checkpoint specified by checkpoint_checksum.
-    Admins will be able to manage checkpoints.
+
     Parameters
     ----------
     upload_id : int
@@ -135,6 +139,7 @@ def restore_checkpoint(upload_id: int, checkpoint_checksum: str,
         Unique identifier/key for checkpoint.
     user : str
         User making create checkpoint request.
+
     Returns
     -------
     tuple
@@ -179,8 +184,6 @@ def delete_checkpoint(upload_id: int, checkpoint_checksum: str,
                       user: auth_domain.User) -> Response:
     """
     Delete checkpoint specified by checkpoint_checksum.
-
-    Admins will be able to manage checkpoints.
 
     Parameters
     ----------
@@ -237,8 +240,6 @@ def delete_checkpoint(upload_id: int, checkpoint_checksum: str,
 def delete_all_checkpoints(upload_id: int, user: auth_domain.User) -> Response:
     """
     Delete all checkpoint files.
-
-    Admins will be able to manage checkpoints.
 
     Parameters
     ----------
@@ -352,12 +353,14 @@ def get_checkpoint_file(upload_id: int, checkpoint_checksum: str,
                         user: auth_domain.User) -> Response:
     """
     Get the checkpoint file specified by provided checksum.
+
     Parameters
     ----------
     upload_id : int
         The unique identifier for upload workspace.
     checkpoint_checksum: str
         checksum that uniquely identifies checkpoint.
+
     Returns
     -------
     dict
@@ -366,6 +369,7 @@ def get_checkpoint_file(upload_id: int, checkpoint_checksum: str,
         An HTTP status code.
     dict
         Some extra headers to add to the response.
+        
     """
     user_string = util.format_user_information_for_logging(user)
     logger.info("%s: Download checkpoint: '%s' [%s].", upload_id,
