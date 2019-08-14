@@ -28,13 +28,13 @@ class FileIndex:
     def set(self, path: str, u_file: UploadedFile) -> None:
         """Add a :class:`.UploadedFile` to the index."""
         if u_file.is_system:
-            self.system[path] = u_file  # pylint: unsupported-assignment-operation
+            self.system[path] = u_file  # pylint: disable=unsupported-assignment-operation
         elif u_file.is_removed:
-            self.removed[path] = u_file  # pylint: unsupported-assignment-operation
+            self.removed[path] = u_file  # pylint: disable=unsupported-assignment-operation
         elif u_file.is_ancillary:
-            self.ancillary[path] = u_file  # pylint: unsupported-assignment-operation
+            self.ancillary[path] = u_file  # pylint: disable=unsupported-assignment-operation
         else:
-            self.source[path] = u_file  # pylint: unsupported-assignment-operation
+            self.source[path] = u_file  # pylint: disable=unsupported-assignment-operation
 
     def contains(self, path: str, is_ancillary: bool = False,
                  is_removed: bool = False, is_system: bool = False) -> bool:
