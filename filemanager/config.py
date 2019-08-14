@@ -28,7 +28,7 @@ SQLALCHEMY_DATABASE_URI = os.environ.get(
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 if 'mysql' in SQLALCHEMY_DATABASE_URI:
-    SQLALCHEMY_ENGINE_OPTIONS = {'json_serializer': dumps, 
+    SQLALCHEMY_ENGINE_OPTIONS = {'json_serializer': dumps,
                                  'json_deserializer': loads}
 
 JWT_SECRET = os.environ.get('JWT_SECRET', 'foosecret')

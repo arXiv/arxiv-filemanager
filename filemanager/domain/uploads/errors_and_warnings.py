@@ -37,7 +37,7 @@ class ErrorsAndWarningsWorkspace(StoredWorkspace):
     def warnings(self) -> List[Error]:
         """Warnings for all files in the workspace."""
         return self._get_warnings()
-    
+
     @property
     def active_warnings(self) -> List[Error]:
         """Warnings for active files only."""
@@ -53,7 +53,7 @@ class ErrorsAndWarningsWorkspace(StoredWorkspace):
              if error.severity is Error.Severity.WARNING]
         )
 
-    def get_warnings_for_path(self, path: str, 
+    def get_warnings_for_path(self, path: str,
                               is_ancillary: bool = False,
                               is_system: bool = False,
                               is_removed: bool = False) -> List[str]:
@@ -61,7 +61,7 @@ class ErrorsAndWarningsWorkspace(StoredWorkspace):
                                 is_system=is_system, is_removed=is_removed)
         return [e.message for e in u_file.errors
                 if e.severity is Error.Severity.WARNING]
-    
+
     def add_error(self, u_file: UploadedFile, msg: str,
                   severity: Error.Severity = Error.Severity.FATAL,
                   is_persistant: bool = True) -> None:
@@ -82,12 +82,12 @@ class ErrorsAndWarningsWorkspace(StoredWorkspace):
         self.add_error(u_file, msg, severity=Error.Severity.WARNING,
                        is_persistant=is_persistant)
 
-    def add_non_file_warning(self, msg: str, 
+    def add_non_file_warning(self, msg: str,
                              is_persistant: bool = False) -> None:
         """Add a warning for the workspace that is not specific to a file."""
         self.add_non_file_error(msg, severity=Error.Severity.WARNING,
                                 is_persistant=is_persistant)
-    
+
     @property
     def has_warnings(self) -> bool:
         """Determine whether or not this workspace has warnings."""

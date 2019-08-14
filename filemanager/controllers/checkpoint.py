@@ -369,7 +369,7 @@ def get_checkpoint_file(upload_id: int, checkpoint_checksum: str,
         An HTTP status code.
     dict
         Some extra headers to add to the response.
-        
+
     """
     user_string = util.format_user_information_for_logging(user)
     logger.info("%s: Download checkpoint: '%s' [%s].", upload_id,

@@ -17,4 +17,3 @@ class CheckForUUEncodedFiles(BaseChecker):
     I don't believe we are going to implement this unless I discover evidence
     this is used in recent submissions.
     """
-    pass

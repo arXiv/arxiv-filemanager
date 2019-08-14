@@ -291,9 +291,6 @@ def client_delete_all_files(upload_id: int, user: auth_domain.User) \
         raise
         # logger.error("%s: Delete all files request failed ", upload_id)
         # raise InternalServerError(CANT_DELETE_ALL_FILES)
-    except NotFound as nf:
-        logger.info("%s: DeleteAllFiles: '%s'", upload_id, nf)
-        raise
     except database.WorkspaceNotFound as nf:
         logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(messages.UPLOAD_NOT_FOUND) from nf

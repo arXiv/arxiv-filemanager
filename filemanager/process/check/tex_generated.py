@@ -51,6 +51,7 @@ class DisallowDVIFiles(BaseChecker):
 
     def check_DVI(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
+        """Add an error for any non-ancillary DVI file."""
         if not u_file.is_ancillary:
             workspace.add_error(u_file, self.ERROR_MSG % u_file.name)
         return u_file

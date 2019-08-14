@@ -25,20 +25,16 @@ class FileIndex:
     removed: Dict[str, UploadedFile] = field(default_factory=dict)
     system: Dict[str, UploadedFile] = field(default_factory=dict)
 
-    # def __post_init__(self) -> None:
-    #     """Initialize with separate mappings for ancillary, system, etc."""
-
-
     def set(self, path: str, u_file: UploadedFile) -> None:
         """Add a :class:`.UploadedFile` to the index."""
         if u_file.is_system:
-            self.system[path] = u_file
+            self.system[path] = u_file  # pylint: unsupported-assignment-operation
         elif u_file.is_removed:
-            self.removed[path] = u_file
+            self.removed[path] = u_file  # pylint: unsupported-assignment-operation
         elif u_file.is_ancillary:
-            self.ancillary[path] = u_file
+            self.ancillary[path] = u_file  # pylint: unsupported-assignment-operation
         else:
-            self.source[path] = u_file
+            self.source[path] = u_file  # pylint: unsupported-assignment-operation
 
     def contains(self, path: str, is_ancillary: bool = False,
                  is_removed: bool = False, is_system: bool = False) -> bool:

@@ -4,7 +4,7 @@ from enum import Enum
 
 from dataclasses import dataclass, field
 
-@dataclass 
+@dataclass
 class LockMixin:
     """Implements methods and properties related to locking/unlocking."""
 
@@ -28,7 +28,7 @@ class LockMixin:
 
     lock_state: LockState = field(default=LockState.UNLOCKED)
     """Lock state of upload workspace."""
-    
+
     @property
     def is_locked(self) -> bool:
         return bool(self.lock_state == LockMixin.LockState.LOCKED)

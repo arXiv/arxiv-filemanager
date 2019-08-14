@@ -33,11 +33,11 @@ class StatusMixin:
 
     status: Status = field(default=Status.ACTIVE)
     """Status of upload workspace."""
-    
+
     @property
     def is_active(self) -> bool:
         return bool(self.status == StatusMixin.Status.ACTIVE)
-        
+
     @property
     def is_deleted(self) -> bool:
         return bool(self.status == StatusMixin.Status.DELETED)

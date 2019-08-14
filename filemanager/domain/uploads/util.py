@@ -21,7 +21,7 @@ class _IUploadWorkspace(Protocol):
     modified_datetime: datetime
 
 
-# This is implemented as a class per 
+# This is implemented as a class per
 # https://github.com/python/mypy/issues/1551#issuecomment-253978622.
 class modifies_workspace:
     """Extend an instance method to perform post-modification steps."""

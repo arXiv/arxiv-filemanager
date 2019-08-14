@@ -34,13 +34,13 @@ class _BaseFieldsWithDefaults:
 class BaseWorkspace(_BaseFieldsWithDefaults, _BaseFields):
     """
     Base class for upload workspaces.
-    
+
     Provides a foundational :class:`.FileIndex` at :attr:`.files`, plus some
     core methods that depend on the index.
     """
 
     def iter_children(self, u_file_or_path: Union[str, UploadedFile],
-                      max_depth: Optional[int] = None,  
+                      max_depth: Optional[int] = None,
                       is_ancillary: bool = False,
                       is_removed: bool = False, is_system: bool = False) \
             -> Iterable[Tuple[str, UploadedFile]]:
@@ -86,8 +86,8 @@ class BaseWorkspace(_BaseFieldsWithDefaults, _BaseFields):
                 if (allow_directories or not f.is_directory)
                 and (allow_removed or not f.is_removed)
                 and (allow_ancillary or not f.is_ancillary)
-                and (allow_system or not f.is_system)]  
-    
+                and (allow_system or not f.is_system)]
+
     @property
     def size_bytes(self) -> int:
         """Total size of the source content (including ancillary files)."""
@@ -99,19 +99,18 @@ class BaseWorkspace(_BaseFieldsWithDefaults, _BaseFields):
         files_last_modified = [f.last_modified for f in self.iter_files()]
         if not files_last_modified:
             return None
-        _mod: datetime = max(files_last_modified + [self.modified_datetime])   
+        _mod: datetime = max(files_last_modified + [self.modified_datetime])
         return _mod
-    
-    def _update_refs(self, u_file: UploadedFile, 
+
+    def _update_refs(self, u_file: UploadedFile,
                      from_path: str) -> None:
         self.files.pop(from_path, is_ancillary=u_file.is_ancillary,
                        is_removed=u_file.is_removed,
                        is_system=u_file.is_system)   # Discard old ref.
         self.files.set(u_file.path, u_file)
 
-    def _drop_refs(self, from_path: str, 
-                   is_ancillary: bool = False, is_removed: bool = False, 
+    def _drop_refs(self, from_path: str,
+                   is_ancillary: bool = False, is_removed: bool = False,
                    is_system: bool = False) -> None:
         self.files.pop(from_path, is_ancillary=is_ancillary,
                        is_removed=is_removed, is_system=is_system)
-                

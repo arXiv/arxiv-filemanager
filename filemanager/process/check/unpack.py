@@ -21,14 +21,17 @@ class UnpackCompressedTarFiles(BaseChecker):
 
     def check_TAR(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
+        """Unpack a Tar file."""
         return self._unpack(workspace, u_file)
 
     def check_GZIPPED(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
+        """Unpack a gzipped tar file."""
         return self._unpack(workspace, u_file)
 
     def check_BZIP2(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
+        """Unpack a bzip2 file."""
         return self._unpack(workspace, u_file)
 
     def _unpack_file(self, workspace: CheckableWorkspace, u_file: UploadedFile,
@@ -47,7 +50,7 @@ class UnpackCompressedTarFiles(BaseChecker):
                                  is_persisted=u_file.is_persisted):
             logger.error('Member of %s tried to escape workspace', u_file.path)
             workspace.log.info(f'Member of file {u_file.name} tried to escape'
-                          ' workspace.')
+                               ' workspace.')
             return u_file
 
         # Warn about entities we don't want to see in upload archives. We
@@ -125,12 +128,14 @@ class UnpackCompressedTarFiles(BaseChecker):
 
 
 class UnpackCompressedZIPFiles(BaseChecker):
+    """Unpack compressed ZIP files."""
 
     UNPACK_ERROR_MSG = ("There were problems unpacking '%s'. Please try again"
                         " and confirm your files.")
 
     def check_ZIP(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
             -> UploadedFile:
+        """Perform the ZIP extraction."""
         logger.debug("*******Process zip archive: %s", u_file.path)
 
         workspace.log.info(
@@ -168,7 +173,7 @@ class UnpackCompressedZIPFiles(BaseChecker):
         if not workspace.is_safe(dest):
             logger.error('Member of %s tried to escape workspace', u_file.path)
             workspace.log.info(f'Member of file {u_file.name} tried'
-                          ' to escape workspace.')
+                               ' to escape workspace.')
             return
 
         # If the parent is not explicitly an ancillary file, leave it up
@@ -188,6 +193,7 @@ class UnpackCompressedZFiles(BaseChecker):
 
     def check_COMPRESSED(self, workspace: CheckableWorkspace,
                          u_file: UploadedFile) -> UploadedFile:
+        """Uncompress the .Z file (not implemented)."""
         logger.debug("We can't uncompress .Z files yet: %s", u_file.path)
         workspace.log.info('Unable to uncompress .Z file. Not implemented yet.')
         return u_file

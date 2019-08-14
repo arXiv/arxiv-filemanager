@@ -16,15 +16,15 @@ from .error import Error
 
 class _IUploadWorkspace(Protocol):
     """Interface for an upload workspace, from the perspective of the file."""
-    
+
     def get_public_path(self, u_file: 'UploadedFile') -> str:
         """Get the public path (key) of a :class:`.UploadedFile`."""
         ...
-    
+
     def get_full_path(self, u_file: 'UploadedFile') -> str:
         """Get the full path (key) of a :class:`.UploadedFile`."""
         ...
-    
+
     def get_checksum(self, u_file: 'UploadedFile') -> str:
         """Get the URL-safe base64-encoded MD5 hash of file contents."""
         ...
@@ -165,7 +165,7 @@ class UploadedFile:
     def full_path(self) -> str:
         """Absolute path to this file."""
         return self.workspace.get_full_path(self)
-    
+
     @property
     def checksum(self) -> str:
         """Base64-endocded MD5 hash of the file contents."""

@@ -74,15 +74,15 @@ class SimpleStorageAdapter(IStorageAdapter):
         elif is_ancillary:
             logger.debug('evaluate as ancillary: %s', full_path)
             wks_full_path = self.get_path_bare(workspace.ancillary_path,
-                                                is_persisted=is_persisted)
+                                               is_persisted=is_persisted)
         elif is_removed:
             logger.debug('evaluate as removed: %s', full_path)
             wks_full_path = self.get_path_bare(workspace.removed_path,
-                                                is_persisted=is_persisted)
+                                               is_persisted=is_persisted)
         else:
             logger.debug('evaluate as active source file: %s', full_path)
             wks_full_path = self.get_path_bare(workspace.source_path,
-                                                is_persisted=is_persisted)
+                                               is_persisted=is_persisted)
         logger.debug('Valid path (persisted=%s)? %s', is_persisted, full_path)
         if wks_full_path not in full_path:
             raise ValueError(f'Not a valid path for workspace: {full_path}')

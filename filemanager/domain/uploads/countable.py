@@ -18,7 +18,7 @@ class CountableWorkspace(BaseWorkspace):
     def file_count(self) -> int:
         """Get the total number of non-ancillary files in this workspace."""
         return len(self.iter_files(allow_ancillary=False))
-    
+
     @property
     def ancillary_file_count(self) -> int:
         """Get the total number of ancillary files in this workspace."""
