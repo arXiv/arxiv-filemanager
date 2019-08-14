@@ -66,11 +66,14 @@ class TestCheckpoints(TestCase):
 
     def unpack_tarfile(self, tarfile_path: str, target_directory: str) -> None:
         """
-        Fast and dirty routine to unpack
+        Fast and dirty routine to unpack a tarfile.
+
         Parameters
         ----------
-        file
-        target_directory
+        tarfile_path : str
+            Absolute path to the tarfile.
+        target_directory : str
+            Directory into which the tarfile should be unpacked.
 
         """
         with tarfile.open(tarfile_path) as tar:
