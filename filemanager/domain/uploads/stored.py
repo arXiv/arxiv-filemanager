@@ -127,6 +127,7 @@ class IStorageAdapter(Protocol):
     def is_tarfile(self, workspace: 'StoredWorkspace',
                    u_file: UploadedFile) -> bool:
         """Determine whether or not a file can be opened with ``tarfile``."""
+        ...
 
     def get_path(self, workspace: 'StoredWorkspace',
                  u_file_or_path: Union[str, UploadedFile],
@@ -135,6 +136,7 @@ class IStorageAdapter(Protocol):
                  is_persisted: bool = False,
                  is_system: bool = False) -> str:
         """Get the absolute path to an :class:`.UploadedFile`."""
+        ...
 
     def cmp(self, workspace: 'StoredWorkspace', a_file: UploadedFile,
             b_file: UploadedFile, shallow: bool = True) -> bool:

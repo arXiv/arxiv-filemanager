@@ -25,7 +25,7 @@ from .util import modifies_workspace, logger
 @dataclass
 class FileMutationsWorkspace(TranslatableWorkspace):
     """
-    Adds methods that alter files.
+    Adds methods that alter files, including deleting the whole workspace.
 
     Introduces the source package.
     """
