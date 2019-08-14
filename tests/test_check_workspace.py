@@ -564,9 +564,6 @@ class TestStrip(WorkspaceTestCase):
         self.assertTrue(filecmp.cmp(result_path, expected_path, shallow=False),
                         'Resulting content has preview stripped')
 
-    # QUESTION: here's another weird one; the expected output file has 3322
-    # lines, while the input file has only 2227 lines. Are they even related?
-    # --Erick 2019-06-11
     def test_strip_thumbnail(self):
         """Thumbnail segment is removed from EPS file."""
         self.write_upload('PostscriptThumbnail1.eps',)
