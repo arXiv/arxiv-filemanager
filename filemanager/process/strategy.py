@@ -18,13 +18,8 @@ logger.propagate = False
 
 
 class BaseCheckingStrategy:
+    """Base class for checking strategies."""
     pass
-    # def _iter_files(self, workspace: 'CheckableWorkspace'):
-    #     for u_file in workspace.iter_files(allow_directories=True):
-    #         if u_file.is_checked:   # Don't run checks twice on the same
-    #             continue            # file.
-    #         print('yield', u_file.path)
-    #         yield u_file
 
 
 class Worker(Thread):
