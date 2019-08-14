@@ -32,7 +32,6 @@ class TestUploadToExistingWorkspace(TestCase):
 
     TODO: Add tests for locked/released workspaces on upload requests.
     TODO: Lock/unlock, release/unrelease. (when implements)
-    TODO: Add size checks (when implemented)
     """
 
     DATA_PATH = os.path.join(os.path.split(os.path.abspath(__file__))[0], '..')
