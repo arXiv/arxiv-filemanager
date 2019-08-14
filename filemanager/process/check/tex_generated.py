@@ -1,4 +1,4 @@
-"""Check for TeX-generated files."""
+"""Check for and eliminate files generated from TeX compilation."""
 
 import os
 import re
