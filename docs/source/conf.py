@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.abspath('.'))
 sys.path.append(os.path.abspath('..'))
 sys.path.append(os.path.abspath('../..'))
 
+# import patched_sphinx_autodoc_typehints
 from filemanager.factory import create_web_app
 app = create_web_app()
 app.app_context().push()
@@ -46,7 +47,6 @@ release = '0.1'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx_autodoc_typehints',
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
@@ -56,7 +56,8 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages'
+    'sphinx.ext.githubpages',
+    # 'patched_sphinx_autodoc_typehints'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

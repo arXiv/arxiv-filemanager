@@ -84,7 +84,6 @@ example:
            assert self.__internal_api is not None
            return self.__internal_api
 
-
 """
 
 from datetime import datetime

@@ -1,7 +1,7 @@
-filemanager.services.database.translate module
+filemanager.domain.uploads.translatable module
 ==============================================
 
-.. automodule:: filemanager.services.database.translate
+.. automodule:: filemanager.domain.uploads.translatable
     :members:
     :undoc-members:
     :show-inheritance:

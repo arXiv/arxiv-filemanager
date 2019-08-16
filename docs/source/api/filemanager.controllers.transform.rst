@@ -1,7 +1,7 @@
-filemanager.domain.uploads.stored module
+filemanager.controllers.transform module
 ========================================
 
-.. automodule:: filemanager.domain.uploads.stored
+.. automodule:: filemanager.controllers.transform
     :members:
     :undoc-members:
     :show-inheritance:

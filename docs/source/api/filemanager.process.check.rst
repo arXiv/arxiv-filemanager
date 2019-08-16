@@ -6,6 +6,13 @@ filemanager.process.check package
     :undoc-members:
     :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+
+    filemanager.process.check.tests
+
 Submodules
 ----------
 

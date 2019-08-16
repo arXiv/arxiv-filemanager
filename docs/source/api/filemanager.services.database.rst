@@ -12,5 +12,4 @@ Submodules
 .. toctree::
 
    filemanager.services.database.models
-   filemanager.services.database.translate
 
