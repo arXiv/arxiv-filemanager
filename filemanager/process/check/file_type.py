@@ -24,7 +24,6 @@ class InferFileType(BaseChecker):
         logger.debug('Identify a type for %s', u_file.path)
         for check_type in _type_checkers:
             file_type = check_type(workspace, u_file)
-            logger.debug('Tried %s, got %s', check_type.__name__, file_type)
             if file_type is not None:
                 u_file.file_type = file_type
                 return u_file
@@ -35,14 +34,11 @@ class InferFileType(BaseChecker):
 
         for check_content_type in _content_type_checkers:
             file_type = check_content_type(workspace, u_file, content)
-            logger.debug('Tried %s, got %s',
-                         check_content_type.__name__, file_type)
             if file_type is not None:
                 u_file.file_type = file_type
                 return u_file
 
         file_type = _heavy_introspection(workspace, u_file)
-        logger.debug('Tried %s, got %s', 'heavy_introspection', file_type)
         if file_type is not None:
             u_file.file_type = file_type
             return u_file

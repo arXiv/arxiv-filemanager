@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
     app = create_web_app()
+    logger.info('New app with database URI: %s',
+                app.config['SQLALCHEMY_DATABASE_URI'])
     with app.app_context():
         session = database.db.session
         wait = 2

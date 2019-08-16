@@ -248,10 +248,6 @@ def upload(upload_id: Union[int, None], file: Union[FileStorage, Any],
     except (TypeError, ValueError) as dbe:
         logger.info("%s: Error updating database: '%s'", upload_id, dbe)
         raise InternalServerError(messages.UPLOAD_DB_ERROR) from dbe
-    except IOError:
-        logger.error("%s: File upload request failed "
-                     "for file='%s'", upload_id, file.filename)
-        raise
 
 
 @database.atomic
@@ -289,8 +285,6 @@ def upload_summary(upload_id: int) -> Response:
     except database.WorkspaceNotFound as nf:
         logger.info("%s: UploadSummary: '%s'", upload_id, nf)
         raise NotFound(messages.UPLOAD_NOT_FOUND)
-    except IOError:
-        raise InternalServerError(messages.ERROR_RETRIEVING_UPLOAD)
     except (TypeError, ValueError) as e:
         logger.info("Error updating database.")
         raise InternalServerError(messages.UPLOAD_DB_ERROR)

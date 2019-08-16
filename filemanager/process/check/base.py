@@ -31,7 +31,6 @@ class BaseChecker:
     def __call__(self, workspace: Workspace, u_file: UserFile) \
             -> UserFile:
         """Perform file checks."""
-        logger.debug('%s: check %s', self.__class__.__name__, u_file.path)
         generic_check = getattr(self, 'check', None)
         tex_types_check = getattr(self, 'check_tex_types', None)
         typed_check = getattr(self, f'check_{u_file.file_type.value}', None)

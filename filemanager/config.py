@@ -21,10 +21,8 @@ AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
 LOGFILE = os.environ.get('LOGFILE')
 LOGLEVEL = os.environ.get('LOGLEVEL', 20)
 
-SQLALCHEMY_DATABASE_URI = os.environ.get(
-    'FILE_MANAGEMENT_SQLALCHEMY_DATABASE_URI',
-    'sqlite:///filemanager.db'
-)
+SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI',
+                                         'sqlite:///../filemanager.db')
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 if 'mysql' in SQLALCHEMY_DATABASE_URI:

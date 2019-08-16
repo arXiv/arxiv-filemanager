@@ -78,7 +78,6 @@ class SimpleStorageAdapter(IStorageAdapter):
         else:
             wks_full_path = self.get_path_bare(workspace.source_path,
                                                is_persisted=is_persisted)
-        logger.debug('Valid path (persisted=%s)? %s', is_persisted, full_path)
         if wks_full_path not in full_path:
             raise ValueError(f'Not a valid path for workspace: {full_path}')
 

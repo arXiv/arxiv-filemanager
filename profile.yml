@@ -25,5 +25,5 @@ application:
   - name: JWT_SECRET
     type: generic
   - name: uploads
-    var: FILE_MANAGEMENT_SQLALCHEMY_DATABASE_URI
+    var: SQLALCHEMY_DATABASE_URI
     type: maria
