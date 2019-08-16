@@ -17,7 +17,7 @@ from arxiv.users import domain, auth
 
 from filemanager.factory import create_web_app
 from filemanager.services import database
-from filemanager.domain import UploadWorkspace
+from filemanager.domain import Workspace, Status
 
 from .util import generate_token
 
@@ -142,7 +142,7 @@ class TestReleasedWorkspace(TestCase):
                          "Request upload summary on released workspace (OK)")
         response_data = json.loads(response.data)
         self.assertEqual(response_data['upload_status'],
-                         UploadWorkspace.Status.RELEASED.value)
+                         Status.RELEASED.value)
 
     def test_attempt_to_delete_a_file_in_released_workspace(self):
         """Attempt to delete a file in a released workspace."""
@@ -290,7 +290,7 @@ class TestUnReleasedWorkspace(TestCase):
                          "Request upload summary on unreleased workspace (OK)")
         response_data = json.loads(response.data)
         self.assertEqual(response_data['upload_status'],
-                         UploadWorkspace.Status.ACTIVE.value)
+                         Status.ACTIVE.value)
 
     def test_attempt_to_delete_a_file_in_unreleased_workspace(self):
         """Attempt to delete a file in an unreleased workspace."""

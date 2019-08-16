@@ -6,7 +6,7 @@ from datetime import datetime
 from unittest import TestCase, mock
 
 from ....services.storage import SimpleStorageAdapter
-from ....domain import UploadWorkspace, UploadedFile
+from ....domain import Workspace, UserFile
 from ..top_level_directory import RemoveTopLevelDirectory
 
 
@@ -19,13 +19,13 @@ class TestRemoveTopLevelDirectoryCheck(TestCase):
         self.mock_strategy = mock.MagicMock()
         self.storage = SimpleStorageAdapter(self.basedir)
 
-        self.workspace = UploadWorkspace(
+        self.workspace = Workspace(
             upload_id=1234,
             owner_user_id='98765',
             created_datetime=datetime.now(),
             modified_datetime=datetime.now(),
-            strategy=self.mock_strategy,
-            storage=self.storage
+            _strategy=self.mock_strategy,
+            _storage=self.storage
         )
         self.workspace.initialize()
 

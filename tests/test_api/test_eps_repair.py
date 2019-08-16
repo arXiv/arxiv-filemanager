@@ -20,7 +20,7 @@ from arxiv.users import domain, auth
 
 from filemanager.factory import create_web_app
 from filemanager.services import database
-from filemanager.domain import UploadWorkspace
+from filemanager.domain import Workspace
 
 from .util import generate_token
 
@@ -91,7 +91,7 @@ class TestEPSRepair(TestCase):
         self.assertIn('readiness', response_data, 'Readiness is indicated')
 
         # self.assertEqual(response_data['readiness'],
-                        #  UploadWorkspace.Readiness.READY_WITH_WARNINGS.value,
+                        #  Readiness.READY_WITH_WARNINGS.value,
                         #  "Expect warnings from stripping TIFF from EPS file.")
 
         # Make sure we are seeing errors

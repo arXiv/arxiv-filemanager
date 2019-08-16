@@ -8,7 +8,7 @@ from pytz import UTC
 from typing import Any
 import sqlalchemy
 from filemanager.services import database
-from filemanager.domain import UploadWorkspace, Error, UploadedFile
+from filemanager.domain import Workspace, Error, UserFile, Status
 from filemanager.services.storage import SimpleStorageAdapter
 
 
@@ -20,27 +20,28 @@ class TestTranslate(TestCase):
         error = Error(severity=Error.Severity.FATAL, path='foo/path.md',
                                message='This is a message',
                                is_persistant=True)
-        self.assertEqual(error, UploadWorkspace.dict_to_error(UploadWorkspace.error_to_dict(error)),
+        self.assertEqual(error, Error.from_dict(error.to_dict()),
                          'Error is preserved with fidelity')
         error = Error(severity=Error.Severity.FATAL, path='foo/path.md',
                                message='This is a message',
                                is_persistant=False)
-        self.assertEqual(error, UploadWorkspace.dict_to_error(UploadWorkspace.error_to_dict(error)),
+        self.assertEqual(error, Error.from_dict(error.to_dict()),
                          'Error is preserved with fidelity')
 
     def test_translate_file(self):
-        """Translate an :class:`.UploadedFile` to and from a ``dict``."""
-        workspace = mock.MagicMock(spec=UploadWorkspace)
-        u_file = UploadedFile(workspace=workspace,
+        """Translate an :class:`.UserFile` to and from a ``dict``."""
+        workspace = mock.MagicMock(spec=Workspace)
+        u_file = UserFile(workspace=workspace,
                               path='foo/path.md', is_ancillary=True,
                               size_bytes=54_022)
-        self.assertEqual(u_file, UploadWorkspace.dict_to_file(UploadWorkspace.file_to_dict(u_file), workspace),
+        self.assertEqual(u_file,
+                         UserFile.from_dict(u_file.to_dict(), workspace),
                          'File is preserved with fidelity')
 
     def test_translate_file_with_errors(self):
-        """Translate an :class:`.UploadedFile` with errors."""
-        workspace = mock.MagicMock(spec=UploadWorkspace)
-        u_file = UploadedFile(workspace=workspace,
+        """Translate an :class:`.UserFile` with errors."""
+        workspace = mock.MagicMock(spec=Workspace)
+        u_file = UserFile(workspace=workspace,
                               path='foo/path.md', is_ancillary=True,
                               size_bytes=54_022, _errors=[
                                   Error(severity=Error.Severity.FATAL,
@@ -52,7 +53,7 @@ class TestTranslate(TestCase):
                                         message='This is a message',
                                         is_persistant=False),
                               ])
-        translated_file = UploadWorkspace.dict_to_file(UploadWorkspace.file_to_dict(u_file), workspace)
+        translated_file = UserFile.from_dict(u_file.to_dict(), workspace)
         self.assertEqual(len(translated_file.errors), 1,
                          'Only one file is preserved')
         self.assertEqual(translated_file.errors[0].severity,
@@ -81,7 +82,7 @@ class TestUploadGetter(TestCase):
         self.data = dict(owner_user_id='dlf2',
                          created_datetime=datetime.now(UTC),
                          modified_datetime=datetime.now(UTC),
-                         status=UploadWorkspace.Status.ACTIVE.value)
+                         status=Status.ACTIVE.value)
         self.dbupload = self.database.DBUpload(**self.data)  # type: ignore
         self.database.db.session.add(self.dbupload)  # type: ignore
         self.database.db.session.commit()  # type: ignore
@@ -101,7 +102,7 @@ class TestUploadGetter(TestCase):
     def test_get_an_upload_that_exists(self) -> None:
         """When the uploads exists, returns a :class:`.Upload`."""
         upload = self.database.retrieve(1)  # type: ignore
-        self.assertIsInstance(upload, UploadWorkspace)
+        self.assertIsInstance(upload, Workspace)
         self.assertEqual(upload.upload_id, 1)
         self.assertEqual(upload.owner_user_id, self.data['owner_user_id'])
         self.assertEqual(upload.created_datetime,
@@ -144,7 +145,7 @@ class TestUploadCreator(TestCase):
         self.data = {'owner_user_id': 'dlf2',
                      'created_datetime': datetime.now(UTC),
                      'modified_datetime': datetime.now(UTC),
-                     'status': UploadWorkspace.Status.ACTIVE.value}
+                     'status': Status.ACTIVE.value}
         self.dbupload = self.database.DBUpload(**self.data)  # type: ignore
         self.database.db.session.add(self.dbupload)  # type: ignore
         self.database.db.session.commit()  # type: ignore
@@ -158,13 +159,13 @@ class TestUploadCreator(TestCase):
 
     def test_store_an_upload(self) -> None:
         """A new row is added for the upload."""
-        existing_upload = UploadWorkspace(
+        existing_upload = Workspace(
             upload_id='98765',
             owner_user_id='dlf2',
             created_datetime=datetime.now(UTC),
             modified_datetime=datetime.now(UTC),
-            strategy=mock.MagicMock(),
-            storage=SimpleStorageAdapter(self.base_path)
+            _strategy=mock.MagicMock(),
+            _storage=SimpleStorageAdapter(self.base_path)
         )
 
         self.database.store(existing_upload)  # type: ignore
@@ -212,13 +213,13 @@ class TestUploadUpdater(TestCase):
     #
     def test_update_an_upload(self) -> None:
         """The db is updated with the current state of the :class:`.Upload`."""
-        an_upload = UploadWorkspace(
+        an_upload = Workspace(
             upload_id=self.dbupload.upload_id,
             owner_user_id='dlf2',
             created_datetime=datetime.now(UTC),
             modified_datetime=datetime.now(UTC),
-            strategy=mock.MagicMock(),
-            storage=SimpleStorageAdapter(self.base_path)
+            _strategy=mock.MagicMock(),
+            _storage=SimpleStorageAdapter(self.base_path)
         )
         self.database.update(an_upload)  # type: ignore
 
@@ -232,13 +233,13 @@ class TestUploadUpdater(TestCase):
     @mock.patch('filemanager.services.database.db.session.query')
     def test_operationalerror_is_handled(self, mock_query: Any) -> None:
         """When the db raises an OperationalError, an IOError is raised."""
-        an_upload = UploadWorkspace(
+        an_upload = Workspace(
             upload_id=self.dbupload.upload_id,
             owner_user_id='dlf2',
             created_datetime=datetime.now(UTC),
             modified_datetime=datetime.now(UTC),
-            strategy=mock.MagicMock(),
-            storage=SimpleStorageAdapter(self.base_path)
+            _strategy=mock.MagicMock(),
+            _storage=SimpleStorageAdapter(self.base_path)
         )
 
         def raise_op_error(*args, **kwargs) -> None:  # type: ignore
@@ -252,13 +253,13 @@ class TestUploadUpdater(TestCase):
 
     def test_upload_really_does_not_exist(self) -> None:
         """If the :class:`.Upload` doesn't exist, a RuntimeError is raised."""
-        an_update = UploadWorkspace(
+        an_update = Workspace(
             upload_id=666,
             owner_user_id='12345',
             created_datetime=datetime.now(UTC),
             modified_datetime=datetime.now(UTC),
-            strategy=mock.MagicMock(),
-            storage=SimpleStorageAdapter(self.base_path)
+            _strategy=mock.MagicMock(),
+            _storage=SimpleStorageAdapter(self.base_path)
         )  # Unlikely to exist.
         with self.assertRaises(RuntimeError):
             self.database.update(an_update)  # type: ignore
@@ -266,13 +267,13 @@ class TestUploadUpdater(TestCase):
     @mock.patch('filemanager.services.database.db.session.query')
     def test_thing_does_not_exist(self, mock_query: Any) -> None:
         """If the :class:`.Upload` doesn't exist, a RuntimeError is raised."""
-        an_update = UploadWorkspace(
+        an_update = Workspace(
             upload_id=666,
             owner_user_id='dlf2',
             created_datetime=datetime.now(UTC),
             modified_datetime=datetime.now(UTC),
-            strategy=mock.MagicMock(),
-            storage=SimpleStorageAdapter(self.base_path)
+            _strategy=mock.MagicMock(),
+            _storage=SimpleStorageAdapter(self.base_path)
         )
         mock_query.return_value = mock.MagicMock(
             get=mock.MagicMock(return_value=None)

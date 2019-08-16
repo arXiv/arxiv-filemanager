@@ -1,4 +1,4 @@
-"""Provides :class:`UploadedFile`."""
+"""Provides :class:`UserFile`."""
 
 import os
 from typing import Optional, List, Dict, Any
@@ -14,27 +14,25 @@ from .file_type import FileType
 from .error import Error
 
 
-class _IUploadWorkspace(Protocol):
-    """Interface for an upload workspace, from the perspective of the file."""
-
-    def get_public_path(self, u_file: 'UploadedFile') -> str:
-        """Get the public path (key) of a :class:`.UploadedFile`."""
+class IWorkspace(Protocol):
+    def get_public_path(self, u_file: 'UserFile') -> str:
+        """Get the public path (key) of a :class:`.UserFile`."""
         ...
 
-    def get_full_path(self, u_file: 'UploadedFile') -> str:
-        """Get the full path (key) of a :class:`.UploadedFile`."""
+    def get_full_path(self, u_file: 'UserFile') -> str:
+        """Get the full path (key) of a :class:`.UserFile`."""
         ...
 
-    def get_checksum(self, u_file: 'UploadedFile') -> str:
+    def get_checksum(self, u_file: 'UserFile') -> str:
         """Get the URL-safe base64-encoded MD5 hash of file contents."""
         ...
 
 
 @dataclass
-class UploadedFile:
+class UserFile:
     """Represents a single file in an upload workspace."""
 
-    workspace: _IUploadWorkspace
+    workspace: IWorkspace
     """The workspace to which this file belongs."""
 
     path: str
@@ -170,3 +168,45 @@ class UploadedFile:
     def checksum(self) -> str:
         """Base64-endocded MD5 hash of the file contents."""
         return self.workspace.get_checksum(self)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'path': self.path,
+            'size_bytes': self.size_bytes,
+            'file_type': self.file_type.value,
+            'is_removed': self.is_removed,
+            'is_ancillary': self.is_ancillary,
+            'is_directory': self.is_directory,
+            'is_checked': self.is_checked,
+            'is_persisted': self.is_persisted,
+            'is_system': self.is_system,
+            'last_modified': self.last_modified.isoformat(),
+            'reason_for_removal': self.reason_for_removal,
+            'errors': [error.to_dict() for error in self.errors
+                       if error.is_persistant]
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict, workspace: IWorkspace) -> 'UserFile':
+        """Translate a dict to an :class:`.UserFile`."""
+        last_modified = data['last_modified']
+        if not isinstance(last_modified, datetime):
+            # fromisoformat() is backported from 3.7.
+            last_modified = datetime.fromisoformat(last_modified)  # type: ignore
+
+        return cls(
+            workspace=workspace,
+            path=data['path'],
+            size_bytes=int(data['size_bytes']),
+            is_removed=data.get('is_removed', False),
+            is_ancillary=data.get('is_ancillary', False),
+            is_checked=data.get('is_checked', False),
+            is_persisted=data.get('is_persisted', False),
+            is_system=data.get('is_system', False),
+            is_directory=data.get('is_directory', False),
+            last_modified=last_modified,
+            reason_for_removal=data.get('reason_for_removal'),
+            _errors=[Error.from_dict(error)
+                     for error in data.get('errors', [])],
+            file_type=FileType(data['file_type'])
+        )

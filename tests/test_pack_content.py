@@ -10,7 +10,7 @@ from werkzeug.utils import secure_filename
 
 import shutil
 
-from filemanager.domain import UploadWorkspace, FileType
+from filemanager.domain import Workspace, FileType
 from filemanager.services.storage import SimpleStorageAdapter
 from filemanager.process.strategy import SynchronousCheckingStrategy
 from filemanager.process.check import get_default_checkers
@@ -29,13 +29,13 @@ class TestPackContent(TestCase):
         self.workspace_path = os.path.join(self.base_path, str(self.upload_id))
         os.makedirs(self.workspace_path)
 
-        self.workspace = UploadWorkspace(
+        self.workspace = Workspace(
             upload_id=self.upload_id,
             owner_user_id='98765',
             created_datetime=datetime.now(),
             modified_datetime=datetime.now(),
-            strategy=SynchronousCheckingStrategy(),
-            storage=SimpleStorageAdapter(self.base_path),
+            _strategy=SynchronousCheckingStrategy(),
+            _storage=SimpleStorageAdapter(self.base_path),
             checkers=get_default_checkers()
         )
         self.workspace.initialize()

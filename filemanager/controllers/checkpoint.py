@@ -70,10 +70,6 @@ def create_checkpoint(upload_id: int, user: auth_domain.User) -> Response:
     except database.WorkspaceNotFound as nf:
         logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(messages.UPLOAD_NOT_FOUND) from nf
-    except Exception as ue:
-        logger.info("%s: Unknown error create checkpoint. "
-                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
-        raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
 
     return response_data, status_code, {'ETag': checksum}
 
@@ -116,11 +112,6 @@ def list_checkpoints(upload_id: int, user: auth_domain.User) -> Response:
     except database.WorkspaceNotFound as nf:
         logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(messages.UPLOAD_NOT_FOUND) from nf
-    except Exception as ue:
-        logger.error("%s: Unknown error while listing checkpoints. "
-                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
-        logger.error(traceback.print_exc())
-        raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR) from ue
 
     return response_data, status_code, {}
 
@@ -171,10 +162,6 @@ def restore_checkpoint(upload_id: int, checkpoint_checksum: str,
     except IOError as ioe:
         logger.error("%s: Restore checkpoint request failed ", upload_id)
         raise InternalServerError(messages.CANT_DELETE_FILE) from ioe
-    except Exception as ue:
-        logger.info("%s: Unknown error while restoring checkpoint. "
-                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
-        raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR) from ue
 
     return response_data, status_code, {}
 
@@ -227,11 +214,6 @@ def delete_checkpoint(upload_id: int, checkpoint_checksum: str,
     except IOError as ioe:
         logger.error("%s: Deleted checkpoint request failed ", upload_id)
         raise InternalServerError(messages.CANT_DELETE_FILE) from ioe
-    except Exception as ue:
-        logger.error("%s: Unknown error while deleting checkpoint. "
-                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
-        logger.error(traceback.print_exc())
-        raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR) from ue
 
     return response_data, status_code, {}
 
@@ -276,11 +258,6 @@ def delete_all_checkpoints(upload_id: int, user: auth_domain.User) -> Response:
         logger.error("%s: Delete all checkpoints request failed: %s ",
                      upload_id, ioe)
         raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR) from ioe
-    except Exception as ue:
-        logger.error("%s: Unknown error while deleting all checkpoints. "
-                     " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
-        logger.error(traceback.print_exc())
-        raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR) from ue
 
     return response_data, status_code, {}
 
@@ -341,10 +318,6 @@ def check_checkpoint_file_exists(upload_id: int, checkpoint_checksum: str) \
         # TODO: Should this be BadRequest or NotFound. I'm leaning towards
         # NotFound in order to provide as little feedback as posible to client.
         raise NotFound("Checkpoint file not found.") from secerr
-    except Exception as ue:
-        logger.info("%s: Unknown error in checkpoint file exists operation. "
-                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
-        raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR) from ue
 
     return {}, status.OK, {'ETag': checkpoint_checksum}
 
@@ -409,9 +382,5 @@ def get_checkpoint_file(upload_id: int, checkpoint_checksum: str,
         # TODO: Should this be BadRequest or NotFound. I'm leaning towards
         # NotFound in order to provide as little feedback as posible to client.
         raise NotFound(messages.UPLOAD_FILE_NOT_FOUND) from secerr
-    except Exception as ue:
-        logger.info("%s: Unknown error in get checkpoint file. "
-                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
-        raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR) from ue
 
     return pointer, status.OK, headers

@@ -8,12 +8,12 @@ from pytz import UTC
 from werkzeug.datastructures import FileStorage
 
 from filemanager.domain.uploads.exceptions import NoSourceFilesToCheckpoint
-from filemanager.domain.uploads import UploadWorkspace, UploadedFile
+from filemanager.domain.uploads import Workspace, UserFile
 from filemanager.domain.file_type import FileType
 from filemanager.services import storage
 from filemanager.process import strategy, check
 
-class TestCheckpointWorkspace(TestCase):
+class TestCheckpointable(TestCase):
 
     DATA_PATH = os.path.join(os.path.split(os.path.abspath(__file__))[0],
                              'test_files_upload')
@@ -25,13 +25,13 @@ class TestCheckpointWorkspace(TestCase):
         self.base_path = tempfile.mkdtemp()
         self.test_id = '1234321'
         self.storage = storage.SimpleStorageAdapter(self.base_path)
-        self.wks = UploadWorkspace(
+        self.wks = Workspace(
             upload_id=self.test_id,
             owner_user_id='98765',
             created_datetime=datetime.now(),
             modified_datetime=datetime.now(),
-            storage=self.storage,
-            strategy = strategy.create_strategy(mock.MagicMock()),
+            _storage=self.storage,
+            _strategy = strategy.create_strategy(mock.MagicMock()),
             checkers=check.get_default_checkers()
         )
         self.wks.initialize()

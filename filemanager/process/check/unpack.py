@@ -5,7 +5,7 @@ import tarfile
 import zipfile
 from arxiv.base import logging
 
-from ...domain import FileType, UploadedFile, CheckableWorkspace
+from ...domain import FileType, UserFile, Workspace
 from .base import BaseChecker
 
 
@@ -19,24 +19,24 @@ class UnpackCompressedTarFiles(BaseChecker):
     UNPACK_ERROR_MSG = ("There were problems unpacking '%s'. Please try again"
                         " and confirm your files.")
 
-    def check_TAR(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check_TAR(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Unpack a Tar file."""
         return self._unpack(workspace, u_file)
 
-    def check_GZIPPED(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check_GZIPPED(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Unpack a gzipped tar file."""
         return self._unpack(workspace, u_file)
 
-    def check_BZIP2(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check_BZIP2(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Unpack a bzip2 file."""
         return self._unpack(workspace, u_file)
 
-    def _unpack_file(self, workspace: CheckableWorkspace, u_file: UploadedFile,
+    def _unpack_file(self, workspace: Workspace, u_file: UserFile,
                      tar: tarfile.TarFile, tarinfo: tarfile.TarInfo) \
-            -> UploadedFile:
+            -> UserFile:
         # Extract files and directories for now
         fname = tarinfo.name
         if fname.startswith('./'):
@@ -99,8 +99,8 @@ class UnpackCompressedTarFiles(BaseChecker):
                                  is_ancillary=is_ancillary)
         return u_file
 
-    def _unpack(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def _unpack(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         if not workspace.is_tarfile(u_file):
             workspace.add_error(u_file, f'Unable to read tar {u_file.name}')
             return u_file
@@ -133,8 +133,8 @@ class UnpackCompressedZIPFiles(BaseChecker):
     UNPACK_ERROR_MSG = ("There were problems unpacking '%s'. Please try again"
                         " and confirm your files.")
 
-    def check_ZIP(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check_ZIP(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Perform the ZIP extraction."""
         logger.debug("*******Process zip archive: %s", u_file.path)
 
@@ -160,7 +160,7 @@ class UnpackCompressedZIPFiles(BaseChecker):
         workspace.log.info(f'Removed packed file {u_file.name}')
         return u_file
 
-    def _unpack_file(self, workspace: CheckableWorkspace, u_file: UploadedFile,
+    def _unpack_file(self, workspace: Workspace, u_file: UserFile,
                      zip: zipfile.ZipFile, zipinfo: zipfile.ZipInfo) -> None:
         fname = zipinfo.filename
         if fname.startswith('./'):
@@ -191,8 +191,8 @@ class UnpackCompressedZIPFiles(BaseChecker):
 class UnpackCompressedZFiles(BaseChecker):
     """Unpack compressed .Z files."""
 
-    def check_COMPRESSED(self, workspace: CheckableWorkspace,
-                         u_file: UploadedFile) -> UploadedFile:
+    def check_COMPRESSED(self, workspace: Workspace,
+                         u_file: UserFile) -> UserFile:
         """Uncompress the .Z file (not implemented)."""
         logger.debug("We can't uncompress .Z files yet: %s", u_file.path)
         workspace.log.info('Unable to uncompress .Z file. Not implemented yet.')

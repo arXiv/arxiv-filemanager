@@ -14,7 +14,7 @@ from werkzeug.exceptions import NotFound, InternalServerError, SecurityError, \
 from arxiv.users import domain as auth_domain
 from arxiv.base.globals import get_application_config
 
-from ..domain import UploadWorkspace, NoSuchFile
+from ..domain import Workspace, NoSuchFile, Status
 from ..services import database, storage
 from ..process import strategy, check
 from .transform import transform_workspace
@@ -55,7 +55,7 @@ def upload_release(upload_id: int, user: auth_domain.User) -> Response:
     # Expect workspace to be in ACTIVE state.
     user_string = util.format_user_information_for_logging(user)
     try:
-        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
+        workspace: Optional[Workspace] = database.retrieve(upload_id)
 
         if workspace is None:
             # Invalid workspace identifier
@@ -74,7 +74,7 @@ def upload_release(upload_id: int, user: auth_domain.User) -> Response:
         elif workspace.is_active:
             logger.info("%s: Release upload workspace [%s].", upload_id,
                         user_string)
-            workspace.status = UploadWorkspace.Status.RELEASED
+            workspace.status = Status.RELEASED
             if workspace.source_package.is_stale:
                 workspace.source_package.pack()
             database.update(workspace)
@@ -88,10 +88,6 @@ def upload_release(upload_id: int, user: auth_domain.User) -> Response:
     except database.WorkspaceNotFound as nf:
         logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(messages.UPLOAD_NOT_FOUND)
-    except Exception as ue:
-        logger.info("%s: Unknown error in release workspace. "
-                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
-        raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
 
     headers = {'ARXIV-OWNER': workspace.owner_user_id,
                'ETag': workspace.source_package.checksum,
@@ -136,7 +132,7 @@ def upload_unrelease(upload_id: int, user: auth_domain.User) -> Response:
 
     try:
         # Make sure we have an upload_db_data to work with
-        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
+        workspace: Optional[Workspace] = database.retrieve(upload_id)
 
         if workspace is None:
             raise NotFound(messages.UPLOAD_NOT_FOUND)
@@ -155,7 +151,7 @@ def upload_unrelease(upload_id: int, user: auth_domain.User) -> Response:
             logger.info("%s: Unrelease upload workspace [%s].", upload_id,
                         user_string)
 
-            workspace.status = UploadWorkspace.Status.ACTIVE
+            workspace.status = Status.ACTIVE
             if workspace.source_package.is_stale:
                 workspace.source_package.pack()
             database.update(workspace)
@@ -169,10 +165,6 @@ def upload_unrelease(upload_id: int, user: auth_domain.User) -> Response:
     except database.WorkspaceNotFound as nf:
         logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(messages.UPLOAD_NOT_FOUND)
-    except Exception as ue:
-        logger.info("%s: Unknown error in unrelease workspace. "
-                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
-        raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
 
     headers = {'ARXIV-OWNER': workspace.owner_user_id,
                'ETag': workspace.source_package.checksum,

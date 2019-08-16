@@ -4,7 +4,7 @@ import os
 import re
 from arxiv.base import logging
 
-from ...domain import FileType, UploadedFile, CheckableWorkspace
+from ...domain import FileType, UserFile, Workspace
 from .base import BaseChecker
 
 logger = logging.getLogger(__name__)
@@ -43,15 +43,15 @@ class CheckForMissingReferences(BaseChecker):
         " remember to verify references)."
     )
 
-    def check_workspace(self, workspace: CheckableWorkspace) -> None:
+    def check_workspace(self, workspace: Workspace) -> None:
         """Check for a .bib file, and remove if a .bbl file is present."""
         for u_file in workspace.iter_files():
             if self.BIB_FILE.search(u_file.name):
                 self._check_for_missing_bbl_file(workspace, u_file)
 
 
-    def _check_for_missing_bbl_file(self, workspace: CheckableWorkspace,
-                                    u_file: UploadedFile) -> None:
+    def _check_for_missing_bbl_file(self, workspace: Workspace,
+                                    u_file: UserFile) -> None:
         """
         Look for a sibling .bbl file.
 

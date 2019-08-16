@@ -14,7 +14,7 @@ from werkzeug.exceptions import NotFound, InternalServerError, SecurityError, \
 from arxiv.users import domain as auth_domain
 from arxiv.base.globals import get_application_config
 
-from ..domain import UploadWorkspace, NoSuchFile
+from ..domain import Workspace, NoSuchFile, LockState
 from ..services import database, storage
 from ..process import strategy, check
 from .transform import transform_workspace
@@ -60,7 +60,7 @@ def upload_lock(upload_id: int, user: auth_domain.User) -> Response:
     logger.info("%s: Lock upload workspace [%s].", upload_id, user_string)
 
     try:
-        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
+        workspace: Optional[Workspace] = database.retrieve(upload_id)
 
         if workspace is None:
             # Invalid workspace identifier
@@ -71,7 +71,7 @@ def upload_lock(upload_id: int, user: auth_domain.User) -> Response:
         if workspace.is_locked:
             logger.info("%s: Lock: Workspace is already locked.", upload_id)
         else:
-            workspace.lock_state = UploadWorkspace.LockState.LOCKED
+            workspace.lock_state = LockState.LOCKED
             if workspace.source_package.is_stale:
                 workspace.source_package.pack()
             database.update(workspace)
@@ -85,10 +85,6 @@ def upload_lock(upload_id: int, user: auth_domain.User) -> Response:
     except database.WorkspaceNotFound as nf:
         logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(messages.UPLOAD_NOT_FOUND)
-    except Exception as ue:
-        logger.error("Unknown error lock workspace. "
-                    " Add except clauses for '%s'. DO IT NOW!", ue)
-        raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
 
     headers = {'ARXIV-OWNER': workspace.owner_user_id,
                'ETag': workspace.source_package.checksum,
@@ -120,7 +116,7 @@ def upload_unlock(upload_id: int, user: auth_domain.User) -> Response:
     logger.info("%s: Unlock upload workspace [%s].", upload_id, user_string)
 
     try:
-        workspace: Optional[UploadWorkspace] = database.retrieve(upload_id)
+        workspace: Optional[Workspace] = database.retrieve(upload_id)
 
         if workspace is None:
             raise NotFound(messages.UPLOAD_NOT_FOUND)
@@ -130,7 +126,7 @@ def upload_unlock(upload_id: int, user: auth_domain.User) -> Response:
             logger.info("%s: Unlock: Workspace is already unlocked.",
                         upload_id)
         else:
-            workspace.lock_state = UploadWorkspace.LockState.UNLOCKED
+            workspace.lock_state = LockState.UNLOCKED
             if workspace.source_package.is_stale:
                 workspace.source_package.pack()
             database.update(workspace)
@@ -144,10 +140,6 @@ def upload_unlock(upload_id: int, user: auth_domain.User) -> Response:
     except database.WorkspaceNotFound as nf:
         logger.info("%s: Workspace not found: '%s'", upload_id, nf)
         raise NotFound(messages.UPLOAD_NOT_FOUND)
-    except Exception as ue:
-        logger.info("%s: Unknown error in unlock workspace. "
-                    " Add except clauses for '%s'. DO IT NOW!", upload_id, ue)
-        raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)
 
     headers = {'ARXIV-OWNER': workspace.owner_user_id,
                'ETag': workspace.source_package.checksum,

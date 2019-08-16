@@ -17,7 +17,7 @@ from arxiv.users.auth import scopes
 
 from filemanager.factory import create_web_app
 from filemanager.services import database
-from filemanager.domain import UploadWorkspace
+from filemanager.domain import Workspace
 from .util import generate_token
 
 

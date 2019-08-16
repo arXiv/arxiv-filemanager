@@ -4,7 +4,7 @@ import os
 
 from arxiv.base import logging
 
-from ...domain import FileType, UploadedFile, CheckableWorkspace
+from ...domain import FileType, UserFile, Workspace, SourceType
 from .base import BaseChecker, StopCheck
 
 
@@ -15,21 +15,21 @@ logger.propagate = False
 class InferSourceType(BaseChecker):
     """Attempt to determine the source type for the workspace as a whole."""
 
-    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Check for single-file TeX source package."""
-        workspace.source_type = CheckableWorkspace.SourceType.UNKNOWN
+        workspace.source_type = SourceType.UNKNOWN
         if workspace.file_count != 1:
             return u_file
         logger.debug('Single file in workspace: %s', u_file.path)
         if u_file.is_ancillary or u_file.is_always_ignore:
             logger.debug('Ancillary or always-ignore file; invalid source')
-            workspace.source_type = CheckableWorkspace.SourceType.INVALID
-            workspace.add_non_file_error('Found single ancillary file. Invalid'
+            workspace.source_type = SourceType.INVALID
+            workspace.add_error_non_file('Found single ancillary file. Invalid'
                                          ' submission.')
         return u_file
 
-    def check_workspace(self, workspace: CheckableWorkspace) -> None:
+    def check_workspace(self, workspace: Workspace) -> None:
         """Determine the source type for the workspace as a whole."""
         logger.debug('Check whole workspace')
         # if not workspace.source_type.is_unknown:
@@ -41,7 +41,7 @@ class InferSourceType(BaseChecker):
             # generate a message here. If system deletes all uploaded
             # files there will be warnings associated with those actions.
             logger.debug('Workspace has no files; setting source type invalid')
-            workspace.source_type = CheckableWorkspace.SourceType.INVALID
+            workspace.source_type = SourceType.INVALID
             return
 
         if not workspace.source_type.is_unknown:
@@ -66,8 +66,8 @@ class InferSourceType(BaseChecker):
             type_counts[FileType.IMAGE]
         ))
         if type_counts['files'] == type_counts['ignore']:
-            workspace.source_type = CheckableWorkspace.SourceType.INVALID
-            workspace.add_non_file_warning(
+            workspace.source_type = SourceType.INVALID
+            workspace.add_warning_non_file(
                 "All files are auto-ignore. If you intended to withdraw the"
                 " article, please use the 'withdraw' function from the list"
                 "of articles on your account page."
@@ -77,66 +77,66 @@ class InferSourceType(BaseChecker):
             # No source files detected, extra ancillary files may be present
             # User may have deleted main document source.
             logger.debug('No active (non-ancillary) submission files')
-            workspace.source_type = CheckableWorkspace.SourceType.INVALID
+            workspace.source_type = SourceType.INVALID
         elif type_counts[FileType.HTML] > 0 \
                 and type_counts['files'] == html_aux_file_count:
-            workspace.source_type = CheckableWorkspace.SourceType.HTML
+            workspace.source_type = SourceType.HTML
         elif type_counts[FileType.POSTSCRIPT] > 0 \
                 and type_counts['files'] == postscript_aux_file_counts:
-            workspace.source_type = CheckableWorkspace.SourceType.POSTSCRIPT
+            workspace.source_type = SourceType.POSTSCRIPT
         else:   # Default source type is TEX
             logger.debug('Default source type is TeX')
-            workspace.source_type = CheckableWorkspace.SourceType.TEX
+            workspace.source_type = SourceType.TEX
 
-    def check_tex_types(self, workspace: CheckableWorkspace,
-                        u_file: UploadedFile) -> UploadedFile:
+    def check_tex_types(self, workspace: Workspace,
+                        u_file: UserFile) -> UserFile:
         """Check for single-file TeX source package."""
         if workspace.source_type.is_unknown and workspace.file_count == 1:
-            workspace.source_type = CheckableWorkspace.SourceType.TEX
+            workspace.source_type = SourceType.TEX
         return u_file
 
-    def check_POSTSCRIPT(self, workspace: CheckableWorkspace,
-                         u_file: UploadedFile) -> UploadedFile:
+    def check_POSTSCRIPT(self, workspace: Workspace,
+                         u_file: UserFile) -> UserFile:
         """Check for single-file PostScript source package."""
         if workspace.source_type.is_unknown and workspace.file_count == 1:
-            workspace.source_type = CheckableWorkspace.SourceType.POSTSCRIPT
+            workspace.source_type = SourceType.POSTSCRIPT
         return u_file
 
-    def check_PDF(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check_PDF(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Check for single-file PDF source package."""
         logger.debug('Check PDF?')
         if workspace.file_count == 1:
-            workspace.source_type = CheckableWorkspace.SourceType.PDF
+            workspace.source_type = SourceType.PDF
         return u_file
 
-    def check_HTML(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check_HTML(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Check for single-file HTML source package."""
         if workspace.source_type.is_unknown and workspace.file_count == 1:
-            workspace.source_type = CheckableWorkspace.SourceType.HTML
+            workspace.source_type = SourceType.HTML
         return u_file
 
-    def check_FAILED(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check_FAILED(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Check for single-file source with failed type detection."""
         if workspace.source_type.is_unknown and workspace.file_count == 1:
-            workspace.source_type = CheckableWorkspace.SourceType.INVALID
+            workspace.source_type = SourceType.INVALID
             workspace.add_error(u_file, 'Could not determine file type.')
         return u_file
 
-    # def check_DOS_EPS(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-    #         -> UploadedFile:
+    # def check_DOS_EPS(self, workspace: Workspace, u_file: UserFile) \
+    #         -> UserFile:
     #     if workspace.source_type.is_unknown and workspace.file_count == 1:
-    #         workspace.source_type = CheckableWorkspace.SourceType.INVALID
+    #         workspace.source_type = SourceType.INVALID
     #         workspace.add_error(u_file, 'DOS EPS format is not supported.')
     #     return u_file
 
-    def check_finally(self, workspace: CheckableWorkspace,
-                      u_file: UploadedFile) -> UploadedFile:
+    def check_finally(self, workspace: Workspace,
+                      u_file: UserFile) -> UserFile:
         """Check for unknown single-file source."""
         if workspace.source_type.is_unknown and workspace.file_count == 1:
             logger.debug('Source type not known, and only one file')
-            workspace.source_type = CheckableWorkspace.SourceType.INVALID
+            workspace.source_type = SourceType.INVALID
             workspace.add_error(u_file, 'Unsupported submission type')
         return u_file

@@ -4,7 +4,7 @@ import os
 import re
 from arxiv.base import logging
 
-from ...domain import FileType, UploadedFile, CheckableWorkspace
+from ...domain import FileType, UserFile, Workspace
 from .base import BaseChecker
 
 logger = logging.getLogger(__name__)
@@ -20,8 +20,8 @@ class RemoveTeXGeneratedFiles(BaseChecker):
     TEX_PRODUCED = re.compile(r'(.+)\.(log|aux|out|blg|dvi|ps|pdf)$',
                               re.IGNORECASE)
 
-    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Check for and remove TeX processing files."""
         if self.TEX_PRODUCED.search(u_file.name):
             base_path, name = os.path.split(u_file.path)
@@ -49,8 +49,8 @@ class DisallowDVIFiles(BaseChecker):
     ERROR_MSG = ('%s is a TeX-produced DVI file. Please submit the TeX source'
                  ' instead.')
 
-    def check_DVI(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check_DVI(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Add an error for any non-ancillary DVI file."""
         if not u_file.is_ancillary:
             workspace.add_error(u_file, self.ERROR_MSG % u_file.name)

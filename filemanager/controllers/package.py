@@ -14,7 +14,7 @@ from werkzeug.exceptions import NotFound, InternalServerError, SecurityError, \
 from arxiv.users import domain as auth_domain
 from arxiv.base.globals import get_application_config
 
-from ..domain import UploadWorkspace, NoSuchFile
+from ..domain import Workspace, NoSuchFile
 from ..services import database, storage
 from ..process import strategy, check
 from .transform import transform_workspace
@@ -45,7 +45,7 @@ def check_upload_content_exists(upload_id: int) -> Response:
 
     """
     try:
-        workspace: UploadWorkspace = database.retrieve(upload_id)
+        workspace: Workspace = database.retrieve(upload_id)
     except IOError:
         logger.error("%s: ContentExistsCheck: There was a problem connecting "
                      "to database.", upload_id)
@@ -88,7 +88,7 @@ def get_upload_content(upload_id: int, user: auth_domain.User) -> Response:
                 user_string)
 
     try:
-        workspace: UploadWorkspace = database.retrieve(upload_id)
+        workspace: Workspace = database.retrieve(upload_id)
     except IOError:
         logger.error("%s: ContentDownload: There was a problem connecting "
                      "to database.", upload_id)

@@ -8,7 +8,7 @@ from flask_sqlalchemy import SQLAlchemy, Model
 
 from arxiv.util.serialize import dumps, loads
 
-from ...domain import UploadWorkspace
+from ...domain import Workspace, LockState, SourceType, Status
 
 
 db: SQLAlchemy = SQLAlchemy()
@@ -60,27 +60,25 @@ class DBUpload(db.Model):
     files = Column(FriendlyJSON)
     errors = Column(FriendlyJSON)
 
-    lastupload_start_datetime = Column(DateTime, nullable=True)
+    last_upload_start_datetime = Column(DateTime, nullable=True)
     """Start datetime of last upload."""
 
-    lastupload_completion_datetime = Column(DateTime, nullable=True)
+    last_upload_completion_datetime = Column(DateTime, nullable=True)
     """Completion datetime of last upload."""
 
-    lastupload_logs = Column(Text, nullable=True)
+    last_upload_logs = Column(Text, nullable=True)
     """Log (error/warning messages) from last upload."""
 
-    lastupload_file_summary = Column(Text, nullable=True)
+    last_upload_file_summary = Column(Text, nullable=True)
     """Upload details useful for display in UI"""
 
-    lastupload_readiness = Column(Text, nullable=True)
+    last_upload_readiness = Column(Text, nullable=True)
     """Upload content readiness status."""
 
-    status = Column(String(30), default=UploadWorkspace.Status.ACTIVE.value)
+    status = Column(String(30), default=Status.ACTIVE.value)
     """State of upload. ACTIVE, RELEASED, DELETED"""
 
-    lock_state = Column(String(30),
-                        default=UploadWorkspace.LockState.UNLOCKED.value)
+    lock_state = Column(String(30), default=LockState.UNLOCKED.value)
     """Lock state of upload workspace. UNLOCKED or LOCKED."""
 
-    source_type = Column(String(30),
-                         default=UploadWorkspace.SourceType.UNKNOWN.value)
+    source_type = Column(String(30), default=SourceType.UNKNOWN.value)

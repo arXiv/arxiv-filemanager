@@ -4,7 +4,7 @@ import os
 import re
 from arxiv.base import logging
 
-from ...domain import FileType, UploadedFile, CheckableWorkspace
+from ...domain import FileType, UserFile, Workspace
 from .base import BaseChecker
 
 
@@ -16,8 +16,8 @@ class FixWindowsFileNames(BaseChecker):
 
     WINDOWS_FILE_PREFIX = re.compile(r'^[A-Za-z]:\\(.*\\)?')
 
-    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Find Windows-style filenames and fix them."""
         if self.WINDOWS_FILE_PREFIX.search(u_file.path):
             # Rename using basename
@@ -45,8 +45,8 @@ class WarnAboutTeXBackupFiles(BaseChecker):
                    " extraneous backup files.")
     TEX_BACKUP_FILE = re.compile(r'(.+)\.(tex_|tex.bak|tex\~)$', re.IGNORECASE)
 
-    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Check for and warn about possible backup files."""
         if not u_file.is_ancillary \
                 and self.TEX_BACKUP_FILE.search(u_file.name):
@@ -60,8 +60,8 @@ class ReplaceIllegalCharacters(BaseChecker):
     ILLEGAL = re.compile(r'[^\w\+\-\.\=\,\_]')
     """Filename contains illegal characters ``+-/=,``."""
 
-    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Check for illegal characters and replace them with underscores."""
 
         if not u_file.is_directory and self.ILLEGAL.search(u_file.name):
@@ -90,8 +90,8 @@ class PanicOnIllegalCharacters(BaseChecker):
         'a-z A-Z 0-9 _ + - . , ='
     )
 
-    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Check for illegal characters and generate error if found."""
         if u_file.is_directory:
             return u_file
@@ -103,8 +103,8 @@ class PanicOnIllegalCharacters(BaseChecker):
 class ReplaceLeadingHyphen(BaseChecker):
     """Checks for a leading hyphen, and replaces it with an underscore."""
 
-    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Check for a leading hyphen, and replace it with an underscore."""
 
         if u_file.name.startswith('-'):

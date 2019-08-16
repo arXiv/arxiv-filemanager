@@ -4,7 +4,7 @@ import os
 import re
 from arxiv.base import logging
 
-from ...domain import FileType, UploadedFile, CheckableWorkspace
+from ...domain import FileType, UserFile, Workspace
 from .base import BaseChecker
 
 logger = logging.getLogger(__name__)
@@ -22,8 +22,8 @@ class RemoveHyperlinkStyleFiles(BaseChecker):
     DOT_STY = re.compile(r'^(espcrc2|lamuphys)\.sty$')
     DOT_TEX = re.compile(r'^(espcrc2|lamuphys)\.tex$')
 
-    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Check for and remove hyperlink styles espcrc2 and lamuphys."""
         if self.DOT_STY.search(u_file.name):
             workspace.remove(u_file, self.WARNING_MSG % u_file.name)
@@ -43,8 +43,8 @@ class RemoveDisallowedFiles(BaseChecker):
 
     DISALLOWED = ['uufiles', 'core', 'splread.1st']
 
-    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Check for and removes disallowed files."""
         if u_file.name in self.DISALLOWED:
             workspace.remove(u_file,
@@ -61,8 +61,8 @@ class RemoveMetaFiles(BaseChecker):
     DESC_FILE = re.compile(r'\.desc$')
     DISALLOWED_PATTERNS = [XXX_FILE, GF_FILE, DESC_FILE]
 
-    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Check for and remove disallowed meta files."""
         for pattern in self.DISALLOWED_PATTERNS:
             if pattern.search(u_file.name):
@@ -87,8 +87,8 @@ class RemoveExtraneousRevTeXFiles(BaseChecker):
     EXTRANEOUS = re.compile(r'^(10pt\.rtx|11pt\.rtx|12pt\.rtx|aps\.rtx|'
                             r'revsymb\.sty|revtex4\.cls|rmp\.rtx)$')
 
-    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Check for and remove files already included in TeX Live release."""
         if self.EXTRANEOUS.search(u_file.name):
             workspace.remove(u_file, self.REVTEX_WARNING_MSG)
@@ -113,8 +113,8 @@ class RemoveDiagramsPackage(BaseChecker):
 
     DIAGRAMS = re.compile(r'^diagrams\.(sty|tex)$')
 
-    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Check for and remove the diagrams package."""
         if self.DIAGRAMS.search(u_file.name):
             workspace.remove(u_file, self.DIAGRAMS_WARNING)
@@ -134,8 +134,8 @@ class RemoveAADemoFile(BaseChecker):
          'macro package aa.cls.'
     )
 
-    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Check for and remove the ``aa.dem`` file."""
         if u_file.name == 'aa.dem':
             workspace.remove(u_file, self.AA_DEM_MSG)
@@ -154,8 +154,8 @@ class RemoveMissingFontFile(BaseChecker):
         " that our system generates."
     )
 
-    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Check for and remove the ``missfont.log`` file."""
         if u_file.name == 'missfont.log':
             workspace.remove(u_file, self.MISSFONT_WARNING)
@@ -176,8 +176,8 @@ class RemoveSyncTeXFiles(BaseChecker):
     )
     SYNCTEX = re.compile(r'\.synctex$')
 
-    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Check for and remove synctex files."""
         if self.SYNCTEX.search(u_file.name):
             workspace.remove(u_file, self.SYNCTEX_MSG % u_file.name)
@@ -191,8 +191,8 @@ class FixTGZFileName(BaseChecker):
     PTN = re.compile(r'([\.\-]t?[ga]?z)$', re.IGNORECASE)
     """[ needs info ]"""
 
-    def check(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """[ needs info ]"""
         if self.PTN.search(u_file.name):
             base_path, prev_name = os.path.split(u_file.path)
@@ -224,8 +224,8 @@ class RemoveDOCFiles(BaseChecker):
     )
     """DOC (MS Word) format not accepted warning message."""
 
-    def check_FAILED(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check_FAILED(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         if u_file.name.endswith('.doc'):
             # TODO: The original code did indeed include removal here; and
             # yet we are issuing a warning that pre-supposes the presence of

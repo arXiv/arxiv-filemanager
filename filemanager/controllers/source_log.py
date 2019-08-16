@@ -12,7 +12,7 @@ from werkzeug.exceptions import NotFound, InternalServerError
 from arxiv.users import domain as auth_domain
 from arxiv.base.globals import get_application_config
 
-from ..domain import UploadWorkspace
+from ..domain import Workspace
 from ..services import database
 from .service_log import logger
 from . import _messages as messages
@@ -42,7 +42,7 @@ def check_upload_source_log_exists(upload_id: int) -> Response:
 
     """
     try:
-        workspace: UploadWorkspace = database.retrieve(upload_id)
+        workspace: Workspace = database.retrieve(upload_id)
     except IOError as ioe:
         logger.error("%s: SourceLogExistCheck: There was a problem connecting"
                      " to database: %s", upload_id, ioe)
@@ -81,7 +81,7 @@ def get_upload_source_log(upload_id: int, user: auth_domain.User) -> Response:
     user_string = util.format_user_information_for_logging(user)
     logger.info("%s: Download source log [%s].", upload_id, user_string)
     try:
-        workspace: UploadWorkspace = database.retrieve(upload_id)
+        workspace: Workspace = database.retrieve(upload_id)
     except IOError:
         logger.error("%s: GetSourceLog: There was a problem connecting to"
                      " database.", upload_id)

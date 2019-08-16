@@ -1,7 +1,7 @@
 import time
 import tempfile
 from datetime import datetime
-from filemanager.domain import UploadWorkspace
+from filemanager.domain import Workspace
 from filemanager.process.strategy import AsynchronousCheckingStrategy, \
     SynchronousCheckingStrategy
 from filemanager.process.check import get_default_checkers
@@ -10,14 +10,14 @@ from filemanager.services.storage import SimpleStorageAdapter
 basedir = tempfile.mkdtemp()
 storage = SimpleStorageAdapter(basedir)
 
-workspace = UploadWorkspace(
+workspace = Workspace(
     upload_id=1234,
     owner_user_id='98765',
     created_datetime=datetime.now(),
     modified_datetime=datetime.now(),
-    strategy=SynchronousCheckingStrategy(),
+    _strategy=SynchronousCheckingStrategy(),
     checkers=get_default_checkers(),
-    storage=storage
+    _storage=storage
 )
 workspace.initialize()
 

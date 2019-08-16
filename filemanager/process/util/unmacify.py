@@ -2,7 +2,7 @@ import mmap
 import re
 from arxiv.base import logging
 
-from ...domain import UploadedFile, CheckableWorkspace
+from ...domain import UserFile, Workspace
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ PC = 'pc'
 MAC = 'mac'
 
 
-def unmacify(workspace: CheckableWorkspace, uploaded_file: UploadedFile) \
+def unmacify(workspace: Workspace, uploaded_file: UserFile) \
         -> None:
     """
     Cleans up files containing carriage returns and line feeds.
@@ -63,8 +63,8 @@ def unmacify(workspace: CheckableWorkspace, uploaded_file: UploadedFile) \
     workspace.delete(new_file)
 
 
-def check_file_termination(workspace: CheckableWorkspace,
-                           u_file: UploadedFile) -> None:
+def check_file_termination(workspace: Workspace,
+                           u_file: UserFile) -> None:
     r"""
     Check for unwanted characters at end of file.
 

@@ -1,23 +1,122 @@
 """Adds checkpoint functionality to the upload workspace."""
 
 import os
-from json import dump, load
+from contextlib import contextmanager
 from datetime import datetime
-from typing import IO, List
+from json import dump, load
+from typing import IO, List, TypeVar, Type, Iterable, Any, Optional, Dict, \
+    Callable, Iterator, cast
 
-from arxiv.users import domain as auth_domain
-from arxiv.util.serialize import ISO8601JSONEncoder, ISO8601JSONDecoder
+from dataclasses import dataclass, field
+from typing_extensions import Protocol
 
-from .file_mutations import FileMutationsWorkspace
+# Not sure why we're running into issues with namespace packages here.
+from arxiv.users.domain import User  # pylint: disable=no-name-in-module
+from arxiv.util.serialize import ISO8601JSONEncoder, ISO8601JSONDecoder  # pylint: disable=no-name-in-module
+
+from .base import IBaseWorkspace
 from .exceptions import UploadFileSecurityError, NoSourceFilesToCheckpoint
-from ..uploaded_file import UploadedFile
+from ..error import Error
+from ..uploaded_file import UserFile
 
 UPLOAD_WORKSPACE_IS_EMPTY = 'workspace is empty'
 UPLOAD_FILE_NOT_FOUND = 'file not found'
 UPLOAD_CHECKPOINT_FILE_NOT_FOUND = 'checkpoint file not found'
 
+T = TypeVar('T')
 
-class CheckpointWorkspace(FileMutationsWorkspace):
+class ILog(Protocol):
+    def info(self, message: str) -> None:
+        ...
+
+
+class IFiles(Protocol):
+    source: Dict[str, UserFile]
+    ancillary: Dict[str, UserFile]
+
+
+class IStorage(Protocol):
+    def unpack_tarfile(self, workspace: 'Checkpointable',
+                       u_file: UserFile, path: str) -> None:
+        """Unpack tarfile ``u_file`` into ``path``."""
+        ...
+
+
+class IWorkspace(IBaseWorkspace, Protocol):
+    """
+    Workspace API required for :class:`.Checkable`.
+
+    This incorporates the base API and any additional structures that require
+    implementation by other components of the workspace.
+    """
+
+    errors: List[Error]
+    log: ILog
+
+    def add_warning_non_file(self, msg: str,
+                             is_persistant: bool = False) -> None:
+        """Add a warning for the workspace that is not specific to a file."""
+
+    def add_error_non_file(self, msg: str,
+                           severity: Error.Severity = Error.Severity.FATAL,
+                           is_persistant: bool = True) -> None:
+        """Add an error for the workspace that is not specific to a file."""
+
+    def create(self, path: str, is_system: bool = False,
+               is_persisted: bool = False, touch: bool = True) -> UserFile:
+        """Create a new :class:`.UserFile` at ``path``."""
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Generate a dict representation of a workspace."""
+
+    def delete(self, u_file: UserFile) -> None:
+        """Completely delete a file."""
+
+    def delete_all_files(self) -> None:
+        """Delete all source and ancillary files in the workspace."""
+
+
+class ICheckpointable(Protocol):
+    """Interface for checkpointable behavior."""
+
+    @property
+    def checkpoint_directory(self) -> str:
+        """Get directory where checkpoint archive files live."""
+
+    def checkpoint_file_exists(self, checksum: str) -> bool:
+        """Indicate whether checkpoint files exists."""
+
+    def create_checkpoint(self, user: User) -> str:
+        """Create a chckpoint (backup) of workspace source files."""
+
+    def delete_all_checkpoints(self, user: User) -> None:
+        """Remove all checkpoints."""
+
+    def delete_checkpoint(self, checksum: str, user: User) -> None:
+        """Remove specified checkpoint."""
+
+    def get_checkpoint_file(self, checksum: str) -> UserFile:
+        """Get a checkpoint file."""
+
+    def get_checkpoint_file_last_modified(self, checksum: str) -> datetime:
+        """Return last modified time for specified file/package."""
+
+    def get_checkpoint_file_pointer(self, checksum: str) -> IO[bytes]:
+        """Open specified file and return file pointer."""
+
+    def get_checkpoint_file_size(self, checksum: str) -> int:
+        """Return size of specified checkpoint file."""
+
+    def list_checkpoints(self, user: User) -> List[UserFile]:
+        """Generate a list of checkpoints."""
+
+
+class ICheckpointableWorkspace(IWorkspace, ICheckpointable, Protocol):
+    """Structure of a workspace with checkpointable behavior."""
+
+
+@dataclass
+class Checkpointable(ICheckpointable):
     """
     Adds checkpoint routines to the workspace.
 
@@ -28,65 +127,34 @@ class CheckpointWorkspace(FileMutationsWorkspace):
     TODO: Should we support admin provided description of checkpoint?
     """
 
-    CHECKPOINT_PREFIX = 'checkpoint'
+    CHECKPOINT_PREFIX: str = field(default='checkpoint')
     """The name of the checkpoint directory within the upload workspace."""
 
     # Allow maximum number of checkpoints (100?)
-    MAX_CHECKPOINTS = 10  # Use 10 for testing
+    MAX_CHECKPOINTS: int = field(default=10)  # Use 10 for testing
+
+    __internal_api = None
+
+    def __api_init__(self, api: IWorkspace) -> None:
+        """Register the workspace API."""
+        if hasattr(super(Checkpointable, self), '__api_init__'):
+            super(Checkpointable, self).__api_init__(api)   # type: ignore
+        self.__internal_api = api
+
+    @property
+    def __api(self) -> IWorkspace:
+        assert self.__internal_api is not None
+        return self.__internal_api
+
+    @classmethod
+    def from_dict(cls: Type[T], upload_data: dict) -> T:
+        raise NotImplementedError('Must be combined with seomthing that'
+                                  ' implements from_dict')
 
     @property
     def checkpoint_directory(self) -> str:
         """Get directory where checkpoint archive files live."""
-        return os.path.join(self.base_path, self.CHECKPOINT_PREFIX)
-
-    def _is_checkpoint_file(self, u_file: UploadedFile) -> bool:
-        return bool(u_file.is_system
-                    and u_file.path.startswith(self.CHECKPOINT_PREFIX))
-
-    def _resolve_checkpoint_file(self, checksum: str) -> UploadedFile:
-        for u_file in self.iter_files(allow_system=True):
-            if not self._is_checkpoint_file(u_file):
-                continue
-            if u_file.checksum == checksum:
-                return u_file
-        raise FileNotFoundError(UPLOAD_FILE_NOT_FOUND)
-
-    def get_checkpoint_file(self, checksum: str) -> UploadedFile:
-        """
-        Get a checkpoint file.
-
-        Parameters
-        ----------
-        checksum : str
-            Checksum that uniquely identifies checkpoint.
-
-        Returns
-        -------
-        :class:`.UploadedFile`
-
-        """
-        return self._resolve_checkpoint_file(checksum)
-
-    def _get_checkpoint_file_path(self, checksum: str) -> str:
-        """
-        Return the absolute path of content file given relative pointer.
-
-        Parameters
-        ----------
-        checksum : str
-            Checksum that uniquely identifies checkpoint.
-
-        Returns
-        -------
-        Path to checkpoint specified by unique checksum.
-
-        """
-        u_file = self._resolve_checkpoint_file(checksum)
-        if u_file is not None:
-            return u_file.path
-
-        raise FileNotFoundError(UPLOAD_FILE_NOT_FOUND)
-
+        return os.path.join(self.__api.base_path, self.CHECKPOINT_PREFIX)
 
     def checkpoint_file_exists(self, checksum: str) -> bool:
         """
@@ -104,14 +172,73 @@ class CheckpointWorkspace(FileMutationsWorkspace):
 
         """
         try:
-            self._resolve_checkpoint_file(checksum)
+            self._get_checkpoint(checksum)
             return True
         except FileNotFoundError:
             return False
 
-    def get_checkpoint_file_size(self, checksum: str) -> int:
+    def create_checkpoint(self, user: User) -> str:
         """
-        Return size of specified file.
+        Create a chckpoint (backup) of workspace source files.
+
+        Returns
+        -------
+        checksum : str
+            Checksum for checkpoint tar gzipped archive we just created.
+
+        """
+        # Make sure there are files before we bother to create a checkpoint.
+        if self._all_file_count == 0:
+            raise NoSourceFilesToCheckpoint(UPLOAD_WORKSPACE_IS_EMPTY)
+
+        self.__api.add_warning_non_file(
+            "Creating checkpoint." + (f"['{user.user_id}']" if user else "")
+        )
+
+        # Create a new unique filename for checkpoint
+        count = self._get_checkpoint_count(user)
+        if count >= self.MAX_CHECKPOINTS:
+            return ''   # TODO: Need to throw an error here?
+
+        checkpoint = self.__api.create(self._make_path(user, count + 1),
+                                       is_system=True, is_persisted=True,
+                                       touch=True)
+        self.__api.pack_source(checkpoint)
+
+        metadata = self.__api.create(self._make_metadata_path(user, count + 1),
+                                     is_system=True, is_persisted=True,
+                                     touch=True)
+        with self.__api.open(metadata, 'w') as f:
+            dump(self.__api.to_dict(), f, cls=ISO8601JSONEncoder)
+        return checkpoint.checksum
+
+    def delete_all_checkpoints(self, user: User) -> None:
+        """Remove all checkpoints."""
+        for checkpoint in self.list_checkpoints(user):
+            self.__api.delete(checkpoint)
+
+        log_msg = f"Deleted ALL checkpoints"
+        log_msg += f": ['{user.username}']." if user else "."
+        self.__api.log.info(log_msg)
+
+    def delete_checkpoint(self, checksum: str, user: User) -> None:
+        """Remove specified checkpoint."""
+        try:
+            checkpoint = self._get_checkpoint(checksum)
+        except FileNotFoundError:
+            log_msg = f"ERROR: Checkpoint not found: {checksum}"
+            log_msg += f"['{user.username}']" if user else "."
+            self.__api.log.info(log_msg)
+            raise
+
+        self.__api.delete(checkpoint)
+        log_msg = f"Deleted checkpoint: {checkpoint.name}"
+        log_msg += f"['{user.username}']." if user else "."
+        self.__api.log.info(log_msg)
+
+    def get_checkpoint_file(self, checksum: str) -> UserFile:
+        """
+        Get a checkpoint file.
 
         Parameters
         ----------
@@ -120,12 +247,25 @@ class CheckpointWorkspace(FileMutationsWorkspace):
 
         Returns
         -------
-        Size in bytes.
+        :class:`.UserFile`
+
         """
-        u_file = self._resolve_checkpoint_file(checksum)
-        if u_file is not None:
-            return int(u_file.size_bytes)
-        raise FileNotFoundError(UPLOAD_CHECKPOINT_FILE_NOT_FOUND)
+        return self._get_checkpoint(checksum)
+
+    def get_checkpoint_file_last_modified(self, checksum: str) -> datetime:
+        """
+        Return last modified time for specified file/package.
+
+        Parameters
+        ----------
+        checksum : str
+            Checksum that uniquely identifies checkpoint.
+
+        Returns
+        -------
+        Last modified date string.
+        """
+        return self._get_checkpoint(checksum).last_modified
 
     def get_checkpoint_file_pointer(self, checksum: str) -> IO[bytes]:
         """
@@ -142,11 +282,11 @@ class CheckpointWorkspace(FileMutationsWorkspace):
             File pointer or exception string when filepath does not exist.
 
         """
-        return self.open_pointer(self._resolve_checkpoint_file(checksum), 'rb')
+        return self.__api.open_pointer(self._get_checkpoint(checksum), 'rb')
 
-    def get_checkpoint_file_last_modified(self, checksum: str) -> datetime:
+    def get_checkpoint_file_size(self, checksum: str) -> int:
         """
-        Return last modified time for specified file/package.
+        Return size of specified file.
 
         Parameters
         ----------
@@ -155,69 +295,14 @@ class CheckpointWorkspace(FileMutationsWorkspace):
 
         Returns
         -------
-        Last modified date string.
+        Size in bytes.
         """
-        return self._resolve_checkpoint_file(checksum).last_modified
+        u_file = self._get_checkpoint(checksum)
+        if u_file is not None:
+            return int(u_file.size_bytes)
+        raise FileNotFoundError(UPLOAD_CHECKPOINT_FILE_NOT_FOUND)
 
-    @property
-    def _all_file_count(self) -> int:
-        return len(self.iter_files(allow_ancillary=True))
-
-    def _make_path(self, user: auth_domain.User, count: int) -> str:
-        user_string = f'_{user.username}' if user else ''
-        return os.path.join(self.CHECKPOINT_PREFIX,
-                            f'checkpoint_{count}{user_string}.tar.gz')
-
-    def _make_metadata_path(self, user: auth_domain.User, count: int) -> str:
-        user_string = f'_{user.username}' if user else ''
-        return os.path.join(self.CHECKPOINT_PREFIX,
-                            f'checkpoint_{count}{user_string}.json')
-
-    def _get_checkpoint_count(self, user: auth_domain.User) -> int:
-        count = 0
-        while True:
-            _path = self._make_path(user, count + 1)
-            if not self.exists(_path, is_system=True):
-                break
-            count += 1
-        return count
-
-    def create_checkpoint(self, user: auth_domain.User) -> str:
-        """
-        Create a chckpoint (backup) of workspace source files.
-
-        Returns
-        -------
-        checksum : str
-            Checksum for checkpoint tar gzipped archive we just created.
-
-        """
-        # Make sure there are files before we bother to create a checkpoint.
-        if self._all_file_count == 0:
-            raise NoSourceFilesToCheckpoint(UPLOAD_WORKSPACE_IS_EMPTY)
-
-        self.add_non_file_warning(
-            "Creating checkpoint." + (f"['{user.user_id}']" if user else "")
-        )
-
-        # Create a new unique filename for checkpoint
-        count = self._get_checkpoint_count(user)
-        if count >= self.MAX_CHECKPOINTS:
-            # TODO: Need to throw an error here?
-            return ''
-
-        checkpoint = self.create(self._make_path(user, count + 1),
-                                 is_system=True, is_persisted=True, touch=True)
-        self.pack_source(checkpoint)
-
-        metadata = self.create(self._make_metadata_path(user, count + 1),
-                               is_system=True, is_persisted=True, touch=True)
-        with self.open(metadata, 'w') as f:
-            dump(self.to_dict(), f, cls=ISO8601JSONEncoder)
-        # Determine checksum for new checkpoint file
-        return checkpoint.checksum
-
-    def list_checkpoints(self, user: auth_domain.User) -> List[UploadedFile]:
+    def list_checkpoints(self, user: User) -> List[UserFile]:
         """
         Generate a list of checkpoints.
 
@@ -234,46 +319,13 @@ class CheckpointWorkspace(FileMutationsWorkspace):
             log_msg = f'Created list of checkpoints [{user.username}].'
         else:
             log_msg = 'Created list of checkpoints.'
-        self.log.info(log_msg)
-        return [u for u in self.iter_files(allow_system=True)
+        self.__api.log.info(log_msg)
+        return [u for u in self.__api.iter_files(allow_system=True)
                 if u.is_system
                 and u.path.startswith(self.CHECKPOINT_PREFIX)
                 and u.path.endswith('.tar.gz')]
 
-    def delete_checkpoint(self, checksum: str, user: auth_domain.User) -> None:
-        """Remove specified checkpoint."""
-        try:
-            checkpoint = self._resolve_checkpoint_file(checksum)
-        except FileNotFoundError:
-            log_msg = f"ERROR: Checkpoint not found: {checksum}"
-            log_msg += f"['{user.username}']" if user else "."
-            self.log.info(log_msg)
-            raise
-
-        self.delete(checkpoint)
-        log_msg = f"Deleted checkpoint: {checkpoint.name}"
-        log_msg += f"['{user.username}']." if user else "."
-        self.log.info(log_msg)
-
-    def delete_all_checkpoints(self, user: auth_domain.User) -> None:
-        """Remove all checkpoints."""
-        for checkpoint in self.list_checkpoints(user):
-            self.delete(checkpoint)
-
-        log_msg = f"Deleted ALL checkpoints"
-        log_msg += f": ['{user.username}']." if user else "."
-        self.log.info(log_msg)
-
-    def _update_from_checkpoint(self, workspace: 'CheckpointWorkspace') \
-            -> None:
-        self.files.source = workspace.files.source
-        self.files.ancillary = workspace.files.ancillary
-        for u_file in self.iter_files():
-            u_file.workspace = self
-        self._errors = workspace.errors
-
-    def restore_checkpoint(self, checksum: str,
-                           user: auth_domain.User) -> None:
+    def restore_checkpoint(self, checksum: str, user: User) -> None:
         """
         Restore a previous checkpoint.
 
@@ -289,24 +341,90 @@ class CheckpointWorkspace(FileMutationsWorkspace):
         """
         # We probably need to remove all existing source files before we
         # extract files from checkpoint zipped tar archive.
-        self.delete_all_files()
+        self.__api.delete_all_files()
 
         # Locate the checkpoint we are interested in.
         try:
-            checkpoint = self._resolve_checkpoint_file(checksum)
+            checkpoint = self._get_checkpoint(checksum)
         except FileNotFoundError:
-            self.add_non_file_error('Unable to restore checkpoint. Not found.')
+            self.__api.add_error_non_file(
+                'Unable to restore checkpoint. Not found.'
+            )
             raise
-        if self.storage is None:
+        if self.__api.storage is None:
             raise RuntimeError('Storage not available')
-        self.storage.unpack_tarfile(self, checkpoint, self.source_path)
+        self.__api.storage.unpack_tarfile(self, checkpoint,
+                                          self.__api.source_path)
 
         # Restore fileindex and errors from previous metadata.
         meta_path = os.path.join(checkpoint.path.replace('.tar.gz', '.json'))
-        with self.open(self.get(meta_path, is_system=True)) as f_meta:
-            self._update_from_checkpoint(
-                self.from_dict(load(f_meta, cls=ISO8601JSONDecoder)))
+        u_chex_file = self.__api.get(meta_path, is_system=True)
+        with self.__api.open(u_chex_file) as f_meta:
+            loaded = self.from_dict(load(f_meta, cls=ISO8601JSONDecoder))
+            self._update_from_checkpoint(cast(IWorkspace, loaded))
 
         log_msg = f'Restored checkpoint: {checkpoint.name}'
         log_msg += f' [{user.username}].' if user else '.'
-        self.log.info(log_msg)
+        self.__api.log.info(log_msg)
+
+    @property
+    def _all_file_count(self) -> int:
+        return len(self.__api.iter_files(allow_ancillary=True))
+
+    def _get_checkpoint_count(self, user: User) -> int:
+        count = 0
+        while True:
+            _path = self._make_path(user, count + 1)
+            if not self.__api.exists(_path, is_system=True):
+                break
+            count += 1
+        return count
+
+    def _get_checkpoint_file_path(self, checksum: str) -> str:
+        """
+        Return the absolute path of content file given relative pointer.
+
+        Parameters
+        ----------
+        checksum : str
+            Checksum that uniquely identifies checkpoint.
+
+        Returns
+        -------
+        Path to checkpoint specified by unique checksum.
+
+        """
+        u_file = self._get_checkpoint(checksum)
+        if u_file is not None:
+            return u_file.path
+
+        raise FileNotFoundError(UPLOAD_FILE_NOT_FOUND)
+
+    def _is_checkpoint_file(self, u_file: UserFile) -> bool:
+        return bool(u_file.is_system
+                    and u_file.path.startswith(self.CHECKPOINT_PREFIX))
+
+    def _make_metadata_path(self, user: User, count: int) -> str:
+        user_string = f'_{user.username}' if user else ''
+        return os.path.join(self.CHECKPOINT_PREFIX,
+                            f'checkpoint_{count}{user_string}.json')
+
+    def _make_path(self, user: User, count: int) -> str:
+        user_string = f'_{user.username}' if user else ''
+        return os.path.join(self.CHECKPOINT_PREFIX,
+                            f'checkpoint_{count}{user_string}.tar.gz')
+
+    def _get_checkpoint(self, checksum: str) -> UserFile:
+        for u_file in self.__api.iter_files(allow_system=True):
+            if not self._is_checkpoint_file(u_file):
+                continue
+            if u_file.checksum == checksum:
+                return u_file
+        raise FileNotFoundError(UPLOAD_FILE_NOT_FOUND)
+
+    def _update_from_checkpoint(self, workspace: IWorkspace) -> None:
+        self.__api.files.source = workspace.files.source
+        self.__api.files.ancillary = workspace.files.ancillary
+        for u_file in self.__api.iter_files():
+            u_file.workspace = cast(IWorkspace, self)
+        self._errors = workspace.errors

@@ -5,7 +5,7 @@ import os
 import shutil
 from datetime import datetime
 import tempfile
-from ...domain import UploadWorkspace, UploadedFile
+from ...domain import Workspace, UserFile
 from ..storage import SimpleStorageAdapter, QuarantineStorageAdapter
 
 
@@ -22,7 +22,7 @@ class TestSimpleStorage(TestCase):
         self.upload_id \
             = self.workspace_path.split(self.base_path, 1)[1].lstrip('/')
         self.mock_workspace = mock.MagicMock(
-            spec=UploadWorkspace,
+            spec=Workspace,
             source_path=f'{self.upload_id}/src',
             ancillary_path=f'{self.upload_id}/src/anc',
             removed_path=f'{self.upload_id}/removed',
@@ -219,7 +219,7 @@ class TestQuarantineStorage(TestCase):
         self.q_source_path = os.path.join(self.q_workspace_path, 'src')
 
         self.mock_workspace = mock.MagicMock(
-            spec=UploadWorkspace,
+            spec=Workspace,
             source_path=f'{self.upload_id}/src',
             ancillary_path=f'{self.upload_id}/src/anc',
             removed_path=f'{self.upload_id}/removed',
@@ -252,7 +252,7 @@ class TestQuarantineStorage(TestCase):
                                    is_directory=False,
                                    is_ancillary=False,
                                    is_removed=False,
-                                   spec=UploadedFile)
+                                   spec=UserFile)
 
         with self.adapter.open(self.mock_workspace, mock_file) as f:
             self.assertEqual(f.read(), 'Thanks for all the fish')
@@ -271,7 +271,7 @@ class TestQuarantineStorage(TestCase):
                                    is_directory=False,
                                    is_ancillary=False,
                                    is_removed=False,
-                                   spec=UploadedFile)
+                                   spec=UserFile)
 
         self.assertEqual(self.adapter.get_size_bytes(self.mock_workspace, mock_file),
                          os.path.getsize(fpath))
@@ -286,7 +286,7 @@ class TestQuarantineStorage(TestCase):
                                    is_directory=False,
                                    is_ancillary=False,
                                    is_removed=False,
-                                   spec=UploadedFile)
+                                   spec=UserFile)
 
         _, fpath2 = tempfile.mkstemp(dir=self.q_source_path)
         rel_path2 = fpath2.split(self.q_source_path, 1)[1].lstrip('/')
@@ -296,7 +296,7 @@ class TestQuarantineStorage(TestCase):
                                     is_directory=False,
                                     is_ancillary=False,
                                     is_removed=False,
-                                    spec=UploadedFile)
+                                    spec=UserFile)
 
         self.assertFalse(
             self.adapter.cmp(self.mock_workspace, mock_file, mock_file2),
@@ -311,7 +311,7 @@ class TestQuarantineStorage(TestCase):
                                     is_directory=False,
                                     is_ancillary=False,
                                     is_removed=False,
-                                    spec=UploadedFile)
+                                    spec=UserFile)
 
         self.assertTrue(
             self.adapter.cmp(self.mock_workspace, mock_file, mock_file3),
@@ -328,7 +328,7 @@ class TestQuarantineStorage(TestCase):
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_persisted=False,
-                                   spec=UploadedFile)
+                                   spec=UserFile)
 
         self.adapter.delete(self.mock_workspace, mock_file)
         self.assertFalse(os.path.exists(fpath), 'The file is deleted')
@@ -341,7 +341,7 @@ class TestQuarantineStorage(TestCase):
                                   is_persisted=False,
                                   is_ancillary=False,
                                   is_removed=False,
-                                  spec=UploadedFile)
+                                  spec=UserFile)
 
         _, fpath = tempfile.mkstemp(dir=dpath)
         with open(fpath, 'w') as f:
@@ -361,7 +361,7 @@ class TestQuarantineStorage(TestCase):
                                    is_persisted=False,
                                    is_ancillary=False,
                                    is_removed=False,
-                                   spec=UploadedFile)
+                                   spec=UserFile)
         new_path = os.path.join(self.q_source_path, 'alt')
         new_rel_path = new_path.split(self.q_source_path, 1)[1].lstrip('/')
         mock_new_file = mock.MagicMock(path=new_rel_path,
@@ -369,7 +369,7 @@ class TestQuarantineStorage(TestCase):
                                        is_directory=False,
                                        is_ancillary=False,
                                        is_removed=False,
-                                       spec=UploadedFile)
+                                       spec=UserFile)
 
         self.adapter.copy(self.mock_workspace, mock_file, mock_new_file)
         with self.adapter.open(self.mock_workspace, mock_new_file) as f:
@@ -386,7 +386,7 @@ class TestQuarantineStorage(TestCase):
                                    is_persisted=False,
                                    is_ancillary=False,
                                    is_removed=False,
-                                   spec=UploadedFile)
+                                   spec=UserFile)
 
         new_path = os.path.join(self.q_source_path, 'new')
         new_rel_base_path = new_path.split(self.q_base_path, 1)[1].lstrip('/')
@@ -398,7 +398,7 @@ class TestQuarantineStorage(TestCase):
                                    is_persisted=False,
                                    is_ancillary=False,
                                    is_removed=False,
-                                   spec=UploadedFile)
+                                   spec=UserFile)
         with self.adapter.open(self.mock_workspace, mock_file) as f:
             self.assertEqual(f.read(), 'Thanks for all the fish')
 
@@ -408,7 +408,7 @@ class TestQuarantineStorage(TestCase):
                                    is_persisted=False,
                                    is_ancillary=False,
                                    is_removed=False,
-                                   spec=UploadedFile)
+                                   spec=UserFile)
         self.adapter.create(self.mock_workspace, mock_file)
         self.assertTrue(
             os.path.exists(os.path.join(self.q_source_path, 'foo.txt')),
@@ -421,7 +421,7 @@ class TestQuarantineStorage(TestCase):
                                    is_persisted=False,
                                    is_ancillary=False,
                                    is_removed=False,
-                                   spec=UploadedFile)
+                                   spec=UserFile)
         self.adapter.create(self.mock_workspace, mock_file)
         self.assertTrue(
             os.path.exists(os.path.join(self.q_source_path, 'baz/foo.txt')),
@@ -438,7 +438,7 @@ class TestQuarantineStorage(TestCase):
                                    is_persisted=False,
                                    is_ancillary=False,
                                    is_removed=False,
-                                   spec=UploadedFile)
+                                   spec=UserFile)
         self.adapter.persist(self.mock_workspace, mock_file)
         self.assertTrue(mock_file.is_persisted, 'File is marked as persisted')
         self.assertFalse(os.path.exists(fpath), 'Original file does not exist')
@@ -453,7 +453,7 @@ class TestQuarantineStorage(TestCase):
                                   is_persisted=False,
                                   is_ancillary=False,
                                   is_removed=False,
-                                  spec=UploadedFile)
+                                  spec=UserFile)
 
         _, fpath = tempfile.mkstemp(dir=dpath)
         rel_path = fpath.split(self.q_source_path, 1)[1].lstrip('/')
@@ -464,14 +464,14 @@ class TestQuarantineStorage(TestCase):
                                   is_persisted=False,
                                   is_ancillary=False,
                                   is_removed=False,
-                                  spec=UploadedFile)
+                                  spec=UserFile)
         self.adapter.persist(self.mock_workspace, mock_dir)
         self.assertTrue(mock_dir.is_persisted, 'Dir is marked as persisted')
         self.assertFalse(os.path.exists(fpath), 'Original dir does not exist')
 
         # Child file is also moved.
         mock_file = mock.MagicMock(path=rel_path,
-                                   spec=UploadedFile,
+                                   spec=UserFile,
                                    is_directory=False,
                                    is_persisted=True,
                                    is_ancillary=False,
@@ -481,20 +481,20 @@ class TestQuarantineStorage(TestCase):
 
 
 class TestStorageWithWorkspace(TestCase):
-    """Test using a SimpleStorageAdapter with an UploadWorkspace."""
+    """Test using a SimpleStorageAdapter with an Workspace."""
 
     def setUp(self):
         """We have a :class:`.SimpleStorageAdapter`."""
         self.base_path = tempfile.mkdtemp()
         self.adapter = SimpleStorageAdapter(self.base_path)
         self.mock_strategy = mock.MagicMock()
-        self.wks = UploadWorkspace(
+        self.wks = Workspace(
             upload_id=1234,
             owner_user_id='98765',
             created_datetime=datetime.now(),
             modified_datetime=datetime.now(),
-            strategy=self.mock_strategy,
-            storage=self.adapter
+            _strategy=self.mock_strategy,
+            _storage=self.adapter
         )
 
     def tearDown(self):
@@ -532,8 +532,8 @@ class TestStorageWithWorkspace(TestCase):
                          'Must return a relative path')
 
     def test_get_path(self):
-        """Can get a relative path for an :class:`.UploadedFile`."""
-        mock_file = mock.MagicMock(spec=UploadedFile,
+        """Can get a relative path for an :class:`.UserFile`."""
+        mock_file = mock.MagicMock(spec=UserFile,
                                    is_ancillary=False,
                                    is_removed=False,
                                    is_directory=False,
@@ -546,8 +546,8 @@ class TestStorageWithWorkspace(TestCase):
                          'Must return a relative path')
 
     def test_get_ancillary_file_path(self):
-        """Can get a relative path for an ancillary :class:`.UploadedFile`."""
-        mock_file = mock.MagicMock(spec=UploadedFile,
+        """Can get a relative path for an ancillary :class:`.UserFile`."""
+        mock_file = mock.MagicMock(spec=UserFile,
                                    is_ancillary=True,
                                    is_removed=False,
                                    is_directory=False,
@@ -560,8 +560,8 @@ class TestStorageWithWorkspace(TestCase):
                          'Must return a relative path')
 
     def test_get_removed_file_path(self):
-        """Can get a relative path for a removed :class:`.UploadedFile`."""
-        mock_file = mock.MagicMock(spec=UploadedFile,
+        """Can get a relative path for a removed :class:`.UserFile`."""
+        mock_file = mock.MagicMock(spec=UserFile,
                                    is_ancillary=False,
                                    is_removed=True,
                                    is_directory=False,

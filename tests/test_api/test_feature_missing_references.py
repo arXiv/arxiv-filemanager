@@ -17,7 +17,7 @@ from arxiv.users import domain, auth
 
 from filemanager.factory import create_web_app
 from filemanager.services import database
-from filemanager.domain import UploadWorkspace
+from filemanager.domain import Workspace, Readiness
 
 from .util import generate_token
 
@@ -87,7 +87,7 @@ class TestMissingReferences(TestCase):
         self.assertIn('readiness', response_data,
                       "Returns total upload status.")
         self.assertEqual(response_data['readiness'],
-                         UploadWorkspace.Readiness.ERRORS.value,
+                         Readiness.ERRORS.value,
                          'Workspace has readiness: `ERRORS`')
 
         # Get upload_id from previous file upload
@@ -117,6 +117,6 @@ class TestMissingReferences(TestCase):
         # from ERRORS to READY.
         self.assertIn('readiness', response_data, 'Readiness is provided')
         self.assertEqual(response_data['readiness'],
-                         UploadWorkspace.Readiness.READY.value,
+                         Readiness.READY.value,
                          'Workspace is ready with warnings')
 

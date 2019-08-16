@@ -16,7 +16,8 @@ from retry import retry
 from arxiv.base.globals import get_application_global
 from arxiv.base import logging
 
-from filemanager.domain import UploadWorkspace, FileIndex
+from filemanager.domain import Workspace, FileIndex, UserFile, Error, \
+    Readiness, LockState, SourceType, Status
 from .models import db, DBUpload
 from ..storage import create_adapter
 
@@ -69,7 +70,7 @@ def atomic(func: Callable) -> Callable:
     return inner
 
 
-def retrieve(upload_id: int, skip_cache: bool = False) -> UploadWorkspace:
+def retrieve(upload_id: int, skip_cache: bool = False) -> Workspace:
     """
     Get data about a upload.
 
@@ -79,12 +80,12 @@ def retrieve(upload_id: int, skip_cache: bool = False) -> UploadWorkspace:
         Unique identifier for the upload.
     skip_cache : bool
         If `True`, will load fresh data regardless of what might already be
-        around. Otherwise, will only load the same :class:`UploadWorkspace`
+        around. Otherwise, will only load the same :class:`Workspace`
         instance once.
 
     Returns
     -------
-    :class:`.UploadWorkspace`
+    :class:`.Workspace`
         Data about the upload.
 
     Raises
@@ -125,56 +126,56 @@ def retrieve(upload_id: int, skip_cache: bool = False) -> UploadWorkspace:
     args['created_datetime'] = upload_data.created_datetime.replace(tzinfo=UTC)
     args['modified_datetime'] = \
         upload_data.modified_datetime.replace(tzinfo=UTC)
-    args['status'] = UploadWorkspace.Status(upload_data.status)
-    args['lock_state'] = UploadWorkspace.LockState(upload_data.lock_state)
-    args['source_type'] = UploadWorkspace.SourceType(upload_data.source_type)
+    args['status'] = Status(upload_data.status)
+    args['lock_state'] = LockState(upload_data.lock_state)
+    args['source_type'] = SourceType(upload_data.source_type)
 
-    if upload_data.lastupload_start_datetime is not None:
-        args['lastupload_start_datetime'] = \
-            upload_data.lastupload_start_datetime.replace(tzinfo=UTC)
+    if upload_data.last_upload_start_datetime is not None:
+        args['last_upload_start_datetime'] = \
+            upload_data.last_upload_start_datetime.replace(tzinfo=UTC)
 
-    if upload_data.lastupload_completion_datetime is not None:
-        args['lastupload_completion_datetime'] = \
-            upload_data.lastupload_completion_datetime.replace(tzinfo=UTC)
+    if upload_data.last_upload_completion_datetime is not None:
+        args['last_upload_completion_datetime'] = \
+            upload_data.last_upload_completion_datetime.replace(tzinfo=UTC)
 
-    if upload_data.lastupload_logs is not None:
-        args['lastupload_logs'] = upload_data.lastupload_logs
+    if upload_data.last_upload_logs is not None:
+        args['last_upload_logs'] = upload_data.last_upload_logs
 
-    if upload_data.lastupload_file_summary is not None:
-        args['lastupload_file_summary'] = upload_data.lastupload_file_summary
+    if upload_data.last_upload_file_summary is not None:
+        args['last_upload_file_summary'] = upload_data.last_upload_file_summary
 
-    if upload_data.lastupload_readiness is not None:
-        args['lastupload_readiness'] \
-            = UploadWorkspace.Readiness(upload_data.lastupload_readiness)
-    args['storage'] = create_adapter(current_app)
-    workspace = UploadWorkspace(**args)
+    if upload_data.last_upload_readiness is not None:
+        args['last_upload_readiness'] \
+            = Readiness(upload_data.last_upload_readiness)
+    args['_storage'] = create_adapter(current_app)
+    workspace = Workspace(**args)
 
     if upload_data.files:
         workspace.files = FileIndex(
-            source={p: UploadWorkspace.dict_to_file(d, workspace)
+            source={p: UserFile.from_dict(d, workspace)
                     for p, d in upload_data.files['source'].items()},
-            ancillary={p: UploadWorkspace.dict_to_file(d, workspace)
+            ancillary={p: UserFile.from_dict(d, workspace)
                     for p, d in upload_data.files['ancillary'].items()},
-            removed={p: UploadWorkspace.dict_to_file(d, workspace)
+            removed={p: UserFile.from_dict(d, workspace)
                     for p, d in upload_data.files['removed'].items()},
-            system={p: UploadWorkspace.dict_to_file(d, workspace)
+            system={p: UserFile.from_dict(d, workspace)
                     for p, d in upload_data.files['system'].items()
             }
         )
     if upload_data.errors:
         for datum in upload_data.errors:
-            workspace._errors.append(UploadWorkspace.dict_to_error(datum))
+            workspace._errors.append(Error.from_dict(datum))
     workspace.initialize()
     return workspace
 
 
-def store(new_upload_data: UploadWorkspace) -> UploadWorkspace:
+def store(new_upload_data: Workspace) -> Workspace:
     """
-    Create a new record for a :class:`.UploadWorkspace` in the database.
+    Create a new record for a :class:`.Workspace` in the database.
 
     Parameters
     ----------
-    upload_data : :class:`.UploadWorkspace`
+    upload_data : :class:`.Workspace`
 
     Raises
     ------
@@ -194,8 +195,8 @@ def store(new_upload_data: UploadWorkspace) -> UploadWorkspace:
 
 
 def create(owner_user_id: str,
-           status: UploadWorkspace.Status = UploadWorkspace.Status.ACTIVE) \
-        -> UploadWorkspace:
+           status: Status = Status.ACTIVE) \
+        -> Workspace:
     current_datetime = datetime.now(UTC)
     upload_data = DBUpload(owner_user_id=owner_user_id,
                            created_datetime=current_datetime,
@@ -203,20 +204,20 @@ def create(owner_user_id: str,
                            status=status.value)
     db.session.add(upload_data)
     db.session.commit()
-    return UploadWorkspace(upload_id=upload_data.upload_id,
+    return Workspace(upload_id=upload_data.upload_id,
                            owner_user_id=owner_user_id,
                            created_datetime=current_datetime,
                            modified_datetime=current_datetime,
-                           storage=create_adapter(current_app))
+                           _storage=create_adapter(current_app))
 
 
-def update(workspace: UploadWorkspace) -> None:
+def update(workspace: Workspace) -> None:
     """
-    Update the database with the latest :class:`.UploadWorkspace`.
+    Update the database with the latest :class:`.Workspace`.
 
     Parameters
     ----------
-    the_thing : :class:`.UploadWorkspace`
+    the_thing : :class:`.Workspace`
 
     Raises
     ------
@@ -240,30 +241,27 @@ def update(workspace: UploadWorkspace) -> None:
 
     # We won't let client update created_datetime
 
-    upload_data.lastupload_start_datetime = \
-        workspace.lastupload_start_datetime
-    upload_data.lastupload_completion_datetime = \
-        workspace.lastupload_completion_datetime
-    upload_data.lastupload_logs = workspace.lastupload_logs
-    upload_data.lastupload_file_summary = workspace.lastupload_file_summary
-    upload_data.lastupload_readiness = workspace.lastupload_readiness.value
+    upload_data.last_upload_start_datetime = \
+        workspace.last_upload_start_datetime
+    upload_data.last_upload_completion_datetime = \
+        workspace.last_upload_completion_datetime
+    upload_data.last_upload_logs = workspace.last_upload_logs
+    upload_data.last_upload_file_summary = workspace.last_upload_file_summary
+    upload_data.last_upload_readiness = workspace.last_upload_readiness.value
     upload_data.status = workspace.status.value
     upload_data.lock_state = workspace.lock_state.value
     upload_data.source_type = workspace.source_type.value
     upload_data.modified_datetime = workspace.modified_datetime
 
     upload_data.files = {
-        'source': {p: UploadWorkspace.file_to_dict(f)
-                    for p, f in workspace.files.source.items()},
-        'ancillary': {p: UploadWorkspace.file_to_dict(f)
+        'source': {p: f.to_dict() for p, f in workspace.files.source.items()},
+        'ancillary': {p: f.to_dict()
                       for p, f in workspace.files.ancillary.items()},
-        'removed': {p: UploadWorkspace.file_to_dict(f)
+        'removed': {p: f.to_dict()
                     for p, f in workspace.files.removed.items()},
-        'system': {p: UploadWorkspace.file_to_dict(f)
-                   for p, f in workspace.files.system.items()},
+        'system': {p: f.to_dict() for p, f in workspace.files.system.items()},
     }
-    upload_data.errors = [UploadWorkspace.error_to_dict(e)
-                          for e in workspace._errors
+    upload_data.errors = [e.to_dict() for e in workspace._errors
                           if e.is_persistant]
 
     # 2019-06-28: In earlier versions, the ``modified_datetime`` of the

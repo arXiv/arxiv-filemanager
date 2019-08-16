@@ -1,4 +1,4 @@
-"""Runs checks against an :class:`.UploadWorkspace`."""
+"""Runs checks against an :class:`.Workspace`."""
 
 import os
 import re
@@ -9,7 +9,7 @@ from datetime import datetime
 
 from unittest import TestCase, mock
 
-from filemanager.domain import UploadWorkspace, UploadedFile, FileType
+from filemanager.domain import Workspace, UserFile, FileType, SourceType
 from filemanager.process.strategy import SynchronousCheckingStrategy
 from filemanager.process.check import get_default_checkers, cleanup, \
     FixFileExtensions
@@ -32,13 +32,13 @@ class TestTarGZUpload(TestCase):
         self.workspace_path = os.path.join(self.base_path, str(self.upload_id))
         os.makedirs(self.workspace_path)
 
-        self.workspace = UploadWorkspace(
+        self.workspace = Workspace(
             upload_id=self.upload_id,
             owner_user_id='98765',
             created_datetime=datetime.now(),
             modified_datetime=datetime.now(),
-            strategy=SynchronousCheckingStrategy(),
-            storage=SimpleStorageAdapter(self.base_path),
+            _strategy=SynchronousCheckingStrategy(),
+            _storage=SimpleStorageAdapter(self.base_path),
             checkers=get_default_checkers()
         )
         self.workspace.initialize()
@@ -63,10 +63,9 @@ class TestTarGZUpload(TestCase):
         self.assertEqual(type_counts[FileType.PDF], 2)
         self.assertEqual(type_counts[FileType.LATEX2e], 1)
 
-        self.assertEqual(self.workspace.source_type,
-                         UploadWorkspace.SourceType.TEX,
+        self.assertEqual(self.workspace.source_type, SourceType.TEX,
                          'Upload is TeX')
-        self.assertFalse(self.workspace.has_fatal_errors)
+        self.assertFalse(self.workspace.has_errors_fatal)
 
 
 class WorkspaceTestCase(TestCase):
@@ -81,13 +80,13 @@ class WorkspaceTestCase(TestCase):
         self.workspace_path = os.path.join(self.base_path, str(self.upload_id))
         os.makedirs(self.workspace_path)
 
-        self.workspace = UploadWorkspace(
+        self.workspace = Workspace(
             upload_id=self.upload_id,
             owner_user_id='98765',
             created_datetime=datetime.now(),
             modified_datetime=datetime.now(),
-            strategy=SynchronousCheckingStrategy(),
-            storage=SimpleStorageAdapter(self.base_path),
+            _strategy=SynchronousCheckingStrategy(),
+            _storage=SimpleStorageAdapter(self.base_path),
             checkers=get_default_checkers()
         )
         self.workspace.initialize()
@@ -125,18 +124,18 @@ class TestSingleFileSubmissions(WorkspaceTestCase):
         self.write_upload('test_files_upload/upload5.pdf')
         self.workspace.perform_checks()
         self.assertEqual(self.workspace.source_type,
-                         UploadWorkspace.SourceType.PDF,
+                         SourceType.PDF,
                          'Source type is PDF')
-        self.assertFalse(self.workspace.has_fatal_errors)
+        self.assertFalse(self.workspace.has_errors_fatal)
 
     def test_single_file_tex_submission(self):
         """Test checking a normal single-file 'TeX' submission."""
         self.write_upload('type_test_files/minMac.tex')
         self.workspace.perform_checks()
         self.assertEqual(self.workspace.source_type,
-                         UploadWorkspace.SourceType.TEX,
+                         SourceType.TEX,
                          'Source type is TEX')
-        self.assertFalse(self.workspace.has_fatal_errors)
+        self.assertFalse(self.workspace.has_errors_fatal)
         counts = self.workspace.get_file_type_counts()
         self.assertEqual(counts[FileType.LATEX2e], 1)
 
@@ -145,9 +144,9 @@ class TestSingleFileSubmissions(WorkspaceTestCase):
         self.write_upload('type_test_files/one.ps')
         self.workspace.perform_checks()
         self.assertEqual(self.workspace.source_type,
-                         UploadWorkspace.SourceType.POSTSCRIPT,
+                         SourceType.POSTSCRIPT,
                          'Source type is POSTSCRIPT')
-        self.assertFalse(self.workspace.has_fatal_errors)
+        self.assertFalse(self.workspace.has_errors_fatal)
         counts = self.workspace.get_file_type_counts()
         self.assertEqual(counts[FileType.POSTSCRIPT], 1)
 
@@ -156,9 +155,9 @@ class TestSingleFileSubmissions(WorkspaceTestCase):
         self.write_upload('test_files_sub_type/sampleA.ps')
         self.workspace.perform_checks()
         self.assertEqual(self.workspace.source_type,
-                         UploadWorkspace.SourceType.POSTSCRIPT,
+                         SourceType.POSTSCRIPT,
                          'Source type is POSTSCRIPT')
-        self.assertFalse(self.workspace.has_fatal_errors)
+        self.assertFalse(self.workspace.has_errors_fatal)
         counts = self.workspace.get_file_type_counts()
         self.assertEqual(counts[FileType.POSTSCRIPT], 1)
 
@@ -167,9 +166,9 @@ class TestSingleFileSubmissions(WorkspaceTestCase):
         self.write_upload('test_files_sub_type/sampleA.html')
         self.workspace.perform_checks()
         self.assertEqual(self.workspace.source_type,
-                         UploadWorkspace.SourceType.HTML,
+                         SourceType.HTML,
                          'Source type is HTML')
-        self.assertFalse(self.workspace.has_fatal_errors)
+        self.assertFalse(self.workspace.has_errors_fatal)
         counts = self.workspace.get_file_type_counts()
         self.assertEqual(counts[FileType.HTML], 1)
 
@@ -178,9 +177,9 @@ class TestSingleFileSubmissions(WorkspaceTestCase):
         self.write_upload('test_files_sub_type/sampleA.docx')
         self.workspace.perform_checks()
         self.assertEqual(self.workspace.source_type,
-                         UploadWorkspace.SourceType.INVALID,
+                         SourceType.INVALID,
                          'Source type is INVALID')
-        self.assertTrue(self.workspace.has_fatal_errors,
+        self.assertTrue(self.workspace.has_errors_fatal,
                         'DocX submissions are not allowed')
         counts = self.workspace.get_file_type_counts()
         self.assertEqual(counts[FileType.DOCX], 1)
@@ -190,9 +189,9 @@ class TestSingleFileSubmissions(WorkspaceTestCase):
         self.write_upload('test_files_sub_type/Hellotest.odt')
         self.workspace.perform_checks()
         self.assertEqual(self.workspace.source_type,
-                         UploadWorkspace.SourceType.INVALID,
+                         SourceType.INVALID,
                          'Source type is INVALID')
-        self.assertTrue(self.workspace.has_fatal_errors,
+        self.assertTrue(self.workspace.has_errors_fatal,
                         'ODT submissions are not allowed')
         counts = self.workspace.get_file_type_counts()
         self.assertEqual(counts[FileType.ODF], 1)
@@ -203,9 +202,9 @@ class TestSingleFileSubmissions(WorkspaceTestCase):
         self.write_upload('type_test_files/dos_eps_1.eps')
         self.workspace.perform_checks()
         self.assertEqual(self.workspace.source_type,
-                         UploadWorkspace.SourceType.INVALID,
+                         SourceType.INVALID,
                          'Source type is INVALID')
-        self.assertTrue(self.workspace.has_fatal_errors,
+        self.assertTrue(self.workspace.has_errors_fatal,
                         'EPS submissions are not allowed')
         counts = self.workspace.get_file_type_counts()
         self.assertEqual(counts[FileType.DOS_EPS], 1)
@@ -215,9 +214,9 @@ class TestSingleFileSubmissions(WorkspaceTestCase):
         self.write_upload('type_test_files/ol.sty')
         self.workspace.perform_checks()
         self.assertEqual(self.workspace.source_type,
-                         UploadWorkspace.SourceType.INVALID,
+                         SourceType.INVALID,
                          'Source type is INVALID')
-        self.assertTrue(self.workspace.has_fatal_errors,
+        self.assertTrue(self.workspace.has_errors_fatal,
                         'Texaux submissions are not allowed')
         counts = self.workspace.get_file_type_counts()
         self.assertEqual(counts[FileType.TEXAUX], 1)
@@ -231,9 +230,9 @@ class TestMultiFileSubmissions(WorkspaceTestCase):
         self.write_upload('test_files_sub_type/sampleB_html.tar.gz')
         self.workspace.perform_checks()
         self.assertEqual(self.workspace.source_type,
-                         UploadWorkspace.SourceType.HTML,
+                         SourceType.HTML,
                          'Source type is HTML')
-        self.assertFalse(self.workspace.has_fatal_errors,
+        self.assertFalse(self.workspace.has_errors_fatal,
                          'HTML submissions are OK')
         counts = self.workspace.get_file_type_counts()
         self.assertEqual(counts[FileType.IMAGE], 6)
@@ -245,9 +244,9 @@ class TestMultiFileSubmissions(WorkspaceTestCase):
         self.workspace.perform_checks()
         counts = self.workspace.get_file_type_counts()
         self.assertEqual(self.workspace.source_type,
-                         UploadWorkspace.SourceType.HTML,
+                         SourceType.HTML,
                          'Source type is HTML')
-        self.assertFalse(self.workspace.has_fatal_errors,
+        self.assertFalse(self.workspace.has_errors_fatal,
                          'HTML submissions are OK')
 
         self.assertEqual(counts[FileType.IMAGE], 20)
@@ -258,9 +257,9 @@ class TestMultiFileSubmissions(WorkspaceTestCase):
         self.write_upload('test_files_sub_type/sampleA_ps.tar.gz')
         self.workspace.perform_checks()
         self.assertEqual(self.workspace.source_type,
-                         UploadWorkspace.SourceType.TEX,
+                         SourceType.TEX,
                          'Source type is TEX')
-        self.assertFalse(self.workspace.has_fatal_errors,
+        self.assertFalse(self.workspace.has_errors_fatal,
                          'TEX submissions are OK')
         counts = self.workspace.get_file_type_counts()
         self.assertEqual(counts[FileType.LATEX2e], 1)
@@ -271,9 +270,9 @@ class TestMultiFileSubmissions(WorkspaceTestCase):
         self.write_upload('test_files_sub_type/sampleB_ps.tar.gz')
         self.workspace.perform_checks()
         self.assertEqual(self.workspace.source_type,
-                         UploadWorkspace.SourceType.TEX,
+                         SourceType.TEX,
                          'Source type is TEX')
-        self.assertFalse(self.workspace.has_fatal_errors,
+        self.assertFalse(self.workspace.has_errors_fatal,
                          'TEX submissions are OK')
         counts = self.workspace.get_file_type_counts()
         self.assertEqual(counts[FileType.LATEX2e], 1)
@@ -284,9 +283,9 @@ class TestMultiFileSubmissions(WorkspaceTestCase):
         self.write_upload('test_files_upload/UploadWithANCDirectory.tar.gz')
         self.workspace.perform_checks()
         self.assertEqual(self.workspace.source_type,
-                         UploadWorkspace.SourceType.TEX,
+                         SourceType.TEX,
                          'Source type is TEX')
-        self.assertFalse(self.workspace.has_fatal_errors,
+        self.assertFalse(self.workspace.has_errors_fatal,
                          'TEX submissions are OK')
         counts = self.workspace.get_file_type_counts()
         self.assertEqual(counts[FileType.TEXAUX], 3)
@@ -306,19 +305,19 @@ class TestUploadScenarios(WorkspaceTestCase):
         self.workspace.perform_checks()
         self.assertTrue(self.workspace.has_warnings)
         self.assertIn("File 'espcrc2.sty' is empty (size is zero).",
-                      self.workspace.get_warnings_for_path('espcrc2.sty', is_removed=True))
+                      self.workspace.get_warnings('espcrc2.sty', is_removed=True))
 
     def test_well_formed_submission(self):
         """Upload is a well-formed submission package."""
         self.write_upload('upload2.tar.gz')
         self.workspace.perform_checks()
-        self.assertFalse(self.workspace.has_fatal_errors)
+        self.assertFalse(self.workspace.has_errors_fatal)
 
     def test_another_well_formed_submission(self):
         """Upload is a well-formed submission package."""
         self.write_upload('upload3.tar.gz')
         self.workspace.perform_checks()
-        self.assertFalse(self.workspace.has_fatal_errors)
+        self.assertFalse(self.workspace.has_errors_fatal)
 
     def test_submission_with_warnings(self):
         """Upload is a well-formed submission package."""
@@ -326,14 +325,14 @@ class TestUploadScenarios(WorkspaceTestCase):
         self.workspace.perform_checks()
         self.assertTrue(self.workspace.has_warnings)
         self.assertIn("Renamed 'upload4.gz' to 'upload4'.",
-                      self.workspace.get_warnings_for_path('upload4'))
-        self.assertTrue(self.workspace.has_fatal_errors)
+                      self.workspace.get_warnings('upload4'))
+        self.assertTrue(self.workspace.has_errors_fatal)
 
     def test_yet_another_well_formed_submission(self):
         """Upload is a well-formed submission package."""
         self.write_upload('upload5.tar.gz')
         self.workspace.perform_checks()
-        self.assertFalse(self.workspace.has_fatal_errors)
+        self.assertFalse(self.workspace.has_errors_fatal)
 
     def test_a_tgz_file(self):
         """
@@ -343,7 +342,7 @@ class TestUploadScenarios(WorkspaceTestCase):
         """
         self.write_upload('upload6.tgz')
         self.workspace.perform_checks()
-        self.assertFalse(self.workspace.has_fatal_errors)
+        self.assertFalse(self.workspace.has_errors_fatal)
 
 
 class TestNestedArchives(WorkspaceTestCase):
@@ -359,7 +358,7 @@ class TestNestedArchives(WorkspaceTestCase):
         self.assertTrue(self.workspace.has_warnings)
         self.assertIn('There were problems unpacking \'jz2.zip\'. Please try'
                       ' again and confirm your files.',
-                      self.workspace.get_warnings_for_path('jz2.zip'))
+                      self.workspace.get_warnings('jz2.zip'))
 
     def test_contains_top_level_directory(self):
         """Contains a top-level directory."""
@@ -368,7 +367,7 @@ class TestNestedArchives(WorkspaceTestCase):
         self.assertTrue(self.workspace.has_warnings)
         self.assertIn(
             'Removed top level directory',
-            self.workspace.get_warnings_for_path('index_files/',
+            self.workspace.get_warnings('index_files/',
                                                  is_removed=True)
         )
         self.workspace.exists('link.gif')
@@ -387,7 +386,7 @@ class TestNestedArchives(WorkspaceTestCase):
         self.assertTrue(self.workspace.has_warnings)
         self.assertIn(
             'Removed top level directory',
-            self.workspace.get_warnings_for_path('source/', is_removed=True)
+            self.workspace.get_warnings('source/', is_removed=True)
         )
         self.workspace.exists('draft.tex')
 
@@ -404,7 +403,7 @@ class TestBadFilenames(WorkspaceTestCase):
         self.workspace.perform_checks()
         self.assertTrue(self.workspace.has_warnings)
         self.assertIn('Renamed c:\\data\\windows.txt to windows.txt',
-                      self.workspace.get_warnings_for_path('windows.txt'))
+                      self.workspace.get_warnings('windows.txt'))
 
     def test_contains_illegal_filenames(self):
         """Contains really bad filenames."""
@@ -412,7 +411,7 @@ class TestBadFilenames(WorkspaceTestCase):
         self.workspace.perform_checks()
         self.assertTrue(self.workspace.has_warnings)
         self.assertIn('Renamed 10-1-1(63).png to 10-1-1_63_.png',
-                      self.workspace.get_warnings_for_path('10-1-1_63_.png'))
+                      self.workspace.get_warnings('10-1-1_63_.png'))
 
 
 class TestUnpack(WorkspaceTestCase):
@@ -425,7 +424,7 @@ class TestUnpack(WorkspaceTestCase):
         self.assertTrue(self.workspace.has_warnings)
         self.assertIn(
             "Removed '__MACOSX' directory.",
-            self.workspace.get_warnings_for_path('__MACOSX/', is_removed=True)
+            self.workspace.get_warnings('__MACOSX/', is_removed=True)
         )
 
     def test_processed_directory(self):
@@ -434,7 +433,7 @@ class TestUnpack(WorkspaceTestCase):
         self.workspace.perform_checks()
         self.assertTrue(self.workspace.has_warnings)
         self.assertIn("Detected 'processed' directory. Please check.",
-                      self.workspace.get_warnings_for_path('processed/'))
+                      self.workspace.get_warnings('processed/'))
 
 
 class TestMalformedFiles(WorkspaceTestCase):
@@ -450,7 +449,7 @@ class TestMalformedFiles(WorkspaceTestCase):
         self.assertTrue(self.workspace.has_warnings)
         self.assertIn('File \'NoNewlineTermination.tex\' does not end with'
                       ' newline (\\n), TRUNCATED?',
-                      self.workspace.get_warnings_for_path('NoNewlineTermination.tex'))
+                      self.workspace.get_warnings('NoNewlineTermination.tex'))
 
 
 class TestStrip(WorkspaceTestCase):
@@ -472,7 +471,7 @@ class TestStrip(WorkspaceTestCase):
             ' to 172746 bytes (see http://arxiv.org/help/sizes)'
         )
         self.assertIn(expected_warning,
-                      self.workspace.get_warnings_for_path('PostscriptPhotoshop1.ps'))
+                      self.workspace.get_warnings('PostscriptPhotoshop1.ps'))
 
         result_path = self.workspace.get_full_path('PostscriptPhotoshop1.ps')
         expected_path = os.path.join(self.DATA_PATH,
@@ -493,7 +492,7 @@ class TestStrip(WorkspaceTestCase):
             ' to 93377 bytes (see http://arxiv.org/help/sizes)'
         )
         self.assertIn(expected_warning,
-                      self.workspace.get_warnings_for_path('PostscriptPhotoshop2.ps'))
+                      self.workspace.get_warnings('PostscriptPhotoshop2.ps'))
 
         result_path = self.workspace.get_full_path('PostscriptPhotoshop2.ps')
         expected_path = os.path.join(self.DATA_PATH,
@@ -514,7 +513,7 @@ class TestStrip(WorkspaceTestCase):
             ' to 1273439 bytes (see http://arxiv.org/help/sizes)'
         )
         self.assertIn(expected_warning,
-                      self.workspace.get_warnings_for_path('PostscriptPhotoshop3.ps'))
+                      self.workspace.get_warnings('PostscriptPhotoshop3.ps'))
 
         result_path = self.workspace.get_full_path('PostscriptPhotoshop3.ps')
         expected_path = os.path.join(self.DATA_PATH,
@@ -535,7 +534,7 @@ class TestStrip(WorkspaceTestCase):
             ' to 81123 bytes (see http://arxiv.org/help/sizes)'
         )
         self.assertIn(expected_warning,
-                      self.workspace.get_warnings_for_path('PostscriptPreview1.ps'))
+                      self.workspace.get_warnings('PostscriptPreview1.ps'))
 
         result_path = self.workspace.get_full_path('PostscriptPreview1.ps')
         expected_path = os.path.join(self.DATA_PATH,
@@ -556,7 +555,7 @@ class TestStrip(WorkspaceTestCase):
             ' to 418144 bytes (see http://arxiv.org/help/sizes)'
         )
         self.assertIn(expected_warning,
-                      self.workspace.get_warnings_for_path('PostscriptPreview2.ps'))
+                      self.workspace.get_warnings('PostscriptPreview2.ps'))
 
         result_path = self.workspace.get_full_path('PostscriptPreview2.ps')
         expected_path = os.path.join(self.DATA_PATH,
@@ -577,7 +576,7 @@ class TestStrip(WorkspaceTestCase):
             ' to 59657 bytes (see http://arxiv.org/help/sizes)'
         )
         self.assertIn(expected_warning,
-                      self.workspace.get_warnings_for_path('PostscriptThumbnail1.ps'))
+                      self.workspace.get_warnings('PostscriptThumbnail1.ps'))
 
         result_path = self.workspace.get_full_path('PostscriptThumbnail1.ps')
         expected_path = os.path.join(self.DATA_PATH,
@@ -598,7 +597,7 @@ class TestStrip(WorkspaceTestCase):
             ' to 70771 bytes (see http://arxiv.org/help/sizes)'
         )
         self.assertIn(expected_warning,
-                      self.workspace.get_warnings_for_path('PostscriptThumbnail2.ps'))
+                      self.workspace.get_warnings('PostscriptThumbnail2.ps'))
 
         result_path = self.workspace.get_full_path('PostscriptThumbnail2.ps')
         expected_path = os.path.join(self.DATA_PATH,
@@ -622,7 +621,7 @@ class TestStrip(WorkspaceTestCase):
             ' to 48174 bytes (see http://arxiv.org/help/sizes)'
         )
         self.assertIn(expected_warning,
-                      self.workspace.get_warnings_for_path('P11_cmplx_plane.ps'))
+                      self.workspace.get_warnings('P11_cmplx_plane.ps'))
 
         result_path = self.workspace.get_full_path('P11_cmplx_plane.ps')
         expected_path = os.path.join(self.DATA_PATH,
@@ -643,7 +642,7 @@ class TestStrip(WorkspaceTestCase):
             ' to 1688730 bytes (see http://arxiv.org/help/sizes)'
         )
         self.assertIn(expected_warning,
-                      self.workspace.get_warnings_for_path('cone.ps'))
+                      self.workspace.get_warnings('cone.ps'))
 
         result_path = self.workspace.get_full_path('cone.ps')
         expected_path = os.path.join(self.DATA_PATH,
@@ -922,13 +921,13 @@ class TestProcessCountFileTypes(WorkspaceTestCase):
 #         workspace_path = os.path.join(self.base_path, str(upload_id))
 #         os.makedirs(workspace_path)
 #
-#         return UploadWorkspace(
+#         return Workspace(
 #             upload_id=upload_id,
 #             owner_user_id='98765',
 #             created_datetime=datetime.now(),
 #             modified_datetime=datetime.now(),
-#             strategy=SynchronousCheckingStrategy(),
-#             storage=SimpleStorageAdapter(self.base_path),
+#             _strategy=SynchronousCheckingStrategy(),
+#             _storage=SimpleStorageAdapter(self.base_path),
 #             checkers=get_default_checkers()
 #         )
 #
@@ -947,4 +946,4 @@ class TestProcessCountFileTypes(WorkspaceTestCase):
 #                     dest.write(source.read())
 #
 #         workspace.perform_checks()
-#         self.assertTrue(workspace.has_fatal_errors)
+#         self.assertTrue(workspace.has_errors_fatal)

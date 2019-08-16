@@ -4,7 +4,7 @@ import io
 from contextlib import contextmanager
 from unittest import TestCase, mock
 from datetime import datetime
-from filemanager.domain import UploadedFile, UploadWorkspace, Error, FileType
+from filemanager.domain import UserFile, Workspace, Error, FileType
 from filemanager.controllers.transform import transform_error, \
     transform_file, transform_workspace
 
@@ -31,10 +31,10 @@ class TestTransformFile(TestCase):
     """Tests for :func:`.transform.transform_file`."""
 
     def test_transform_file(self):
-        """Transform a :class:`.UploadedFile`."""
-        workspace = mock.MagicMock(spec=UploadWorkspace)
+        """Transform a :class:`.UserFile`."""
+        workspace = mock.MagicMock(spec=Workspace)
         workspace.get_public_path.return_value = 'foo/path.md'
-        u_file = UploadedFile(workspace=workspace,
+        u_file = UserFile(workspace=workspace,
                               path='foo/path.md', is_ancillary=True,
                               size_bytes=54_022, file_type=FileType.TEX)
         expected = {'name': 'path.md', 'public_filepath': 'foo/path.md',
@@ -43,10 +43,10 @@ class TestTransformFile(TestCase):
         self.assertDictEqual(transform_file(u_file), expected)
 
     def test_transform_file_with_errors(self):
-        """Transform a :class:`.UploadedFile` with errors."""
-        workspace = mock.MagicMock(spec=UploadWorkspace)
+        """Transform a :class:`.UserFile` with errors."""
+        workspace = mock.MagicMock(spec=Workspace)
         workspace.get_public_path.return_value = 'foo/path.md'
-        u_file = UploadedFile(workspace=workspace,
+        u_file = UserFile(workspace=workspace,
                               path='foo/path.md', is_ancillary=False,
                               file_type=FileType.TEX,
                               size_bytes=54_022, _errors=[
@@ -70,10 +70,10 @@ class TestTransformFile(TestCase):
 
 
 class TestTransformWorkspace(TestCase):
-    """Transform an :class:`.UploadWorkspace."""
+    """Transform an :class:`.Workspace."""
 
     def test_transform_workspace(self):
-        """Transform an :class:`.UploadWorkspace."""
+        """Transform an :class:`.Workspace."""
         self.upload_id = 5432
 
         @contextmanager
@@ -84,13 +84,13 @@ class TestTransformWorkspace(TestCase):
         mock_storage.get_path.return_value = 'foo'
         mock_storage.open = mock_open
         mock_storage.get_size_bytes.return_value = 1234
-        workspace = UploadWorkspace(
+        workspace = Workspace(
             upload_id=self.upload_id,
             owner_user_id='98765',
             created_datetime=datetime.now(),
             modified_datetime=datetime.now(),
-            strategy=mock.MagicMock(),
-            storage=mock_storage
+            _strategy=mock.MagicMock(),
+            _storage=mock_storage
         )
         workspace.initialize()
         expected = {'upload_id': 5432, 'upload_total_size': 0,
@@ -106,7 +106,7 @@ class TestTransformWorkspace(TestCase):
             self.assertEqual(data.get(key), value, f'{key} should match')
 
     def test_transform_workspace_with_files_and_errors(self):
-        """Transform an :class:`.UploadWorkspace."""
+        """Transform an :class:`.Workspace."""
         self.upload_id = 5432
 
         @contextmanager
@@ -117,13 +117,13 @@ class TestTransformWorkspace(TestCase):
         mock_storage.get_path.return_value = 'foo'
         mock_storage.open = mock_open
         mock_storage.get_size_bytes.return_value = 1234
-        workspace = UploadWorkspace(
+        workspace = Workspace(
             upload_id=self.upload_id,
             owner_user_id='98765',
             created_datetime=datetime.now(),
             modified_datetime=datetime.now(),
-            strategy=mock.MagicMock(),
-            storage=mock_storage
+            _strategy=mock.MagicMock(),
+            _storage=mock_storage
         )
         workspace.initialize()
         u_file = workspace.create('foo/baz.md')

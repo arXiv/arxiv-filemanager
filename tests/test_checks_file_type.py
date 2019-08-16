@@ -10,7 +10,7 @@ import os
 from unittest import TestCase, mock
 
 from arxiv.base import logging
-from filemanager.domain import UploadWorkspace, UploadedFile, FileType
+from filemanager.domain import Workspace, UserFile, FileType
 from filemanager.process.check.file_type import InferFileType
 logger = logging.getLogger(__name__)
 
@@ -116,7 +116,7 @@ class TestInferFileType(TestCase):
     def setUp(self):
         """We have a checker instance."""
         self.check = InferFileType()
-        self.mock_workspace = mock.MagicMock(spec=UploadWorkspace)
+        self.mock_workspace = mock.MagicMock(spec=Workspace)
         self.mock_workspace.get_full_path.side_effect \
             = lambda f: os.path.join(DATA_PATH, f.path)
         self.mock_workspace.open.side_effect \

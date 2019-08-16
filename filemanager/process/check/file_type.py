@@ -1,13 +1,13 @@
 """Methods for file type checking."""
 
-import os
 import io
+import os
 import re
-from typing import Callable, Optional, List
+from typing import Callable, Optional, List, IO
 
 from arxiv.base import logging
 
-from ...domain import FileType, UploadedFile, CheckableWorkspace
+from ...domain import FileType, UserFile, Workspace
 from .base import BaseChecker
 
 
@@ -16,10 +16,10 @@ logger.propagate = False
 
 
 class InferFileType(BaseChecker):
-    """Attempt to check the :class:`.FileType` of an :class:`.UploadedFile`."""
+    """Attempt to check the :class:`.FileType` of an :class:`.UserFile`."""
 
-    def check_UNKNOWN(self, workspace: CheckableWorkspace, u_file: UploadedFile) \
-            -> UploadedFile:
+    def check_UNKNOWN(self, workspace: Workspace, u_file: UserFile) \
+            -> UserFile:
         """Perform file type check."""
         logger.debug('Identify a type for %s', u_file.path)
         for check_type in _type_checkers:
@@ -110,23 +110,23 @@ INCLUDE_GRAPHICS = re.compile(rb'^[^%]*\\includegraphics[^%]*\.'
 PDF_OUTPUT = re.compile(rb'^[^%]*\\pdfoutput(?:\s+)?=(?:\s+)?1')
 
 
-# def _check_exists(workspace: CheckableWorkspace,
-#                   u_file: UploadedFile) -> Optional[FileType]:
+# def _check_exists(workspace: Workspace,
+#                   u_file: UserFile) -> Optional[FileType]:
 #     """Check whether file exists (new)."""
 #     if not workspace.exists(u_file.path):
 #         return FileType.FAILED    # , '', ''
 
 
-def _check_command(workspace: CheckableWorkspace,
-                   u_file: UploadedFile) -> Optional[FileType]:
+def _check_command(workspace: Workspace,
+                   u_file: UserFile) -> Optional[FileType]:
     """Check for arXiv's special command file."""
     if ARXIV_COMMAND_FILE.search(u_file.path):
         return FileType.README    # , '', ''
     return None
 
 
-def _check_dvips_temp(workspace: CheckableWorkspace,
-                      u_file: UploadedFile) -> Optional[FileType]:
+def _check_dvips_temp(workspace: Workspace,
+                      u_file: UserFile) -> Optional[FileType]:
     """Ignore tmp files created by (unpatched) dvihps, in top dir."""
     if DVIPS_TEMP_FILE.search(u_file.path):
         return FileType.ALWAYS_IGNORE    # , '', ''
@@ -135,68 +135,68 @@ def _check_dvips_temp(workspace: CheckableWorkspace,
 
 # QUESTION: is this still relevant, given that FM service is decoupled from
 # compilation? -- Erick
-def _check_missing_font(workspace: CheckableWorkspace,
-                        u_file: UploadedFile) -> Optional[FileType]:
+def _check_missing_font(workspace: Workspace,
+                        u_file: UserFile) -> Optional[FileType]:
     """Missing font error is fatal error."""
     if MISSFONT_LOG_FILE.search(u_file.path):
         return FileType.ABORT    # ', '', ''
     return None
 
 
-def _check_aux_tex(workspace: CheckableWorkspace,
-                   u_file: UploadedFile) -> Optional[FileType]:
+def _check_aux_tex(workspace: Workspace,
+                   u_file: UserFile) -> Optional[FileType]:
     """Check whether this is an auxillary TeX File."""
     if AUX_TEX_FILE.search(u_file.path):
         return FileType.TEXAUX    # ', '', ''
     return None
 
 
-def _check_abs_file(workspace: CheckableWorkspace,
-                    u_file: UploadedFile) -> Optional[FileType]:
+def _check_abs_file(workspace: Workspace,
+                    u_file: UserFile) -> Optional[FileType]:
     """Check whether this is an arXiv legacy abstract metadata record."""
     if ABS_FILE.search(u_file.path):
         return FileType.ABS    # ', '', ''
     return None
 
 
-def _check_xfig(workspace: CheckableWorkspace,
-                u_file: UploadedFile) -> Optional[FileType]:
+def _check_xfig(workspace: Workspace,
+                u_file: UserFile) -> Optional[FileType]:
     # Ignore xfig files
     if XFIG_FILE.search(u_file.path):
         return FileType.IGNORE    # , '', ''
     return None
 
 
-def _check_notebook(workspace: CheckableWorkspace,
-                    u_file: UploadedFile) -> Optional[FileType]:
+def _check_notebook(workspace: Workspace,
+                    u_file: UserFile) -> Optional[FileType]:
     if NOTEBOOK_FILE.search(u_file.path):
         return FileType.NOTEBOOK    # , '', ''
     return None
 
 
-def _check_input(workspace: CheckableWorkspace,
-                 u_file: UploadedFile) -> Optional[FileType]:
+def _check_input(workspace: Workspace,
+                 u_file: UserFile) -> Optional[FileType]:
     if INPUT_FILE.search(u_file.path):
         return FileType.INPUT    # , '', ''
     return None
 
 
-def _check_html(workspace: CheckableWorkspace,
-                u_file: UploadedFile) -> Optional[FileType]:
+def _check_html(workspace: Workspace,
+                u_file: UserFile) -> Optional[FileType]:
     if HTML_FILE.search(u_file.path):
         return FileType.HTML    # , '', ''
     return None
 
 
-def _check_encrypted(workspace: CheckableWorkspace,
-                     u_file: UploadedFile) -> Optional[FileType]:
+def _check_encrypted(workspace: Workspace,
+                     u_file: UserFile) -> Optional[FileType]:
     if ENCRYPTED_FILE.search(u_file.path):
         return FileType.ENCRYPTED    # , '', ''
     return None
 
 
-def _check_zero_size(workspace: CheckableWorkspace,
-                     u_file: UploadedFile) -> Optional[FileType]:
+def _check_zero_size(workspace: Workspace,
+                     u_file: UserFile) -> Optional[FileType]:
     """Check for zero size file size."""
     if workspace.get_size_bytes(u_file) == 0:
         return FileType.IGNORE    # , '', ''
@@ -204,21 +204,21 @@ def _check_zero_size(workspace: CheckableWorkspace,
 
 
 # Check for compressed formats (compressed,gzip,bzips)
-def _check_compressed(workspace: CheckableWorkspace, u_file: UploadedFile,
+def _check_compressed(workspace: Workspace, u_file: UserFile,
                       content: bytes) -> Optional[FileType]:
     if content[0] == 0x1F and content[1] == 0x9D:
         return FileType.COMPRESSED    # , '', ''
     return None
 
 
-def _check_gzipped(workspace: CheckableWorkspace, u_file: UploadedFile,
+def _check_gzipped(workspace: Workspace, u_file: UserFile,
                    content: bytes) -> Optional[FileType]:
     if content[0] == 0x1F and content[1] == 0x8B:
         return FileType.GZIPPED    # , '', ''
     return None
 
 
-def _check_bzip2(workspace: CheckableWorkspace, u_file: UploadedFile,
+def _check_bzip2(workspace: Workspace, u_file: UserFile,
                  content: bytes) -> Optional[FileType]:
     if content[0] == 0x42 and content[1] == 0x5A \
             and content[2] == 0x68 and content[3] > 0x2F:
@@ -226,8 +226,8 @@ def _check_bzip2(workspace: CheckableWorkspace, u_file: UploadedFile,
     return None
 
 
-def _check_posix_tarfile(workspace: CheckableWorkspace,
-                         u_file: UploadedFile,
+def _check_posix_tarfile(workspace: Workspace,
+                         u_file: UserFile,
                          content: bytes) -> Optional[FileType]:
     # POSIX tarfiles: look for the string 'ustar' at position 257
     # (There used to be additional code to detect non-POSIX tar files
@@ -237,7 +237,7 @@ def _check_posix_tarfile(workspace: CheckableWorkspace,
     return None
 
 
-def _check_dvi(workspace: CheckableWorkspace, u_file: UploadedFile,
+def _check_dvi(workspace: Workspace, u_file: UserFile,
                content: bytes) -> Optional[FileType]:
     """Check for DVI file."""
     if content[0] == 0xF7 and content[1] == 2:
@@ -245,7 +245,7 @@ def _check_dvi(workspace: CheckableWorkspace, u_file: UploadedFile,
     return None
 
 
-def _check_gif8(workspace: CheckableWorkspace, u_file: UploadedFile,
+def _check_gif8(workspace: Workspace, u_file: UserFile,
                 content: bytes) -> Optional[FileType]:
     """Check for GIF8 image."""
     if content[0:4] == b'GIF8':
@@ -253,7 +253,7 @@ def _check_gif8(workspace: CheckableWorkspace, u_file: UploadedFile,
     return None
 
 
-def _check_png(workspace: CheckableWorkspace, u_file: UploadedFile,
+def _check_png(workspace: Workspace, u_file: UserFile,
                content: bytes) -> Optional[FileType]:
     """Check for PNG image."""
     if content[0:8] == b'\211PNG\r\n\032\n':
@@ -261,7 +261,7 @@ def _check_png(workspace: CheckableWorkspace, u_file: UploadedFile,
     return None
 
 
-def _check_tiff(workspace: CheckableWorkspace, u_file: UploadedFile,
+def _check_tiff(workspace: Workspace, u_file: UserFile,
                 content: bytes) -> Optional[FileType]:
     """
     Check for TIFF image (big endian and little endian).
@@ -278,7 +278,7 @@ def _check_tiff(workspace: CheckableWorkspace, u_file: UploadedFile,
 
 
 
-def _check_jpeg(workspace: CheckableWorkspace, u_file: UploadedFile,
+def _check_jpeg(workspace: Workspace, u_file: UserFile,
                 content: bytes) -> Optional[FileType]:
     """
     Check for JPEG image.
@@ -292,7 +292,7 @@ def _check_jpeg(workspace: CheckableWorkspace, u_file: UploadedFile,
     return None
 
 
-def _check_mpeg_image(workspace: CheckableWorkspace, u_file: UploadedFile,
+def _check_mpeg_image(workspace: Workspace, u_file: UserFile,
                       content: bytes) -> Optional[FileType]:
     """
     Check for MPEG image.
@@ -305,8 +305,8 @@ def _check_mpeg_image(workspace: CheckableWorkspace, u_file: UploadedFile,
     return None
 
 
-def _check_zip_and_extensions(workspace: CheckableWorkspace,
-                              u_file: UploadedFile,
+def _check_zip_and_extensions(workspace: Workspace,
+                              u_file: UserFile,
                               content: bytes) -> Optional[FileType]:
     """
     Check for zip format or an extension.
@@ -328,7 +328,7 @@ def _check_zip_and_extensions(workspace: CheckableWorkspace,
     return None
 
 
-def _check_rar(workspace: CheckableWorkspace, u_file: UploadedFile,
+def _check_rar(workspace: Workspace, u_file: UserFile,
                content: bytes) -> Optional[FileType]:
     """Check for a RAR file."""
     if content[0:4] == b'Rar!':
@@ -336,7 +336,7 @@ def _check_rar(workspace: CheckableWorkspace, u_file: UploadedFile,
     return None
 
 
-def _check_dos_eps(workspace: CheckableWorkspace, u_file: UploadedFile,
+def _check_dos_eps(workspace: Workspace, u_file: UserFile,
                    content: bytes) -> Optional[FileType]:
     """
     Check for DOS EPS.
@@ -350,14 +350,14 @@ def _check_dos_eps(workspace: CheckableWorkspace, u_file: UploadedFile,
     return None
 
 
-def _check_pdf(workspace: CheckableWorkspace, u_file: UploadedFile,
+def _check_pdf(workspace: Workspace, u_file: UserFile,
                content: bytes) -> Optional[FileType]:
     if PDF.search(content):
         return FileType.PDF    # , '', ''
     return None
 
 
-def _check_mac(workspace: CheckableWorkspace, u_file: UploadedFile,
+def _check_mac(workspace: Workspace, u_file: UserFile,
                content: bytes) -> Optional[FileType]:
     if MAC.search(content):
         return FileType.MAC    # , '', ''
@@ -366,8 +366,8 @@ def _check_mac(workspace: CheckableWorkspace, u_file: UploadedFile,
 
 # TODO: this can use more refactoring, but didn't want to get too deep into
 # it right now. -- Erick
-def _heavy_introspection(workspace: CheckableWorkspace,
-                         u_file: UploadedFile) -> Optional[FileType]:
+def _heavy_introspection(workspace: Workspace,
+                         u_file: UserFile) -> Optional[FileType]:
     """
     Perform final checks that involve heavy reading from the file.
 
@@ -380,7 +380,8 @@ def _heavy_introspection(workspace: CheckableWorkspace,
     maybe_tex_priority2 = 0
 
     # Scan file line by line looking for a wide variety of type indicators
-    with workspace.open(u_file, 'rb') as f:
+     # open() can return any IO, so we have to be explicit.
+    with workspace.open(u_file, 'rb') as f:    # type: IO[bytes]
         line_no = 1
         accum = b""
         for line in f:
@@ -396,7 +397,7 @@ def _heavy_introspection(workspace: CheckableWorkspace,
 
             # LaTeX2e/PDFLaTeX
             if line[0:6] == '%!TEX ' and line_no == 1:
-                return _type_of_latex2e(u_file, line_no)
+                return _type_of_latex2e(f, line_no)
 
             accum += line   # Accumulate what we've already seen.
 
@@ -430,11 +431,11 @@ def _heavy_introspection(workspace: CheckableWorkspace,
             # LaTeX and TeX macros
             match = LATEX_MACRO.search(line)
             if line_no <= 12 and match:
-                latex_type = ''
+                latex_type = b''
                 if match is not None:
                     latex_type = match.group(1)
-                    if (latex_type == 'latex209' or latex_type == 'biglatex'
-                            or latex_type == 'latex' or latex_type == 'LaTeX'):
+                    if latex_type \
+                            in [b'latex209', b'biglatex', b'latex', b'LaTeX']:
                         return FileType.LATEX    # , str(latex_type), ''
 
                     return FileType.TEX_MAC    # , str(latex_type), ''
@@ -513,7 +514,7 @@ def _heavy_introspection(workspace: CheckableWorkspace,
 
 
 # Select bewteen PDFLATEX and LATEX2e types.
-def _type_of_latex2e(f: io.BytesIO, count: int) -> FileType:
+def _type_of_latex2e(f: IO[bytes], count: int) -> FileType:
     """Determine whether file is PDFLATEX or LATEX2e."""
     limit = count + 5
     f.seek(0, 0)    # Rewind to beginning of file
@@ -526,7 +527,7 @@ def _type_of_latex2e(f: io.BytesIO, count: int) -> FileType:
     return FileType.LATEX2e    # ', '', ''
 
 
-_type_checkers: List[Callable[[CheckableWorkspace, UploadedFile],
+_type_checkers: List[Callable[[Workspace, UserFile],
                               Optional[FileType]]] = [
     # _check_exists,
     # Currently the following type identification relies on the extension
@@ -545,7 +546,7 @@ _type_checkers: List[Callable[[CheckableWorkspace, UploadedFile],
 ]
 """Checks that do not require inspecting content."""
 
-_content_type_checkers: List[Callable[[CheckableWorkspace, UploadedFile, bytes],
+_content_type_checkers: List[Callable[[Workspace, UserFile, bytes],
                                       Optional[FileType]]] = [
     _check_compressed,
     _check_gzipped,

@@ -14,6 +14,7 @@ arxiv-auth = "==0.4.1"
 mysqlclient = "==1.4.2"
 arxiv-vault = "==0.1.1rc15"
 multiprocessing-logging = "*"
+attrdict = "*"
 
 [dev-packages]
 "nose2" = "==0.9.1"

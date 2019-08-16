@@ -15,7 +15,7 @@ logger.propagate = False
 TFun = TypeVar('TFun', bound=Callable[..., Any])
 
 
-class _IUploadWorkspace(Protocol):
+class _IWorkspace(Protocol):
     """Interface for the upload workspace, from the perspective of this mod."""
 
     modified_datetime: datetime
@@ -27,9 +27,9 @@ class modifies_workspace:
     """Extend an instance method to perform post-modification steps."""
 
     def __call__(self, func: TFun) -> TFun:
-        """Decorate a :class:`.UploadWorkspace` method."""
+        """Decorate a :class:`.Workspace` method."""
         @wraps(func)
-        def inner(workspace: _IUploadWorkspace, *args: Any, **kwargs: Any) \
+        def inner(workspace: _IWorkspace, *args: Any, **kwargs: Any) \
                 -> Any:
             result = func(workspace, *args, **kwargs)
             workspace.modified_datetime = datetime.now(UTC)

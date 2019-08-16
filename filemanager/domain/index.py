@@ -4,7 +4,7 @@ from typing import Iterable, Tuple, Optional, Dict, Iterator
 from itertools import chain
 from dataclasses import dataclass, field
 
-from .uploaded_file import UploadedFile
+from .uploaded_file import UserFile
 
 
 class NoSuchFile(Exception):
@@ -14,19 +14,19 @@ class NoSuchFile(Exception):
 @dataclass
 class FileIndex:
     """
-    Indexing struct for :class:`.UploadedFile`s.
+    Indexing struct for :class:`.UserFile`s.
 
     The overarching objective is to keep track of system, ancillary, removed,
     and source files without committing to an underlying path/filesystem
     structure. This helps us maintain flexibility around how we store files.
     """
-    source: Dict[str, UploadedFile] = field(default_factory=dict)
-    ancillary: Dict[str, UploadedFile] = field(default_factory=dict)
-    removed: Dict[str, UploadedFile] = field(default_factory=dict)
-    system: Dict[str, UploadedFile] = field(default_factory=dict)
+    source: Dict[str, UserFile] = field(default_factory=dict)
+    ancillary: Dict[str, UserFile] = field(default_factory=dict)
+    removed: Dict[str, UserFile] = field(default_factory=dict)
+    system: Dict[str, UserFile] = field(default_factory=dict)
 
-    def set(self, path: str, u_file: UploadedFile) -> None:
-        """Add a :class:`.UploadedFile` to the index."""
+    def set(self, path: str, u_file: UserFile) -> None:
+        """Add a :class:`.UserFile` to the index."""
         if u_file.is_system:
             self.system[path] = u_file  # pylint: disable=unsupported-assignment-operation
         elif u_file.is_removed:
@@ -38,7 +38,7 @@ class FileIndex:
 
     def contains(self, path: str, is_ancillary: bool = False,
                  is_removed: bool = False, is_system: bool = False) -> bool:
-        """Determine whether an :class:`.UploadedFile` exists at ``path``."""
+        """Determine whether an :class:`.UserFile` exists at ``path``."""
         if is_system:
             return path in self.system
         if is_removed:
@@ -49,8 +49,8 @@ class FileIndex:
 
     def get(self, path: str, is_ancillary: bool = False,
             is_removed: bool = False, is_system: bool = False) \
-            -> UploadedFile:
-        """Get an :class:`.UploadedFile` exists at ``path``."""
+            -> UserFile:
+        """Get an :class:`.UserFile` exists at ``path``."""
         try:
             if is_system:
                 return self.system[path]
@@ -63,8 +63,8 @@ class FileIndex:
             raise NoSuchFile('No such file') from e
 
     def items(self, is_ancillary: bool = False, is_removed: bool = False,
-              is_system: bool = False) -> Iterable[Tuple[str, UploadedFile]]:
-        """Get an interator over (path, :class:`.UploadedFile`) tuples."""
+              is_system: bool = False) -> Iterable[Tuple[str, UserFile]]:
+        """Get an interator over (path, :class:`.UserFile`) tuples."""
         if is_system:
             return self.system.items()
         if is_removed:
@@ -75,8 +75,8 @@ class FileIndex:
 
     def pop(self, path: str, is_ancillary: bool = False,
             is_removed: bool = False, is_system: bool = False) \
-            -> Optional[UploadedFile]:
-        """Pop the :class:`.UploadedFile` at ``path``."""
+            -> Optional[UserFile]:
+        """Pop the :class:`.UserFile` at ``path``."""
         if is_system:
             value = self.system.pop(path, None)
         elif is_removed:
@@ -87,7 +87,7 @@ class FileIndex:
             value = self.source.pop(path, None)
         return value
 
-    def __iter__(self) -> Iterator[UploadedFile]:
-        """Get an interator over all :class:`.UploadedFile`s."""
+    def __iter__(self) -> Iterator[UserFile]:
+        """Get an interator over all :class:`.UserFile`s."""
         return chain(self.source.values(), self.ancillary.values(),
                      self.removed.values(), self.system.values())

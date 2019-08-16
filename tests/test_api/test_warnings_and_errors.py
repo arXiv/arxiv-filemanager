@@ -19,7 +19,7 @@ from arxiv.users import domain, auth
 
 from filemanager.factory import create_web_app
 from filemanager.services import database
-from filemanager.domain import UploadWorkspace
+from filemanager.domain import Workspace, Readiness
 
 from .util import generate_token
 
@@ -102,7 +102,7 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
         #  -- Erick 2019-06-25
         #
         self.assertEqual(self.response_data['readiness'],
-                         UploadWorkspace.Readiness.ERRORS.value,
+                         Readiness.ERRORS.value,
                          'Workspace has errors')
         self.assertEqual(self.response_data['source_format'], 'tex')
 
@@ -110,13 +110,13 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
         """This test currently exercises warnings and errors logic."""
         # Organize errors and files so that we can make assertions more easily.
         warnings = defaultdict(list)
-        fatal_errors = defaultdict(list)
+        errors_fatal = defaultdict(list)
         info_errors = defaultdict(list)
         for level, name, msg in self.response_data['errors']:
             if level == 'warn':
                 warnings[name].append(msg)
             elif level == 'fatal':
-                fatal_errors[name].append(msg)
+                errors_fatal[name].append(msg)
             elif level == 'info':
                 info_errors[name].append(msg)
         files = {f['name']: f for f in self.response_data['files']}
@@ -177,7 +177,7 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
         self.assertNotIn('espcrc2.sty', files, 'File was removed')
 
         self.assertIn("Your submission has been rejected because",
-                      ' '.join(fatal_errors['something.doc']))
+                      ' '.join(errors_fatal['something.doc']))
 
         self.assertIn("Removed file 'final.synctex'.",
                       ' '.join(info_errors['final.synctex']))
@@ -217,8 +217,7 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
         )
         response_data = json.loads(response.data)
         self.assertEqual(response_data['source_format'], 'tex')
-        self.assertEqual(response_data['readiness'],
-                         UploadWorkspace.Readiness.READY.value,
+        self.assertEqual(response_data['readiness'], Readiness.READY.value,
                          'Status returned to `READY`; removed file causing'
                          ' fatal error.')
 
@@ -239,13 +238,13 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
 
         # Organize errors and files so that we can make assertions more easily.
         warnings = defaultdict(list)
-        fatal_errors = defaultdict(list)
+        errors_fatal = defaultdict(list)
         info_errors = defaultdict(list)
         for level, name, msg in response_data['errors']:
             if level == 'warn':
                 warnings[name].append(msg)
             elif level == 'fatal':
-                fatal_errors[name].append(msg)
+                errors_fatal[name].append(msg)
             elif level == 'info':
                 info_errors[name].append(msg)
 

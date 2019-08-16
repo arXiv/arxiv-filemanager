@@ -1,17 +1,16 @@
 """File checks."""
 
-from typing import Optional, Callable, List, Tuple
-# from multiprocessing.pool import ThreadPool
 from functools import partial
-from threading import Thread
 from queue import Queue
+from threading import Thread
+from typing import Optional, Callable, List, Tuple, Iterable
 
 from flask import Flask
 
 from arxiv.base import logging
 from .check.base import StopCheck
-from ..domain import CheckableWorkspace, IChecker, ICheckingStrategy, \
-    UploadedFile
+from ..domain import Workspace, IChecker, ICheckingStrategy, \
+    UserFile
 
 logger = logging.getLogger(__name__)
 logger.propagate = False
@@ -31,7 +30,7 @@ class Worker(Thread):
         self.daemon = True
         self.start()
 
-    def run(self):
+    def run(self) -> None:
         """Perform tasks until the queue is empty."""
         while True:
             func, args = self.tasks.get()
@@ -49,16 +48,16 @@ class ThreadPool:
 
     def __init__(self, workers: int) -> None:
         """Create a :class:`.Queue`."""
-        self.tasks = Queue(workers)
+        self.tasks: Queue = Queue(workers)
         for _ in range(workers):
             Worker(self.tasks)
 
-    def map(self, func: Callable, args_list: List[Tuple]):
+    def map(self, func: Callable, args_list: List[Tuple]) -> None:
         """Apply ``func`` to each of the elements of ``args_list``."""
         for args in args_list:
             self.tasks.put((func, (args,)))
 
-    def await_completion(self):
+    def await_completion(self) -> None:
         """Await completion of all the tasks in the queue."""
         self.tasks.join()
 
@@ -66,12 +65,12 @@ class ThreadPool:
 class AsynchronousCheckingStrategy(BaseCheckingStrategy):
     """Runs checks in parallel processes."""
 
-    def check(self, workspace: 'CheckableWorkspace',
+    def check(self, workspace: 'Workspace',
               *checkers: IChecker) -> None:
         """Run checks in parallel threads."""
         pool = ThreadPool(10)
         while workspace.has_unchecked_files:
-            pool.map(partial(self._check_file, workspace, checkers), [u_file for u_file in workspace.iter_files(allow_directories=True)])
+            pool.map(partial(self._check_file, workspace, checkers), [(u_file,) for u_file in workspace.iter_files(allow_directories=True)])
             pool.await_completion()
 
             # Perform workspace-wide checks.
@@ -79,8 +78,9 @@ class AsynchronousCheckingStrategy(BaseCheckingStrategy):
                 if hasattr(checker, 'check_workspace'):
                     checker.check_workspace(workspace)
 
-    def _check_file(self, workspace: 'CheckableWorkspace', checkers: IChecker,
-                    u_file: UploadedFile) -> None:
+    def _check_file(self, workspace: 'Workspace',
+                    checkers: Iterable[IChecker],
+                    u_file: UserFile) -> None:
         for checker in checkers:
             try:
                 u_file = checker(workspace, u_file)
@@ -92,14 +92,13 @@ class AsynchronousCheckingStrategy(BaseCheckingStrategy):
                 break               # further action should be taken.
 
         u_file.is_checked = True
-        return u_file
 
 
 
 class SynchronousCheckingStrategy:
     """Runs checks one file at a time."""
 
-    def check(self, workspace: 'CheckableWorkspace',
+    def check(self, workspace: 'Workspace',
               *checkers: IChecker) -> None:
         """Run checks one file at a time."""
         # This may take a few passes, as we may be unpacking compressed files.

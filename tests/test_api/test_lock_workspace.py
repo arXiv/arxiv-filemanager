@@ -17,7 +17,7 @@ from arxiv.users import domain, auth
 
 from filemanager.factory import create_web_app
 from filemanager.services import database
-from filemanager.domain import UploadWorkspace
+from filemanager.domain import Workspace, LockState
 
 from .util import generate_token
 
@@ -141,7 +141,7 @@ class TestLockedWorkspace(TestCase):
                          "Request upload summary on locked workspace (OK)")
         response_data = json.loads(response.data)
         self.assertEqual(response_data['lock_state'],
-                         UploadWorkspace.LockState.LOCKED.value)
+                         LockState.LOCKED.value)
 
     def test_attempt_to_delete_a_file_in_locked_workspace(self):
         """Attempt to delete a file in a locked workspace."""
@@ -292,7 +292,7 @@ class TestUnLockedWorkspace(TestCase):
                          "Request upload summary on unlocked workspace (OK)")
         response_data = json.loads(response.data)
         self.assertEqual(response_data['lock_state'],
-                         UploadWorkspace.LockState.UNLOCKED.value)
+                         LockState.UNLOCKED.value)
 
     def test_attempt_to_delete_a_file_in_unlocked_workspace(self):
         """Attempt to delete a file in an unlocked workspace."""
