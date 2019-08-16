@@ -38,7 +38,7 @@
 <p>Handle requests for the source package.</p>
 <dl class="function">
 <dt id="filemanager.controllers.package.check_upload_content_exists">
-<code class="sig-prename descclassname">filemanager.controllers.package.</code><code class="sig-name descname">check_upload_content_exists</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/controllers/package.html#check_upload_content_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.controllers.package.check_upload_content_exists" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.controllers.package.</code><code class="sig-name descname">check_upload_content_exists</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; Tuple[Union[dict, IO, None], http.HTTPStatus, dict]<a class="reference internal" href="../_modules/filemanager/controllers/package.html#check_upload_content_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.controllers.package.check_upload_content_exists" title="Permalink to this definition">¶</a></dt>
 <dd><p>Verify that the package content exists/is available.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -52,15 +52,12 @@
 </ul>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Union" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Io</span></code>[<a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.AnyStr" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">AnyStr</span></code></a>], <code class="docutils literal notranslate"><span class="pre">None</span></code>], <a class="reference external" href="https://docs.python.org/3.6/library/http.html#http.HTTPStatus" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HTTPStatus</span></code></a>, <a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</p>
-</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.controllers.package.get_upload_content">
-<code class="sig-prename descclassname">filemanager.controllers.package.</code><code class="sig-name descname">get_upload_content</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/controllers/package.html#get_upload_content"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.controllers.package.get_upload_content" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.controllers.package.</code><code class="sig-name descname">get_upload_content</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em>, <em class="sig-param">user: arxiv.users.domain.User</em><span class="sig-paren">)</span> &#x2192; Tuple[Union[dict, IO, None], http.HTTPStatus, dict]<a class="reference internal" href="../_modules/filemanager/controllers/package.html#get_upload_content"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.controllers.package.get_upload_content" title="Permalink to this definition">¶</a></dt>
 <dd><p>Package up files for downloading as a compressed gzipped tar file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -73,9 +70,6 @@
 <li><p><em>dict</em> – HTTP headers.</p></li>
 </ul>
 </p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Union" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Io</span></code>[<a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.AnyStr" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">AnyStr</span></code></a>], <code class="docutils literal notranslate"><span class="pre">None</span></code>], <a class="reference external" href="https://docs.python.org/3.6/library/http.html#http.HTTPStatus" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HTTPStatus</span></code></a>, <a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</p>
 </dd>
 </dl>
 </dd></dl>

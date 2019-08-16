@@ -37,32 +37,29 @@
 <span id="filemanager-routes-upload-api-module"></span><h1>filemanager.routes.upload_api module<a class="headerlink" href="#module-filemanager.routes.upload_api" title="Permalink to this headline">¶</a></h1>
 <p>Provides routes for the external API.</p>
 <dl class="function">
+<dt id="filemanager.routes.upload_api.check_checkpoint_file_exists">
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">check_checkpoint_file_exists</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em>, <em class="sig-param">checkpoint_checksum: str</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#check_checkpoint_file_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.check_checkpoint_file_exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Verify that upload content exists.</p>
+<p>Returns an <code class="docutils literal notranslate"><span class="pre">ETag</span></code> header with the current source package checksum.</p>
+</dd></dl>
+
+<dl class="function">
 <dt id="filemanager.routes.upload_api.check_file_exists">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">check_file_exists</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em>, <em class="sig-param">public_file_path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#check_file_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.check_file_exists" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">check_file_exists</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em>, <em class="sig-param">public_file_path: str</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#check_file_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.check_file_exists" title="Permalink to this definition">¶</a></dt>
 <dd><p>Verify specified file exists.</p>
 <p>Returns an <code class="docutils literal notranslate"><span class="pre">ETag</span></code> header with the current source file checksum.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.check_upload_content_exists">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">check_upload_content_exists</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#check_upload_content_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.check_upload_content_exists" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">check_upload_content_exists</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#check_upload_content_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.check_upload_content_exists" title="Permalink to this definition">¶</a></dt>
 <dd><p>Verify that upload content exists.</p>
 <p>Returns an <code class="docutils literal notranslate"><span class="pre">ETag</span></code> header with the current source package checksum.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.check_upload_service_log_exists">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">check_upload_service_log_exists</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#check_upload_service_log_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.check_upload_service_log_exists" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">check_upload_service_log_exists</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#check_upload_service_log_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.check_upload_service_log_exists" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check that upload source log exists.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
@@ -71,15 +68,12 @@
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p>Returns an <code class="docutils literal notranslate"><span class="pre">ETag</span></code> header with the current source package checksum.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
-</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.check_upload_source_log_exists">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">check_upload_source_log_exists</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#check_upload_source_log_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.check_upload_source_log_exists" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">check_upload_source_log_exists</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#check_upload_source_log_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.check_upload_source_log_exists" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check that upload source log exists.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -91,29 +85,59 @@
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>Returns an <code class="docutils literal notranslate"><span class="pre">ETag</span></code> header with the current source package checksum.</p>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="filemanager.routes.upload_api.create_checkpoint">
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">create_checkpoint</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; tuple<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#create_checkpoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.create_checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create checkpoint from current files in specified workspace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>upload_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Workspace identifier</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="filemanager.routes.upload_api.delete_all_checkpoints">
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">delete_all_checkpoints</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; tuple<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#delete_all_checkpoints"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.delete_all_checkpoints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete all checkpoint files in specified workspace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>upload_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Workspace identifier</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.delete_all_files">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">delete_all_files</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#delete_all_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.delete_all_files" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">delete_all_files</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#delete_all_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.delete_all_files" title="Permalink to this definition">¶</a></dt>
 <dd><p>Delete all files in specified workspace.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>upload_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Workspace identifier</p>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="filemanager.routes.upload_api.delete_checkpoint">
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">delete_checkpoint</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em>, <em class="sig-param">checkpoint_checksum: str</em><span class="sig-paren">)</span> &#x2192; tuple<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#delete_checkpoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.delete_checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete individual checkpoint file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>upload_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Workspace identifier</p></li>
+<li><p><strong>checkpoint_checksum</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – Checkpoint checksum that uniquely identifies file to be removed.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.delete_file">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">delete_file</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em>, <em class="sig-param">public_file_path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#delete_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.delete_file" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">delete_file</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em>, <em class="sig-param">public_file_path: str</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#delete_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.delete_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Delete individual file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -122,62 +146,56 @@
 <li><p><strong>public_file_path</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – Relative file path that uniquely identifies file to be removed.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
-</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
+<dt id="filemanager.routes.upload_api.get_checkpoint_file">
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">get_checkpoint_file</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em>, <em class="sig-param">checkpoint_checksum: str</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#get_checkpoint_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.get_checkpoint_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the upload content as a compressed tarball.</p>
+<p>Returns a stream with mimetype <code class="docutils literal notranslate"><span class="pre">application/tar+gzip</span></code>, and an <code class="docutils literal notranslate"><span class="pre">ETag</span></code>
+header with the current source package checksum.</p>
+</dd></dl>
+
+<dl class="function">
 <dt id="filemanager.routes.upload_api.get_file_content">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">get_file_content</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em>, <em class="sig-param">public_file_path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#get_file_content"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.get_file_content" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">get_file_content</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em>, <em class="sig-param">public_file_path: str</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#get_file_content"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.get_file_content" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return content of specified file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>upload_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – </p></li>
-<li><p><strong>public_file_path</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – </p></li>
+<li><p><strong>upload_id</strong> – </p></li>
+<li><p><strong>public_file_path</strong> – </p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
-</dd>
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>File content.</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>File content.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.get_upload_content">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">get_upload_content</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#get_upload_content"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.get_upload_content" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">get_upload_content</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#get_upload_content"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.get_upload_content" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the upload content as a compressed tarball.</p>
 <p>Returns a stream with mimetype <code class="docutils literal notranslate"><span class="pre">application/tar+gzip</span></code>, and an <code class="docutils literal notranslate"><span class="pre">ETag</span></code>
 header with the current source package checksum.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.get_upload_files">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">get_upload_files</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#get_upload_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.get_upload_files" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">get_upload_files</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#get_upload_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.get_upload_files" title="Permalink to this definition">¶</a></dt>
 <dd><p>Upload summary.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>upload_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Workspace identifier</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.get_upload_service_log">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">get_upload_service_log</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#get_upload_service_log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.get_upload_service_log" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">get_upload_service_log</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#get_upload_service_log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.get_upload_service_log" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get upload file manager service log.</p>
 <p>Return the top level file manager service log that records high-level
 events/requests along with important errors/warnings.</p>
@@ -189,18 +207,15 @@ events/requests along with important errors/warnings.</p>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p>The log file for upload file manager service.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
-</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.get_upload_source_log">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">get_upload_source_log</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#get_upload_source_log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.get_upload_source_log" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">get_upload_source_log</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#get_upload_source_log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.get_upload_source_log" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get upload workspace log.</p>
-<p>Get the upload source log for specified upload workspace. This provides details of all
-upload/deletion/errors/warnings for specified workspace.</p>
+<p>Get the upload source log for specified upload workspace. This provides
+details of all upload/deletion/errors/warnings for specified workspace.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>upload_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – </p>
@@ -211,41 +226,39 @@ upload/deletion/errors/warnings for specified workspace.</p>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>The source.log for specified upload workspace.</p>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
-</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.handle_exception">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">handle_exception</code><span class="sig-paren">(</span><em class="sig-param">error</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#handle_exception"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.handle_exception" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">handle_exception</code><span class="sig-paren">(</span><em class="sig-param">error: werkzeug.exceptions.HTTPException</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#handle_exception"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.handle_exception" title="Permalink to this definition">¶</a></dt>
 <dd><p>JSON-ify the error response.</p>
 <p>This works just like the handlers in zero.routes.ui, but instead of
 rendering a template we are JSON-ifying the response. Note that we are
 registering the same error handler for several different exceptions, since
 we aren’t doing anything that is specific to a particular exception.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.is_owner">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">is_owner</code><span class="sig-paren">(</span><em class="sig-param">session</em>, <em class="sig-param">upload_id</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#is_owner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.is_owner" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">is_owner</code><span class="sig-paren">(</span><em class="sig-param">session: arxiv.users.domain.Session</em>, <em class="sig-param">upload_id: int</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#is_owner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.is_owner" title="Permalink to this definition">¶</a></dt>
 <dd><p>User must be the upload owner, or an admin.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="filemanager.routes.upload_api.list_checkpoints">
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">list_checkpoints</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; tuple<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#list_checkpoints"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.list_checkpoints" title="Permalink to this definition">¶</a></dt>
+<dd><p>List checkpoint files associated with specified workspace.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>upload_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Workspace identifier</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.lock_workspace">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">lock_workspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#lock_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.lock_workspace" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">lock_workspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#lock_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.lock_workspace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Lock submission workspace.</p>
 <p>Lock submission (read-only mode) while other services are
 processing (major state transitions are occurring).</p>
@@ -253,80 +266,63 @@ processing (major state transitions are occurring).</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>upload_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Workspace identifier</p>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
-</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.new_upload">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">new_upload</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#new_upload"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.new_upload" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">new_upload</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#new_upload"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.new_upload" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create workspace and upload files.</p>
 <p>Initial upload where workspace (upload_id) does not yet exist.</p>
 <p>This requests creates a new workspace. Upload package is processed normally.</p>
 <p>Client response include upload_id which is necessary for subsequent requests.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.release_workspace">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">release_workspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#release_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.release_workspace" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">release_workspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#release_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.release_workspace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Client indicates they are finished with submission.</p>
 <p>File management service is free to remove submissions files,
 or schedule workspace for removal.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="filemanager.routes.upload_api.restore_checkpoint">
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">restore_checkpoint</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em>, <em class="sig-param">checkpoint_checksum: str</em><span class="sig-paren">)</span> &#x2192; tuple<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#restore_checkpoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.restore_checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create checkpoint from current files in specified workspace.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>upload_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Workspace identifier</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.service_status">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">service_status</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#service_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.service_status" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">service_status</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#service_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.service_status" title="Permalink to this definition">¶</a></dt>
 <dd><p>Readiness endpoint.</p>
 <p>This route quickly exercises the downstream services/systems upon which
 the filemanager service depends. If all is well, returns 200 OK. Otherwise,
 returns 503 Service Unavailable.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.unlock_workspace">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">unlock_workspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#unlock_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.unlock_workspace" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">unlock_workspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#unlock_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.unlock_workspace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Unlock submission workspace and allow updates.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.unrelease_workspace">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">unrelease_workspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#unrelease_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.unrelease_workspace" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">unrelease_workspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#unrelease_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.unrelease_workspace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Client indicates they are NOT finished with submission.</p>
 <p>Workspace was previously release by client. Client has changed their
 mind and does not want to remove workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.upload_files">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">upload_files</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#upload_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.upload_files" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">upload_files</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#upload_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.upload_files" title="Permalink to this definition">¶</a></dt>
 <dd><p>Upload files to existing workspace.</p>
 <p>Upload individual files or compressed archive
 and add to existing upload workspace. Multiple uploads accepted.</p>
@@ -334,22 +330,32 @@ and add to existing upload workspace. Multiple uploads accepted.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>upload_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Workspace identifier</p>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="filemanager.routes.upload_api.upload_files_with_checkpoint">
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">upload_files_with_checkpoint</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; tuple<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#upload_files_with_checkpoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.upload_files_with_checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Upload files to existing workspace after creating checkpoint.</p>
+<p>Upload individual files or compressed archive
+and add to existing upload workspace. Multiple uploads accepted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>upload_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Workspace identifier</p></li>
+<li><p><strong>Note</strong> (<em>This request is reserved to users with special scope so</em>) – we won’t limit access to ‘is_owner’.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.routes.upload_api.workspace_delete">
-<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">workspace_delete</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#workspace_delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.workspace_delete" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.routes.upload_api.</code><code class="sig-name descname">workspace_delete</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/routes/upload_api.html#workspace_delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.routes.upload_api.workspace_delete" title="Permalink to this definition">¶</a></dt>
 <dd><p>Delete the specified workspace.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>upload_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Workspace identifier</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
 </dd>
 </dl>
 </dd></dl>

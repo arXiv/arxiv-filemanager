@@ -1,0 +1,224 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.domain.uploads.translatable &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.domain.uploads.translatable</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Conversion of domain objects to/from native structs for persistence.</span>
+
+<span class="sd">These are defined separately from the serialization functions that we use to</span>
+<span class="sd">prepare workspace data for API responses. In the API case, we are only exposing</span>
+<span class="sd">a subset of the information, and the naming/structure of the response documents</span>
+<span class="sd">in somewhat different from our internal representation. In contrast, the goal</span>
+<span class="sd">here is fidelity.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="k">import</span> <span class="n">Protocol</span>
+
+<span class="kn">from</span> <span class="nn">backports.datetime_fromisoformat</span> <span class="k">import</span> <span class="n">MonkeyPatch</span>
+
+<span class="kn">from</span> <span class="nn">..error</span> <span class="k">import</span> <span class="n">Error</span>
+<span class="kn">from</span> <span class="nn">..uploaded_file</span> <span class="k">import</span> <span class="n">UserFile</span>
+<span class="kn">from</span> <span class="nn">..file_type</span> <span class="k">import</span> <span class="n">FileType</span>
+<span class="kn">from</span> <span class="nn">..index</span> <span class="k">import</span> <span class="n">FileIndex</span>
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">IBaseWorkspace</span>
+
+<span class="n">MonkeyPatch</span><span class="o">.</span><span class="n">patch_fromisoformat</span><span class="p">()</span>
+
+
+<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;T&#39;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">IBaseWorkspace</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="IWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.translatable.html#filemanager.domain.uploads.translatable.IWorkspace">[docs]</a><span class="k">class</span> <span class="nc">IWorkspace</span><span class="p">(</span><span class="n">IBaseWorkspace</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Workspace behavior required for :class:`.Translatable`.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="ITranslatable"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.translatable.html#filemanager.domain.uploads.translatable.ITranslatable">[docs]</a><span class="k">class</span> <span class="nc">ITranslatable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for translatable behavior.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Mypy notes correctly that the erased type of ``cls`` is not a superclass</span>
+    <span class="c1"># of (I)Translatable. In practice this is not a problem, because we only</span>
+    <span class="c1"># use (I)Translatable in conjunction with workspaces.</span>
+<div class="viewcode-block" id="ITranslatable.from_dict"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.translatable.html#filemanager.domain.uploads.translatable.ITranslatable.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+        <span class="sd">&quot;&quot;&quot;Load a workspace from a dict representation.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="ITranslatable.to_dict"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.translatable.html#filemanager.domain.uploads.translatable.ITranslatable.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Generate a dict representation of a workspace.&quot;&quot;&quot;</span></div></div>
+
+
+<div class="viewcode-block" id="ITranslatableWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.translatable.html#filemanager.domain.uploads.translatable.ITranslatableWorkspace">[docs]</a><span class="k">class</span> <span class="nc">ITranslatableWorkspace</span><span class="p">(</span><span class="n">IWorkspace</span><span class="p">,</span> <span class="n">ITranslatable</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for workspace with translatable behavior.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="IFromDictable"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.translatable.html#filemanager.domain.uploads.translatable.IFromDictable">[docs]</a><span class="k">class</span> <span class="nc">IFromDictable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Supports loading constructor args from a dict.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IFromDictable.args_from_dict"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.translatable.html#filemanager.domain.uploads.translatable.IFromDictable.args_from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">args_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Pluck object constructor args from a dict.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IFromDictable.post_from_dict"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.translatable.html#filemanager.domain.uploads.translatable.IFromDictable.post_from_dict">[docs]</a>    <span class="nd">@classmethod</span>    <span class="c1"># See comment on ITranslatable.from_dict.</span>
+    <span class="k">def</span> <span class="nf">post_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span>      <span class="c1"># type: ignore</span>
+                       <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Update the object after it has been loaded from a dict.&quot;&quot;&quot;</span></div></div>
+
+
+<div class="viewcode-block" id="IToDictable"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.translatable.html#filemanager.domain.uploads.translatable.IToDictable">[docs]</a><span class="k">class</span> <span class="nc">IToDictable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Supports translating to dict.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IToDictable.to_dict_impl"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.translatable.html#filemanager.domain.uploads.translatable.IToDictable.to_dict_impl">[docs]</a>    <span class="nd">@classmethod</span>    <span class="c1"># See comment on ITranslatable.from_dict.</span>
+    <span class="k">def</span> <span class="nf">to_dict_impl</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>  <span class="c1"># type: ignore</span>
+        <span class="sd">&quot;&quot;&quot;Generate a dict representation of the object.&quot;&quot;&quot;</span></div></div>
+
+
+<div class="viewcode-block" id="Translatable"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.translatable.html#filemanager.domain.uploads.translatable.Translatable">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Translatable</span><span class="p">(</span><span class="n">ITranslatable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Adds translation functionality to/from native Python structs.&quot;&quot;&quot;</span>
+
+    <span class="n">__internal_api</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__api_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api</span><span class="p">:</span> <span class="n">IWorkspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Register the workspace API.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">Translatable</span><span class="p">,</span> <span class="bp">self</span><span class="p">),</span> <span class="s1">&#39;__api_init__&#39;</span><span class="p">):</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">Translatable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__api_init__</span><span class="p">(</span><span class="n">api</span><span class="p">)</span>    <span class="c1"># type: ignore</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span> <span class="o">=</span> <span class="n">api</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">__api</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IWorkspace</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Accessor for the internal workspace API.&quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span>
+
+<div class="viewcode-block" id="Translatable.from_dict"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.translatable.html#filemanager.domain.uploads.translatable.Translatable.from_dict">[docs]</a>    <span class="nd">@classmethod</span>    <span class="c1"># See comment on ITranslatable, above.</span>
+    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+        <span class="sd">&quot;&quot;&quot;Load a workspace from a dict representation.&quot;&quot;&quot;</span>
+        <span class="n">args</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">Interface</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">mro</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">Interface</span><span class="p">,</span> <span class="s1">&#39;args_from_dict&#39;</span><span class="p">):</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="n">cast</span><span class="p">(</span><span class="n">Type</span><span class="p">[</span><span class="n">IFromDictable</span><span class="p">],</span> <span class="n">Interface</span><span class="p">)</span><span class="o">.</span><span class="n">args_from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Mypy doesn&#39;t like variant keys.</span>
+        <span class="n">workspace</span><span class="p">:</span> <span class="n">T</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+        <span class="k">for</span> <span class="n">Interface</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">mro</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">Interface</span><span class="p">,</span> <span class="s1">&#39;post_from_dict&#39;</span><span class="p">):</span>
+                <span class="n">cast</span><span class="p">(</span><span class="n">Type</span><span class="p">[</span><span class="n">IFromDictable</span><span class="p">],</span> <span class="n">Interface</span><span class="p">)</span><span class="o">.</span><span class="n">post_from_dict</span><span class="p">(</span>
+                    <span class="n">cast</span><span class="p">(</span><span class="n">IFromDictable</span><span class="p">,</span> <span class="n">workspace</span><span class="p">),</span> <span class="n">data</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">workspace</span></div>
+
+<div class="viewcode-block" id="Translatable.to_dict"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.translatable.html#filemanager.domain.uploads.translatable.Translatable.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Generate a dict representation of a workspace.&quot;&quot;&quot;</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">Interface</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">mro</span><span class="p">()[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">Interface</span><span class="p">,</span> <span class="s1">&#39;to_dict_impl&#39;</span><span class="p">):</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">cast</span><span class="p">(</span><span class="n">Type</span><span class="p">[</span><span class="n">IToDictable</span><span class="p">],</span> <span class="n">Interface</span><span class="p">)</span>
+                            <span class="o">.</span><span class="n">to_dict_impl</span><span class="p">(</span><span class="n">cast</span><span class="p">(</span><span class="n">IToDictable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="n">data</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  <li><a href="../uploads.html">filemanager.domain.uploads</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

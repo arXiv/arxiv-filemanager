@@ -38,7 +38,7 @@
 <span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
 
-<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">CheckableWorkspace</span>
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">Workspace</span>
 <span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseChecker</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -56,8 +56,8 @@
     <span class="n">DOT_STY</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^(espcrc2|lamuphys)\.sty$&#39;</span><span class="p">)</span>
     <span class="n">DOT_TEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^(espcrc2|lamuphys)\.tex$&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="RemoveHyperlinkStyleFiles.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveHyperlinkStyleFiles.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+<div class="viewcode-block" id="RemoveHyperlinkStyleFiles.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveHyperlinkStyleFiles.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Check for and remove hyperlink styles espcrc2 and lamuphys.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">DOT_STY</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">WARNING_MSG</span> <span class="o">%</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
@@ -77,8 +77,8 @@
 
     <span class="n">DISALLOWED</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;uufiles&#39;</span><span class="p">,</span> <span class="s1">&#39;core&#39;</span><span class="p">,</span> <span class="s1">&#39;splread.1st&#39;</span><span class="p">]</span>
 
-<div class="viewcode-block" id="RemoveDisallowedFiles.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveDisallowedFiles.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+<div class="viewcode-block" id="RemoveDisallowedFiles.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveDisallowedFiles.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Check for and removes disallowed files.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">DISALLOWED</span><span class="p">:</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span>
@@ -95,8 +95,8 @@
     <span class="n">DESC_FILE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\.desc$&#39;</span><span class="p">)</span>
     <span class="n">DISALLOWED_PATTERNS</span> <span class="o">=</span> <span class="p">[</span><span class="n">XXX_FILE</span><span class="p">,</span> <span class="n">GF_FILE</span><span class="p">,</span> <span class="n">DESC_FILE</span><span class="p">]</span>
 
-<div class="viewcode-block" id="RemoveMetaFiles.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveMetaFiles.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+<div class="viewcode-block" id="RemoveMetaFiles.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveMetaFiles.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Check for and remove disallowed meta files.&quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">DISALLOWED_PATTERNS</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
@@ -121,8 +121,8 @@
     <span class="n">EXTRANEOUS</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^(10pt\.rtx|11pt\.rtx|12pt\.rtx|aps\.rtx|&#39;</span>
                             <span class="sa">r</span><span class="s1">&#39;revsymb\.sty|revtex4\.cls|rmp\.rtx)$&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="RemoveExtraneousRevTeXFiles.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveExtraneousRevTeXFiles.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+<div class="viewcode-block" id="RemoveExtraneousRevTeXFiles.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveExtraneousRevTeXFiles.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Check for and remove files already included in TeX Live release.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">EXTRANEOUS</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">REVTEX_WARNING_MSG</span><span class="p">)</span>
@@ -147,8 +147,8 @@
 
     <span class="n">DIAGRAMS</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^diagrams\.(sty|tex)$&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="RemoveDiagramsPackage.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveDiagramsPackage.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+<div class="viewcode-block" id="RemoveDiagramsPackage.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveDiagramsPackage.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Check for and remove the diagrams package.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">DIAGRAMS</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">DIAGRAMS_WARNING</span><span class="p">)</span>
@@ -168,8 +168,8 @@
          <span class="s1">&#39;macro package aa.cls.&#39;</span>
     <span class="p">)</span>
 
-<div class="viewcode-block" id="RemoveAADemoFile.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveAADemoFile.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+<div class="viewcode-block" id="RemoveAADemoFile.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveAADemoFile.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Check for and remove the ``aa.dem`` file.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;aa.dem&#39;</span><span class="p">:</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">AA_DEM_MSG</span><span class="p">)</span>
@@ -188,8 +188,8 @@
         <span class="s2">&quot; that our system generates.&quot;</span>
     <span class="p">)</span>
 
-<div class="viewcode-block" id="RemoveMissingFontFile.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveMissingFontFile.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+<div class="viewcode-block" id="RemoveMissingFontFile.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveMissingFontFile.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Check for and remove the ``missfont.log`` file.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;missfont.log&#39;</span><span class="p">:</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">MISSFONT_WARNING</span><span class="p">)</span>
@@ -210,8 +210,8 @@
     <span class="p">)</span>
     <span class="n">SYNCTEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\.synctex$&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="RemoveSyncTeXFiles.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveSyncTeXFiles.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+<div class="viewcode-block" id="RemoveSyncTeXFiles.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveSyncTeXFiles.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Check for and remove synctex files.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">SYNCTEX</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SYNCTEX_MSG</span> <span class="o">%</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
@@ -225,8 +225,8 @@
     <span class="n">PTN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;([\.\-]t?[ga]?z)$&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
     <span class="sd">&quot;&quot;&quot;[ needs info ]&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="FixTGZFileName.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.FixTGZFileName.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+<div class="viewcode-block" id="FixTGZFileName.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.FixTGZFileName.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;[ needs info ]&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">PTN</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
             <span class="n">base_path</span><span class="p">,</span> <span class="n">prev_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
@@ -238,7 +238,7 @@
         <span class="k">return</span> <span class="n">u_file</span></div></div>
 
 
-<span class="c1"># TODO: it&#39;s unclear why we have a fatal error that discusses rejection here </span>
+<span class="c1"># TODO: it&#39;s unclear why we have a fatal error that discusses rejection here</span>
 <span class="c1"># when we are also removing the file. -- Erick 2019-06-25</span>
 <div class="viewcode-block" id="RemoveDOCFiles"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveDOCFiles">[docs]</a><span class="k">class</span> <span class="nc">RemoveDOCFiles</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Removes .doc files that fail type checks.&quot;&quot;&quot;</span>
@@ -258,16 +258,16 @@
     <span class="p">)</span>
     <span class="sd">&quot;&quot;&quot;DOC (MS Word) format not accepted warning message.&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="RemoveDOCFiles.check_FAILED"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveDOCFiles.check_FAILED">[docs]</a>    <span class="k">def</span> <span class="nf">check_FAILED</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+<div class="viewcode-block" id="RemoveDOCFiles.check_FAILED"><a class="viewcode-back" href="../../../../api/filemanager.process.check.errata.html#filemanager.process.check.errata.RemoveDOCFiles.check_FAILED">[docs]</a>    <span class="k">def</span> <span class="nf">check_FAILED</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.doc&#39;</span><span class="p">):</span>
-            <span class="c1"># TODO: The original code did indeed include removal here; and </span>
-            <span class="c1"># yet we are issuing a warning that pre-supposes the presence of </span>
-            <span class="c1"># the file after processing. Disabling removal for now, but we </span>
-            <span class="c1"># should get clear on what the desired behavior is. </span>
+            <span class="c1"># TODO: The original code did indeed include removal here; and</span>
+            <span class="c1"># yet we are issuing a warning that pre-supposes the presence of</span>
+            <span class="c1"># the file after processing. Disabling removal for now, but we</span>
+            <span class="c1"># should get clear on what the desired behavior is.</span>
             <span class="c1"># -- Erick 2019-06-25</span>
             <span class="c1">#</span>
-            <span class="c1"># workspace.remove(u_file)  </span>
+            <span class="c1"># workspace.remove(u_file)</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">add_error</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">DOC_WARNING</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">u_file</span></div></div>
 </pre></div>

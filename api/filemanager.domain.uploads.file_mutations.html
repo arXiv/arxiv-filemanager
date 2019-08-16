@@ -16,7 +16,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="filemanager.domain.uploads.lock module" href="filemanager.domain.uploads.lock.html" />
-    <link rel="prev" title="filemanager.domain.uploads.errors_and_warnings module" href="filemanager.domain.uploads.errors_and_warnings.html" />
+    <link rel="prev" title="filemanager.domain.uploads.exceptions module" href="filemanager.domain.uploads.exceptions.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -37,76 +37,51 @@
 <span id="filemanager-domain-uploads-file-mutations-module"></span><h1>filemanager.domain.uploads.file_mutations module<a class="headerlink" href="#module-filemanager.domain.uploads.file_mutations" title="Permalink to this headline">¶</a></h1>
 <p>Provides <code class="xref py py-class docutils literal notranslate"><span class="pre">FileMutationsMixin</span></code>.</p>
 <dl class="class">
-<dt id="filemanager.domain.uploads.file_mutations.FileMutationsWorkspace">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.file_mutations.</code><code class="sig-name descname">FileMutationsWorkspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em>, <em class="sig-param">owner_user_id</em>, <em class="sig-param">created_datetime</em>, <em class="sig-param">modified_datetime</em>, <em class="sig-param">files=&lt;factory&gt;</em>, <em class="sig-param">storage=None</em>, <em class="sig-param">lastupload_start_datetime=None</em>, <em class="sig-param">lastupload_completion_datetime=None</em>, <em class="sig-param">lastupload_logs=&lt;factory&gt;</em>, <em class="sig-param">lastupload_file_summary=&lt;factory&gt;</em>, <em class="sig-param">_errors=&lt;factory&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutationsWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace" title="filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace</span></code></a></p>
-<p>Adds methods that alter files.</p>
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.file_mutations.</code><code class="sig-name descname">FileMutations</code><span class="sig-paren">(</span><em class="sig-param">_source_package: Optional[SourcePackage] = None</em>, <em class="sig-param">_log: Optional[SourceLog] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#filemanager.domain.uploads.file_mutations.IFileMutations" title="filemanager.domain.uploads.file_mutations.IFileMutations"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.file_mutations.IFileMutations</span></code></a></p>
+<p>Adds methods that alter files, including deleting the whole workspace.</p>
 <p>Introduces the source package.</p>
 <dl class="attribute">
-<dt id="filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.LEADING_DOTSLASH">
-<code class="sig-name descname">LEADING_DOTSLASH</code><em class="property"> = re.compile('^\\./')</em><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.LEADING_DOTSLASH" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations.LEADING_DOTSLASH">
+<code class="sig-name descname">LEADING_DOTSLASH</code><em class="property"> = re.compile('^\\./')</em><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations.LEADING_DOTSLASH" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pattern to match leading <code class="docutils literal notranslate"><span class="pre">./</span></code> in relative paths.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.add_files">
-<code class="sig-name descname">add_files</code><span class="sig-paren">(</span><em class="sig-param">*u_files</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutationsWorkspace.add_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.add_files" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add new :class:<a href="#id1"><span class="problematic" id="id2">`</span></a>.UploadedFile`s to this workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations.add_files">
+<code class="sig-name descname">add_files</code><span class="sig-paren">(</span><em class="sig-param">*u_files</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutations.add_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations.add_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add new :class:<a href="#id1"><span class="problematic" id="id2">`</span></a>.UserFile`s to this workspace.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.copy">
-<code class="sig-name descname">copy</code><span class="sig-paren">(</span><em class="sig-param">u_file</em>, <em class="sig-param">new_path</em>, <em class="sig-param">replace=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutationsWorkspace.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.copy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Make a copy of a file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations.copy">
+<code class="sig-name descname">copy</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">new_path: str</em>, <em class="sig-param">replace: bool = False</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutations.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a> <code class="docutils literal notranslate"><span class="pre">u_file</span></code> to path <code class="docutils literal notranslate"><span class="pre">new_path</span></code>.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.create">
-<code class="sig-name descname">create</code><span class="sig-paren">(</span><em class="sig-param">path</em>, <em class="sig-param">file_type=&lt;FileType.UNKNOWN: 'UNKNOWN'&gt;</em>, <em class="sig-param">replace=False</em>, <em class="sig-param">is_directory=False</em>, <em class="sig-param">is_ancillary=None</em>, <em class="sig-param">is_system=False</em>, <em class="sig-param">is_persisted=False</em>, <em class="sig-param">touch=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutationsWorkspace.create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.create" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a new <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a> at <code class="docutils literal notranslate"><span class="pre">path</span></code>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations.create">
+<code class="sig-name descname">create</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">file_type: filemanager.domain.file_type.FileType = &lt;FileType.UNKNOWN: 'UNKNOWN'&gt;</em>, <em class="sig-param">replace: bool = False</em>, <em class="sig-param">is_directory: bool = False</em>, <em class="sig-param">is_ancillary: Optional[bool] = None</em>, <em class="sig-param">is_system: bool = False</em>, <em class="sig-param">is_persisted: bool = False</em>, <em class="sig-param">touch: bool = True</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutations.create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations.create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a> at <code class="docutils literal notranslate"><span class="pre">path</span></code>.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.delete">
-<code class="sig-name descname">delete</code><span class="sig-paren">(</span><em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutationsWorkspace.delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.delete" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations.delete">
+<code class="sig-name descname">delete</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutations.delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations.delete" title="Permalink to this definition">¶</a></dt>
 <dd><p>Completely delete a file.</p>
-<p>See also <code class="xref py py-func docutils literal notranslate"><span class="pre">UploadWorkspace.remove()</span></code>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<p>See also <code class="xref py py-func docutils literal notranslate"><span class="pre">Workspace.remove()</span></code>.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.delete_all_files">
-<code class="sig-name descname">delete_all_files</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutationsWorkspace.delete_all_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.delete_all_files" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations.delete_all_files">
+<code class="sig-name descname">delete_all_files</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutations.delete_all_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations.delete_all_files" title="Permalink to this definition">¶</a></dt>
 <dd><p>Delete all source and ancillary files in the workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.delete_workspace">
-<code class="sig-name descname">delete_workspace</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutationsWorkspace.delete_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.delete_workspace" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations.delete_workspace">
+<code class="sig-name descname">delete_workspace</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutations.delete_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations.delete_workspace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Complete delete the upload workspace.</p>
 <p>This completely removes the upload workspace directory. No backup is
 made here (system backups may have files for period of time).</p>
@@ -117,81 +92,198 @@ made here (system backups may have files for period of time).</p>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)">bool</a></p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-</dd>
 </dl>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.initialize">
-<code class="sig-name descname">initialize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutationsWorkspace.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.initialize" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations.drop_refs">
+<code class="sig-name descname">drop_refs</code><span class="sig-paren">(</span><em class="sig-param">from_path: str</em>, <em class="sig-param">is_ancillary: bool = False</em>, <em class="sig-param">is_removed: bool = False</em>, <em class="sig-param">is_system: bool = False</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutations.drop_refs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations.drop_refs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Drop references to <code class="docutils literal notranslate"><span class="pre">from_path</span></code>.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.persist">
-<code class="sig-name descname">persist</code><span class="sig-paren">(</span><em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutationsWorkspace.persist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.persist" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations.initialize">
+<code class="sig-name descname">initialize</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutations.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up the source package and log for this workspace.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.persist_all">
-<code class="sig-name descname">persist_all</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutationsWorkspace.persist_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.persist_all" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations.log">
+<em class="property">property </em><code class="sig-name descname">log</code><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations.log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the source log for this workspace.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.remove">
-<code class="sig-name descname">remove</code><span class="sig-paren">(</span><em class="sig-param">u_file</em>, <em class="sig-param">reason=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutationsWorkspace.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.remove" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations.persist">
+<code class="sig-name descname">persist</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutations.persist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations.persist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move a file to permanent storage.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations.persist_all">
+<code class="sig-name descname">persist_all</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutations.persist_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations.persist_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move all files in the workspace to permanent storage.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations.remove">
+<code class="sig-name descname">remove</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">reason: Optional[str] = None</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutations.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations.remove" title="Permalink to this definition">¶</a></dt>
 <dd><p>Mark a file as removed, and quarantine.</p>
 <p>This is not the same as deletion.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.rename">
-<code class="sig-name descname">rename</code><span class="sig-paren">(</span><em class="sig-param">u_file</em>, <em class="sig-param">new_path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutationsWorkspace.rename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.rename" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations.rename">
+<code class="sig-name descname">rename</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">new_path: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutations.rename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations.rename" title="Permalink to this definition">¶</a></dt>
 <dd><p>Rename a file in this workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.replace">
-<code class="sig-name descname">replace</code><span class="sig-paren">(</span><em class="sig-param">to_replace</em>, <em class="sig-param">replace_with</em>, <em class="sig-param">keep_refs=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutationsWorkspace.replace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace.replace" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations.replace">
+<code class="sig-name descname">replace</code><span class="sig-paren">(</span><em class="sig-param">to_replace: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">replace_with: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">keep_refs: bool = True</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutations.replace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations.replace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Replace a file with another file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations.source_package">
+<em class="property">property </em><code class="sig-name descname">source_package</code><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations.source_package" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the source package for this workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.FileMutations.update_refs">
+<code class="sig-name descname">update_refs</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">from_path: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#FileMutations.update_refs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.FileMutations.update_refs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update references to <code class="docutils literal notranslate"><span class="pre">from_path</span></code> to <code class="docutils literal notranslate"><span class="pre">u_file</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.file_mutations.IFileMutations">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.file_mutations.</code><code class="sig-name descname">IFileMutations</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#IFileMutations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IFileMutations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Interface for file mutations behavior.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.IFileMutations.add_files">
+<code class="sig-name descname">add_files</code><span class="sig-paren">(</span><em class="sig-param">*u_files</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#IFileMutations.add_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IFileMutations.add_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add new :class:<a href="#id3"><span class="problematic" id="id4">`</span></a>.UserFile`s to this workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.IFileMutations.copy">
+<code class="sig-name descname">copy</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">new_path: str</em>, <em class="sig-param">replace: bool = False</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#IFileMutations.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IFileMutations.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a> <code class="docutils literal notranslate"><span class="pre">u_file</span></code> to path <code class="docutils literal notranslate"><span class="pre">new_path</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.IFileMutations.create">
+<code class="sig-name descname">create</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">file_type: filemanager.domain.file_type.FileType = &lt;FileType.UNKNOWN: 'UNKNOWN'&gt;</em>, <em class="sig-param">replace: bool = False</em>, <em class="sig-param">is_directory: bool = False</em>, <em class="sig-param">is_ancillary: Optional[bool] = None</em>, <em class="sig-param">is_system: bool = False</em>, <em class="sig-param">is_persisted: bool = False</em>, <em class="sig-param">touch: bool = True</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#IFileMutations.create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IFileMutations.create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a> at <code class="docutils literal notranslate"><span class="pre">path</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.IFileMutations.delete">
+<code class="sig-name descname">delete</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#IFileMutations.delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IFileMutations.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Completely delete a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.IFileMutations.delete_all_files">
+<code class="sig-name descname">delete_all_files</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#IFileMutations.delete_all_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IFileMutations.delete_all_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete all source and ancillary files in the workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.IFileMutations.delete_workspace">
+<code class="sig-name descname">delete_workspace</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#IFileMutations.delete_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IFileMutations.delete_workspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Complete delete the upload workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.IFileMutations.drop_refs">
+<code class="sig-name descname">drop_refs</code><span class="sig-paren">(</span><em class="sig-param">from_path: str</em>, <em class="sig-param">is_ancillary: bool = False</em>, <em class="sig-param">is_removed: bool = False</em>, <em class="sig-param">is_system: bool = False</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#IFileMutations.drop_refs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IFileMutations.drop_refs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Drop references to <code class="docutils literal notranslate"><span class="pre">from_path</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.IFileMutations.initialize">
+<code class="sig-name descname">initialize</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#IFileMutations.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IFileMutations.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up the source package and log for this workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.IFileMutations.log">
+<em class="property">property </em><code class="sig-name descname">log</code><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IFileMutations.log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the source log for this workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.IFileMutations.persist">
+<code class="sig-name descname">persist</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#IFileMutations.persist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IFileMutations.persist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move a file to permanent storage.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.IFileMutations.persist_all">
+<code class="sig-name descname">persist_all</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#IFileMutations.persist_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IFileMutations.persist_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move all files in the workspace to permanent storage.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.IFileMutations.remove">
+<code class="sig-name descname">remove</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">reason: Optional[str] = None</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#IFileMutations.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IFileMutations.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mark a file as removed, and quarantine.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.IFileMutations.replace">
+<code class="sig-name descname">replace</code><span class="sig-paren">(</span><em class="sig-param">to_replace: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">replace_with: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">keep_refs: bool = True</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#IFileMutations.replace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IFileMutations.replace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replace a file with another file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.IFileMutations.source_package">
+<em class="property">property </em><code class="sig-name descname">source_package</code><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IFileMutations.source_package" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the source package for this workspace.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.file_mutations.ISystemFilesWorkspace">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.file_mutations.</code><code class="sig-name descname">ISystemFilesWorkspace</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#ISystemFilesWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.ISystemFilesWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#filemanager.domain.uploads.file_mutations.IWorkspace" title="filemanager.domain.uploads.file_mutations.IWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.file_mutations.IWorkspace</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.ISystemFilesWorkspace.create">
+<code class="sig-name descname">create</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">file_type: filemanager.domain.file_type.FileType = &lt;FileType.UNKNOWN: 'UNKNOWN'&gt;</em>, <em class="sig-param">replace: bool = False</em>, <em class="sig-param">is_directory: bool = False</em>, <em class="sig-param">is_ancillary: Optional[bool] = None</em>, <em class="sig-param">is_system: bool = False</em>, <em class="sig-param">is_persisted: bool = False</em>, <em class="sig-param">touch: bool = True</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#ISystemFilesWorkspace.create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.ISystemFilesWorkspace.create" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.file_mutations.IWorkspace">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.file_mutations.</code><code class="sig-name descname">IWorkspace</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#IWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace" title="filemanager.domain.uploads.base.IBaseWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.base.IBaseWorkspace</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Workspace API required for <a class="reference internal" href="#filemanager.domain.uploads.file_mutations.FileMutations" title="filemanager.domain.uploads.file_mutations.FileMutations"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileMutations</span></code></a>.</p>
+<p>This incorporates the base API and any additional structures that require
+implementation by other components of the workspace.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.IWorkspace.add_error">
+<code class="sig-name descname">add_error</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">msg: str</em>, <em class="sig-param">severity: filemanager.domain.error.Error.Severity = &lt;Severity.FATAL: 'fatal'&gt;</em>, <em class="sig-param">is_persistant: bool = True</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#IWorkspace.add_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IWorkspace.add_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an error for a specific file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.file_mutations.IWorkspace.perform_checks">
+<code class="sig-name descname">perform_checks</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#IWorkspace.perform_checks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.IWorkspace.perform_checks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform all checks on the workspace.</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="filemanager.domain.uploads.file_mutations.SourceLog">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.file_mutations.</code><code class="sig-name descname">SourceLog</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">path</em>, <em class="sig-param">_file=None</em>, <em class="sig-param">log_format='%(asctime)s %(message)s'</em>, <em class="sig-param">time_format='%d/%b/%Y:%H:%M:%S %z'</em>, <em class="sig-param">level=20</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#SourceLog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.SourceLog" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.file_mutations.</code><code class="sig-name descname">SourceLog</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.file_mutations.ISystemFilesWorkspace</em>, <em class="sig-param">path: str</em>, <em class="sig-param">_file: Optional[filemanager.domain.uploaded_file.UserFile] = None</em>, <em class="sig-param">log_format: str = '%(asctime)s %(message)s'</em>, <em class="sig-param">time_format: str = '%d/%b/%Y:%H:%M:%S %z'</em>, <em class="sig-param">level: int = 20</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#SourceLog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.SourceLog" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.file_mutations._SpecialSystemFile</span></code></p>
 <p>Record of upload and processing events for a source workspace.</p>
 <dl class="attribute">
@@ -206,33 +298,18 @@ made here (system backups may have files for period of time).</p>
 
 <dl class="method">
 <dt id="filemanager.domain.uploads.file_mutations.SourceLog.debug">
-<code class="sig-name descname">debug</code><span class="sig-paren">(</span><em class="sig-param">message</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#SourceLog.debug"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.SourceLog.debug" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
-</dd></dl>
+<code class="sig-name descname">debug</code><span class="sig-paren">(</span><em class="sig-param">message: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#SourceLog.debug"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.SourceLog.debug" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="method">
 <dt id="filemanager.domain.uploads.file_mutations.SourceLog.error">
-<code class="sig-name descname">error</code><span class="sig-paren">(</span><em class="sig-param">message</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#SourceLog.error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.SourceLog.error" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
-</dd></dl>
+<code class="sig-name descname">error</code><span class="sig-paren">(</span><em class="sig-param">message: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#SourceLog.error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.SourceLog.error" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="method">
 <dt id="filemanager.domain.uploads.file_mutations.SourceLog.info">
-<code class="sig-name descname">info</code><span class="sig-paren">(</span><em class="sig-param">message</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#SourceLog.info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.SourceLog.info" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
-</dd></dl>
+<code class="sig-name descname">info</code><span class="sig-paren">(</span><em class="sig-param">message: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#SourceLog.info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.SourceLog.info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="attribute">
 <dt id="filemanager.domain.uploads.file_mutations.SourceLog.level">
@@ -255,29 +332,19 @@ made here (system backups may have files for period of time).</p>
 
 <dl class="class">
 <dt id="filemanager.domain.uploads.file_mutations.SourcePackage">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.file_mutations.</code><code class="sig-name descname">SourcePackage</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">path</em>, <em class="sig-param">_file=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#SourcePackage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.SourcePackage" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.file_mutations.</code><code class="sig-name descname">SourcePackage</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.file_mutations.ISystemFilesWorkspace</em>, <em class="sig-param">path: str</em>, <em class="sig-param">_file: Optional[filemanager.domain.uploaded_file.UserFile] = None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#SourcePackage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.SourcePackage" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.file_mutations._SpecialSystemFile</span></code></p>
 <p>An archive containing an entire submission source package.</p>
 <dl class="method">
 <dt id="filemanager.domain.uploads.file_mutations.SourcePackage.is_stale">
 <em class="property">property </em><code class="sig-name descname">is_stale</code><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.SourcePackage.is_stale" title="Permalink to this definition">¶</a></dt>
 <dd><p>Indicates whether or not the source package is out of date.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="filemanager.domain.uploads.file_mutations.SourcePackage.pack">
-<code class="sig-name descname">pack</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#SourcePackage.pack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.SourcePackage.pack" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
-</dd></dl>
+<code class="sig-name descname">pack</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/file_mutations.html#SourcePackage.pack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.file_mutations.SourcePackage.pack" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -317,7 +384,7 @@ made here (system backups may have files for period of time).</p>
   <li><a href="filemanager.html">filemanager package</a><ul>
   <li><a href="filemanager.domain.html">filemanager.domain package</a><ul>
   <li><a href="filemanager.domain.uploads.html">filemanager.domain.uploads package</a><ul>
-      <li>Previous: <a href="filemanager.domain.uploads.errors_and_warnings.html" title="previous chapter">filemanager.domain.uploads.errors_and_warnings module</a></li>
+      <li>Previous: <a href="filemanager.domain.uploads.exceptions.html" title="previous chapter">filemanager.domain.uploads.exceptions module</a></li>
       <li>Next: <a href="filemanager.domain.uploads.lock.html" title="next chapter">filemanager.domain.uploads.lock module</a></li>
   </ul></li>
   </ul></li>

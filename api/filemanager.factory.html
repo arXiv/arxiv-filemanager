@@ -15,7 +15,6 @@
     <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="filemanager.serialize module" href="filemanager.serialize.html" />
     <link rel="prev" title="filemanager.config module" href="filemanager.config.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
@@ -38,35 +37,20 @@
 <p>Application factory for file management app.</p>
 <dl class="function">
 <dt id="filemanager.factory.create_web_app">
-<code class="sig-prename descclassname">filemanager.factory.</code><code class="sig-name descname">create_web_app</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/factory.html#create_web_app"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.factory.create_web_app" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.factory.</code><code class="sig-name descname">create_web_app</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; flask.app.Flask<a class="reference internal" href="../_modules/filemanager/factory.html#create_web_app"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.factory.create_web_app" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialize and configure the filemanager application.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Flask</span></code></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.factory.jsonify_exception">
-<code class="sig-prename descclassname">filemanager.factory.</code><code class="sig-name descname">jsonify_exception</code><span class="sig-paren">(</span><em class="sig-param">error</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/factory.html#jsonify_exception"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.factory.jsonify_exception" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.factory.</code><code class="sig-name descname">jsonify_exception</code><span class="sig-paren">(</span><em class="sig-param">error: werkzeug.exceptions.HTTPException</em><span class="sig-paren">)</span> &#x2192; flask.wrappers.Response<a class="reference internal" href="../_modules/filemanager/factory.html#jsonify_exception"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.factory.jsonify_exception" title="Permalink to this definition">¶</a></dt>
 <dd><p>Render exceptions as JSON.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.factory.register_error_handlers">
-<code class="sig-prename descclassname">filemanager.factory.</code><code class="sig-name descname">register_error_handlers</code><span class="sig-paren">(</span><em class="sig-param">app</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/factory.html#register_error_handlers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.factory.register_error_handlers" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.factory.</code><code class="sig-name descname">register_error_handlers</code><span class="sig-paren">(</span><em class="sig-param">app: flask.app.Flask</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/factory.html#register_error_handlers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.factory.register_error_handlers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Register error handlers for the Flask app.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
 </dd></dl>
 
 </div>
@@ -104,7 +88,6 @@
   <li><a href="modules.html">filemanager</a><ul>
   <li><a href="filemanager.html">filemanager package</a><ul>
       <li>Previous: <a href="filemanager.config.html" title="previous chapter">filemanager.config module</a></li>
-      <li>Next: <a href="filemanager.serialize.html" title="next chapter">filemanager.serialize module</a></li>
   </ul></li>
   </ul></li>
   </ul></li>

@@ -39,33 +39,37 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">from</span> <span class="nn">http</span> <span class="k">import</span> <span class="n">HTTPStatus</span> <span class="k">as</span> <span class="n">status</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">BinaryIO</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
 
 <span class="kn">from</span> <span class="nn">pytz</span> <span class="k">import</span> <span class="n">UTC</span>
 <span class="kn">from</span> <span class="nn">flask</span> <span class="k">import</span> <span class="n">current_app</span><span class="p">,</span> <span class="n">url_for</span>
 <span class="kn">from</span> <span class="nn">werkzeug.exceptions</span> <span class="k">import</span> <span class="n">NotFound</span><span class="p">,</span> <span class="n">InternalServerError</span><span class="p">,</span> <span class="n">SecurityError</span><span class="p">,</span> \
-        <span class="n">Forbidden</span><span class="p">,</span> <span class="n">BadRequest</span>
+        <span class="n">Forbidden</span><span class="p">,</span> <span class="n">BadRequest</span><span class="p">,</span> <span class="n">HTTPException</span>
 <span class="kn">from</span> <span class="nn">werkzeug.datastructures</span> <span class="k">import</span> <span class="n">FileStorage</span>
 
 <span class="kn">from</span> <span class="nn">arxiv.users</span> <span class="k">import</span> <span class="n">domain</span> <span class="k">as</span> <span class="n">auth_domain</span>
 <span class="kn">from</span> <span class="nn">arxiv.base.globals</span> <span class="k">import</span> <span class="n">get_application_config</span>
 
-<span class="kn">from</span> <span class="nn">..domain</span> <span class="k">import</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">NoSuchFile</span>
+<span class="kn">from</span> <span class="nn">..domain</span> <span class="k">import</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">NoSuchFile</span><span class="p">,</span> <span class="n">Status</span>
+<span class="kn">from</span> <span class="nn">..domain.uploads.exceptions</span> <span class="k">import</span> <span class="n">EmptyUploadContentError</span><span class="p">,</span> \
+    <span class="n">UploadFileSecurityError</span><span class="p">,</span> <span class="n">InvalidUploadContentError</span><span class="p">,</span> \
+        <span class="n">NoSourceFilesToCheckpoint</span>
 <span class="kn">from</span> <span class="nn">..services</span> <span class="k">import</span> <span class="n">database</span><span class="p">,</span> <span class="n">storage</span>
 <span class="kn">from</span> <span class="nn">..process</span> <span class="k">import</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">check</span>
-<span class="kn">from</span> <span class="nn">..serialize</span> <span class="k">import</span> <span class="n">serialize_workspace</span>
+<span class="kn">from</span> <span class="nn">.transform</span> <span class="k">import</span> <span class="n">transform_workspace</span>
 <span class="kn">from</span> <span class="nn">.service_log</span> <span class="k">import</span> <span class="n">logger</span>
 <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">_messages</span> <span class="k">as</span> <span class="n">messages</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">util</span>
 
 <span class="n">Response</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="n">status</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span>
 
 
-<span class="k">def</span> <span class="nf">_create_workspace</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n">FileStorage</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadWorkspace</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">_create_workspace</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n">FileStorage</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user_string</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> \
+        <span class="o">-&gt;</span> <span class="n">Workspace</span><span class="p">:</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Create new workspace: Upload request: file=&#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span>
-                    <span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
-        <span class="n">current_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">UTC</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Create new workspace: Upload request: &quot;</span>
+                    <span class="s2">&quot;file=&#39;</span><span class="si">%s</span><span class="s2">&#39; [</span><span class="si">%s</span><span class="s2">]&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">user_string</span><span class="p">)</span>
         <span class="n">workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
         <span class="n">workspace</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
     <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -74,17 +78,14 @@
     <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">dbe</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Error adding new workspace to database: &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="n">dbe</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_DB_ERROR</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ue</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Unknown error in upload for new workspace. &quot;</span>
-                    <span class="s2">&quot; Add except clauses for &#39;</span><span class="si">%s</span><span class="s2">&#39;. DO IT NOW!&quot;</span><span class="p">,</span> <span class="n">ue</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_UNKNOWN_ERROR</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">workspace</span>
 
 
 <div class="viewcode-block" id="upload"><a class="viewcode-back" href="../../../api/filemanager.controllers.upload.html#filemanager.controllers.upload.upload">[docs]</a><span class="nd">@database</span><span class="o">.</span><span class="n">atomic</span>
-<span class="k">def</span> <span class="nf">upload</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FileStorage</span><span class="p">],</span> <span class="n">archive</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-           <span class="n">user</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">auth_domain</span><span class="o">.</span><span class="n">User</span><span class="p">,</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">Client</span><span class="p">],</span>
-           <span class="n">ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">upload</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">file</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">FileStorage</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+           <span class="n">user</span><span class="p">:</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">User</span><span class="p">,</span> <span class="n">ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+           <span class="n">checkpoint</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">clear_source_files</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> \
+        <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Upload individual files or compressed archive into specified workspace.</span>
 
@@ -103,6 +104,9 @@
 <span class="sd">        If ``True``, the file is to be treated as an ancillary file. This means</span>
 <span class="sd">        (presently) that the file is stored in a special subdirectory within</span>
 <span class="sd">        the source package.</span>
+<span class="sd">    checkpoint : bool</span>
+<span class="sd">        Create a checkpoint (backup) of source files before unpacking and</span>
+<span class="sd">        installing file payload for this request.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -113,8 +117,18 @@
 <span class="sd">    dict</span>
 <span class="sd">        Some extra headers to add to the response.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-    <span class="n">workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UploadWorkspace</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1"># Log username and upload_id or new.</span>
+    <span class="n">id_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">user_string</span> <span class="o">=</span> <span class="s1">&#39;None&#39;</span>
+    <span class="k">if</span> <span class="n">user</span><span class="p">:</span>
+        <span class="n">user_string</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">format_user_information_for_logging</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+
+    <span class="n">id_string</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">upload_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">id_string</span> <span class="o">=</span> <span class="s2">&quot;New&quot;</span>
+
+    <span class="c1"># start = time.time()</span>
+    <span class="n">workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Workspace</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="c1"># TODO: we need better handling for client-only requests here.</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">User</span><span class="p">):</span>
@@ -129,20 +143,20 @@
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Handling upload request for </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># Crash and burn...not quite...do we need info about client?</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Upload request is missing file/archive payload.&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">: Upload request is missing file/archive payload.&#39;</span><span class="p">,</span>
+                     <span class="n">upload_id</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">BadRequest</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_MISSING_FILE</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">filename</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
         <span class="c1"># Client needs to select file, or provide name to upload payload.</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Upload file is missing filename. File to upload may not&#39;</span>
-                     <span class="s1">&#39; be selected.&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">: Upload file is missing filename. File to upload may &#39;</span>
+                     <span class="s1">&#39;not be selected.&#39;</span><span class="p">,</span> <span class="n">id_string</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">BadRequest</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_MISSING_FILENAME</span><span class="p">)</span>
 
     <span class="c1"># If this is a new upload then we need to create a workspace.</span>
     <span class="k">if</span> <span class="n">upload_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;This is a new upload workspace.&#39;</span><span class="p">)</span>
         <span class="c1"># Split this out for clarity. --Erick 2019-06-10</span>
-        <span class="n">workspace</span> <span class="o">=</span> <span class="n">_create_workspace</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
+        <span class="n">workspace</span> <span class="o">=</span> <span class="n">_create_workspace</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">user_id</span><span class="p">,</span> <span class="n">user_string</span><span class="p">)</span>
         <span class="n">upload_id</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">upload_id</span>
 
     <span class="c1"># print(&#39;upload workspace exists at&#39;, time.time() - start)</span>
@@ -154,10 +168,21 @@
         <span class="k">if</span> <span class="n">workspace</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>   <span class="c1"># Invalid workspace identifier</span>
             <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span>
 
-        <span class="n">workspace</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="n">strategy</span><span class="o">.</span><span class="n">create_strategy</span><span class="p">(</span><span class="n">current_app</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">checkpoint</span><span class="p">:</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">create_checkpoint</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+
+        <span class="c1"># Admin may want to clear out existing files so that existing files</span>
+        <span class="c1"># do not cause problems or interfere with processing uploaded files.</span>
+        <span class="c1">#</span>
+        <span class="c1"># Steps are 1) checkpoint 2) clear source files 3) unpack upload</span>
+        <span class="c1">#</span>
+        <span class="k">if</span> <span class="n">clear_source_files</span><span class="p">:</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">delete_all_files</span><span class="p">()</span>
+
+        <span class="n">workspace</span><span class="o">.</span><span class="n">set_strategy</span><span class="p">(</span><span class="n">strategy</span><span class="o">.</span><span class="n">create_strategy</span><span class="p">(</span><span class="n">current_app</span><span class="p">))</span>
         <span class="n">workspace</span><span class="o">.</span><span class="n">checkers</span> <span class="o">=</span> <span class="n">check</span><span class="o">.</span><span class="n">get_default_checkers</span><span class="p">()</span>
 
-        <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">ACTIVE</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="n">Status</span><span class="o">.</span><span class="n">ACTIVE</span><span class="p">:</span>
             <span class="c1"># Do we log anything for these requests</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Forbidden, workspace not active&#39;</span><span class="p">)</span>
             <span class="k">raise</span> <span class="n">Forbidden</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_ACTIVE</span><span class="p">)</span>
@@ -179,6 +204,9 @@
         <span class="n">start_datetime</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">UTC</span><span class="p">)</span>
 
         <span class="c1"># Add the uploaded file to the workspace.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">BadRequest</span><span class="p">(</span><span class="s1">&#39;Could not determine filename&#39;</span><span class="p">)</span>
+
         <span class="n">u_file</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">ancillary</span><span class="p">)</span>
         <span class="k">with</span> <span class="n">workspace</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">file</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
@@ -189,26 +217,30 @@
         <span class="n">workspace</span><span class="o">.</span><span class="n">perform_checks</span><span class="p">()</span>      <span class="c1"># Runs sanitization, fixes, etc.</span>
         <span class="c1"># print(&#39;workspace finished processing upload at&#39;, time.time() - start)</span>
         <span class="n">workspace</span><span class="o">.</span><span class="n">persist_all</span><span class="p">()</span>
+        <span class="c1"># print(&#39;workspace persisted at&#39;, time.time() - start)</span>
 
         <span class="n">completion_datetime</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">UTC</span><span class="p">)</span>
 
         <span class="c1"># Disabling these for now, as it doesn&#39;t look like we&#39;re using them.</span>
         <span class="c1"># --Erick 2019-06-20</span>
         <span class="c1">#</span>
-        <span class="c1"># workspace.lastupload_logs = json.dumps(response_data[&#39;errors&#39;])</span>
-        <span class="c1"># workspace.lastupload_file_summary = json.dumps(response_data[&#39;files&#39;])</span>
-        <span class="n">workspace</span><span class="o">.</span><span class="n">lastupload_start_datetime</span> <span class="o">=</span> <span class="n">start_datetime</span>
-        <span class="n">workspace</span><span class="o">.</span><span class="n">lastupload_completion_datetime</span> <span class="o">=</span> <span class="n">completion_datetime</span>
-        <span class="n">workspace</span><span class="o">.</span><span class="n">lastupload_readiness</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">readiness</span>
-        <span class="n">workspace</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">ACTIVE</span>
+        <span class="c1"># workspace.last_upload_logs = json.dumps(response_data[&#39;errors&#39;])</span>
+        <span class="c1"># workspace.last_upload_file_summary = json.dumps(response_data[&#39;files&#39;])</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">last_upload_start_datetime</span> <span class="o">=</span> <span class="n">start_datetime</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">last_upload_completion_datetime</span> <span class="o">=</span> <span class="n">completion_datetime</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">last_upload_readiness</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">readiness</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">ACTIVE</span>
         <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">is_stale</span><span class="p">:</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+        <span class="c1"># print(&#39;source packed at&#39;, time.time() - start)</span>
         <span class="n">database</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>    <span class="c1"># Store in DB</span>
         <span class="c1"># print(&#39;db updated at&#39;, time.time() - start)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Processed upload. Saved to DB. Preparing upload &quot;</span>
                     <span class="s2">&quot;summary.&quot;</span><span class="p">,</span> <span class="n">workspace</span><span class="o">.</span><span class="n">upload_id</span><span class="p">)</span>
-        <span class="n">response_data</span> <span class="o">=</span> <span class="n">serialize_workspace</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>
+        <span class="n">response_data</span> <span class="o">=</span> <span class="n">transform_workspace</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>
+        <span class="c1"># print(&#39;workspace serialized at&#39;, time.time() - start)</span>
+
         <span class="c1"># Do we want affirmative log messages after processing each request</span>
         <span class="c1"># or maybe just report errors like:</span>
         <span class="c1">#  logger.info(f&quot;{workspace.upload_id}: Finished processing ...&quot;)</span>
@@ -226,35 +258,34 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Responding with headers </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
         <span class="c1"># print(&#39;done at&#39;, time.time() - start)</span>
 
-        <span class="c1"># TODO: this should only be 201 Created if it&#39;s a new workspace; </span>
+        <span class="c1"># TODO: this should only be 201 Created if it&#39;s a new workspace;</span>
         <span class="c1"># otherwise just 200 OK. -- Erick</span>
         <span class="k">return</span> <span class="n">response_data</span><span class="p">,</span> <span class="n">status</span><span class="o">.</span><span class="n">CREATED</span><span class="p">,</span> <span class="n">headers</span>
 
-    <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">except</span> <span class="n">HTTPException</span> <span class="k">as</span> <span class="n">httpe</span><span class="p">:</span>
+        <span class="c1"># Werkzeug HTTPExceptions are explicitly raised, so these should always</span>
+        <span class="c1"># propagate.</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Upload failed: &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="n">httpe</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">httpe</span>
+    <span class="k">except</span> <span class="n">InvalidUploadContentError</span> <span class="k">as</span> <span class="n">breq</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">breq</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">BadRequest</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_MISSING_FILE</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">breq</span>
+    <span class="k">except</span> <span class="n">EmptyUploadContentError</span> <span class="k">as</span> <span class="n">ereq</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">ereq</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">BadRequest</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_FILE_EMPTY</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ereq</span>
+    <span class="k">except</span> <span class="n">NoSourceFilesToCheckpoint</span> <span class="k">as</span> <span class="n">nsf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: No source files to checkpoint: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nsf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">BadRequest</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_WORKSPACE_IS_EMPTY</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">nsf</span>
+    <span class="k">except</span> <span class="n">database</span><span class="o">.</span><span class="n">WorkspaceNotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Workspace not found: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">nf</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">dbe</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Error updating database: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">dbe</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_DB_ERROR</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">dbe</span>
+    <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: File upload request failed &quot;</span>
                      <span class="s2">&quot;for file=&#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
-        <span class="c1"># raise InternalServerError(f&#39;{UPLOAD_IO_ERROR}: {e}&#39;) from e</span>
-        <span class="k">raise</span>
-    <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">dbe</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Error updating database: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">dbe</span><span class="p">)</span>
-        <span class="c1"># raise InternalServerError(messages.UPLOAD_DB_ERROR)</span>
-        <span class="k">raise</span>
-    <span class="k">except</span> <span class="n">BadRequest</span> <span class="k">as</span> <span class="n">breq</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">breq</span><span class="p">)</span>
-        <span class="k">raise</span>
-    <span class="k">except</span> <span class="n">NotFound</span> <span class="k">as</span> <span class="n">nfdb</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Upload: &#39;</span><span class="si">{nfdb}</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="n">nfdb</span>
-    <span class="k">except</span> <span class="n">Forbidden</span> <span class="k">as</span> <span class="n">forb</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Upload failed: &#39;</span><span class="si">{forb}</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="n">forb</span>
-    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ue</span><span class="p">:</span>
-        <span class="k">raise</span>
-        <span class="c1"># logger.info(&quot;Unknown error with existing workspace.&quot;</span>
-        <span class="c1">#             &quot; Add except clauses for &#39;%s&#39;. DO IT NOW!&quot;, ue)</span>
-        <span class="c1"># raise InternalServerError(messages.UPLOAD_UNKNOWN_ERROR)</span>
-
-    <span class="k">return</span> <span class="kc">None</span></div>
+        <span class="k">raise</span></div>
 
 
 <div class="viewcode-block" id="upload_summary"><a class="viewcode-back" href="../../../api/filemanager.controllers.upload.html#filemanager.controllers.upload.upload_summary">[docs]</a><span class="nd">@database</span><span class="o">.</span><span class="n">atomic</span>
@@ -282,28 +313,21 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UploadWorkspace</span><span class="p">]</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">workspace</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span>
-
+        <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Upload summary request.&quot;</span><span class="p">,</span> <span class="n">workspace</span><span class="o">.</span><span class="n">upload_id</span><span class="p">)</span>
 
         <span class="n">status_code</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span>
-        <span class="n">response_data</span> <span class="o">=</span> <span class="n">serialize_workspace</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>
+        <span class="n">response_data</span> <span class="o">=</span> <span class="n">transform_workspace</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Upload summary request.&quot;</span><span class="p">,</span> <span class="n">workspace</span><span class="o">.</span><span class="n">upload_id</span><span class="p">)</span>
 
+    <span class="k">except</span> <span class="n">database</span><span class="o">.</span><span class="n">WorkspaceNotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: UploadSummary: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">ERROR_RETRIEVING_UPLOAD</span><span class="p">)</span>
     <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Error updating database.&quot;</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_DB_ERROR</span><span class="p">)</span>
-    <span class="k">except</span> <span class="n">NotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: UploadSummary: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
-        <span class="k">raise</span>
-    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ue</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Unknown error with existing workspace.&quot;</span>
-                    <span class="s2">&quot; Add except clauses for &#39;</span><span class="si">%s</span><span class="s2">&#39;. DO IT NOW!&quot;</span><span class="p">,</span> <span class="n">ue</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_UNKNOWN_ERROR</span><span class="p">)</span>
 
     <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ARXIV-OWNER&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">,</span>
                <span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">checksum</span><span class="p">,</span>
@@ -312,7 +336,7 @@
 
 
 <div class="viewcode-block" id="delete_workspace"><a class="viewcode-back" href="../../../api/filemanager.controllers.upload.html#filemanager.controllers.upload.delete_workspace">[docs]</a><span class="nd">@database</span><span class="o">.</span><span class="n">atomic</span>
-<span class="k">def</span> <span class="nf">delete_workspace</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">delete_workspace</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Delete workspace.</span>
 
@@ -331,7 +355,8 @@
 <span class="sd">        Some extra headers to add to the response.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">: Deleting upload workspace.&#39;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
+    <span class="n">user_string</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">format_user_information_for_logging</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">: Deleting upload workspace [</span><span class="si">%s</span><span class="s1">].&#39;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">user_string</span><span class="p">)</span>
 
     <span class="c1"># Need to add several checks here</span>
 
@@ -347,7 +372,7 @@
 
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># Make sure we have an existing upload workspace to work with</span>
-        <span class="n">workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UploadWorkspace</span><span class="p">]</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+        <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">workspace</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># invalid workspace identifier</span>
@@ -376,19 +401,16 @@
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Workspace currently in &#39;</span><span class="si">%s</span><span class="s2">&#39; state.&quot;</span><span class="p">,</span>
                         <span class="n">upload_id</span><span class="p">,</span> <span class="n">workspace</span><span class="o">.</span><span class="n">status</span><span class="p">)</span>
 
-        <span class="n">workspace</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">DELETED</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">DELETED</span>
         <span class="n">database</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>
 
     <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Delete workspace request failed &quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">CANT_DELETE_FILE</span><span class="p">)</span>
-    <span class="k">except</span> <span class="n">NotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="c1"># raise InternalServerError(messages.CANT_DELETE_FILE)</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="p">(</span><span class="n">NotFound</span><span class="p">,</span> <span class="n">database</span><span class="o">.</span><span class="n">WorkspaceNotFound</span><span class="p">)</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Delete Workspace: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
         <span class="k">raise</span>
-    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ue</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Unknown error in delete workspace. &quot;</span>
-                    <span class="s2">&quot; Add except clauses for &#39;</span><span class="si">%s</span><span class="s2">&#39;. DO IT NOW!&quot;</span><span class="p">,</span> <span class="n">ue</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_UNKNOWN_ERROR</span><span class="p">)</span>
 
     <span class="c1"># API doesn&#39;t provide for returning errors resulting from delete.</span>
     <span class="c1"># 401-unautorized and 403-forbidden are handled at routes level.</span>

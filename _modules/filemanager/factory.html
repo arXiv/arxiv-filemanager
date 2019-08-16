@@ -41,6 +41,7 @@
 <span class="kn">from</span> <span class="nn">arxiv</span> <span class="k">import</span> <span class="n">vault</span>
 <span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">Base</span>
 <span class="kn">from</span> <span class="nn">arxiv.base.middleware</span> <span class="k">import</span> <span class="n">wrap</span>
+<span class="kn">from</span> <span class="nn">arxiv.users</span> <span class="k">import</span> <span class="n">auth</span>
 
 <span class="kn">from</span> <span class="nn">filemanager</span> <span class="k">import</span> <span class="n">celeryconfig</span>
 <span class="kn">from</span> <span class="nn">filemanager.routes</span> <span class="k">import</span> <span class="n">upload_api</span>
@@ -49,12 +50,19 @@
 <span class="kn">from</span> <span class="nn">arxiv.users</span> <span class="k">import</span> <span class="n">auth</span>
 <span class="kn">from</span> <span class="nn">arxiv.util.serialize</span> <span class="k">import</span> <span class="n">ISO8601JSONEncoder</span>
 
+<span class="kn">from</span> <span class="nn">werkzeug.contrib.profiler</span> <span class="k">import</span> <span class="n">ProfilerMiddleware</span>
+
 
 <div class="viewcode-block" id="create_web_app"><a class="viewcode-back" href="../../api/filemanager.factory.html#filemanager.factory.create_web_app">[docs]</a><span class="k">def</span> <span class="nf">create_web_app</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Flask</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Initialize and configure the filemanager application.&quot;&quot;&quot;</span>
     <span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="s1">&#39;filemanager&#39;</span><span class="p">)</span>
     <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">from_pyfile</span><span class="p">(</span><span class="s1">&#39;config.py&#39;</span><span class="p">)</span>
     <span class="n">app</span><span class="o">.</span><span class="n">json_encoder</span> <span class="o">=</span> <span class="n">ISO8601JSONEncoder</span>
+
+    <span class="c1"># This is here for profiling, if needed.</span>
+    <span class="c1"># app.config[&#39;PROFILE&#39;] = True</span>
+    <span class="c1"># app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[30],</span>
+    <span class="c1">#                                   sort_by=(&#39;cumtime&#39;, &#39;calls&#39;))</span>
 
     <span class="c1"># Initialize file management app</span>
     <span class="n">database</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>

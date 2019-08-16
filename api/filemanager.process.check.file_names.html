@@ -48,13 +48,8 @@
 
 <dl class="method">
 <dt id="filemanager.process.check.file_names.FixWindowsFileNames.check">
-<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#FixWindowsFileNames.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.FixWindowsFileNames.check" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#FixWindowsFileNames.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.FixWindowsFileNames.check" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find Windows-style filenames and fix them.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 </dd></dl>
@@ -71,13 +66,8 @@
 
 <dl class="method">
 <dt id="filemanager.process.check.file_names.PanicOnIllegalCharacters.check">
-<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#PanicOnIllegalCharacters.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.PanicOnIllegalCharacters.check" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#PanicOnIllegalCharacters.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.PanicOnIllegalCharacters.check" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check for illegal characters and generate error if found.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 </dd></dl>
@@ -95,13 +85,8 @@
 
 <dl class="method">
 <dt id="filemanager.process.check.file_names.ReplaceIllegalCharacters.check">
-<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#ReplaceIllegalCharacters.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.ReplaceIllegalCharacters.check" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#ReplaceIllegalCharacters.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.ReplaceIllegalCharacters.check" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check for illegal characters and replace them with underscores.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 </dd></dl>
@@ -113,13 +98,8 @@
 <p>Checks for a leading hyphen, and replaces it with an underscore.</p>
 <dl class="method">
 <dt id="filemanager.process.check.file_names.ReplaceLeadingHyphen.check">
-<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#ReplaceLeadingHyphen.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.ReplaceLeadingHyphen.check" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#ReplaceLeadingHyphen.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.ReplaceLeadingHyphen.check" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check for a leading hyphen, and replace it with an underscore.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 </dd></dl>
@@ -144,13 +124,8 @@ undderscore. Otherwise this warning never gets generated properly for
 
 <dl class="method">
 <dt id="filemanager.process.check.file_names.WarnAboutTeXBackupFiles.check">
-<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#WarnAboutTeXBackupFiles.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.WarnAboutTeXBackupFiles.check" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/process/check/file_names.html#WarnAboutTeXBackupFiles.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.file_names.WarnAboutTeXBackupFiles.check" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check for and warn about possible backup files.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 </dd></dl>

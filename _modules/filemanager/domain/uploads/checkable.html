@@ -32,71 +32,132 @@
           <div class="body" role="main">
             
   <h1>Source code for filemanager.domain.uploads.checkable</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
-<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="k">import</span> <span class="n">Protocol</span>
+<span></span><span class="sd">&quot;&quot;&quot;Provides checking functionality to the workspace.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">cast</span>
 
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">field</span><span class="p">,</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="k">import</span> <span class="n">Protocol</span>
 
-<span class="kn">from</span> <span class="nn">..uploaded_file</span> <span class="k">import</span> <span class="n">UploadedFile</span>
-<span class="kn">from</span> <span class="nn">.source_type</span> <span class="k">import</span> <span class="n">SourceTypeMixin</span>
+<span class="kn">from</span> <span class="nn">..uploaded_file</span> <span class="k">import</span> <span class="n">UserFile</span>
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">IBaseWorkspace</span>
 <span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">modifies_workspace</span>
-<span class="kn">from</span> <span class="nn">.file_mutations</span> <span class="k">import</span> <span class="n">FileMutationsWorkspace</span>
-<span class="kn">from</span> <span class="nn">.countable</span> <span class="k">import</span> <span class="n">CountableWorkspace</span>
 
 
 <div class="viewcode-block" id="IChecker"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.IChecker">[docs]</a><span class="k">class</span> <span class="nc">IChecker</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;A visitor that performs a check on an :class:`.UploadedFile`.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;A visitor that performs a check on an :class:`.UserFile`.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;CheckableWorkspace&#39;</span><span class="p">,</span>
-                 <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Check an :class:`.UploadedFile`.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Check an :class:`.UserFile`.&quot;&quot;&quot;</span>
         <span class="o">...</span>
-    
-<div class="viewcode-block" id="IChecker.check_workspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.IChecker.check_workspace">[docs]</a>    <span class="k">def</span> <span class="nf">check_workspace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;CheckableWorkspace&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+<div class="viewcode-block" id="IChecker.check_workspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.IChecker.check_workspace">[docs]</a>    <span class="k">def</span> <span class="nf">check_workspace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Check the workspace as a whole.&quot;&quot;&quot;</span>
         <span class="o">...</span></div></div>
 
 
 <div class="viewcode-block" id="ICheckingStrategy"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.ICheckingStrategy">[docs]</a><span class="k">class</span> <span class="nc">ICheckingStrategy</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Strategy for checking files in an :class:`.CheckableWorkspace`.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Strategy for checking files in a workspace.&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="ICheckingStrategy.check"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.ICheckingStrategy.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;CheckableWorkspace&#39;</span><span class="p">,</span> 
-              <span class="o">*</span><span class="n">checkers</span><span class="p">:</span> <span class="n">IChecker</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Perform checks on all files in the workspace.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="ICheckingStrategy.check"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.ICheckingStrategy.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">*</span><span class="n">checkers</span><span class="p">:</span> <span class="n">IChecker</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Perform checks on all files in the workspace using ``checkers``.&quot;&quot;&quot;</span>
         <span class="o">...</span></div></div>
 
 
-<div class="viewcode-block" id="CheckableWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.CheckableWorkspace">[docs]</a><span class="nd">@dataclass</span>
-<span class="k">class</span> <span class="nc">CheckableWorkspace</span><span class="p">(</span><span class="n">SourceTypeMixin</span><span class="p">,</span> <span class="n">CountableWorkspace</span><span class="p">,</span> 
-                         <span class="n">FileMutationsWorkspace</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Adds checking functionality.&quot;&quot;&quot;</span>
-    
-    <span class="n">checkers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">IChecker</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
-    <span class="sd">&quot;&quot;&quot;File checkers that should be applied to all files in the workspace.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="IWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.IWorkspace">[docs]</a><span class="k">class</span> <span class="nc">IWorkspace</span><span class="p">(</span><span class="n">IBaseWorkspace</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Workspace API required for :class:`.Checkable`.</span>
 
-    <span class="n">strategy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ICheckingStrategy</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-    <span class="sd">&quot;&quot;&quot;Strategy for performing file checks.&quot;&quot;&quot;</span>
+<span class="sd">    This incorporates the base API and any additional structures that require</span>
+<span class="sd">    implementation by other components of the workspace.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="ICheckable"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.ICheckable">[docs]</a><span class="k">class</span> <span class="nc">ICheckable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for checkable behavior.&quot;&quot;&quot;</span>
+
+    <span class="n">checkers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="s1">&#39;IChecker&#39;</span><span class="p">]</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">has_unchecked_files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Determine whether there are unchecked files in this workspace.&quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_files</span><span class="p">(</span><span class="n">allow_directories</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+    <span class="c1"># Preferably ``strategy`` would just be an attribute ``strategy:</span>
+    <span class="c1"># &#39;ICheckingStrategy&#39;``, but see https://github.com/python/mypy/issues/4125</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ICheckingStrategy&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Checking strategy for the workspace.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Known bugs in mypy:</span>
+    <span class="c1"># - https://github.com/python/mypy/issues/5936</span>
+    <span class="c1"># - https://github.com/python/mypy/issues/4644</span>
+    <span class="c1"># - https://github.com/python/mypy/issues/1465</span>
+    <span class="c1"># Probably also related to https://github.com/python/mypy/issues/4125.</span>
+    <span class="c1"># @strategy.setter    # type: ignore</span>
+<div class="viewcode-block" id="ICheckable.set_strategy"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.ICheckable.set_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">:</span> <span class="s1">&#39;ICheckingStrategy&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Set the strategy for this workspace.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="ICheckable.perform_checks"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.ICheckable.perform_checks">[docs]</a>    <span class="k">def</span> <span class="nf">perform_checks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Perform all checks on this workspace using the assigned strategy.&quot;&quot;&quot;</span></div></div>
+
+
+<div class="viewcode-block" id="ICheckableWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.ICheckableWorkspace">[docs]</a><span class="k">class</span> <span class="nc">ICheckableWorkspace</span><span class="p">(</span><span class="n">IWorkspace</span><span class="p">,</span> <span class="n">ICheckable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Joint API for a workspace that incorporates :class:`ICheckable`.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="Checkable"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.Checkable">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Checkable</span><span class="p">(</span><span class="n">ICheckable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Adds checking functionality.&quot;&quot;&quot;</span>
+
+    <span class="n">checkers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="s1">&#39;IChecker&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;File checkers that should be applied to all files in the workspace.&quot;&quot;&quot;</span>
+
+    <span class="n">_strategy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s1">&#39;ICheckingStrategy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Strategy for performing file checks.&quot;&quot;&quot;</span>
+
+    <span class="n">__internal_api</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__api_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api</span><span class="p">:</span> <span class="n">IWorkspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Register the workspace API.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">Checkable</span><span class="p">,</span> <span class="bp">self</span><span class="p">),</span> <span class="s1">&#39;__api_init__&#39;</span><span class="p">):</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">Checkable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__api_init__</span><span class="p">(</span><span class="n">api</span><span class="p">)</span>   <span class="c1"># type: ignore</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span> <span class="o">=</span> <span class="n">api</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">__api</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;IWorkspace&#39;</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">has_unchecked_files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether there are unchecked files in this workspace.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">iter_files</span><span class="p">(</span><span class="n">allow_directories</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_checked</span><span class="p">:</span>
                 <span class="k">return</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="kc">False</span>
-    
-<div class="viewcode-block" id="CheckableWorkspace.perform_checks"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.CheckableWorkspace.perform_checks">[docs]</a>    <span class="k">def</span> <span class="nf">perform_checks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Perform all checks on this workspace using the assigned strategy.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;No checking strategy set&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">checkers</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">is_stale</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="CheckableWorkspace.add_files"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.CheckableWorkspace.add_files">[docs]</a>    <span class="nd">@modifies_workspace</span><span class="p">()</span>
-    <span class="k">def</span> <span class="nf">add_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">u_files</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;When files are added to the workspace, perform checks.&quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_files</span><span class="p">(</span><span class="o">*</span><span class="n">u_files</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">perform_checks</span><span class="p">()</span></div></div>
+    <span class="c1"># This is here so that we don&#39;t have to do a null-check on ``_strategy``</span>
+    <span class="c1"># every time.</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ICheckingStrategy&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;No checking strategy set&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span>
+
+    <span class="c1"># Known bugs in mypy:</span>
+    <span class="c1"># - https://github.com/python/mypy/issues/5936</span>
+    <span class="c1"># - https://github.com/python/mypy/issues/4644</span>
+    <span class="c1"># - https://github.com/python/mypy/issues/1465</span>
+    <span class="c1"># Probably also related to https://github.com/python/mypy/issues/4125.</span>
+    <span class="c1"># @strategy.setter    # type: ignore</span>
+<div class="viewcode-block" id="Checkable.set_strategy"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.Checkable.set_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">:</span> <span class="s1">&#39;ICheckingStrategy&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Set the strategy for this workspace.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span> <span class="o">=</span> <span class="n">strategy</span></div>
+
+<div class="viewcode-block" id="Checkable.perform_checks"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.Checkable.perform_checks">[docs]</a>    <span class="k">def</span> <span class="nf">perform_checks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Perform all checks on this workspace using the assigned strategy.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">checkers</span><span class="p">)</span></div></div>
+
 </pre></div>
 
           </div>

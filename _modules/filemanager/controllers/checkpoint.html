@@ -1,0 +1,489 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.controllers.checkpoint &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.controllers.checkpoint</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Controllers for checkpoint-related operations.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">IO</span>
+<span class="kn">from</span> <span class="nn">http</span> <span class="k">import</span> <span class="n">HTTPStatus</span> <span class="k">as</span> <span class="n">status</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+
+<span class="kn">from</span> <span class="nn">werkzeug.exceptions</span> <span class="k">import</span> <span class="n">NotFound</span><span class="p">,</span> <span class="n">InternalServerError</span><span class="p">,</span> <span class="n">SecurityError</span><span class="p">,</span> \
+    <span class="n">Forbidden</span><span class="p">,</span> <span class="n">BadRequest</span><span class="p">,</span> <span class="n">HTTPException</span>
+
+<span class="kn">from</span> <span class="nn">arxiv.users</span> <span class="k">import</span> <span class="n">domain</span> <span class="k">as</span> <span class="n">auth_domain</span>
+
+<span class="kn">from</span> <span class="nn">..domain.uploads.exceptions</span> <span class="k">import</span> <span class="n">NoSourceFilesToCheckpoint</span><span class="p">,</span> \
+    <span class="n">UploadFileSecurityError</span>
+<span class="kn">from</span> <span class="nn">..services</span> <span class="k">import</span> <span class="n">database</span>
+<span class="kn">from</span> <span class="nn">.service_log</span> <span class="k">import</span> <span class="n">logger</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">_messages</span> <span class="k">as</span> <span class="n">messages</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">util</span><span class="p">,</span> <span class="n">transform</span>
+
+<span class="n">Response</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">IO</span><span class="p">]],</span> <span class="n">status</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="create_checkpoint"><a class="viewcode-back" href="../../../api/filemanager.controllers.checkpoint.html#filemanager.controllers.checkpoint.create_checkpoint">[docs]</a><span class="nd">@database</span><span class="o">.</span><span class="n">atomic</span>
+<span class="k">def</span> <span class="nf">create_checkpoint</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create checkpoint.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    upload_id : int</span>
+<span class="sd">        The unique identifier for upload workspace.</span>
+<span class="sd">    use : str</span>
+<span class="sd">        User making create checkpoint request.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    tuple</span>
+<span class="sd">        Standard Response tuple containing response content, HTTP status, and</span>
+<span class="sd">        HTTP headers.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">user_string</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">format_user_information_for_logging</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Create checkpoint [</span><span class="si">%s</span><span class="s2">].&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">user_string</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Make sure we have an upload_db_data to work with</span>
+        <span class="n">workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+        <span class="n">checksum</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">create_checkpoint</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+
+        <span class="c1">###</span>
+        <span class="c1"># Lock upload workspace</span>
+        <span class="c1"># update database</span>
+        <span class="c1"># if upload_db_data.lock == Upload.LOCKED:</span>
+        <span class="c1">#    logger.info(&quot;%s: Lock: Workspace is already locked.&quot;, upload_id)</span>
+        <span class="c1"># else:</span>
+        <span class="c1">#    upload_db_data.lock = Upload.LOCKED</span>
+        <span class="c1">#</span>
+        <span class="c1"># Store in DB</span>
+        <span class="c1">#   uploads.update(upload_db_data)</span>
+        <span class="c1">###</span>
+
+        <span class="n">database</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>    <span class="c1"># Store in DB</span>
+        <span class="n">response_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_CREATED_CHECKPOINT</span><span class="p">}</span>  <span class="c1"># Get rid of pylint error</span>
+        <span class="n">status_code</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span>
+    <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">ioe</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Create checkpoint request failed &quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">CANT_DELETE_FILE</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ioe</span>
+    <span class="k">except</span> <span class="n">NoSourceFilesToCheckpoint</span> <span class="k">as</span> <span class="n">nsf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: No source files to checkpoint: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nsf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">BadRequest</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_WORKSPACE_IS_EMPTY</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">nsf</span>
+    <span class="k">except</span> <span class="n">database</span><span class="o">.</span><span class="n">WorkspaceNotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Workspace not found: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">nf</span>
+
+    <span class="k">return</span> <span class="n">response_data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">checksum</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="list_checkpoints"><a class="viewcode-back" href="../../../api/filemanager.controllers.checkpoint.html#filemanager.controllers.checkpoint.list_checkpoints">[docs]</a><span class="k">def</span> <span class="nf">list_checkpoints</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    List checkpoints.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    upload_id : int</span>
+<span class="sd">        The unique identifier for upload workspace.</span>
+<span class="sd">    user : str</span>
+<span class="sd">        User making create checkpoint request.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    tuple</span>
+<span class="sd">        Standard Response tuple containing response content, HTTP status, and</span>
+<span class="sd">        HTTP headers.</span>
+<span class="sd">        Response content includes details for each checkpoint.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">user_string</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">format_user_information_for_logging</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: List checkpoints [</span><span class="si">%s</span><span class="s2">].&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">user_string</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+        <span class="n">checkpoint_list</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">list_checkpoints</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+        <span class="n">response_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;upload_id&#39;</span><span class="p">:</span> <span class="n">upload_id</span><span class="p">,</span>
+            <span class="s1">&#39;checkpoints&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">transform</span><span class="o">.</span><span class="n">transform_checkpoint</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span>
+                            <span class="n">checkpoint_list</span><span class="p">]</span>
+        <span class="p">}</span>
+        <span class="n">status_code</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span>
+
+    <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">ioe</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: List checkpoints request failed &quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">CANT_DELETE_FILE</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ioe</span>
+    <span class="k">except</span> <span class="n">database</span><span class="o">.</span><span class="n">WorkspaceNotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Workspace not found: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">nf</span>
+
+    <span class="k">return</span> <span class="n">response_data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="p">{}</span></div>
+
+
+<div class="viewcode-block" id="restore_checkpoint"><a class="viewcode-back" href="../../../api/filemanager.controllers.checkpoint.html#filemanager.controllers.checkpoint.restore_checkpoint">[docs]</a><span class="nd">@database</span><span class="o">.</span><span class="n">atomic</span>
+<span class="k">def</span> <span class="nf">restore_checkpoint</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">checkpoint_checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                       <span class="n">user</span><span class="p">:</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Restore checkpoint specified by checkpoint_checksum.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    upload_id : int</span>
+<span class="sd">        The unique identifier for upload workspace.</span>
+<span class="sd">    checkpoint_checksum: str</span>
+<span class="sd">        Unique identifier/key for checkpoint.</span>
+<span class="sd">    user : str</span>
+<span class="sd">        User making create checkpoint request.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    tuple</span>
+<span class="sd">        Standard Response tuple containing response content, HTTP status, and</span>
+<span class="sd">        HTTP headers.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">user_string</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">format_user_information_for_logging</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Restore checkpoint &#39;</span><span class="si">%s</span><span class="s2">&#39; [</span><span class="si">%s</span><span class="s2">].&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span>
+                <span class="n">checkpoint_checksum</span><span class="p">,</span> <span class="n">user_string</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Make sure we have an upload_db_data to work with</span>
+        <span class="n">workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">restore_checkpoint</span><span class="p">(</span><span class="n">checkpoint_checksum</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">is_stale</span><span class="p">:</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+        <span class="n">database</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>    <span class="c1"># Store in DB</span>
+        <span class="n">response_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="n">f</span><span class="s2">&quot;Restored checkpoint &quot;</span>
+                                   <span class="n">f</span><span class="s2">&quot;&#39;</span><span class="si">{checkpoint_checksum}</span><span class="s2">&#39;&quot;</span><span class="p">}</span>
+        <span class="n">status_code</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span>
+
+    <span class="k">except</span> <span class="n">database</span><span class="o">.</span><span class="n">WorkspaceNotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Workspace not found: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">nf</span>
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Requested checkpoint &#39;</span><span class="si">%s</span><span class="s2">&#39; not found: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span>
+                    <span class="n">checkpoint_checksum</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_CHECKPOINT_NOT_FOUND</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">nf</span>
+    <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">ioe</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Restore checkpoint request failed &quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">CANT_DELETE_FILE</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ioe</span>
+
+    <span class="k">return</span> <span class="n">response_data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="p">{}</span></div>
+
+
+<div class="viewcode-block" id="delete_checkpoint"><a class="viewcode-back" href="../../../api/filemanager.controllers.checkpoint.html#filemanager.controllers.checkpoint.delete_checkpoint">[docs]</a><span class="nd">@database</span><span class="o">.</span><span class="n">atomic</span>
+<span class="k">def</span> <span class="nf">delete_checkpoint</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">checkpoint_checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                      <span class="n">user</span><span class="p">:</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Delete checkpoint specified by checkpoint_checksum.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    upload_id : int</span>
+<span class="sd">        The unique identifier for upload workspace.</span>
+<span class="sd">    checkpoint_checksum: str</span>
+<span class="sd">        Unique identifier/key for checkpoint to delete.</span>
+<span class="sd">    user : str</span>
+<span class="sd">        User making create checkpoint request.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    tuple</span>
+<span class="sd">        Standard Response tuple containing response content, HTTP status, and</span>
+<span class="sd">        HTTP headers.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">user_string</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">format_user_information_for_logging</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Delete checkpoint &#39;</span><span class="si">%s</span><span class="s2">&#39; [</span><span class="si">%s</span><span class="s2">].&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span>
+                <span class="n">checkpoint_checksum</span><span class="p">,</span> <span class="n">user_string</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Make sure we have an upload_db_data to work with</span>
+        <span class="n">workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">delete_checkpoint</span><span class="p">(</span><span class="n">checkpoint_checksum</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">is_stale</span><span class="p">:</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+        <span class="n">database</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>    <span class="c1"># Store in DB</span>
+
+        <span class="n">response_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="n">f</span><span class="s2">&quot;Deleted checkpoint &quot;</span>
+                                   <span class="n">f</span><span class="s2">&quot;&#39;</span><span class="si">{checkpoint_checksum}</span><span class="s2">&#39;&quot;</span><span class="p">}</span>
+        <span class="n">status_code</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span>
+
+    <span class="k">except</span> <span class="n">database</span><span class="o">.</span><span class="n">WorkspaceNotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Workspace not found: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">nf</span>
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Requested checkpoint &#39;</span><span class="si">%s</span><span class="s2">&#39; not found: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span>
+                    <span class="n">checkpoint_checksum</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_CHECKPOINT_NOT_FOUND</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">nf</span>
+    <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">ioe</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Deleted checkpoint request failed &quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">CANT_DELETE_FILE</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ioe</span>
+
+    <span class="k">return</span> <span class="n">response_data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="p">{}</span></div>
+
+
+<div class="viewcode-block" id="delete_all_checkpoints"><a class="viewcode-back" href="../../../api/filemanager.controllers.checkpoint.html#filemanager.controllers.checkpoint.delete_all_checkpoints">[docs]</a><span class="nd">@database</span><span class="o">.</span><span class="n">atomic</span>
+<span class="k">def</span> <span class="nf">delete_all_checkpoints</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Delete all checkpoint files.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    upload_id : int</span>
+<span class="sd">        The unique identifier for upload workspace.</span>
+<span class="sd">    user : str</span>
+<span class="sd">        User making create checkpoint request.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    tuple</span>
+<span class="sd">        Standard Response tuple containing response content, HTTP status, and</span>
+<span class="sd">        HTTP headers.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">user_string</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">format_user_information_for_logging</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Delete all checkpoints [</span><span class="si">%s</span><span class="s2">].&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">user_string</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Make sure we have an upload_db_data to work with</span>
+        <span class="n">workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+        <span class="n">workspace</span><span class="o">.</span><span class="n">delete_all_checkpoints</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">is_stale</span><span class="p">:</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+        <span class="n">database</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>    <span class="c1"># Store in DB</span>
+
+        <span class="n">response_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="n">f</span><span class="s2">&quot;Deleted all checkpoints.&quot;</span><span class="p">}</span>  <span class="c1"># Get rid of pylint error</span>
+        <span class="n">status_code</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span>
+
+    <span class="k">except</span> <span class="n">database</span><span class="o">.</span><span class="n">WorkspaceNotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Workspace not found: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">nf</span>
+    <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">ioe</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Delete all checkpoints request failed: </span><span class="si">%s</span><span class="s2"> &quot;</span><span class="p">,</span>
+                     <span class="n">upload_id</span><span class="p">,</span> <span class="n">ioe</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_UNKNOWN_ERROR</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ioe</span>
+
+    <span class="k">return</span> <span class="n">response_data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="p">{}</span></div>
+
+
+<div class="viewcode-block" id="check_checkpoint_file_exists"><a class="viewcode-back" href="../../../api/filemanager.controllers.checkpoint.html#filemanager.controllers.checkpoint.check_checkpoint_file_exists">[docs]</a><span class="k">def</span> <span class="nf">check_checkpoint_file_exists</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">checkpoint_checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> \
+        <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Verify that the specified checkpoint content file exists/is available.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    upload_id : int</span>
+<span class="sd">        The unique identifier for upload workspace.</span>
+<span class="sd">    checkpoint_checksum: str</span>
+<span class="sd">        checksum of checkpoint ile to be checked.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    tuple</span>
+<span class="sd">        Standard Response tuple containing content, HTTP status, and</span>
+<span class="sd">        HTTP headers.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">ioe</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: CheckpointFileExistsCheck: There was a problem &quot;</span>
+                     <span class="s2">&quot;connecting to database.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_DB_CONNECT_ERROR</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ioe</span>
+    <span class="k">except</span> <span class="n">database</span><span class="o">.</span><span class="n">WorkspaceNotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Workspace not found: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">nf</span>
+
+    <span class="c1">##logger.info(&quot;%s: Checkpoint content file exists request.&quot;, upload_id)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+
+        <span class="n">checkpoint</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">get_checkpoint_file</span><span class="p">(</span><span class="n">checkpoint_checksum</span><span class="p">)</span>
+
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">checkpoint_checksum</span><span class="p">,</span>
+                    <span class="s1">&#39;Content-Length&#39;</span><span class="p">:</span> <span class="n">checkpoint</span><span class="o">.</span><span class="n">size_bytes</span><span class="p">,</span>
+                    <span class="s1">&#39;Last-Modified&#39;</span><span class="p">:</span> <span class="n">checkpoint</span><span class="o">.</span><span class="n">last_modified</span><span class="p">}</span>
+        <span class="k">return</span> <span class="p">{},</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span><span class="p">,</span> <span class="n">headers</span>
+
+    <span class="k">except</span> <span class="n">HTTPException</span> <span class="k">as</span> <span class="n">httpe</span><span class="p">:</span>
+        <span class="c1"># Werkzeug HTTPExceptions are explicitly raised, so these should always</span>
+        <span class="c1"># propagate.</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Operation failed: &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="n">httpe</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">httpe</span>
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">fne</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Checksum &#39;</span><span class="si">{checkpoint_checksum}</span><span class="s2">&#39; not found.&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">fne</span>
+    <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">ioe</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Checkpoint file exists request failed &quot;</span><span class="p">,</span>
+                     <span class="n">upload_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">CANT_DELETE_FILE</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ioe</span>
+    <span class="k">except</span> <span class="n">UploadFileSecurityError</span> <span class="k">as</span> <span class="n">secerr</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">secerr</span><span class="p">)</span>
+        <span class="c1"># TODO: Should this be BadRequest or NotFound. I&#39;m leaning towards</span>
+        <span class="c1"># NotFound in order to provide as little feedback as posible to client.</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="s2">&quot;Checkpoint file not found.&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">secerr</span>
+
+    <span class="k">return</span> <span class="p">{},</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">checkpoint_checksum</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="get_checkpoint_file"><a class="viewcode-back" href="../../../api/filemanager.controllers.checkpoint.html#filemanager.controllers.checkpoint.get_checkpoint_file">[docs]</a><span class="k">def</span> <span class="nf">get_checkpoint_file</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">checkpoint_checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                        <span class="n">user</span><span class="p">:</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the checkpoint file specified by provided checksum.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    upload_id : int</span>
+<span class="sd">        The unique identifier for upload workspace.</span>
+<span class="sd">    checkpoint_checksum: str</span>
+<span class="sd">        checksum that uniquely identifies checkpoint.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        Complete summary of upload processing.</span>
+<span class="sd">    int</span>
+<span class="sd">        An HTTP status code.</span>
+<span class="sd">    dict</span>
+<span class="sd">        Some extra headers to add to the response.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">user_string</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">format_user_information_for_logging</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Download checkpoint: &#39;</span><span class="si">%s</span><span class="s2">&#39; [</span><span class="si">%s</span><span class="s2">].&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span>
+                <span class="n">checkpoint_checksum</span><span class="p">,</span> <span class="n">user_string</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">ioe</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: CheckpointFileDownload: There was a problem&quot;</span>
+                     <span class="s2">&quot; connecting to database.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_DB_CONNECT_ERROR</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ioe</span>
+    <span class="k">except</span> <span class="n">database</span><span class="o">.</span><span class="n">WorkspaceNotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Workspace not found: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">nf</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">checkpoint</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">get_checkpoint_file</span><span class="p">(</span><span class="n">checkpoint_checksum</span><span class="p">)</span>
+        <span class="n">pointer</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">get_checkpoint_file_pointer</span><span class="p">(</span><span class="n">checkpoint_checksum</span><span class="p">)</span>
+
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;Content-disposition&quot;</span><span class="p">:</span> <span class="n">f</span><span class="s2">&quot;filename=</span><span class="si">{checkpoint.name}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">checkpoint_checksum</span><span class="p">,</span>
+            <span class="s1">&#39;Content-Length&#39;</span><span class="p">:</span> <span class="n">checkpoint</span><span class="o">.</span><span class="n">size_bytes</span><span class="p">,</span>
+            <span class="s1">&#39;Last-Modified&#39;</span><span class="p">:</span> <span class="n">checkpoint</span><span class="o">.</span><span class="n">last_modified</span>
+        <span class="p">}</span>
+    <span class="k">except</span> <span class="n">HTTPException</span> <span class="k">as</span> <span class="n">httpe</span><span class="p">:</span>
+        <span class="c1"># Werkzeug HTTPExceptions are explicitly raised, so these should always</span>
+        <span class="c1"># propagate.</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Operation failed: &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="n">httpe</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">httpe</span>
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">fnf</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;File &#39;</span><span class="si">{checkpoint_checksum}</span><span class="s2">&#39; not found.&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">fnf</span>
+    <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">ioe</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Checkpoint file request failed &quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_DB_CONNECT_ERROR</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ioe</span>
+    <span class="k">except</span> <span class="n">UploadFileSecurityError</span> <span class="k">as</span> <span class="n">secerr</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">secerr</span><span class="p">)</span>
+        <span class="c1"># TODO: Should this be BadRequest or NotFound. I&#39;m leaning towards</span>
+        <span class="c1"># NotFound in order to provide as little feedback as posible to client.</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_FILE_NOT_FOUND</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">secerr</span>
+
+    <span class="k">return</span> <span class="n">pointer</span><span class="p">,</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span><span class="p">,</span> <span class="n">headers</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

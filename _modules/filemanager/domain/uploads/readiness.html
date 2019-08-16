@@ -35,54 +35,115 @@
 <span></span><span class="sd">&quot;&quot;&quot;Provides :class:`.ReadinessMixin`.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">enum</span> <span class="k">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">cast</span>
 
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="k">import</span> <span class="n">Protocol</span>
 
-<span class="kn">from</span> <span class="nn">.errors_and_warnings</span> <span class="k">import</span> <span class="n">ErrorsAndWarningsWorkspace</span>
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">IBaseWorkspace</span>
 
 
-<div class="viewcode-block" id="ReadinessWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.readiness.html#filemanager.domain.uploads.readiness.ReadinessWorkspace">[docs]</a><span class="nd">@dataclass</span>
-<span class="k">class</span> <span class="nc">ReadinessWorkspace</span><span class="p">(</span><span class="n">ErrorsAndWarningsWorkspace</span><span class="p">):</span>
+<div class="viewcode-block" id="Readiness"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.readiness.html#filemanager.domain.uploads.readiness.Readiness">[docs]</a><span class="k">class</span> <span class="nc">Readiness</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Upload workspace readiness states.</span>
+
+<span class="sd">    Provides an indication (but not the final word) on whether the</span>
+<span class="sd">    workspace is suitable for incorporating into a submission to arXiv.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">READY</span> <span class="o">=</span> <span class="s1">&#39;READY&#39;</span>
+    <span class="sd">&quot;&quot;&quot;Overall state of workspace is good; no warnings/errors reported.&quot;&quot;&quot;</span>
+
+    <span class="n">READY_WITH_WARNINGS</span> <span class="o">=</span> <span class="s1">&#39;READY_WITH_WARNINGS&#39;</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Workspace is ready, but there are warnings for the user.</span>
+
+<span class="sd">    Upload processing reported warnings which do not prohibit client</span>
+<span class="sd">    from continuing on to compilation and submit steps.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">ERRORS</span> <span class="o">=</span> <span class="s1">&#39;ERRORS&#39;</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    There were errors reported while processing upload files.</span>
+
+<span class="sd">    Subsequent steps [compilation, submit, publish] should reject working</span>
+<span class="sd">    with such an upload package.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="IWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.readiness.html#filemanager.domain.uploads.readiness.IWorkspace">[docs]</a><span class="k">class</span> <span class="nc">IWorkspace</span><span class="p">(</span><span class="n">IBaseWorkspace</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Workspace API required for :class:`.Readiable`.</span>
+
+<span class="sd">    This incorporates the base API and any additional structures that require</span>
+<span class="sd">    implementation by other components of the workspace.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">has_errors_fatal</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not this workspace has fatal errors.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">has_warnings_active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether this workspace has warnings for active files.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="IReadiable"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.readiness.html#filemanager.domain.uploads.readiness.IReadiable">[docs]</a><span class="k">class</span> <span class="nc">IReadiable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for readiable behavior.&quot;&quot;&quot;</span>
+
+    <span class="n">last_upload_readiness</span><span class="p">:</span> <span class="s1">&#39;Readiness&#39;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">readiness</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Readiness&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Readiness state of the upload workspace.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="IReadiableWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.readiness.html#filemanager.domain.uploads.readiness.IReadiableWorkspace">[docs]</a><span class="k">class</span> <span class="nc">IReadiableWorkspace</span><span class="p">(</span><span class="n">IWorkspace</span><span class="p">,</span> <span class="n">IReadiable</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for workspace with readiable behavior.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="Readiable"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.readiness.html#filemanager.domain.uploads.readiness.Readiable">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Readiable</span><span class="p">(</span><span class="n">IReadiable</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Adds methods and properties releated to source readiness.&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="ReadinessWorkspace.Readiness"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.readiness.html#filemanager.domain.uploads.readiness.ReadinessWorkspace.Readiness">[docs]</a>    <span class="k">class</span> <span class="nc">Readiness</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Upload workspace readiness states.</span>
-
-<span class="sd">        Provides an indication (but not the final word) on whether the</span>
-<span class="sd">        workspace is suitable for incorporating into a submission to arXiv.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">READY</span> <span class="o">=</span> <span class="s1">&#39;READY&#39;</span>
-        <span class="sd">&quot;&quot;&quot;Overall state of workspace is good; no warnings/errors reported.&quot;&quot;&quot;</span>
-
-        <span class="n">READY_WITH_WARNINGS</span> <span class="o">=</span> <span class="s1">&#39;READY_WITH_WARNINGS&#39;</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Workspace is ready, but there are warnings for the user.</span>
-
-<span class="sd">        Upload processing reported warnings which do not prohibit client</span>
-<span class="sd">        from continuing on to compilation and submit steps.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">ERRORS</span> <span class="o">=</span> <span class="s1">&#39;ERRORS&#39;</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        There were errors reported while processing upload files.</span>
-
-<span class="sd">        Subsequent steps [compilation, submit, publish] should reject working</span>
-<span class="sd">        with such an upload package.</span>
-<span class="sd">        &quot;&quot;&quot;</span></div>
-
-    <span class="n">lastupload_readiness</span><span class="p">:</span> <span class="n">Readiness</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">Readiness</span><span class="o">.</span><span class="n">READY</span><span class="p">)</span>
+    <span class="n">last_upload_readiness</span><span class="p">:</span> <span class="n">Readiness</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">Readiness</span><span class="o">.</span><span class="n">READY</span><span class="p">)</span>
     <span class="sd">&quot;&quot;&quot;Content readiness status after last upload event.&quot;&quot;&quot;</span>
+
+    <span class="n">__internal_api</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__api_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api</span><span class="p">:</span> <span class="n">IWorkspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Register the workspace API.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">Readiable</span><span class="p">,</span> <span class="bp">self</span><span class="p">),</span> <span class="s1">&#39;__api_init__&#39;</span><span class="p">):</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">Readiable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__api_init__</span><span class="p">(</span><span class="n">api</span><span class="p">)</span>    <span class="c1"># type: ignore</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span> <span class="o">=</span> <span class="n">api</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">__api</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IWorkspace</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">readiness</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Readiness&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Readiness state of the upload workspace.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_fatal_errors</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">ReadinessWorkspace</span><span class="o">.</span><span class="n">Readiness</span><span class="o">.</span><span class="n">ERRORS</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_active_warnings</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">ReadinessWorkspace</span><span class="o">.</span><span class="n">Readiness</span><span class="o">.</span><span class="n">READY_WITH_WARNINGS</span>
-        <span class="k">return</span> <span class="n">ReadinessWorkspace</span><span class="o">.</span><span class="n">Readiness</span><span class="o">.</span><span class="n">READY</span></div>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">has_errors_fatal</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Readiness</span><span class="o">.</span><span class="n">ERRORS</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">has_warnings_active</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Readiness</span><span class="o">.</span><span class="n">READY_WITH_WARNINGS</span>
+        <span class="k">return</span> <span class="n">Readiness</span><span class="o">.</span><span class="n">READY</span>
+
+<div class="viewcode-block" id="Readiable.to_dict_impl"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.readiness.html#filemanager.domain.uploads.readiness.Readiable.to_dict_impl">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">to_dict_impl</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="bp">self</span><span class="p">:</span> <span class="s1">&#39;Readiable&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Generate a dict representation of the workspace.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;last_upload_readiness&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_upload_readiness</span><span class="o">.</span><span class="n">value</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="Readiable.args_from_dict"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.readiness.html#filemanager.domain.uploads.readiness.Readiable.args_from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">args_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Pluck workspace constructor args from a dict.&quot;&quot;&quot;</span>
+        <span class="n">args</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">last_upload_readiness</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;last_upload_readiness&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">last_upload_readiness</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">args</span><span class="p">[</span><span class="s1">&#39;last_upload_readiness&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Readiness</span><span class="p">(</span><span class="n">last_upload_readiness</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">args</span></div></div>
 </pre></div>
 
           </div>

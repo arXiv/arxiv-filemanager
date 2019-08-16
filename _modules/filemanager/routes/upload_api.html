@@ -52,7 +52,7 @@
 
 <span class="kn">from</span> <span class="nn">..services</span> <span class="k">import</span> <span class="n">database</span>
 <span class="kn">from</span> <span class="nn">..controllers</span> <span class="k">import</span> <span class="n">upload</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">service_log</span><span class="p">,</span> <span class="n">source_log</span><span class="p">,</span> <span class="n">lock</span><span class="p">,</span> \
-    <span class="n">release</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">files</span>
+    <span class="n">release</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">files</span><span class="p">,</span> <span class="n">checkpoint</span>
 
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -62,8 +62,10 @@
 <div class="viewcode-block" id="is_owner"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.is_owner">[docs]</a><span class="k">def</span> <span class="nf">is_owner</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">Session</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
              <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;User must be the upload owner, or an admin.&quot;&quot;&quot;</span>
-    <span class="n">workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">workspace</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">database</span><span class="o">.</span><span class="n">WorkspaceNotFound</span><span class="p">:</span>
+        <span class="c1"># Assume user is creating new upload when upload_id is not found.</span>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">if</span> <span class="n">session</span><span class="o">.</span><span class="n">user</span><span class="p">:</span>
@@ -72,7 +74,6 @@
         <span class="n">owner_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">owner_id</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">Unauthorized</span><span class="p">(</span><span class="s1">&#39;No user or client on authenticated session&#39;</span><span class="p">)</span>
-
     <span class="k">return</span> <span class="n">owner_id</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">)</span></div>
 
 
@@ -91,6 +92,7 @@
     <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">code</span>
     <span class="k">return</span> <span class="n">response</span></div>
 
+<span class="c1"># TODO: Am I able to start off by loading ancillary files?</span>
 
 <div class="viewcode-block" id="new_upload"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.new_upload">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
 <span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">WRITE_UPLOAD</span><span class="p">)</span>
@@ -104,13 +106,6 @@
 
 <span class="sd">    Client response include upload_id which is necessary for subsequent requests.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Optional category/archive - this is required to accurately calculate</span>
-    <span class="c1"># whether submission is oversize.</span>
-    <span class="n">archive_arg</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;archive&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-
-    <span class="c1"># is this optional??</span>
-    <span class="n">archive_arg</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;archive&#39;</span><span class="p">)</span>
-
     <span class="c1"># Required file payload</span>
     <span class="n">file</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;file&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
@@ -122,14 +117,41 @@
         <span class="k">raise</span> <span class="n">Unauthorized</span><span class="p">(</span><span class="s1">&#39;No user or client on authenticated session&#39;</span><span class="p">)</span>
 
     <span class="c1"># Collect arguments and call main upload controller</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">upload</span><span class="o">.</span><span class="n">upload</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span> <span class="n">archive_arg</span><span class="p">,</span>
-                                               <span class="n">user_or_client</span><span class="p">)</span>
-    
+    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">upload</span><span class="o">.</span><span class="n">upload</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span> <span class="n">user_or_client</span><span class="p">)</span>
+
     <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
     <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">headers</span><span class="p">)</span>
     <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
     <span class="k">return</span> <span class="n">response</span></div>
 
+<span class="c1"># TODO : Need to set scope correctly once new auth release is minted.</span>
+
+<div class="viewcode-block" id="upload_files_with_checkpoint"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.upload_files_with_checkpoint">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;&lt;int:upload_id&gt;/checkpoint_with_upload&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
+<span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">CREATE_UPLOAD_CHECKPOINT</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">upload_files_with_checkpoint</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Upload files to existing workspace after creating checkpoint.</span>
+
+<span class="sd">    Upload individual files or compressed archive</span>
+<span class="sd">    and add to existing upload workspace. Multiple uploads accepted.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    upload_id : int</span>
+<span class="sd">        Workspace identifier</span>
+
+<span class="sd">    Note: This request is reserved to users with special scope so</span>
+<span class="sd">           we won&#39;t limit access to &#39;is_owner&#39;.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ancillary</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ancillary&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;True&#39;</span>
+    <span class="n">file</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;file&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="c1"># Attempt to process upload</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">upload</span><span class="o">.</span><span class="n">upload</span><span class="p">(</span><span class="n">upload_id</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span>
+                                               <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span><span class="p">,</span>
+                                               <span class="n">ancillary</span><span class="o">=</span><span class="n">ancillary</span><span class="p">,</span>
+                                               <span class="n">checkpoint</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span></div>
 
 <div class="viewcode-block" id="upload_files"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.upload_files">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;&lt;int:upload_id&gt;&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
 <span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">WRITE_UPLOAD</span><span class="p">,</span> <span class="n">authorizer</span><span class="o">=</span><span class="n">is_owner</span><span class="p">)</span>
@@ -146,11 +168,10 @@
 <span class="sd">        Workspace identifier</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">archive_arg</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;archive&#39;</span><span class="p">)</span>
     <span class="n">ancillary</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ancillary&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;True&#39;</span>
     <span class="n">file</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;file&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
     <span class="c1"># Attempt to process upload</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">upload</span><span class="o">.</span><span class="n">upload</span><span class="p">(</span><span class="n">upload_id</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span> <span class="n">archive_arg</span><span class="p">,</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">upload</span><span class="o">.</span><span class="n">upload</span><span class="p">(</span><span class="n">upload_id</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span>
                                                <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span><span class="p">,</span>
                                                <span class="n">ancillary</span><span class="o">=</span><span class="n">ancillary</span><span class="p">)</span>
     <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
@@ -193,12 +214,16 @@
 <span class="sd">        Relative file path that uniquely identifies file to be removed.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">files</span><span class="o">.</span><span class="n">client_delete_file</span><span class="p">(</span><span class="n">upload_id</span><span class="p">,</span>
-                                                          <span class="n">public_file_path</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">files</span><span class="o">.</span><span class="n">client_delete_file</span><span class="p">(</span>
+        <span class="n">upload_id</span><span class="p">,</span>
+        <span class="n">public_file_path</span><span class="p">,</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">client</span>
+    <span class="p">)</span>
     <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
     <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
     <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
     <span class="k">return</span> <span class="n">response</span></div>
+
 
 <span class="c1"># File and workspace deletion</span>
 
@@ -214,11 +239,15 @@
 <span class="sd">        Workspace identifier</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">files</span><span class="o">.</span><span class="n">client_delete_all_files</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">files</span><span class="o">.</span><span class="n">client_delete_all_files</span><span class="p">(</span>
+        <span class="n">upload_id</span><span class="p">,</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">client</span>
+    <span class="p">)</span>
     <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
     <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
     <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
     <span class="k">return</span> <span class="n">response</span></div>
+
 
 
 <div class="viewcode-block" id="workspace_delete"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.workspace_delete">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;&lt;int:upload_id&gt;&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;DELETE&#39;</span><span class="p">])</span>
@@ -233,11 +262,15 @@
 <span class="sd">        Workspace identifier</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">upload</span><span class="o">.</span><span class="n">delete_workspace</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">upload</span><span class="o">.</span><span class="n">delete_workspace</span><span class="p">(</span>
+        <span class="n">upload_id</span><span class="p">,</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">client</span>
+    <span class="p">)</span>
     <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
     <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
     <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
     <span class="k">return</span> <span class="n">response</span></div>
+
 
 
 <span class="c1"># Lock and unlock upload workspace</span>
@@ -257,7 +290,10 @@
 <span class="sd">        Workspace identifier</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">lock</span><span class="o">.</span><span class="n">upload_lock</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">lock</span><span class="o">.</span><span class="n">upload_lock</span><span class="p">(</span>
+        <span class="n">upload_id</span><span class="p">,</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">client</span>
+    <span class="p">)</span>
     <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
     <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
     <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
@@ -269,7 +305,10 @@
 <span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">WRITE_UPLOAD</span><span class="p">,</span> <span class="n">authorizer</span><span class="o">=</span><span class="n">is_owner</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">unlock_workspace</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Unlock submission workspace and allow updates.&quot;&quot;&quot;</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">lock</span><span class="o">.</span><span class="n">upload_unlock</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">lock</span><span class="o">.</span><span class="n">upload_unlock</span><span class="p">(</span>
+        <span class="n">upload_id</span><span class="p">,</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">client</span>
+    <span class="p">)</span>
     <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
     <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
     <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
@@ -286,7 +325,10 @@
 <span class="sd">    File management service is free to remove submissions files,</span>
 <span class="sd">    or schedule workspace for removal.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">release</span><span class="o">.</span><span class="n">upload_release</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">release</span><span class="o">.</span><span class="n">upload_release</span><span class="p">(</span>
+        <span class="n">upload_id</span><span class="p">,</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">client</span>
+    <span class="p">)</span>
     <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
     <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
     <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
@@ -303,7 +345,10 @@
 <span class="sd">    Workspace was previously release by client. Client has changed their</span>
 <span class="sd">    mind and does not want to remove workspace.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">release</span><span class="o">.</span><span class="n">upload_unrelease</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">release</span><span class="o">.</span><span class="n">upload_unrelease</span><span class="p">(</span>
+        <span class="n">upload_id</span><span class="p">,</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">client</span>
+    <span class="p">)</span>
     <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
     <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
     <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
@@ -339,10 +384,14 @@
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Request for upload content: </span><span class="si">%s</span><span class="s1"> (</span><span class="si">%s</span><span class="s1">)&#39;</span><span class="p">,</span>
                  <span class="n">upload_id</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">upload_id</span><span class="p">))</span>
     <span class="c1"># Note: status_code is not used</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">package</span><span class="o">.</span><span class="n">get_upload_content</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">package</span><span class="o">.</span><span class="n">get_upload_content</span><span class="p">(</span>
+        <span class="n">upload_id</span><span class="p">,</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">client</span>
+    <span class="p">)</span>
     <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">send_file</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mimetype</span><span class="o">=</span><span class="s2">&quot;application/tar+gzip&quot;</span><span class="p">)</span>
     <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
     <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
+    <span class="c1"># response.set_etag(headers.get(&#39;ETag&#39;))</span>
     <span class="k">return</span> <span class="n">response</span></div>
 
 <div class="viewcode-block" id="check_file_exists"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.check_file_exists">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/&lt;int:upload_id&gt;/&lt;path:public_file_path&gt;/content&#39;</span><span class="p">,</span>
@@ -373,11 +422,15 @@
 <span class="sd">    :param public_file_path:</span>
 <span class="sd">    :return: File content.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> \
-        <span class="n">files</span><span class="o">.</span><span class="n">get_upload_file_content</span><span class="p">(</span><span class="n">upload_id</span><span class="p">,</span> <span class="n">public_file_path</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">files</span><span class="o">.</span><span class="n">get_upload_file_content</span><span class="p">(</span>
+        <span class="n">upload_id</span><span class="p">,</span>
+        <span class="n">public_file_path</span><span class="p">,</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">client</span>
+    <span class="p">)</span>
     <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">send_file</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mimetype</span><span class="o">=</span><span class="s2">&quot;application/*&quot;</span><span class="p">)</span>
     <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
     <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
+    <span class="c1"># response.set_etag(headers.get(&#39;ETag&#39;))</span>
     <span class="k">return</span> <span class="n">response</span></div>
 
 
@@ -412,8 +465,8 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get upload workspace log.</span>
 
-<span class="sd">    Get the upload source log for specified upload workspace. This provides details of all</span>
-<span class="sd">    upload/deletion/errors/warnings for specified workspace.</span>
+<span class="sd">    Get the upload source log for specified upload workspace. This provides</span>
+<span class="sd">    details of all upload/deletion/errors/warnings for specified workspace.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -424,10 +477,14 @@
 <span class="sd">    The source.log for specified upload workspace.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">source_log</span><span class="o">.</span><span class="n">get_upload_source_log</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">source_log</span><span class="o">.</span><span class="n">get_upload_source_log</span><span class="p">(</span>
+        <span class="n">upload_id</span><span class="p">,</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">client</span>
+    <span class="p">)</span>
     <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">send_file</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mimetype</span><span class="o">=</span><span class="s2">&quot;application/tar+gzip&quot;</span><span class="p">)</span>
     <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
     <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
+    <span class="c1"># response.set_etag(headers.get(&#39;ETag&#39;))</span>
     <span class="k">return</span> <span class="n">response</span></div>
 
 
@@ -466,11 +523,160 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Note: status_code not used</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">service_log</span><span class="o">.</span><span class="n">get_upload_service_log</span><span class="p">()</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">service_log</span><span class="o">.</span><span class="n">get_upload_service_log</span><span class="p">(</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">client</span>
+    <span class="p">)</span>
     <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">send_file</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mimetype</span><span class="o">=</span><span class="s2">&quot;application/tar+gzip&quot;</span><span class="p">)</span>
     <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
     <span class="c1"># response.set_etag(headers.get(&#39;ETag&#39;))</span>
     <span class="k">return</span> <span class="n">response</span></div>
+
+<span class="c1"># Checkpoint related requests</span>
+<span class="c1">#</span>
+<span class="c1"># create</span>
+<span class="c1"># list</span>
+<span class="c1"># remove</span>
+<span class="c1"># remove_all</span>
+<span class="c1"># restore</span>
+<span class="c1"># checkpoint exists</span>
+<span class="c1"># checkpoint download</span>
+
+<span class="c1"># Create checkpoint</span>
+<div class="viewcode-block" id="create_checkpoint"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.create_checkpoint">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;&lt;int:upload_id&gt;/checkpoint&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
+<span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">CREATE_UPLOAD_CHECKPOINT</span><span class="p">,</span> <span class="n">authorizer</span><span class="o">=</span><span class="n">is_owner</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">create_checkpoint</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create checkpoint from current files in specified workspace.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    upload_id : int</span>
+<span class="sd">        Workspace identifier</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="o">.</span><span class="n">create_checkpoint</span><span class="p">(</span><span class="n">upload_id</span><span class="p">,</span>
+                                                       <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span></div>
+
+<span class="c1"># List checkpoints</span>
+<div class="viewcode-block" id="list_checkpoints"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.list_checkpoints">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;&lt;int:upload_id&gt;/list_checkpoints&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GET&#39;</span><span class="p">])</span>
+<span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">READ_UPLOAD_CHECKPOINT</span><span class="p">,</span> <span class="n">authorizer</span><span class="o">=</span><span class="n">is_owner</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">list_checkpoints</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    List checkpoint files associated with specified workspace.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    upload_id : int</span>
+<span class="sd">        Workspace identifier</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="o">.</span><span class="n">list_checkpoints</span><span class="p">(</span><span class="n">upload_id</span><span class="p">,</span>
+                                                      <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span></div>
+
+<span class="c1"># Restore checkpoint</span>
+<div class="viewcode-block" id="restore_checkpoint"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.restore_checkpoint">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;&lt;int:upload_id&gt;/restore_checkpoint/&lt;checkpoint_checksum&gt;&#39;</span><span class="p">,</span>
+                 <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GET&#39;</span><span class="p">])</span>
+<span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">RESTORE_UPLOAD_CHECKPOINT</span><span class="p">,</span> <span class="n">authorizer</span><span class="o">=</span><span class="n">is_owner</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">restore_checkpoint</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">checkpoint_checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create checkpoint from current files in specified workspace.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    upload_id : int</span>
+<span class="sd">        Workspace identifier</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="o">.</span><span class="n">restore_checkpoint</span><span class="p">(</span><span class="n">upload_id</span><span class="p">,</span>
+                                                        <span class="n">checkpoint_checksum</span><span class="p">,</span>
+                                                        <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span></div>
+
+<span class="c1"># TODO: Need to revise scopes!!! Leave open during development.</span>
+
+<span class="c1"># Checkpoint remove and remove all</span>
+
+<div class="viewcode-block" id="delete_checkpoint"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.delete_checkpoint">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;&lt;int:upload_id&gt;/delete_checkpoint/&lt;checkpoint_checksum&gt;&#39;</span><span class="p">,</span>
+                 <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;DELETE&#39;</span><span class="p">])</span>
+<span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">DELETE_UPLOAD_CHECKPOINT</span><span class="p">,</span> <span class="n">authorizer</span><span class="o">=</span><span class="n">is_owner</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">delete_checkpoint</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">checkpoint_checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Delete individual checkpoint file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    upload_id : int</span>
+<span class="sd">        Workspace identifier</span>
+<span class="sd">    checkpoint_checksum : str</span>
+<span class="sd">        Checkpoint checksum that uniquely identifies file to be removed.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="o">.</span><span class="n">delete_checkpoint</span><span class="p">(</span><span class="n">upload_id</span><span class="p">,</span>
+                                                       <span class="n">checkpoint_checksum</span><span class="p">,</span>
+                                                       <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span></div>
+
+<span class="c1"># File and workspace deletion</span>
+
+<div class="viewcode-block" id="delete_all_checkpoints"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.delete_all_checkpoints">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;&lt;int:upload_id&gt;/delete_all_checkpoints&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
+<span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">DELETE_UPLOAD_CHECKPOINT</span><span class="p">,</span> <span class="n">authorizer</span><span class="o">=</span><span class="n">is_owner</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">delete_all_checkpoints</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Delete all checkpoint files in specified workspace.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    upload_id : int</span>
+<span class="sd">        Workspace identifier</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span> \
+        <span class="o">=</span> <span class="n">checkpoint</span><span class="o">.</span><span class="n">delete_all_checkpoints</span><span class="p">(</span><span class="n">upload_id</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span></div>
+
+
+<span class="c1"># Checkpoint exists/download</span>
+<div class="viewcode-block" id="check_checkpoint_file_exists"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.check_checkpoint_file_exists">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/&lt;int:upload_id&gt;/checkpoint/&lt;checkpoint_checksum&gt;&#39;</span><span class="p">,</span>
+                 <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;HEAD&#39;</span><span class="p">])</span>
+<span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">READ_UPLOAD_CHECKPOINT</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">check_checkpoint_file_exists</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">checkpoint_checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Verify that upload content exists.</span>
+
+<span class="sd">    Returns an ``ETag`` header with the current source package checksum.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span> \
+        <span class="o">=</span> <span class="n">checkpoint</span><span class="o">.</span><span class="n">check_checkpoint_file_exists</span><span class="p">(</span><span class="n">upload_id</span><span class="p">,</span>
+                                                 <span class="n">checkpoint_checksum</span><span class="p">)</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_update_headers</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">code</span>
+    <span class="k">return</span> <span class="n">response</span></div>
+
+
+<div class="viewcode-block" id="get_checkpoint_file"><a class="viewcode-back" href="../../../api/filemanager.routes.upload_api.html#filemanager.routes.upload_api.get_checkpoint_file">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/&lt;int:upload_id&gt;/checkpoint/&lt;checkpoint_checksum&gt;&#39;</span><span class="p">,</span>
+                 <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GET&#39;</span><span class="p">])</span>
+<span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">READ_UPLOAD_CHECKPOINT</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">get_checkpoint_file</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">checkpoint_checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the upload content as a compressed tarball.</span>
+
+<span class="sd">    Returns a stream with mimetype ``application/tar+gzip``, and an ``ETag``</span>
+<span class="sd">    header with the current source package checksum.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Request for upload content: </span><span class="si">%s</span><span class="s1"> (</span><span class="si">%s</span><span class="s1">)&#39;</span><span class="p">,</span>
+                 <span class="n">upload_id</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">upload_id</span><span class="p">))</span>
+    <span class="c1"># Note: status_code is not used</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="o">.</span><span class="n">get_checkpoint_file</span><span class="p">(</span><span class="n">upload_id</span><span class="p">,</span>
+                                                      <span class="n">checkpoint_checksum</span><span class="p">,</span>
+                                                      <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">send_file</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mimetype</span><span class="o">=</span><span class="s2">&quot;application/tar+gzip&quot;</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">set_etag</span><span class="p">(</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ETag&#39;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">response</span></div>
+
+
+
 
 <span class="c1"># Exception handling</span>
 
@@ -503,6 +709,8 @@
         <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">:</span>     <span class="c1"># Avoid duplicate headers.</span>
             <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>   <span class="c1"># type: ignore</span>
         <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>   <span class="c1"># type: ignore</span>
+    <span class="c1"># if &#39;Content-Length&#39; in response.headers:</span>
+    <span class="c1">#     response.headers.remove(&#39;Content-Length&#39;) # type: ignore</span>
     <span class="k">return</span> <span class="n">response</span>
 </pre></div>
 

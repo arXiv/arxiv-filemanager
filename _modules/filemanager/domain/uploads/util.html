@@ -49,21 +49,21 @@
 <span class="n">TFun</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;TFun&#39;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span>
 
 
-<span class="k">class</span> <span class="nc">_IUploadWorkspace</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">_IWorkspace</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Interface for the upload workspace, from the perspective of this mod.&quot;&quot;&quot;</span>
 
     <span class="n">modified_datetime</span><span class="p">:</span> <span class="n">datetime</span>
 
 
-<span class="c1"># This is implemented as a class per </span>
+<span class="c1"># This is implemented as a class per</span>
 <span class="c1"># https://github.com/python/mypy/issues/1551#issuecomment-253978622.</span>
 <div class="viewcode-block" id="modifies_workspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.util.html#filemanager.domain.uploads.util.modifies_workspace">[docs]</a><span class="k">class</span> <span class="nc">modifies_workspace</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Extend an instance method to perform post-modification steps.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">TFun</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TFun</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Decorate a :class:`.UploadWorkspace` method.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Decorate a :class:`.Workspace` method.&quot;&quot;&quot;</span>
         <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-        <span class="k">def</span> <span class="nf">inner</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">_IUploadWorkspace</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> \
+        <span class="k">def</span> <span class="nf">inner</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">_IWorkspace</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> \
                 <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
             <span class="n">result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
             <span class="n">workspace</span><span class="o">.</span><span class="n">modified_datetime</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">UTC</span><span class="p">)</span>

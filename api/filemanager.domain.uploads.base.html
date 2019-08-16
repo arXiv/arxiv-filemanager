@@ -38,53 +38,542 @@
 <p>Provides <a class="reference internal" href="#filemanager.domain.uploads.base.BaseWorkspace" title="filemanager.domain.uploads.base.BaseWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseWorkspace</span></code></a>.</p>
 <dl class="class">
 <dt id="filemanager.domain.uploads.base.BaseWorkspace">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.base.</code><code class="sig-name descname">BaseWorkspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em>, <em class="sig-param">owner_user_id</em>, <em class="sig-param">created_datetime</em>, <em class="sig-param">modified_datetime</em>, <em class="sig-param">files=&lt;factory&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.base._BaseFieldsWithDefaults</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.base._BaseFields</span></code></p>
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.base.</code><code class="sig-name descname">BaseWorkspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em>, <em class="sig-param">owner_user_id: str</em>, <em class="sig-param">created_datetime: datetime.datetime</em>, <em class="sig-param">modified_datetime: datetime.datetime</em>, <em class="sig-param">files: filemanager.domain.index.FileIndex = &lt;factory&gt;</em>, <em class="sig-param">SOURCE_PREFIX: str = 'src'</em>, <em class="sig-param">REMOVED_PREFIX: str = 'removed'</em>, <em class="sig-param">ANCILLARY_PREFIX: str = 'anc'</em>, <em class="sig-param">_storage: Optional[IStorageAdapter] = None</em>, <em class="sig-param">last_upload_start_datetime: Optional[datetime.datetime] = None</em>, <em class="sig-param">last_upload_completion_datetime: Optional[datetime.datetime] = None</em>, <em class="sig-param">last_upload_logs: str = &lt;factory&gt;</em>, <em class="sig-param">last_upload_file_summary: str = &lt;factory&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.base._BaseFieldsWithDefaults</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.base._BaseFields</span></code>, <a class="reference internal" href="#filemanager.domain.uploads.base.IBaseWorkspace" title="filemanager.domain.uploads.base.IBaseWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.base.IBaseWorkspace</span></code></a></p>
 <p>Base class for upload workspaces.</p>
-<p>Provides a foundational <a class="reference internal" href="filemanager.domain.index.html#filemanager.domain.index.FileIndex" title="filemanager.domain.index.FileIndex"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileIndex</span></code></a> at <a class="reference internal" href="filemanager.services.database.models.html#filemanager.services.database.models.DBUpload.files" title="filemanager.services.database.models.DBUpload.files"><code class="xref py py-attr docutils literal notranslate"><span class="pre">files</span></code></a>, plus some
+<p>Provides a foundational <a class="reference internal" href="filemanager.domain.index.html#filemanager.domain.index.FileIndex" title="filemanager.domain.index.FileIndex"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileIndex</span></code></a> at <a class="reference internal" href="#filemanager.domain.uploads.base.IBaseWorkspace.files" title="filemanager.domain.uploads.base.IBaseWorkspace.files"><code class="xref py py-attr docutils literal notranslate"><span class="pre">files</span></code></a>, plus some
 core methods that depend on the index.</p>
 <dl class="method">
-<dt id="filemanager.domain.uploads.base.BaseWorkspace.iter_children">
-<code class="sig-name descname">iter_children</code><span class="sig-paren">(</span><em class="sig-param">u_file_or_path</em>, <em class="sig-param">max_depth=None</em>, <em class="sig-param">is_ancillary=False</em>, <em class="sig-param">is_removed=False</em>, <em class="sig-param">is_system=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.iter_children"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.iter_children" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get an iterator over path, <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a> tuples.</p>
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.ancillary_path">
+<em class="property">property </em><code class="sig-name descname">ancillary_path</code><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.ancillary_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the path where ancillary files are stored.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.args_from_dict">
+<em class="property">classmethod </em><code class="sig-name descname">args_from_dict</code><span class="sig-paren">(</span><em class="sig-param">data: Dict[str, Any]</em><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.args_from_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.args_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pluck workspace constructor args from a dict.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.base_path">
+<em class="property">property </em><code class="sig-name descname">base_path</code><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.base_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Relative base path for this workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.cmp">
+<code class="sig-name descname">cmp</code><span class="sig-paren">(</span><em class="sig-param">a_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">b_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">shallow: bool = True</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.cmp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.cmp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare the contents of two files.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.exists">
+<code class="sig-name descname">exists</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">is_ancillary: bool = False</em>, <em class="sig-param">is_removed: bool = False</em>, <em class="sig-param">is_system: bool = False</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether or not a file exists in this workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.get">
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">is_ancillary: Optional[bool] = None</em>, <em class="sig-param">is_removed: bool = False</em>, <em class="sig-param">is_system: bool = False</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a file at <code class="docutils literal notranslate"><span class="pre">path</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.get_checksum">
+<code class="sig-name descname">get_checksum</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.get_checksum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.get_checksum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the urlsafe base64-encoded MD5 hash of the file contents.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.get_full_path">
+<code class="sig-name descname">get_full_path</code><span class="sig-paren">(</span><em class="sig-param">u_file_or_path: Union[str, filemanager.domain.uploaded_file.UserFile], is_ancillary: bool = False, is_removed: bool = False, is_persisted: bool = False, is_system: bool = False</em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.get_full_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.get_full_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the absolute path to a <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.get_last_modified">
+<code class="sig-name descname">get_last_modified</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; datetime.datetime<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.get_last_modified"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.get_last_modified" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the datetime when a <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a> was last modified.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.get_path">
+<code class="sig-name descname">get_path</code><span class="sig-paren">(</span><em class="sig-param">u_file_or_path: Union[str, filemanager.domain.uploaded_file.UserFile], is_ancillary: bool = False, is_removed: bool = False, is_system: bool = False, **kwargs</em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.get_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.get_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the path to an <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a> in this workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.get_public_path">
+<code class="sig-name descname">get_public_path</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.get_public_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.get_public_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the public path for a file in the workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.get_size_bytes">
+<code class="sig-name descname">get_size_bytes</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; int<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.get_size_bytes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.get_size_bytes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get (and update) the size in bytes of a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.is_ancillary_path">
+<code class="sig-name descname">is_ancillary_path</code><span class="sig-paren">(</span><em class="sig-param">path: str</em><span class="sig-paren">)</span> &#x2192; Tuple[str, bool]<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.is_ancillary_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.is_ancillary_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether or not <code class="docutils literal notranslate"><span class="pre">path</span></code> is an ancillary path.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Iterable" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>]]</p>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – A (relative) path. Need not refer to a file that already exists in
+the workspace.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>str</em> – The <code class="docutils literal notranslate"><span class="pre">path</span></code> that was passed. If <code class="docutils literal notranslate"><span class="pre">path</span></code> is to an ancillary file,
+the ancillary affix is removed.</p></li>
+<li><p><em>bool</em> – True if <code class="docutils literal notranslate"><span class="pre">path</span></code> was ancillary. False otherwise.</p></li>
+</ul>
+</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.is_safe">
+<code class="sig-name descname">is_safe</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">is_ancillary: bool = False</em>, <em class="sig-param">is_removed: bool = False</em>, <em class="sig-param">is_persisted: bool = False</em>, <em class="sig-param">is_system: bool = False</em>, <em class="sig-param">strict: bool = True</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.is_safe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.is_safe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether or not a path is safe to use in this workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.is_tarfile">
+<code class="sig-name descname">is_tarfile</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.is_tarfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.is_tarfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether or not a file is a tarfile.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.iter_children">
+<code class="sig-name descname">iter_children</code><span class="sig-paren">(</span><em class="sig-param">u_file_or_path: Union[str, filemanager.domain.uploaded_file.UserFile], max_depth: Optional[int] = None, is_ancillary: bool = False, is_removed: bool = False, is_system: bool = False</em><span class="sig-paren">)</span> &#x2192; Iterable[Tuple[str, filemanager.domain.uploaded_file.UserFile]]<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.iter_children"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.iter_children" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an iterator over (path, <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a>) tuples.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="filemanager.domain.uploads.base.BaseWorkspace.iter_files">
-<code class="sig-name descname">iter_files</code><span class="sig-paren">(</span><em class="sig-param">allow_ancillary=True</em>, <em class="sig-param">allow_removed=False</em>, <em class="sig-param">allow_directories=False</em>, <em class="sig-param">allow_system=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.iter_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.iter_files" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">iter_files</code><span class="sig-paren">(</span><em class="sig-param">allow_ancillary: bool = True</em>, <em class="sig-param">allow_removed: bool = False</em>, <em class="sig-param">allow_directories: bool = False</em>, <em class="sig-param">allow_system: bool = False</em><span class="sig-paren">)</span> &#x2192; List[filemanager.domain.uploaded_file.UserFile]<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.iter_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.iter_files" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get an iterator over :class:<a href="#id1"><span class="problematic" id="id2">`</span></a>.UploadFile`s in this workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.List" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>]</p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="filemanager.domain.uploads.base.BaseWorkspace.last_modified">
 <em class="property">property </em><code class="sig-name descname">last_modified</code><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.last_modified" title="Permalink to this definition">¶</a></dt>
 <dd><p>Time of the most recent change to a file in the workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Optional" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/datetime.html#datetime.datetime" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">datetime</span></code></a>]</p>
-</dd>
-</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.open">
+<code class="sig-name descname">open</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">flags: str = 'r'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> &#x2192; Iterator[IO]<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.open"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.open" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a file pointer for a <code class="xref py py-class docutils literal notranslate"><span class="pre">UploadFile</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.open_pointer">
+<code class="sig-name descname">open_pointer</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">flags: str = 'r'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> &#x2192; IO<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.open_pointer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.open_pointer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an open file pointer to a file on disk.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.pack_source">
+<code class="sig-name descname">pack_source</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.pack_source"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.pack_source" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pack the source + ancillary content of a workspace as a tarball.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.post_from_dict">
+<em class="property">classmethod </em><code class="sig-name descname">post_from_dict</code><span class="sig-paren">(</span><em class="sig-param">workspace: WorkspaceType, data: Dict[str, Any]</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.post_from_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.post_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the workspace after it has been loaded from a dict.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.removed_path">
+<em class="property">property </em><code class="sig-name descname">removed_path</code><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.removed_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get path where source archive files get moved when unpacked.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.set_last_modified">
+<code class="sig-name descname">set_last_modified</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">modified: Optional[datetime.datetime] = None</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.set_last_modified"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.set_last_modified" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the last modified time on a <code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code>.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="filemanager.domain.uploads.base.BaseWorkspace.size_bytes">
 <em class="property">property </em><code class="sig-name descname">size_bytes</code><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.size_bytes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Total size of the source content (including ancillary files).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
-</dd>
-</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.source_path">
+<em class="property">property </em><code class="sig-name descname">source_path</code><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.source_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the path where source files are deposited.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.storage">
+<em class="property">property </em><code class="sig-name descname">storage</code><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.storage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the storage adapter for this workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.BaseWorkspace.to_dict_impl">
+<em class="property">classmethod </em><code class="sig-name descname">to_dict_impl</code><span class="sig-paren">(</span><em class="sig-param">self: filemanager.domain.uploads.base.BaseWorkspace</em><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#BaseWorkspace.to_dict_impl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.BaseWorkspace.to_dict_impl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a dict representation of the workspace.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.base.</code><code class="sig-name descname">IBaseWorkspace</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Defines the base workspace API.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.ancillary_path">
+<em class="property">property </em><code class="sig-name descname">ancillary_path</code><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.ancillary_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the path where ancillary files are stored.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.base_path">
+<em class="property">property </em><code class="sig-name descname">base_path</code><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.base_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Relative base path for this workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.cmp">
+<code class="sig-name descname">cmp</code><span class="sig-paren">(</span><em class="sig-param">a_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">b_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">shallow: bool = True</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace.cmp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.cmp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare the contents of two files.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.created_datetime">
+<code class="sig-name descname">created_datetime</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.created_datetime" title="Permalink to this definition">¶</a></dt>
+<dd><p>When workspace was created</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.exists">
+<code class="sig-name descname">exists</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">is_ancillary: bool = False</em>, <em class="sig-param">is_removed: bool = False</em>, <em class="sig-param">is_system: bool = False</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace.exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether or not a file exists in this workspace.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.files">
+<code class="sig-name descname">files</code><em class="property"> = Field(name=None,type=None,default=&lt;dataclasses._MISSING_TYPE object&gt;,default_factory=&lt;class 'filemanager.domain.index.FileIndex'&gt;,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),_field_type=None)</em><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Index of all of the files in this workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.get">
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">is_ancillary: Optional[bool] = None</em>, <em class="sig-param">is_removed: bool = False</em>, <em class="sig-param">is_system: bool = False</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a file at <code class="docutils literal notranslate"><span class="pre">path</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.get_checksum">
+<code class="sig-name descname">get_checksum</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace.get_checksum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.get_checksum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the urlsafe base64-encoded MD5 hash of the file contents.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.get_full_path">
+<code class="sig-name descname">get_full_path</code><span class="sig-paren">(</span><em class="sig-param">u_file_or_path: Union[str, filemanager.domain.uploaded_file.UserFile], is_ancillary: bool = False, is_removed: bool = False, is_persisted: bool = False, is_system: bool = False</em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace.get_full_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.get_full_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the absolute path to a <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.get_last_modified">
+<code class="sig-name descname">get_last_modified</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; datetime.datetime<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace.get_last_modified"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.get_last_modified" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the datetime when a <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a> was last modified.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.get_path">
+<code class="sig-name descname">get_path</code><span class="sig-paren">(</span><em class="sig-param">u_file_or_path: Union[str, filemanager.domain.uploaded_file.UserFile], is_ancillary: bool = False, is_removed: bool = False, is_system: bool = False, **kwargs</em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace.get_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.get_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the path to an <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a> in this workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.get_public_path">
+<code class="sig-name descname">get_public_path</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace.get_public_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.get_public_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the public path for a file in the workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.get_size_bytes">
+<code class="sig-name descname">get_size_bytes</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; int<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace.get_size_bytes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.get_size_bytes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get (and update) the size in bytes of a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.is_ancillary_path">
+<code class="sig-name descname">is_ancillary_path</code><span class="sig-paren">(</span><em class="sig-param">path: str</em><span class="sig-paren">)</span> &#x2192; Tuple[str, bool]<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace.is_ancillary_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.is_ancillary_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether or not <code class="docutils literal notranslate"><span class="pre">path</span></code> is an ancillary path.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.is_tarfile">
+<code class="sig-name descname">is_tarfile</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace.is_tarfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.is_tarfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether or not a file is a tarfile.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.iter_children">
+<code class="sig-name descname">iter_children</code><span class="sig-paren">(</span><em class="sig-param">u_file_or_path: Union[str, filemanager.domain.uploaded_file.UserFile], max_depth: Optional[int] = None, is_ancillary: bool = False, is_removed: bool = False, is_system: bool = False</em><span class="sig-paren">)</span> &#x2192; Iterable[Tuple[str, filemanager.domain.uploaded_file.UserFile]]<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace.iter_children"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.iter_children" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an iterator over (path, <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a>) tuples.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.iter_files">
+<code class="sig-name descname">iter_files</code><span class="sig-paren">(</span><em class="sig-param">allow_ancillary: bool = True</em>, <em class="sig-param">allow_removed: bool = False</em>, <em class="sig-param">allow_directories: bool = False</em>, <em class="sig-param">allow_system: bool = False</em><span class="sig-paren">)</span> &#x2192; List[filemanager.domain.uploaded_file.UserFile]<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace.iter_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.iter_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an iterator over :class:<a href="#id3"><span class="problematic" id="id4">`</span></a>.UploadFile`s in this workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.last_modified">
+<em class="property">property </em><code class="sig-name descname">last_modified</code><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.last_modified" title="Permalink to this definition">¶</a></dt>
+<dd><p>Time of the most recent change to a file in the workspace.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.last_upload_completion_datetime">
+<code class="sig-name descname">last_upload_completion_datetime</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.last_upload_completion_datetime" title="Permalink to this definition">¶</a></dt>
+<dd><p>When we completed processing last upload event.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.last_upload_file_summary">
+<code class="sig-name descname">last_upload_file_summary</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.last_upload_file_summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Logs associated with last upload event.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.last_upload_logs">
+<code class="sig-name descname">last_upload_logs</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.last_upload_logs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Logs associated with last upload event.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.last_upload_start_datetime">
+<code class="sig-name descname">last_upload_start_datetime</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.last_upload_start_datetime" title="Permalink to this definition">¶</a></dt>
+<dd><p>When we started processing last upload event.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.modified_datetime">
+<code class="sig-name descname">modified_datetime</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.modified_datetime" title="Permalink to this definition">¶</a></dt>
+<dd><p>When workspace was last modified</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.open">
+<code class="sig-name descname">open</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">flags: str = 'r'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> &#x2192; Iterator[IO]<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace.open"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.open" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a file pointer for a <code class="xref py py-class docutils literal notranslate"><span class="pre">UploadFile</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.open_pointer">
+<code class="sig-name descname">open_pointer</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">flags: str = 'r'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> &#x2192; IO<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace.open_pointer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.open_pointer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an open file pointer to a file on disk.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.owner_user_id">
+<code class="sig-name descname">owner_user_id</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.owner_user_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>User id for owner of workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.pack_source">
+<code class="sig-name descname">pack_source</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace.pack_source"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.pack_source" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pack the source + ancillary content of a workspace as a tarball.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.removed_path">
+<em class="property">property </em><code class="sig-name descname">removed_path</code><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.removed_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get path where source archive files get moved when unpacked.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.set_last_modified">
+<code class="sig-name descname">set_last_modified</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">modified: Optional[datetime.datetime] = None</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IBaseWorkspace.set_last_modified"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.set_last_modified" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the last modified time on a <code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.size_bytes">
+<em class="property">property </em><code class="sig-name descname">size_bytes</code><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.size_bytes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total size of the source content (including ancillary files).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.source_path">
+<em class="property">property </em><code class="sig-name descname">source_path</code><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.source_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the path where source files are deposited.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.storage">
+<em class="property">property </em><code class="sig-name descname">storage</code><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.storage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the storage adapter for this workspace.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.base.IBaseWorkspace.upload_id">
+<code class="sig-name descname">upload_id</code><em class="property"> = None</em><a class="headerlink" href="#filemanager.domain.uploads.base.IBaseWorkspace.upload_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unique ID for the upload workspace.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.base.</code><code class="sig-name descname">IStorageAdapter</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Responsible for providing a data access interface.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.cmp">
+<code class="sig-name descname">cmp</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">a_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">b_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">shallow: bool = True</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.cmp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.cmp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare the contents of two files.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.copy">
+<code class="sig-name descname">copy</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">new_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy the contents of <code class="docutils literal notranslate"><span class="pre">u_file</span></code> into <code class="docutils literal notranslate"><span class="pre">new_file</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.create">
+<code class="sig-name descname">create</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a file.</p>
+<p>Creates any non-existant directories in the path.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.delete">
+<code class="sig-name descname">delete</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Permanently delete a file or directory.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.delete_all">
+<code class="sig-name descname">delete_all</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.delete_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.delete_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete all files in the workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.delete_workspace">
+<code class="sig-name descname">delete_workspace</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.delete_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.delete_workspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Completely delete a workspace and all of its contents.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.get_last_modified">
+<code class="sig-name descname">get_last_modified</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; datetime.datetime<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.get_last_modified"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.get_last_modified" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the datetime when a file was last modified.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.get_path">
+<code class="sig-name descname">get_path</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any, u_file_or_path: Union[str, filemanager.domain.uploaded_file.UserFile], is_ancillary: bool = False, is_removed: bool = False, is_persisted: bool = False, is_system: bool = False</em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.get_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.get_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the absolute path to an <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.get_size_bytes">
+<code class="sig-name descname">get_size_bytes</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; int<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.get_size_bytes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.get_size_bytes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the size of a file in bytes.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.is_safe">
+<code class="sig-name descname">is_safe</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">path: str</em>, <em class="sig-param">is_ancillary: bool = False</em>, <em class="sig-param">is_removed: bool = False</em>, <em class="sig-param">is_persisted: bool = False</em>, <em class="sig-param">is_system: bool = False</em>, <em class="sig-param">strict: bool = True</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.is_safe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.is_safe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether or not a path is safe to use.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.is_tarfile">
+<code class="sig-name descname">is_tarfile</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.is_tarfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.is_tarfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether or not a file can be opened with <code class="docutils literal notranslate"><span class="pre">tarfile</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.makedirs">
+<code class="sig-name descname">makedirs</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">path: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.makedirs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.makedirs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make directories recursively for <code class="docutils literal notranslate"><span class="pre">path</span></code> if they don’t exist.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.move">
+<code class="sig-name descname">move</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">from_path: str</em>, <em class="sig-param">to_path: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.move"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.move" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move a file from one path to another.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.open">
+<code class="sig-name descname">open</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">flags: str = 'r'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> &#x2192; Iterator[IO]<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.open"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.open" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an open file pointer to a file on disk.</p>
+<p>To be used as a context manager. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">storage</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.open_pointer">
+<code class="sig-name descname">open_pointer</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">flags: str = 'r'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span> &#x2192; IO[Any]<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.open_pointer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.open_pointer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an open file pointer to a file on disk.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.pack_tarfile">
+<code class="sig-name descname">pack_tarfile</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">path: str</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.pack_tarfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.pack_tarfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pack <code class="docutils literal notranslate"><span class="pre">path</span></code> into <code class="docutils literal notranslate"><span class="pre">u_file</span></code> as a tarball.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.persist">
+<code class="sig-name descname">persist</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.persist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.persist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Persist a file.</p>
+<p>The file should be available on subsequent requests.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.remove">
+<code class="sig-name descname">remove</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.set_last_modified">
+<code class="sig-name descname">set_last_modified</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">modified: datetime.datetime</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.set_last_modified"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.set_last_modified" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the modification datetime on a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.set_permissions">
+<code class="sig-name descname">set_permissions</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">file_mode: int = 436</em>, <em class="sig-param">dir_mode: int = 509</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.set_permissions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.set_permissions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set permissions for files and directories in a workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.stash_deleted_log">
+<code class="sig-name descname">stash_deleted_log</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.stash_deleted_log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.stash_deleted_log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stash the log file <code class="docutils literal notranslate"><span class="pre">u_file</span></code> (e.g. when deleting a workspace).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.base.IStorageAdapter.unpack_tarfile">
+<code class="sig-name descname">unpack_tarfile</code><span class="sig-paren">(</span><em class="sig-param">workspace: Any</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">path: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/base.html#IStorageAdapter.unpack_tarfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.base.IStorageAdapter.unpack_tarfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unpack tarfile <code class="docutils literal notranslate"><span class="pre">u_file</span></code> into <code class="docutils literal notranslate"><span class="pre">path</span></code>.</p>
 </dd></dl>
 
 </dd></dl>

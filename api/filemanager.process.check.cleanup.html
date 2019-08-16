@@ -48,38 +48,23 @@
 
 <dl class="method">
 <dt id="filemanager.process.check.cleanup.CleanupPostScript.check_FAILED">
-<code class="sig-name descname">check_FAILED</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#CleanupPostScript.check_FAILED"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.CleanupPostScript.check_FAILED" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
+<code class="sig-name descname">check_FAILED</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#CleanupPostScript.check_FAILED"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.CleanupPostScript.check_FAILED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="method">
 <dt id="filemanager.process.check.cleanup.CleanupPostScript.check_POSTSCRIPT">
-<code class="sig-name descname">check_POSTSCRIPT</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#CleanupPostScript.check_POSTSCRIPT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.CleanupPostScript.check_POSTSCRIPT" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">check_POSTSCRIPT</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#CleanupPostScript.check_POSTSCRIPT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.CleanupPostScript.check_POSTSCRIPT" title="Permalink to this definition">¶</a></dt>
 <dd><p>[ needs info ]</p>
 <p>Check postscript for unwanted inclusions and inspect unidentified files
 that appear to be Postscript.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="filemanager.process.check.cleanup.CleanupPostScript.check_PS_PC">
-<code class="sig-name descname">check_PS_PC</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#CleanupPostScript.check_PS_PC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.CleanupPostScript.check_PS_PC" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">check_PS_PC</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#CleanupPostScript.check_PS_PC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.CleanupPostScript.check_PS_PC" title="Permalink to this definition">¶</a></dt>
 <dd><p>Repair poscript for PS PC files.</p>
 <p>Seeing very few of this type in recent submissions.
 leer.eps header repaired to: %!PS-Adobe-2.0 EPSF-2.0</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 </dd></dl>
@@ -115,13 +100,8 @@ leer.eps header repaired to: %!PS-Adobe-2.0 EPSF-2.0</p>
 <p>Repair DOS EPS files.</p>
 <dl class="method">
 <dt id="filemanager.process.check.cleanup.RepairDOSEPSFiles.check_DOS_EPS">
-<code class="sig-name descname">check_DOS_EPS</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#RepairDOSEPSFiles.check_DOS_EPS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.RepairDOSEPSFiles.check_DOS_EPS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">check_DOS_EPS</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#RepairDOSEPSFiles.check_DOS_EPS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.RepairDOSEPSFiles.check_DOS_EPS" title="Permalink to this definition">¶</a></dt>
 <dd><p>[ needs info ]</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 </dd></dl>
@@ -133,46 +113,26 @@ leer.eps header repaired to: %!PS-Adobe-2.0 EPSF-2.0</p>
 <p>UnMac-ifies files.</p>
 <dl class="method">
 <dt id="filemanager.process.check.cleanup.UnMacify.check">
-<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#UnMacify.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.UnMacify.check" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#UnMacify.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.UnMacify.check" title="Permalink to this definition">¶</a></dt>
 <dd><p>If file is identified as core TeX type then we need to unmacify.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="filemanager.process.check.cleanup.UnMacify.check_HTML">
-<code class="sig-name descname">check_HTML</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#UnMacify.check_HTML"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.UnMacify.check_HTML" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">check_HTML</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#UnMacify.check_HTML"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.UnMacify.check_HTML" title="Permalink to this definition">¶</a></dt>
 <dd><p>UnMac-ify HTML files.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="filemanager.process.check.cleanup.UnMacify.check_MAC">
-<code class="sig-name descname">check_MAC</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#UnMacify.check_MAC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.UnMacify.check_MAC" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">check_MAC</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#UnMacify.check_MAC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.UnMacify.check_MAC" title="Permalink to this definition">¶</a></dt>
 <dd><p>UnMac-ify mac files.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="filemanager.process.check.cleanup.UnMacify.check_PC">
-<code class="sig-name descname">check_PC</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#UnMacify.check_PC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.UnMacify.check_PC" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">check_PC</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/process/check/cleanup.html#UnMacify.check_PC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.cleanup.UnMacify.check_PC" title="Permalink to this definition">¶</a></dt>
 <dd><p>UnMac-ify PC files.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 </dd></dl>

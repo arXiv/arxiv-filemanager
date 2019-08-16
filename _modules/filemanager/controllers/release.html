@@ -45,20 +45,22 @@
 <span class="kn">from</span> <span class="nn">werkzeug.exceptions</span> <span class="k">import</span> <span class="n">NotFound</span><span class="p">,</span> <span class="n">InternalServerError</span><span class="p">,</span> <span class="n">SecurityError</span><span class="p">,</span> \
         <span class="n">Forbidden</span>
 
+<span class="kn">from</span> <span class="nn">arxiv.users</span> <span class="k">import</span> <span class="n">domain</span> <span class="k">as</span> <span class="n">auth_domain</span>
 <span class="kn">from</span> <span class="nn">arxiv.base.globals</span> <span class="k">import</span> <span class="n">get_application_config</span>
 
-<span class="kn">from</span> <span class="nn">..domain</span> <span class="k">import</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">NoSuchFile</span>
+<span class="kn">from</span> <span class="nn">..domain</span> <span class="k">import</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">NoSuchFile</span><span class="p">,</span> <span class="n">Status</span>
 <span class="kn">from</span> <span class="nn">..services</span> <span class="k">import</span> <span class="n">database</span><span class="p">,</span> <span class="n">storage</span>
 <span class="kn">from</span> <span class="nn">..process</span> <span class="k">import</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">check</span>
-<span class="kn">from</span> <span class="nn">..serialize</span> <span class="k">import</span> <span class="n">serialize_workspace</span>
+<span class="kn">from</span> <span class="nn">.transform</span> <span class="k">import</span> <span class="n">transform_workspace</span>
 <span class="kn">from</span> <span class="nn">.service_log</span> <span class="k">import</span> <span class="n">logger</span>
 <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">_messages</span> <span class="k">as</span> <span class="n">messages</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">util</span>
 
 <span class="n">Response</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="n">status</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="upload_release"><a class="viewcode-back" href="../../../api/filemanager.controllers.release.html#filemanager.controllers.release.upload_release">[docs]</a><span class="nd">@database</span><span class="o">.</span><span class="n">atomic</span>
-<span class="k">def</span> <span class="nf">upload_release</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">upload_release</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Release inidcates owner is done with upload workspace.</span>
 
@@ -85,54 +87,51 @@
     <span class="c1"># existence of workspace is verified in route level</span>
 
     <span class="c1"># Expect workspace to be in ACTIVE state.</span>
-
+    <span class="n">user_string</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">format_user_information_for_logging</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UploadWorkspace</span><span class="p">]</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+        <span class="n">workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Workspace</span><span class="p">]</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">workspace</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># Invalid workspace identifier</span>
             <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">is_released</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Release: Workspace has already been released.&quot;</span><span class="p">,</span> 
-                        <span class="n">upload_id</span><span class="p">)</span>
-            <span class="n">response_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_RELEASED_WORKSPACE</span><span class="p">}</span>  
-            
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Release: Workspace has already been released &quot;</span>
+                        <span class="s2">&quot;[</span><span class="si">%s</span><span class="s2">].&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">user_string</span><span class="p">)</span>
+            <span class="n">response_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_RELEASED_WORKSPACE</span><span class="p">}</span>
+
             <span class="n">status_code</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span> <span class="c1"># Should this be an error?</span>
         <span class="k">elif</span> <span class="n">workspace</span><span class="o">.</span><span class="n">is_deleted</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Release failed: Workspace has been deleted.&quot;</span><span class="p">,</span> 
-                        <span class="n">upload_id</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Release failed: Workspace has been deleted [</span><span class="si">%s</span><span class="s2">].&quot;</span><span class="p">,</span>
+                        <span class="n">upload_id</span><span class="p">,</span> <span class="n">user_string</span><span class="p">)</span>
             <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_WORKSPACE_ALREADY_DELETED</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">workspace</span><span class="o">.</span><span class="n">is_active</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Release upload workspace.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
-            <span class="n">workspace</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">RELEASED</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Release upload workspace [</span><span class="si">%s</span><span class="s2">].&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span>
+                        <span class="n">user_string</span><span class="p">)</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">RELEASED</span>
             <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">is_stale</span><span class="p">:</span>
                 <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
             <span class="n">database</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>
 
-            <span class="n">response_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_RELEASED_WORKSPACE</span><span class="p">}</span> 
+            <span class="n">response_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_RELEASED_WORKSPACE</span><span class="p">}</span>
             <span class="n">status_code</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span>
 
     <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Release workspace request failed.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">CANT_RELEASE_WORKSPACE</span><span class="p">)</span>
-    <span class="k">except</span> <span class="n">NotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Release workspace: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
-        <span class="k">raise</span>
-    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ue</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Unknown error in release workspace. &quot;</span>
-                    <span class="s2">&quot; Add except clauses for &#39;</span><span class="si">%s</span><span class="s2">&#39;. DO IT NOW!&quot;</span><span class="p">,</span> <span class="n">ue</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_UNKNOWN_ERROR</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">database</span><span class="o">.</span><span class="n">WorkspaceNotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Workspace not found: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span>
 
     <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ARXIV-OWNER&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">,</span>
                <span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">checksum</span><span class="p">,</span>
                <span class="s1">&#39;Last-Modified&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">last_modified</span><span class="p">}</span>
-            
+
     <span class="k">return</span> <span class="n">response_data</span><span class="p">,</span> <span class="n">status_code</span><span class="p">,</span> <span class="n">headers</span></div>
 
 
 <div class="viewcode-block" id="upload_unrelease"><a class="viewcode-back" href="../../../api/filemanager.controllers.release.html#filemanager.controllers.release.upload_unrelease">[docs]</a><span class="nd">@database</span><span class="o">.</span><span class="n">atomic</span>
-<span class="k">def</span> <span class="nf">upload_unrelease</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">upload_unrelease</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Unrelease returns released workspace to active state.</span>
 
@@ -160,13 +159,14 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Again, as with delete workspace, authentication, authorization, and</span>
     <span class="c1"># existence of workspace is verified in route level</span>
+    <span class="n">user_string</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">format_user_information_for_logging</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
 
     <span class="c1"># Expect workspace to be in RELEASED state.</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Unrelease upload workspace.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Unrelease upload workspace [</span><span class="si">%s</span><span class="s2">].&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">user_string</span><span class="p">)</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># Make sure we have an upload_db_data to work with</span>
-        <span class="n">workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UploadWorkspace</span><span class="p">]</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+        <span class="n">workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Workspace</span><span class="p">]</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">workspace</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span>
@@ -177,14 +177,15 @@
             <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_WORKSPACE_ALREADY_DELETED</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">is_active</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Unrelease: Workspace is already active.&quot;</span><span class="p">,</span> 
-                        <span class="n">upload_id</span><span class="p">)</span>
-            <span class="n">response_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_UNRELEASED_WORKSPACE</span><span class="p">}</span>  
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Unrelease: Workspace is already active [</span><span class="si">%s</span><span class="s2">].&quot;</span><span class="p">,</span>
+                        <span class="n">upload_id</span><span class="p">,</span> <span class="n">user_string</span><span class="p">)</span>
+            <span class="n">response_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_UNRELEASED_WORKSPACE</span><span class="p">}</span>
             <span class="n">status_code</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span>     <span class="c1"># Should this be an error?</span>
         <span class="k">elif</span> <span class="n">workspace</span><span class="o">.</span><span class="n">is_released</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Unrelease upload workspace.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Unrelease upload workspace [</span><span class="si">%s</span><span class="s2">].&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span>
+                        <span class="n">user_string</span><span class="p">)</span>
 
-            <span class="n">workspace</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">ACTIVE</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">ACTIVE</span>
             <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">is_stale</span><span class="p">:</span>
                 <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
             <span class="n">database</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>
@@ -195,13 +196,9 @@
     <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Unrelease workspace request failed.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">CANT_DELETE_FILE</span><span class="p">)</span>
-    <span class="k">except</span> <span class="n">NotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Unrelease workspace: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
-        <span class="k">raise</span>
-    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ue</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Unknown error in unrelease workspace. &quot;</span>
-                    <span class="s2">&quot; Add except clauses for &#39;</span><span class="si">%s</span><span class="s2">&#39;. DO IT NOW!&quot;</span><span class="p">,</span> <span class="n">ue</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_UNKNOWN_ERROR</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">database</span><span class="o">.</span><span class="n">WorkspaceNotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Workspace not found: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span>
 
     <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ARXIV-OWNER&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">,</span>
                <span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">checksum</span><span class="p">,</span>

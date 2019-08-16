@@ -1,0 +1,535 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.domain.uploads.checkpoint &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.domain.uploads.checkpoint</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Adds checkpoint functionality to the upload workspace.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">json</span> <span class="k">import</span> <span class="n">dump</span><span class="p">,</span> <span class="n">load</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">IO</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> \
+    <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="k">import</span> <span class="n">Protocol</span>
+
+<span class="c1"># Not sure why we&#39;re running into issues with namespace packages here.</span>
+<span class="kn">from</span> <span class="nn">arxiv.users.domain</span> <span class="k">import</span> <span class="n">User</span>  <span class="c1"># pylint: disable=no-name-in-module</span>
+<span class="kn">from</span> <span class="nn">arxiv.util.serialize</span> <span class="k">import</span> <span class="n">ISO8601JSONEncoder</span><span class="p">,</span> <span class="n">ISO8601JSONDecoder</span>  <span class="c1"># pylint: disable=no-name-in-module</span>
+
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">IBaseWorkspace</span>
+<span class="kn">from</span> <span class="nn">.exceptions</span> <span class="k">import</span> <span class="n">UploadFileSecurityError</span><span class="p">,</span> <span class="n">NoSourceFilesToCheckpoint</span>
+<span class="kn">from</span> <span class="nn">..error</span> <span class="k">import</span> <span class="n">Error</span>
+<span class="kn">from</span> <span class="nn">..uploaded_file</span> <span class="k">import</span> <span class="n">UserFile</span>
+
+<span class="n">UPLOAD_WORKSPACE_IS_EMPTY</span> <span class="o">=</span> <span class="s1">&#39;workspace is empty&#39;</span>
+<span class="n">UPLOAD_FILE_NOT_FOUND</span> <span class="o">=</span> <span class="s1">&#39;file not found&#39;</span>
+<span class="n">UPLOAD_CHECKPOINT_FILE_NOT_FOUND</span> <span class="o">=</span> <span class="s1">&#39;checkpoint file not found&#39;</span>
+
+<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;T&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ILog"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.ILog">[docs]</a><span class="k">class</span> <span class="nc">ILog</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="ILog.info"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.ILog.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="o">...</span></div></div>
+
+
+<div class="viewcode-block" id="IFiles"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.IFiles">[docs]</a><span class="k">class</span> <span class="nc">IFiles</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="n">source</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">]</span>
+    <span class="n">ancillary</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="IStorage"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.IStorage">[docs]</a><span class="k">class</span> <span class="nc">IStorage</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="IStorage.unpack_tarfile"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.IStorage.unpack_tarfile">[docs]</a>    <span class="k">def</span> <span class="nf">unpack_tarfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;Checkpointable&#39;</span><span class="p">,</span>
+                       <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Unpack tarfile ``u_file`` into ``path``.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div></div>
+
+
+<div class="viewcode-block" id="IWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.IWorkspace">[docs]</a><span class="k">class</span> <span class="nc">IWorkspace</span><span class="p">(</span><span class="n">IBaseWorkspace</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Workspace API required for :class:`.Checkable`.</span>
+
+<span class="sd">    This incorporates the base API and any additional structures that require</span>
+<span class="sd">    implementation by other components of the workspace.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">errors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Error</span><span class="p">]</span>
+    <span class="n">log</span><span class="p">:</span> <span class="n">ILog</span>
+
+<div class="viewcode-block" id="IWorkspace.add_warning_non_file"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.IWorkspace.add_warning_non_file">[docs]</a>    <span class="k">def</span> <span class="nf">add_warning_non_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                             <span class="n">is_persistant</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Add a warning for the workspace that is not specific to a file.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IWorkspace.add_error_non_file"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.IWorkspace.add_error_non_file">[docs]</a>    <span class="k">def</span> <span class="nf">add_error_non_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                           <span class="n">severity</span><span class="p">:</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span> <span class="o">=</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">FATAL</span><span class="p">,</span>
+                           <span class="n">is_persistant</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Add an error for the workspace that is not specific to a file.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IWorkspace.create"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.IWorkspace.create">[docs]</a>    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+               <span class="n">is_persisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">touch</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Create a new :class:`.UserFile` at ``path``.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IWorkspace.to_dict"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.IWorkspace.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Generate a dict representation of a workspace.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IWorkspace.delete"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.IWorkspace.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Completely delete a file.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IWorkspace.delete_all_files"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.IWorkspace.delete_all_files">[docs]</a>    <span class="k">def</span> <span class="nf">delete_all_files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Delete all source and ancillary files in the workspace.&quot;&quot;&quot;</span></div></div>
+
+
+<div class="viewcode-block" id="ICheckpointable"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.ICheckpointable">[docs]</a><span class="k">class</span> <span class="nc">ICheckpointable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for checkpointable behavior.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">checkpoint_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get directory where checkpoint archive files live.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ICheckpointable.checkpoint_file_exists"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.ICheckpointable.checkpoint_file_exists">[docs]</a>    <span class="k">def</span> <span class="nf">checkpoint_file_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Indicate whether checkpoint files exists.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="ICheckpointable.create_checkpoint"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.ICheckpointable.create_checkpoint">[docs]</a>    <span class="k">def</span> <span class="nf">create_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Create a chckpoint (backup) of workspace source files.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="ICheckpointable.delete_all_checkpoints"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.ICheckpointable.delete_all_checkpoints">[docs]</a>    <span class="k">def</span> <span class="nf">delete_all_checkpoints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Remove all checkpoints.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="ICheckpointable.delete_checkpoint"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.ICheckpointable.delete_checkpoint">[docs]</a>    <span class="k">def</span> <span class="nf">delete_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Remove specified checkpoint.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="ICheckpointable.get_checkpoint_file"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.ICheckpointable.get_checkpoint_file">[docs]</a>    <span class="k">def</span> <span class="nf">get_checkpoint_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get a checkpoint file.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="ICheckpointable.get_checkpoint_file_last_modified"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.ICheckpointable.get_checkpoint_file_last_modified">[docs]</a>    <span class="k">def</span> <span class="nf">get_checkpoint_file_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return last modified time for specified file/package.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="ICheckpointable.get_checkpoint_file_pointer"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.ICheckpointable.get_checkpoint_file_pointer">[docs]</a>    <span class="k">def</span> <span class="nf">get_checkpoint_file_pointer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IO</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Open specified file and return file pointer.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="ICheckpointable.get_checkpoint_file_size"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.ICheckpointable.get_checkpoint_file_size">[docs]</a>    <span class="k">def</span> <span class="nf">get_checkpoint_file_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return size of specified checkpoint file.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="ICheckpointable.list_checkpoints"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.ICheckpointable.list_checkpoints">[docs]</a>    <span class="k">def</span> <span class="nf">list_checkpoints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">UserFile</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Generate a list of checkpoints.&quot;&quot;&quot;</span></div></div>
+
+
+<div class="viewcode-block" id="ICheckpointableWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.ICheckpointableWorkspace">[docs]</a><span class="k">class</span> <span class="nc">ICheckpointableWorkspace</span><span class="p">(</span><span class="n">IWorkspace</span><span class="p">,</span> <span class="n">ICheckpointable</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Structure of a workspace with checkpointable behavior.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="Checkpointable"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.Checkpointable">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Checkpointable</span><span class="p">(</span><span class="n">ICheckpointable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Adds checkpoint routines to the workspace.</span>
+
+<span class="sd">    Manage creating, viewing, removing, and restoring checkpoints.</span>
+
+<span class="sd">    checksum might be useful as key to identify specific checkpoint.</span>
+
+<span class="sd">    TODO: Should we support admin provided description of checkpoint?</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">CHECKPOINT_PREFIX</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s1">&#39;checkpoint&#39;</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;The name of the checkpoint directory within the upload workspace.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Allow maximum number of checkpoints (100?)</span>
+    <span class="n">MAX_CHECKPOINTS</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># Use 10 for testing</span>
+
+    <span class="n">__internal_api</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__api_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api</span><span class="p">:</span> <span class="n">IWorkspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Register the workspace API.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">Checkpointable</span><span class="p">,</span> <span class="bp">self</span><span class="p">),</span> <span class="s1">&#39;__api_init__&#39;</span><span class="p">):</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">Checkpointable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__api_init__</span><span class="p">(</span><span class="n">api</span><span class="p">)</span>   <span class="c1"># type: ignore</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span> <span class="o">=</span> <span class="n">api</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">__api</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IWorkspace</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span>
+
+<div class="viewcode-block" id="Checkpointable.from_dict"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.Checkpointable.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">upload_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Must be combined with seomthing that&#39;</span>
+                                  <span class="s1">&#39; implements from_dict&#39;</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">checkpoint_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get directory where checkpoint archive files live.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">base_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">CHECKPOINT_PREFIX</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Checkpointable.checkpoint_file_exists"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.Checkpointable.checkpoint_file_exists">[docs]</a>    <span class="k">def</span> <span class="nf">checkpoint_file_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Indicate whether checkpoint files exists.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        checksum : str</span>
+<span class="sd">            Checksum that uniquely identifies checkpoint.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">            True if file exists, False otherwise.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_checkpoint</span><span class="p">(</span><span class="n">checksum</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="Checkpointable.create_checkpoint"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.Checkpointable.create_checkpoint">[docs]</a>    <span class="k">def</span> <span class="nf">create_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a chckpoint (backup) of workspace source files.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        checksum : str</span>
+<span class="sd">            Checksum for checkpoint tar gzipped archive we just created.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Make sure there are files before we bother to create a checkpoint.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_file_count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NoSourceFilesToCheckpoint</span><span class="p">(</span><span class="n">UPLOAD_WORKSPACE_IS_EMPTY</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">add_warning_non_file</span><span class="p">(</span>
+            <span class="s2">&quot;Creating checkpoint.&quot;</span> <span class="o">+</span> <span class="p">(</span><span class="n">f</span><span class="s2">&quot;[&#39;</span><span class="si">{user.user_id}</span><span class="s2">&#39;]&quot;</span> <span class="k">if</span> <span class="n">user</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Create a new unique filename for checkpoint</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_checkpoint_count</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MAX_CHECKPOINTS</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;&#39;</span>   <span class="c1"># TODO: Need to throw an error here?</span>
+
+        <span class="n">checkpoint</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_make_path</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">count</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+                                       <span class="n">is_system</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">is_persisted</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                       <span class="n">touch</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">pack_source</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+
+        <span class="n">metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_make_metadata_path</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">count</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+                                     <span class="n">is_system</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">is_persisted</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                     <span class="n">touch</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">f</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">ISO8601JSONEncoder</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">checkpoint</span><span class="o">.</span><span class="n">checksum</span></div>
+
+<div class="viewcode-block" id="Checkpointable.delete_all_checkpoints"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.Checkpointable.delete_all_checkpoints">[docs]</a>    <span class="k">def</span> <span class="nf">delete_all_checkpoints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Remove all checkpoints.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">checkpoint</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_checkpoints</span><span class="p">(</span><span class="n">user</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+
+        <span class="n">log_msg</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;Deleted ALL checkpoints&quot;</span>
+        <span class="n">log_msg</span> <span class="o">+=</span> <span class="n">f</span><span class="s2">&quot;: [&#39;</span><span class="si">{user.username}</span><span class="s2">&#39;].&quot;</span> <span class="k">if</span> <span class="n">user</span> <span class="k">else</span> <span class="s2">&quot;.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">log_msg</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Checkpointable.delete_checkpoint"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.Checkpointable.delete_checkpoint">[docs]</a>    <span class="k">def</span> <span class="nf">delete_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Remove specified checkpoint.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">checkpoint</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_checkpoint</span><span class="p">(</span><span class="n">checksum</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+            <span class="n">log_msg</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;ERROR: Checkpoint not found: </span><span class="si">{checksum}</span><span class="s2">&quot;</span>
+            <span class="n">log_msg</span> <span class="o">+=</span> <span class="n">f</span><span class="s2">&quot;[&#39;</span><span class="si">{user.username}</span><span class="s2">&#39;]&quot;</span> <span class="k">if</span> <span class="n">user</span> <span class="k">else</span> <span class="s2">&quot;.&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">log_msg</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+        <span class="n">log_msg</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;Deleted checkpoint: </span><span class="si">{checkpoint.name}</span><span class="s2">&quot;</span>
+        <span class="n">log_msg</span> <span class="o">+=</span> <span class="n">f</span><span class="s2">&quot;[&#39;</span><span class="si">{user.username}</span><span class="s2">&#39;].&quot;</span> <span class="k">if</span> <span class="n">user</span> <span class="k">else</span> <span class="s2">&quot;.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">log_msg</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Checkpointable.get_checkpoint_file"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.Checkpointable.get_checkpoint_file">[docs]</a>    <span class="k">def</span> <span class="nf">get_checkpoint_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a checkpoint file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        checksum : str</span>
+<span class="sd">            Checksum that uniquely identifies checkpoint.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        :class:`.UserFile`</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_checkpoint</span><span class="p">(</span><span class="n">checksum</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Checkpointable.get_checkpoint_file_last_modified"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.Checkpointable.get_checkpoint_file_last_modified">[docs]</a>    <span class="k">def</span> <span class="nf">get_checkpoint_file_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return last modified time for specified file/package.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        checksum : str</span>
+<span class="sd">            Checksum that uniquely identifies checkpoint.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Last modified date string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_checkpoint</span><span class="p">(</span><span class="n">checksum</span><span class="p">)</span><span class="o">.</span><span class="n">last_modified</span></div>
+
+<div class="viewcode-block" id="Checkpointable.get_checkpoint_file_pointer"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.Checkpointable.get_checkpoint_file_pointer">[docs]</a>    <span class="k">def</span> <span class="nf">get_checkpoint_file_pointer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IO</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Open specified file and return file pointer.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        checksum : str</span>
+<span class="sd">            Checksum that uniquely identifies checkpoint.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        io.BytesIO</span>
+<span class="sd">            File pointer or exception string when filepath does not exist.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">open_pointer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_checkpoint</span><span class="p">(</span><span class="n">checksum</span><span class="p">),</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Checkpointable.get_checkpoint_file_size"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.Checkpointable.get_checkpoint_file_size">[docs]</a>    <span class="k">def</span> <span class="nf">get_checkpoint_file_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return size of specified file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        checksum : str</span>
+<span class="sd">            Checksum that uniquely identifies checkpoint.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Size in bytes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">u_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_checkpoint</span><span class="p">(</span><span class="n">checksum</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">u_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">size_bytes</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="n">UPLOAD_CHECKPOINT_FILE_NOT_FOUND</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Checkpointable.list_checkpoints"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.Checkpointable.list_checkpoints">[docs]</a>    <span class="k">def</span> <span class="nf">list_checkpoints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">UserFile</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate a list of checkpoints.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">            list of checkpoint files, includes date/time checkpoint was</span>
+<span class="sd">            created and checksum key.</span>
+
+<span class="sd">        TODO: include description? or make one up on the fly?</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">user</span><span class="p">:</span>
+            <span class="n">log_msg</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;Created list of checkpoints [</span><span class="si">{user.username}</span><span class="s1">].&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">log_msg</span> <span class="o">=</span> <span class="s1">&#39;Created list of checkpoints.&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">log_msg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">u</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">iter_files</span><span class="p">(</span><span class="n">allow_system</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">u</span><span class="o">.</span><span class="n">is_system</span>
+                <span class="ow">and</span> <span class="n">u</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CHECKPOINT_PREFIX</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="n">u</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.tar.gz&#39;</span><span class="p">)]</span></div>
+
+<div class="viewcode-block" id="Checkpointable.restore_checkpoint"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.Checkpointable.restore_checkpoint">[docs]</a>    <span class="k">def</span> <span class="nf">restore_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Restore a previous checkpoint.</span>
+
+<span class="sd">        First we delete all existing files under workspace source directory.</span>
+
+<span class="sd">        Next we unpack chackpoint file into src directory.</span>
+
+<span class="sd">        TODO: Decide whether to checkpoint source we are restoring over.</span>
+<span class="sd">        TODO: Probably not. Maybe should checkpoint if someone other than owner</span>
+<span class="sd">        TODO: is uploading file (forget to select checkpoint) but only if</span>
+<span class="sd">        TODO: previous upload was by owner.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># We probably need to remove all existing source files before we</span>
+        <span class="c1"># extract files from checkpoint zipped tar archive.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">delete_all_files</span><span class="p">()</span>
+
+        <span class="c1"># Locate the checkpoint we are interested in.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">checkpoint</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_checkpoint</span><span class="p">(</span><span class="n">checksum</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">add_error_non_file</span><span class="p">(</span>
+                <span class="s1">&#39;Unable to restore checkpoint. Not found.&#39;</span>
+            <span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage not available&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">unpack_tarfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checkpoint</span><span class="p">,</span>
+                                          <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">source_path</span><span class="p">)</span>
+
+        <span class="c1"># Restore fileindex and errors from previous metadata.</span>
+        <span class="n">meta_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">checkpoint</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.tar.gz&#39;</span><span class="p">,</span> <span class="s1">&#39;.json&#39;</span><span class="p">))</span>
+        <span class="n">u_chex_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">meta_path</span><span class="p">,</span> <span class="n">is_system</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">u_chex_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f_meta</span><span class="p">:</span>
+            <span class="n">loaded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">load</span><span class="p">(</span><span class="n">f_meta</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">ISO8601JSONDecoder</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_from_checkpoint</span><span class="p">(</span><span class="n">cast</span><span class="p">(</span><span class="n">IWorkspace</span><span class="p">,</span> <span class="n">loaded</span><span class="p">))</span>
+
+        <span class="n">log_msg</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;Restored checkpoint: </span><span class="si">{checkpoint.name}</span><span class="s1">&#39;</span>
+        <span class="n">log_msg</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39; [</span><span class="si">{user.username}</span><span class="s1">].&#39;</span> <span class="k">if</span> <span class="n">user</span> <span class="k">else</span> <span class="s1">&#39;.&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">log_msg</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_all_file_count</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">iter_files</span><span class="p">(</span><span class="n">allow_ancillary</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_get_checkpoint_count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_path</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">count</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">_path</span><span class="p">,</span> <span class="n">is_system</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                <span class="k">break</span>
+            <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">count</span>
+
+    <span class="k">def</span> <span class="nf">_get_checkpoint_file_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the absolute path of content file given relative pointer.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        checksum : str</span>
+<span class="sd">            Checksum that uniquely identifies checkpoint.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Path to checkpoint specified by unique checksum.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">u_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_checkpoint</span><span class="p">(</span><span class="n">checksum</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">u_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span>
+
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="n">UPLOAD_FILE_NOT_FOUND</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_is_checkpoint_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_system</span>
+                    <span class="ow">and</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CHECKPOINT_PREFIX</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_make_metadata_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">user_string</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;_</span><span class="si">{user.username}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">user</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CHECKPOINT_PREFIX</span><span class="p">,</span>
+                            <span class="n">f</span><span class="s1">&#39;checkpoint_</span><span class="si">{count}{user_string}</span><span class="s1">.json&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_make_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">user_string</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;_</span><span class="si">{user.username}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">user</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CHECKPOINT_PREFIX</span><span class="p">,</span>
+                            <span class="n">f</span><span class="s1">&#39;checkpoint_</span><span class="si">{count}{user_string}</span><span class="s1">.tar.gz&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">iter_files</span><span class="p">(</span><span class="n">allow_system</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_checkpoint_file</span><span class="p">(</span><span class="n">u_file</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">checksum</span> <span class="o">==</span> <span class="n">checksum</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">u_file</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="n">UPLOAD_FILE_NOT_FOUND</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_update_from_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">IWorkspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">source</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">ancillary</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">ancillary</span>
+        <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">iter_files</span><span class="p">():</span>
+            <span class="n">u_file</span><span class="o">.</span><span class="n">workspace</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">IWorkspace</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">errors</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  <li><a href="../uploads.html">filemanager.domain.uploads</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

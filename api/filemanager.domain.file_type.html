@@ -299,48 +299,28 @@
 <em class="property">property </em><code class="sig-name descname">is_tex_type</code><a class="headerlink" href="#filemanager.domain.file_type.FileType.is_tex_type" title="Permalink to this definition">¶</a></dt>
 <dd><p>Indicate whether this is a TeX type.</p>
 <p>This method does some normalization prior to calling internal routine.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="filemanager.domain.file_type.FileType.label">
 <em class="property">property </em><code class="sig-name descname">label</code><a class="headerlink" href="#filemanager.domain.file_type.FileType.label" title="Permalink to this definition">¶</a></dt>
 <dd><p>Human-readable name of the file type.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="filemanager.domain.file_type.FileType.priority">
 <em class="property">property </em><code class="sig-name descname">priority</code><a class="headerlink" href="#filemanager.domain.file_type.FileType.priority" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the priority for this file type.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.domain.file_type.get_type_priority">
-<code class="sig-prename descclassname">filemanager.domain.file_type.</code><code class="sig-name descname">get_type_priority</code><span class="sig-paren">(</span><em class="sig-param">file_type</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/file_type.html#get_type_priority"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.file_type.get_type_priority" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.domain.file_type.</code><code class="sig-name descname">get_type_priority</code><span class="sig-paren">(</span><em class="sig-param">file_type: filemanager.domain.file_type.FileType</em><span class="sig-paren">)</span> &#x2192; int<a class="reference internal" href="../_modules/filemanager/domain/file_type.html#get_type_priority"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.file_type.get_type_priority" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return an integer indicating the processing priority of file type.</p>
 <p>Higher numbers should be processed first. Will return 0 (lower
 than all other types) if file_type is not recognized.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 </div>

@@ -34,27 +34,70 @@
   <h1>Source code for filemanager.domain.uploads.single_file</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Provides :class:`.SingleFileMixin`.&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">cast</span>
 
-<span class="kn">from</span> <span class="nn">.countable</span> <span class="k">import</span> <span class="n">CountableWorkspace</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="k">import</span> <span class="n">Protocol</span>
+
 <span class="kn">from</span> <span class="nn">..file_type</span> <span class="k">import</span> <span class="n">FileType</span>
-<span class="kn">from</span> <span class="nn">..uploaded_file</span> <span class="k">import</span> <span class="n">UploadedFile</span>
+<span class="kn">from</span> <span class="nn">..uploaded_file</span> <span class="k">import</span> <span class="n">UserFile</span>
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">IBaseWorkspace</span>
 
 
-<div class="viewcode-block" id="SingleFileWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.single_file.html#filemanager.domain.uploads.single_file.SingleFileWorkspace">[docs]</a><span class="k">class</span> <span class="nc">SingleFileWorkspace</span><span class="p">(</span><span class="n">CountableWorkspace</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Adds methods related to single-file source packages.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="IWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.single_file.html#filemanager.domain.uploads.single_file.IWorkspace">[docs]</a><span class="k">class</span> <span class="nc">IWorkspace</span><span class="p">(</span><span class="n">IBaseWorkspace</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Workspace functionality required by :class:`SingleFile`.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">file_count</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;The total number of non-ancillary files in this workspace.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IWorkspace.get_file_type_counts"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.single_file.html#filemanager.domain.uploads.single_file.IWorkspace.get_file_type_counts">[docs]</a>    <span class="k">def</span> <span class="nf">get_file_type_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">FileType</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="nb">int</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get the number of files of each type in the workspace.&quot;&quot;&quot;</span></div></div>
+
+
+<div class="viewcode-block" id="ISingleFile"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.single_file.html#filemanager.domain.uploads.single_file.ISingleFile">[docs]</a><span class="k">class</span> <span class="nc">ISingleFile</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for single file behavior.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_single_file_submission</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Indicate whether or not this is a valid single-file submission.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_count</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+
+<div class="viewcode-block" id="ISingleFile.get_single_file"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.single_file.html#filemanager.domain.uploads.single_file.ISingleFile.get_single_file">[docs]</a>    <span class="k">def</span> <span class="nf">get_single_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UserFile</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get the primary source file for single-file submission.&quot;&quot;&quot;</span></div></div>
+
+
+<div class="viewcode-block" id="ISingleFileWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.single_file.html#filemanager.domain.uploads.single_file.ISingleFileWorkspace">[docs]</a><span class="k">class</span> <span class="nc">ISingleFileWorkspace</span><span class="p">(</span><span class="n">IBaseWorkspace</span><span class="p">,</span> <span class="n">ISingleFile</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for workspace with single file behavior.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="SingleFile"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.single_file.html#filemanager.domain.uploads.single_file.SingleFile">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">SingleFile</span><span class="p">(</span><span class="n">ISingleFile</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Adds methods related to single-file source packages.&quot;&quot;&quot;</span>
+
+    <span class="n">__internal_api</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__api_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api</span><span class="p">:</span> <span class="n">IWorkspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Register the workspace API.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">SingleFile</span><span class="p">,</span> <span class="bp">self</span><span class="p">),</span> <span class="s1">&#39;__api_init__&#39;</span><span class="p">):</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">SingleFile</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__api_init__</span><span class="p">(</span><span class="n">api</span><span class="p">)</span>   <span class="c1"># type: ignore</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span> <span class="o">=</span> <span class="n">api</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">__api</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IWorkspace</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_single_file_submission</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Indicate whether or not this is a valid single-file submission.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">file_count</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
-        <span class="n">counts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_file_type_counts</span><span class="p">()</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">get_file_type_counts</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">counts</span><span class="p">[</span><span class="s1">&#39;ignore&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="kc">True</span>
 
-<div class="viewcode-block" id="SingleFileWorkspace.get_single_file"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.single_file.html#filemanager.domain.uploads.single_file.SingleFileWorkspace.get_single_file">[docs]</a>    <span class="k">def</span> <span class="nf">get_single_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UploadedFile</span><span class="p">]:</span>
+<div class="viewcode-block" id="SingleFile.get_single_file"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.single_file.html#filemanager.domain.uploads.single_file.SingleFile.get_single_file">[docs]</a>    <span class="k">def</span> <span class="nf">get_single_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UserFile</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return File object for single-file submission.</span>
 
@@ -66,12 +109,12 @@
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        :class:`.UploadedFile` or ``None``</span>
+<span class="sd">        :class:`.UserFile` or ``None``</span>
 <span class="sd">            Single file. Returns None when submission has more than one file.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_single_file_submission</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_files</span><span class="p">(</span><span class="n">allow_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">iter_files</span><span class="p">(</span><span class="n">allow_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
                 <span class="k">return</span> <span class="n">u_file</span>    <span class="c1"># Return the first file.</span>
         <span class="k">return</span> <span class="kc">None</span></div></div>
 </pre></div>

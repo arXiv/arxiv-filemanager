@@ -38,14 +38,17 @@
 <span class="kn">import</span> <span class="nn">io</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">http</span> <span class="k">import</span> <span class="n">HTTPStatus</span> <span class="k">as</span> <span class="n">status</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">IO</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
 <span class="kn">from</span> <span class="nn">hashlib</span> <span class="k">import</span> <span class="n">md5</span>
 <span class="kn">from</span> <span class="nn">base64</span> <span class="k">import</span> <span class="n">urlsafe_b64encode</span>
 
+<span class="kn">from</span> <span class="nn">arxiv.users</span> <span class="k">import</span> <span class="n">domain</span> <span class="k">as</span> <span class="n">auth_domain</span>
 <span class="kn">from</span> <span class="nn">arxiv.base.globals</span> <span class="k">import</span> <span class="n">get_application_config</span>
 
-<span class="n">Response</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="n">status</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">util</span>
+
+<span class="n">Response</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">IO</span><span class="p">]],</span> <span class="n">status</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span>
 
 <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
 
@@ -74,7 +77,7 @@
 <span class="c1"># fmt = (&quot;application %(asctime)s - %(name)s - %(requestid)s&quot;</span>
 <span class="c1">#          &quot; - [arxiv:%(paperid)s] - %(levelname)s: \&quot;%(message)s\&quot;&quot;)</span>
 <span class="n">datefmt</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%d</span><span class="s1">/%b/%Y:%H:%M:%S %z&#39;</span>  <span class="c1"># Used to format asctime.</span>
-<span class="n">formatter</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">,</span> 
+<span class="n">formatter</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">,</span>
                               <span class="s1">&#39;</span><span class="si">%d</span><span class="s1">/%b/%Y:%H:%M:%S %z&#39;</span><span class="p">)</span>
 <span class="n">file_handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">formatter</span><span class="p">)</span>
 <span class="c1"># logger.handlers = []</span>
@@ -110,7 +113,7 @@
     <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcfromtimestamp</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span>
 
 
-<span class="k">def</span> <span class="nf">__content_pointer</span><span class="p">(</span><span class="n">log_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">__content_pointer</span><span class="p">(</span><span class="n">log_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IO</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;Get a file-pointer for service log.</span>
 
 <span class="sd">    Parameters</span>
@@ -150,13 +153,13 @@
     <span class="n">checksum</span> <span class="o">=</span> <span class="n">__checksum</span><span class="p">(</span><span class="n">service_log_path</span><span class="p">)</span>
     <span class="n">size</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">service_log_path</span><span class="p">)</span>
     <span class="n">modified</span> <span class="o">=</span> <span class="n">__last_modified</span><span class="p">(</span><span class="n">service_log_path</span><span class="p">)</span>
-    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">checksum</span><span class="p">,</span> 
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">checksum</span><span class="p">,</span>
                <span class="s1">&#39;Content-Length&#39;</span><span class="p">:</span> <span class="n">size</span><span class="p">,</span>
                <span class="s1">&#39;Last-Modified&#39;</span><span class="p">:</span> <span class="n">modified</span><span class="p">}</span>
     <span class="k">return</span> <span class="p">{},</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span><span class="p">,</span> <span class="n">headers</span></div>
 
 
-<div class="viewcode-block" id="get_upload_service_log"><a class="viewcode-back" href="../../../api/filemanager.controllers.service_log.html#filemanager.controllers.service_log.get_upload_service_log">[docs]</a><span class="k">def</span> <span class="nf">get_upload_service_log</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<div class="viewcode-block" id="get_upload_service_log"><a class="viewcode-back" href="../../../api/filemanager.controllers.service_log.html#filemanager.controllers.service_log.get_upload_service_log">[docs]</a><span class="k">def</span> <span class="nf">get_upload_service_log</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return the service-level file manager service log.</span>
 
@@ -166,8 +169,14 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    Standard Response tuple containing content, HTTP status, and HTTP headers.</span>
+<span class="sd">    tuple</span>
+<span class="sd">        Standard Response tuple containing content, HTTP status, and HTTP</span>
+<span class="sd">        headers.</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">user_string</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">format_user_information_for_logging</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;sys: Download file manager service log [</span><span class="si">%s</span><span class="s2">].&quot;</span><span class="p">,</span>
+                <span class="n">user_string</span><span class="p">)</span>
     <span class="c1"># service_log_path is global set during startup log init</span>
     <span class="n">checksum</span> <span class="o">=</span> <span class="n">__checksum</span><span class="p">(</span><span class="n">service_log_path</span><span class="p">)</span>
     <span class="n">size</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">service_log_path</span><span class="p">)</span>

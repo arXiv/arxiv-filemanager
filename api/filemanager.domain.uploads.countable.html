@@ -16,7 +16,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="filemanager.domain.uploads.errors_and_warnings module" href="filemanager.domain.uploads.errors_and_warnings.html" />
-    <link rel="prev" title="filemanager.domain.uploads.checkable module" href="filemanager.domain.uploads.checkable.html" />
+    <link rel="prev" title="filemanager.domain.uploads.checkpoint module" href="filemanager.domain.uploads.checkpoint.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -37,43 +37,69 @@
 <span id="filemanager-domain-uploads-countable-module"></span><h1>filemanager.domain.uploads.countable module<a class="headerlink" href="#module-filemanager.domain.uploads.countable" title="Permalink to this headline">¶</a></h1>
 <p>Provides <code class="xref py py-class docutils literal notranslate"><span class="pre">CountsMixin</span></code>.</p>
 <dl class="class">
-<dt id="filemanager.domain.uploads.countable.CountableWorkspace">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.countable.</code><code class="sig-name descname">CountableWorkspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em>, <em class="sig-param">owner_user_id</em>, <em class="sig-param">created_datetime</em>, <em class="sig-param">modified_datetime</em>, <em class="sig-param">files=&lt;factory&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/countable.html#CountableWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.countable.CountableWorkspace" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace" title="filemanager.domain.uploads.base.BaseWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.base.BaseWorkspace</span></code></a></p>
+<dt id="filemanager.domain.uploads.countable.Countable">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.countable.</code><code class="sig-name descname">Countable</code><a class="reference internal" href="../_modules/filemanager/domain/uploads/countable.html#Countable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.countable.Countable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#filemanager.domain.uploads.countable.ICountable" title="filemanager.domain.uploads.countable.ICountable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.countable.ICountable</span></code></a></p>
 <p>Adds methods related to file counts.</p>
 <dl class="method">
-<dt id="filemanager.domain.uploads.countable.CountableWorkspace.ancillary_file_count">
-<em class="property">property </em><code class="sig-name descname">ancillary_file_count</code><a class="headerlink" href="#filemanager.domain.uploads.countable.CountableWorkspace.ancillary_file_count" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.countable.Countable.ancillary_file_count">
+<em class="property">property </em><code class="sig-name descname">ancillary_file_count</code><a class="headerlink" href="#filemanager.domain.uploads.countable.Countable.ancillary_file_count" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the total number of ancillary files in this workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.countable.CountableWorkspace.file_count">
-<em class="property">property </em><code class="sig-name descname">file_count</code><a class="headerlink" href="#filemanager.domain.uploads.countable.CountableWorkspace.file_count" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.countable.Countable.file_count">
+<em class="property">property </em><code class="sig-name descname">file_count</code><a class="headerlink" href="#filemanager.domain.uploads.countable.Countable.file_count" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the total number of non-ancillary files in this workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.countable.CountableWorkspace.get_file_type_counts">
-<code class="sig-name descname">get_file_type_counts</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/countable.html#CountableWorkspace.get_file_type_counts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.countable.CountableWorkspace.get_file_type_counts" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.countable.Countable.get_file_type_counts">
+<code class="sig-name descname">get_file_type_counts</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Mapping[Union[filemanager.domain.file_type.FileType, str], int]<a class="reference internal" href="../_modules/filemanager/domain/uploads/countable.html#Countable.get_file_type_counts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.countable.Countable.get_file_type_counts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the number of files of each type in the workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Mapping" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Union" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference internal" href="filemanager.domain.file_type.html#filemanager.domain.file_type.FileType" title="filemanager.domain.file_type.FileType"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileType</span></code></a>, <a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>], <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]</p>
-</dd>
-</dl>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.countable.ICountable">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.countable.</code><code class="sig-name descname">ICountable</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/countable.html#ICountable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.countable.ICountable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Interface for countable behavior.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.countable.ICountable.ancillary_file_count">
+<em class="property">property </em><code class="sig-name descname">ancillary_file_count</code><a class="headerlink" href="#filemanager.domain.uploads.countable.ICountable.ancillary_file_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the total number of ancillary files in this workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.countable.ICountable.file_count">
+<em class="property">property </em><code class="sig-name descname">file_count</code><a class="headerlink" href="#filemanager.domain.uploads.countable.ICountable.file_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the total number of non-ancillary files in this workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.countable.ICountable.get_file_type_counts">
+<code class="sig-name descname">get_file_type_counts</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Mapping[Union[filemanager.domain.file_type.FileType, str], int]<a class="reference internal" href="../_modules/filemanager/domain/uploads/countable.html#ICountable.get_file_type_counts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.countable.ICountable.get_file_type_counts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the number of files of each type in the workspace.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.countable.ICountableWorkspace">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.countable.</code><code class="sig-name descname">ICountableWorkspace</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/countable.html#ICountableWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.countable.ICountableWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#filemanager.domain.uploads.countable.IWorkspace" title="filemanager.domain.uploads.countable.IWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.countable.IWorkspace</span></code></a>, <a class="reference internal" href="#filemanager.domain.uploads.countable.ICountable" title="filemanager.domain.uploads.countable.ICountable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.countable.ICountable</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Structure of a workspace with countable behavior.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.countable.IWorkspace">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.countable.</code><code class="sig-name descname">IWorkspace</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/countable.html#IWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.countable.IWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace" title="filemanager.domain.uploads.base.IBaseWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.base.IBaseWorkspace</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Workspace API required for <a class="reference internal" href="#filemanager.domain.uploads.countable.Countable" title="filemanager.domain.uploads.countable.Countable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Countable</span></code></a>.</p>
+<p>This incorporates the base API and any additional structures that require
+implementation by other components of the workspace.</p>
 </dd></dl>
 
 </div>
@@ -112,7 +138,7 @@
   <li><a href="filemanager.html">filemanager package</a><ul>
   <li><a href="filemanager.domain.html">filemanager.domain package</a><ul>
   <li><a href="filemanager.domain.uploads.html">filemanager.domain.uploads package</a><ul>
-      <li>Previous: <a href="filemanager.domain.uploads.checkable.html" title="previous chapter">filemanager.domain.uploads.checkable module</a></li>
+      <li>Previous: <a href="filemanager.domain.uploads.checkpoint.html" title="previous chapter">filemanager.domain.uploads.checkpoint module</a></li>
       <li>Next: <a href="filemanager.domain.uploads.errors_and_warnings.html" title="next chapter">filemanager.domain.uploads.errors_and_warnings module</a></li>
   </ul></li>
   </ul></li>

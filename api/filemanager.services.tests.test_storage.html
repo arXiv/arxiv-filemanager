@@ -175,6 +175,12 @@
 </dd></dl>
 
 <dl class="method">
+<dt id="filemanager.services.tests.test_storage.TestSimpleStorage.test_move_overwrite_file">
+<code class="sig-name descname">test_move_overwrite_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestSimpleStorage.test_move_overwrite_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestSimpleStorage.test_move_overwrite_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move a file to a new path, where a file already exists.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="filemanager.services.tests.test_storage.TestSimpleStorage.test_open">
 <code class="sig-name descname">test_open</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestSimpleStorage.test_open"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestSimpleStorage.test_open" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get a pointer to a file.</p>
@@ -186,7 +192,7 @@
 <dt id="filemanager.services.tests.test_storage.TestStorageWithWorkspace">
 <em class="property">class </em><code class="sig-prename descclassname">filemanager.services.tests.test_storage.</code><code class="sig-name descname">TestStorageWithWorkspace</code><span class="sig-paren">(</span><em class="sig-param">methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestStorageWithWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestStorageWithWorkspace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
-<p>Test using a SimpleStorageAdapter with an UploadWorkspace.</p>
+<p>Test using a SimpleStorageAdapter with an Workspace.</p>
 <dl class="method">
 <dt id="filemanager.services.tests.test_storage.TestStorageWithWorkspace.setUp">
 <code class="sig-name descname">setUp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestStorageWithWorkspace.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestStorageWithWorkspace.setUp" title="Permalink to this definition">¶</a></dt>
@@ -202,7 +208,7 @@
 <dl class="method">
 <dt id="filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_ancillary_file_path">
 <code class="sig-name descname">test_get_ancillary_file_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestStorageWithWorkspace.test_get_ancillary_file_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_ancillary_file_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Can get a relative path for an ancillary <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>.</p>
+<dd><p>Can get a relative path for an ancillary <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a>.</p>
 </dd></dl>
 
 <dl class="method">
@@ -220,7 +226,7 @@
 <dl class="method">
 <dt id="filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_path">
 <code class="sig-name descname">test_get_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestStorageWithWorkspace.test_get_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Can get a relative path for an <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>.</p>
+<dd><p>Can get a relative path for an <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a>.</p>
 </dd></dl>
 
 <dl class="method">
@@ -231,7 +237,7 @@
 <dl class="method">
 <dt id="filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_removed_file_path">
 <code class="sig-name descname">test_get_removed_file_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/tests/test_storage.html#TestStorageWithWorkspace.test_get_removed_file_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.tests.test_storage.TestStorageWithWorkspace.test_get_removed_file_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Can get a relative path for a removed <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>.</p>
+<dd><p>Can get a relative path for a removed <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a>.</p>
 </dd></dl>
 
 <dl class="method">

@@ -35,7 +35,7 @@
             
   <div class="section" id="module-filemanager.process.check.tex_generated">
 <span id="filemanager-process-check-tex-generated-module"></span><h1>filemanager.process.check.tex_generated module<a class="headerlink" href="#module-filemanager.process.check.tex_generated" title="Permalink to this headline">¶</a></h1>
-<p>Check for TeX-generated files.</p>
+<p>Check for and eliminate files generated from TeX compilation.</p>
 <dl class="class">
 <dt id="filemanager.process.check.tex_generated.DisallowDVIFiles">
 <em class="property">class </em><code class="sig-prename descclassname">filemanager.process.check.tex_generated.</code><code class="sig-name descname">DisallowDVIFiles</code><a class="reference internal" href="../_modules/filemanager/process/check/tex_generated.html#DisallowDVIFiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.tex_generated.DisallowDVIFiles" title="Permalink to this definition">¶</a></dt>
@@ -50,12 +50,8 @@ was also included???????</p>
 
 <dl class="method">
 <dt id="filemanager.process.check.tex_generated.DisallowDVIFiles.check_DVI">
-<code class="sig-name descname">check_DVI</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/tex_generated.html#DisallowDVIFiles.check_DVI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.tex_generated.DisallowDVIFiles.check_DVI" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
+<code class="sig-name descname">check_DVI</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/process/check/tex_generated.html#DisallowDVIFiles.check_DVI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.tex_generated.DisallowDVIFiles.check_DVI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an error for any non-ancillary DVI file.</p>
 </dd></dl>
 
 </dd></dl>
@@ -73,13 +69,8 @@ was also included???????</p>
 
 <dl class="method">
 <dt id="filemanager.process.check.tex_generated.RemoveTeXGeneratedFiles.check">
-<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/check/tex_generated.html#RemoveTeXGeneratedFiles.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.tex_generated.RemoveTeXGeneratedFiles.check" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/process/check/tex_generated.html#RemoveTeXGeneratedFiles.check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.check.tex_generated.RemoveTeXGeneratedFiles.check" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check for and remove TeX processing files.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 </dd></dl>

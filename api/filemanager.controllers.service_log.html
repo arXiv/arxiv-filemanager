@@ -38,7 +38,7 @@
 <p>Temporary logging at service level to get something in place to build on.</p>
 <dl class="function">
 <dt id="filemanager.controllers.service_log.check_upload_service_log_exists">
-<code class="sig-prename descclassname">filemanager.controllers.service_log.</code><code class="sig-name descname">check_upload_service_log_exists</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/controllers/service_log.html#check_upload_service_log_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.controllers.service_log.check_upload_service_log_exists" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.controllers.service_log.</code><code class="sig-name descname">check_upload_service_log_exists</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Tuple[Union[dict, IO, None], http.HTTPStatus, dict]<a class="reference internal" href="../_modules/filemanager/controllers/service_log.html#check_upload_service_log_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.controllers.service_log.check_upload_service_log_exists" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check whether service log exists.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -53,28 +53,23 @@ not desire to download entire log file.</p>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p>Standard Response tuple containing content, HTTP status, and HTTP headers.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Optional" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>], <a class="reference external" href="https://docs.python.org/3.6/library/http.html#http.HTTPStatus" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HTTPStatus</span></code></a>, <a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</p>
-</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.controllers.service_log.get_upload_service_log">
-<code class="sig-prename descclassname">filemanager.controllers.service_log.</code><code class="sig-name descname">get_upload_service_log</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/controllers/service_log.html#get_upload_service_log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.controllers.service_log.get_upload_service_log" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.controllers.service_log.</code><code class="sig-name descname">get_upload_service_log</code><span class="sig-paren">(</span><em class="sig-param">user: arxiv.users.domain.User</em><span class="sig-paren">)</span> &#x2192; Tuple[Union[dict, IO, None], http.HTTPStatus, dict]<a class="reference internal" href="../_modules/filemanager/controllers/service_log.html#get_upload_service_log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.controllers.service_log.get_upload_service_log" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the service-level file manager service log.</p>
 <p>The file manager service-wide log records high-level events and
 significant workspace events. Detailed file upload/file checks details
 will be recorded in workspace log.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p></p>
+<dd class="field-odd"><p>Standard Response tuple containing content, HTTP status, and HTTP
+headers.</p>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p>Standard Response tuple containing content, HTTP status, and HTTP headers.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Optional" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>], <a class="reference external" href="https://docs.python.org/3.6/library/http.html#http.HTTPStatus" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HTTPStatus</span></code></a>, <a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#tuple" title="(in Python v3.6)">tuple</a></p>
 </dd>
 </dl>
 </dd></dl>

@@ -25,5 +25,4 @@ Submodules
    filemanager.celeryconfig
    filemanager.config
    filemanager.factory
-   filemanager.serialize
 

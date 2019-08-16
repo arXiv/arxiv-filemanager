@@ -6,10 +6,3 @@ filemanager.controllers.tests package
     :undoc-members:
     :show-inheritance:
 
-Submodules
-----------
-
-.. toctree::
-
-   filemanager.controllers.tests.test_status
-

@@ -35,87 +35,129 @@
             
   <div class="section" id="module-filemanager.domain.uploads">
 <span id="filemanager-domain-uploads-package"></span><h1>filemanager.domain.uploads package<a class="headerlink" href="#module-filemanager.domain.uploads" title="Permalink to this headline">¶</a></h1>
-<p>Provides <a class="reference internal" href="#filemanager.domain.uploads.UploadWorkspace" title="filemanager.domain.uploads.UploadWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadWorkspace</span></code></a>, the organizing concept for this service.</p>
-<p>Because <a class="reference internal" href="#filemanager.domain.uploads.UploadWorkspace" title="filemanager.domain.uploads.UploadWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadWorkspace</span></code></a> has many properties and methods, its
-members are split out into separate classes.</p>
+<p>Provides <a class="reference internal" href="#filemanager.domain.uploads.Workspace" title="filemanager.domain.uploads.Workspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">Workspace</span></code></a>, the organizing concept for this service.</p>
+<p>Because <a class="reference internal" href="#filemanager.domain.uploads.Workspace" title="filemanager.domain.uploads.Workspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">Workspace</span></code></a> has many properties and methods, its members are
+split out into separate classes.</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace" title="filemanager.domain.uploads.base.BaseWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseWorkspace</span></code></a> provides the file index, and foundational methods.</p></li>
-<li><p><a class="reference internal" href="filemanager.domain.uploads.paths.html#filemanager.domain.uploads.paths.FilePathsWorkspace" title="filemanager.domain.uploads.paths.FilePathsWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">FilePathsWorkspace</span></code></a> adds methods for working with paths inside
-the workspace.</p></li>
-<li><p><a class="reference internal" href="filemanager.domain.uploads.stored.html#filemanager.domain.uploads.stored.StoredWorkspace" title="filemanager.domain.uploads.stored.StoredWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">StoredWorkspace</span></code></a> adds integration with a storage adapter.</p></li>
-<li><p><a class="reference internal" href="filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutationsWorkspace" title="filemanager.domain.uploads.file_mutations.FileMutationsWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileMutationsWorkspace</span></code></a> adds methods for manipulating individual
-files.</p></li>
-<li><p><a class="reference internal" href="filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.CheckableWorkspace" title="filemanager.domain.uploads.checkable.CheckableWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">CheckableWorkspace</span></code></a> adds slots for checkers and checking strategy,
-and methods for performing checks. It also adds:</p>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace" title="filemanager.domain.uploads.base.BaseWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseWorkspace</span></code></a> provides the file index, and foundational methods
+for working with :class:<a href="#id1"><span class="problematic" id="id2">`</span></a>.UserFile`s and their paths.</p></li>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutations" title="filemanager.domain.uploads.file_mutations.FileMutations"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileMutations</span></code></a> adds methods for manipulating individual files.</p></li>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.Checkpointable" title="filemanager.domain.uploads.checkpoint.Checkpointable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Checkpointable</span></code></a> adds workspace checkpointing and restore.</p></li>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.Checkable" title="filemanager.domain.uploads.checkable.Checkable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Checkable</span></code></a> adds slots for checkers and checking strategy, and
+methods for performing checks.</p></li>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.source_type.html#filemanager.domain.uploads.source_type.SourceTypeable" title="filemanager.domain.uploads.source_type.SourceTypeable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceTypeable</span></code></a> adds a representation of the submission source
+upload type.</p></li>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.countable.html#filemanager.domain.uploads.countable.Countable" title="filemanager.domain.uploads.countable.Countable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Countable</span></code></a> adds methods for counting files and types of files.</p></li>
+<li><p><a class="reference internal" href="#filemanager.domain.uploads.Workspace" title="filemanager.domain.uploads.Workspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">Workspace</span></code></a> extends <a class="reference internal" href="filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.Checkable" title="filemanager.domain.uploads.checkable.Checkable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Checkable</span></code></a> to add an initialization
+method.</p></li>
+<li><dl class="simple">
+<dt><a class="reference internal" href="filemanager.domain.uploads.readiness.html#filemanager.domain.uploads.readiness.Readiable" title="filemanager.domain.uploads.readiness.Readiable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Readiable</span></code></a>, which adds semantics around the “readiness” of the</dt><dd><p>workspace for use in a submission.</p>
+</dd>
+</dl>
+</li>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.single_file.html#filemanager.domain.uploads.single_file.SingleFile" title="filemanager.domain.uploads.single_file.SingleFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">SingleFile</span></code></a>, which adds the concept of a “single file submission.”</p></li>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.lock.html#filemanager.domain.uploads.lock.Lockable" title="filemanager.domain.uploads.lock.Lockable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Lockable</span></code></a>, which adds support for locking/unlocking the workspace.</p></li>
+<li><p><a class="reference internal" href="filemanager.domain.uploads.status.html#filemanager.domain.uploads.status.Statusable" title="filemanager.domain.uploads.status.Statusable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Statusable</span></code></a>, which adds the concept of a workspace status.</p></li>
+</ul>
+<div class="section" id="how-to-implement-new-functionality-in-the-workspace">
+<h2>How to implement new functionality in the workspace<a class="headerlink" href="#how-to-implement-new-functionality-in-the-workspace" title="Permalink to this headline">¶</a></h2>
+<p>Each of the classes mentioned above are “mixins” that contribute to the
+functionality of <a class="reference internal" href="#filemanager.domain.uploads.Workspace" title="filemanager.domain.uploads.Workspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">Workspace</span></code></a>. The best way to become familiar with how
+to write new functionality is to look at the existing mixins. A few things to
+observe:</p>
+<ul class="simple">
+<li><p>Protocols (structural typing) are used to define interfaces. You can read
+about the current state of protocols in the <a class="reference external" href="https://mypy.readthedocs.io/en/latest/protocols.html">mypy documentation</a>. <a class="reference external" href="https://www.python.org/dev/peps/pep-0544/">PEP 544</a> provides the detailed
+specification.</p></li>
+<li><p>Each mixin class is a <code class="docutils literal notranslate"><span class="pre">dataclass</span></code>.</p></li>
+<li><p>The mixins do <em>not</em> inherit from <a class="reference internal" href="filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace" title="filemanager.domain.uploads.base.BaseWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseWorkspace</span></code></a>; they access the
+base workspace functionality and functionality provided by other mixins via
+an internal API (see below).</p></li>
+<li><p>For each mixin, an interface is defined for:</p>
 <ul>
-<li><p><a class="reference internal" href="filemanager.domain.uploads.source_type.html#filemanager.domain.uploads.source_type.SourceTypeMixin" title="filemanager.domain.uploads.source_type.SourceTypeMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceTypeMixin</span></code></a>, which adds a representation of the submission
-source upload type.</p></li>
-<li><p><a class="reference internal" href="filemanager.domain.uploads.countable.html#filemanager.domain.uploads.countable.CountableWorkspace" title="filemanager.domain.uploads.countable.CountableWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">CountableWorkspace</span></code></a>, which adds methods for counting files and
-types of files.</p></li>
+<li><p>The workspace API upon which the mixin depends. These are attributes,
+properties, methods provided by either <a class="reference internal" href="filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace" title="filemanager.domain.uploads.base.BaseWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseWorkspace</span></code></a> or other
+mixins that are required for the mixin to do its job. This is usually
+called <code class="docutils literal notranslate"><span class="pre">IWorkspace</span></code>, and builds on <code class="xref py py-class docutils literal notranslate"><span class="pre">IBaseWorkspace`</span></code>.</p></li>
+<li><p>The API provided by the mixin itself, usually called <code class="docutils literal notranslate"><span class="pre">I[Mixin]</span></code>.</p></li>
+<li><p>The API of a workspace with the mixin mixed in, usually called
+<code class="docutils literal notranslate"><span class="pre">I[Mixin]Workspace</span></code>.</p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#filemanager.domain.uploads.UploadWorkspace" title="filemanager.domain.uploads.UploadWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadWorkspace</span></code></a> extends <a class="reference internal" href="filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.CheckableWorkspace" title="filemanager.domain.uploads.checkable.CheckableWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">CheckableWorkspace</span></code></a> to add an
-initialization method, and also incorporates:</p>
-<ul>
-<li><p><a class="reference internal" href="filemanager.domain.uploads.readiness.html#filemanager.domain.uploads.readiness.ReadinessWorkspace" title="filemanager.domain.uploads.readiness.ReadinessWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReadinessWorkspace</span></code></a>, which adds semantics around the “readiness”
-of the workspace for use in a submission.</p></li>
-<li><p><a class="reference internal" href="filemanager.domain.uploads.single_file.html#filemanager.domain.uploads.single_file.SingleFileWorkspace" title="filemanager.domain.uploads.single_file.SingleFileWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">SingleFileWorkspace</span></code></a>, which adds the concept of a “single file
-submission.”</p></li>
-<li><p><a class="reference internal" href="filemanager.domain.uploads.lock.html#filemanager.domain.uploads.lock.LockMixin" title="filemanager.domain.uploads.lock.LockMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">LockMixin</span></code></a>, which adds support for locking/unlocking the
-workspace.</p></li>
-<li><p><a class="reference internal" href="filemanager.domain.uploads.status.html#filemanager.domain.uploads.status.StatusMixin" title="filemanager.domain.uploads.status.StatusMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">StatusMixin</span></code></a>, which adds the concept of a workspace status.</p></li>
+<li><p>The mixin class itself inherits from its interface (<code class="docutils literal notranslate"><span class="pre">IMixin</span></code>).</p></li>
 </ul>
-</li>
-</ul>
+<p>Each mixin accesses the API of the rest of the workspace via a special
+protected property called <code class="docutils literal notranslate"><span class="pre">__api</span></code>. This is defined on each mixin. For
+example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Bounceable</span><span class="p">(</span><span class="n">IBounceable</span><span class="p">):</span>
+    <span class="c1"># Note that this is not typed; this way dataclasses will ignore it.</span>
+    <span class="c1"># The double-underscores are used to ensure that this attribute belongs</span>
+    <span class="c1"># specifically to this class (and doesn&#39;t get clobbered by other</span>
+    <span class="c1"># mixins).</span>
+    <span class="n">__internal_api</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="c1"># This method is called by Workspace right after construction, and</span>
+    <span class="c1"># registers the final workspace instance as the internal workspace API.</span>
+    <span class="c1"># Note that it is typed as ``IWorkspace``, which is the interface</span>
+    <span class="c1"># that defines the external functionality upon which this mixin depends.</span>
+    <span class="k">def</span> <span class="nf">__api_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api</span><span class="p">:</span> <span class="n">IWorkspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="sd">&#39;&#39;&#39;Register the workspace API.&#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">Bounceable</span><span class="p">,</span> <span class="bp">self</span><span class="p">),</span> <span class="s1">&#39;__api_init__&#39;</span><span class="p">):</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">Bounceable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__api_init__</span><span class="p">(</span><span class="n">api</span><span class="p">)</span>   <span class="c1"># type: ignore</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span> <span class="o">=</span> <span class="n">api</span>
+
+    <span class="c1"># Since ``__internal_api`` is ``None`` until runtime, this property</span>
+    <span class="c1"># saves us the hassle of having to perform a null check every time we</span>
+    <span class="c1"># want to use the workspace API.</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">__api</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;IWorkspace&#39;</span><span class="p">:</span>
+        <span class="sd">&#39;&#39;&#39;Get the internal workspace API.&#39;&#39;&#39;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span>
+</pre></div>
+</div>
 <dl class="class">
-<dt id="filemanager.domain.uploads.UploadWorkspace">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.</code><code class="sig-name descname">UploadWorkspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em>, <em class="sig-param">owner_user_id</em>, <em class="sig-param">created_datetime</em>, <em class="sig-param">modified_datetime</em>, <em class="sig-param">files=&lt;factory&gt;</em>, <em class="sig-param">storage=None</em>, <em class="sig-param">lastupload_start_datetime=None</em>, <em class="sig-param">lastupload_completion_datetime=None</em>, <em class="sig-param">lastupload_logs=&lt;factory&gt;</em>, <em class="sig-param">lastupload_file_summary=&lt;factory&gt;</em>, <em class="sig-param">_errors=&lt;factory&gt;</em>, <em class="sig-param">source_type=&lt;SourceType.UNKNOWN: 'unknown'&gt;</em>, <em class="sig-param">checkers=&lt;factory&gt;</em>, <em class="sig-param">strategy=None</em>, <em class="sig-param">status=&lt;Status.ACTIVE: 'ACTIVE'&gt;</em>, <em class="sig-param">lock_state=&lt;LockState.UNLOCKED: 'UNLOCKED'&gt;</em>, <em class="sig-param">lastupload_readiness=&lt;Readiness.READY: 'READY'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#UploadWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="filemanager.domain.uploads.readiness.html#filemanager.domain.uploads.readiness.ReadinessWorkspace" title="filemanager.domain.uploads.readiness.ReadinessWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.readiness.ReadinessWorkspace</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.single_file.html#filemanager.domain.uploads.single_file.SingleFileWorkspace" title="filemanager.domain.uploads.single_file.SingleFileWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.single_file.SingleFileWorkspace</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.lock.html#filemanager.domain.uploads.lock.LockMixin" title="filemanager.domain.uploads.lock.LockMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.lock.LockMixin</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.status.html#filemanager.domain.uploads.status.StatusMixin" title="filemanager.domain.uploads.status.StatusMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.status.StatusMixin</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.CheckableWorkspace" title="filemanager.domain.uploads.checkable.CheckableWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.checkable.CheckableWorkspace</span></code></a></p>
+<dt id="filemanager.domain.uploads.Workspace">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.</code><code class="sig-name descname">Workspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em>, <em class="sig-param">owner_user_id: str</em>, <em class="sig-param">created_datetime: datetime.datetime</em>, <em class="sig-param">modified_datetime: datetime.datetime</em>, <em class="sig-param">files: filemanager.domain.index.FileIndex = &lt;factory&gt;</em>, <em class="sig-param">SOURCE_PREFIX: str = 'src'</em>, <em class="sig-param">REMOVED_PREFIX: str = 'removed'</em>, <em class="sig-param">ANCILLARY_PREFIX: str = 'anc'</em>, <em class="sig-param">_storage: Optional[IStorageAdapter] = None</em>, <em class="sig-param">last_upload_start_datetime: Optional[datetime.datetime] = None</em>, <em class="sig-param">last_upload_completion_datetime: Optional[datetime.datetime] = None</em>, <em class="sig-param">last_upload_logs: str = &lt;factory&gt;</em>, <em class="sig-param">last_upload_file_summary: str = &lt;factory&gt;</em>, <em class="sig-param">lock_state: filemanager.domain.uploads.lock.LockState = &lt;LockState.UNLOCKED: 'UNLOCKED'&gt;</em>, <em class="sig-param">status: filemanager.domain.uploads.status.Status = &lt;Status.ACTIVE: 'ACTIVE'&gt;</em>, <em class="sig-param">source_type: filemanager.domain.uploads.source_type.SourceType = &lt;SourceType.UNKNOWN: 'unknown'&gt;</em>, <em class="sig-param">checkers: List[IChecker] = &lt;factory&gt;</em>, <em class="sig-param">_strategy: Optional[ICheckingStrategy] = None</em>, <em class="sig-param">CHECKPOINT_PREFIX: str = 'checkpoint'</em>, <em class="sig-param">MAX_CHECKPOINTS: int = 10</em>, <em class="sig-param">last_upload_readiness: filemanager.domain.uploads.readiness.Readiness = &lt;Readiness.READY: 'READY'&gt;</em>, <em class="sig-param">_source_package: Optional[SourcePackage] = None</em>, <em class="sig-param">_log: Optional[SourceLog] = None</em>, <em class="sig-param">_errors: List[filemanager.domain.error.Error] = &lt;factory&gt;</em>, <em class="sig-param">interfaces: attrdict.dictionary.AttrDict = &lt;factory&gt;</em>, <em class="sig-param">_initialized: bool = False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#Workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.Workspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarnings" title="filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarnings"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarnings</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.translatable.html#filemanager.domain.uploads.translatable.Translatable" title="filemanager.domain.uploads.translatable.Translatable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.translatable.Translatable</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.file_mutations.html#filemanager.domain.uploads.file_mutations.FileMutations" title="filemanager.domain.uploads.file_mutations.FileMutations"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.file_mutations.FileMutations</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.readiness.html#filemanager.domain.uploads.readiness.Readiable" title="filemanager.domain.uploads.readiness.Readiable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.readiness.Readiable</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.countable.html#filemanager.domain.uploads.countable.Countable" title="filemanager.domain.uploads.countable.Countable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.countable.Countable</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.checkpoint.html#filemanager.domain.uploads.checkpoint.Checkpointable" title="filemanager.domain.uploads.checkpoint.Checkpointable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.checkpoint.Checkpointable</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.Checkable" title="filemanager.domain.uploads.checkable.Checkable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.checkable.Checkable</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.source_type.html#filemanager.domain.uploads.source_type.SourceTypeable" title="filemanager.domain.uploads.source_type.SourceTypeable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.source_type.SourceTypeable</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.status.html#filemanager.domain.uploads.status.Statusable" title="filemanager.domain.uploads.status.Statusable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.status.Statusable</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.lock.html#filemanager.domain.uploads.lock.Lockable" title="filemanager.domain.uploads.lock.Lockable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.lock.Lockable</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.single_file.html#filemanager.domain.uploads.single_file.SingleFile" title="filemanager.domain.uploads.single_file.SingleFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.single_file.SingleFile</span></code></a>, <a class="reference internal" href="filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace" title="filemanager.domain.uploads.base.BaseWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.base.BaseWorkspace</span></code></a></p>
 <p>An upload workspace contains a set of submission source files.</p>
 <dl class="method">
-<dt id="filemanager.domain.uploads.UploadWorkspace.initialize">
-<code class="sig-name descname">initialize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads.html#UploadWorkspace.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.initialize" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.Workspace.initialize">
+<code class="sig-name descname">initialize</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads.html#Workspace.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.Workspace.initialize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Make sure that we have all of the required directories.</p>
 <p>This is performed on demand, rather than as a <code class="docutils literal notranslate"><span class="pre">__post_init__</span></code> hook,
 so that we have an opportunity to attach an updated <a class="reference internal" href="filemanager.domain.index.html#filemanager.domain.index.FileIndex" title="filemanager.domain.index.FileIndex"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileIndex</span></code></a>
-after the <a class="reference internal" href="#filemanager.domain.uploads.UploadWorkspace" title="filemanager.domain.uploads.UploadWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadWorkspace</span></code></a> is instantiated but before any
+after the <a class="reference internal" href="#filemanager.domain.uploads.Workspace" title="filemanager.domain.uploads.Workspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">Workspace</span></code></a> is instantiated but before any
 system files are created.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.UploadWorkspace.is_initialized">
-<em class="property">property </em><code class="sig-name descname">is_initialized</code><a class="headerlink" href="#filemanager.domain.uploads.UploadWorkspace.is_initialized" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.Workspace.is_initialized">
+<em class="property">property </em><code class="sig-name descname">is_initialized</code><a class="headerlink" href="#filemanager.domain.uploads.Workspace.is_initialized" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determine whether or not the workspace has been initialized.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 </dd></dl>
 
+</div>
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.base.html">filemanager.domain.uploads.base module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.checkable.html">filemanager.domain.uploads.checkable module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.checkpoint.html">filemanager.domain.uploads.checkpoint module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.countable.html">filemanager.domain.uploads.countable module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.errors_and_warnings.html">filemanager.domain.uploads.errors_and_warnings module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.exceptions.html">filemanager.domain.uploads.exceptions module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.file_mutations.html">filemanager.domain.uploads.file_mutations module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.lock.html">filemanager.domain.uploads.lock module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.paths.html">filemanager.domain.uploads.paths module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.readiness.html">filemanager.domain.uploads.readiness module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.single_file.html">filemanager.domain.uploads.single_file module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.source_type.html">filemanager.domain.uploads.source_type module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.status.html">filemanager.domain.uploads.status module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.stored.html">filemanager.domain.uploads.stored module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.translatable.html">filemanager.domain.uploads.translatable module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="filemanager.domain.uploads.util.html">filemanager.domain.uploads.util module</a></li>
 </ul>
 </div>

@@ -15,7 +15,7 @@
     <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="filemanager.services.database.translate module" href="filemanager.services.database.translate.html" />
+    <link rel="next" title="filemanager.services.tests package" href="filemanager.services.tests.html" />
     <link rel="prev" title="filemanager.services.database package" href="filemanager.services.database.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
@@ -58,32 +58,32 @@
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="filemanager.services.database.models.DBUpload.lastupload_completion_datetime">
-<code class="sig-name descname">lastupload_completion_datetime</code><a class="headerlink" href="#filemanager.services.database.models.DBUpload.lastupload_completion_datetime" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.services.database.models.DBUpload.last_upload_completion_datetime">
+<code class="sig-name descname">last_upload_completion_datetime</code><a class="headerlink" href="#filemanager.services.database.models.DBUpload.last_upload_completion_datetime" title="Permalink to this definition">¶</a></dt>
 <dd><p>Completion datetime of last upload.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="filemanager.services.database.models.DBUpload.lastupload_file_summary">
-<code class="sig-name descname">lastupload_file_summary</code><a class="headerlink" href="#filemanager.services.database.models.DBUpload.lastupload_file_summary" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.services.database.models.DBUpload.last_upload_file_summary">
+<code class="sig-name descname">last_upload_file_summary</code><a class="headerlink" href="#filemanager.services.database.models.DBUpload.last_upload_file_summary" title="Permalink to this definition">¶</a></dt>
 <dd><p>Upload details useful for display in UI</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="filemanager.services.database.models.DBUpload.lastupload_logs">
-<code class="sig-name descname">lastupload_logs</code><a class="headerlink" href="#filemanager.services.database.models.DBUpload.lastupload_logs" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.services.database.models.DBUpload.last_upload_logs">
+<code class="sig-name descname">last_upload_logs</code><a class="headerlink" href="#filemanager.services.database.models.DBUpload.last_upload_logs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Log (error/warning messages) from last upload.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="filemanager.services.database.models.DBUpload.lastupload_readiness">
-<code class="sig-name descname">lastupload_readiness</code><a class="headerlink" href="#filemanager.services.database.models.DBUpload.lastupload_readiness" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.services.database.models.DBUpload.last_upload_readiness">
+<code class="sig-name descname">last_upload_readiness</code><a class="headerlink" href="#filemanager.services.database.models.DBUpload.last_upload_readiness" title="Permalink to this definition">¶</a></dt>
 <dd><p>Upload content readiness status.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="filemanager.services.database.models.DBUpload.lastupload_start_datetime">
-<code class="sig-name descname">lastupload_start_datetime</code><a class="headerlink" href="#filemanager.services.database.models.DBUpload.lastupload_start_datetime" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.services.database.models.DBUpload.last_upload_start_datetime">
+<code class="sig-name descname">last_upload_start_datetime</code><a class="headerlink" href="#filemanager.services.database.models.DBUpload.last_upload_start_datetime" title="Permalink to this definition">¶</a></dt>
 <dd><p>Start datetime of last upload.</p>
 </dd></dl>
 
@@ -125,36 +125,26 @@
 </dd></dl>
 
 <dl class="class">
-<dt id="filemanager.services.database.models.SQLiteJSON">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.services.database.models.</code><code class="sig-name descname">SQLiteJSON</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/database/models.html#SQLiteJSON"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.models.SQLiteJSON" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.services.database.models.FriendlyJSONType">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.services.database.models.</code><code class="sig-name descname">FriendlyJSONType</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/database/models.html#FriendlyJSONType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.models.FriendlyJSONType" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">sqlalchemy.sql.type_api.TypeDecorator</span></code></p>
 <p>A SQLite-friendly JSON data type.</p>
 <dl class="attribute">
-<dt id="filemanager.services.database.models.SQLiteJSON.impl">
-<code class="sig-name descname">impl</code><a class="headerlink" href="#filemanager.services.database.models.SQLiteJSON.impl" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.services.database.models.FriendlyJSONType.impl">
+<code class="sig-name descname">impl</code><a class="headerlink" href="#filemanager.services.database.models.FriendlyJSONType.impl" title="Permalink to this definition">¶</a></dt>
 <dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">sqlalchemy.sql.sqltypes.TEXT</span></code></p>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.services.database.models.SQLiteJSON.process_bind_param">
-<code class="sig-name descname">process_bind_param</code><span class="sig-paren">(</span><em class="sig-param">obj</em>, <em class="sig-param">dialect</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/database/models.html#SQLiteJSON.process_bind_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.models.SQLiteJSON.process_bind_param" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.services.database.models.FriendlyJSONType.process_bind_param">
+<code class="sig-name descname">process_bind_param</code><span class="sig-paren">(</span><em class="sig-param">obj: Optional[dict], dialect: str</em><span class="sig-paren">)</span> &#x2192; Optional[str]<a class="reference internal" href="../_modules/filemanager/services/database/models.html#FriendlyJSONType.process_bind_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.models.FriendlyJSONType.process_bind_param" title="Permalink to this definition">¶</a></dt>
 <dd><p>Serialize a dict to JSON.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Optional" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.services.database.models.SQLiteJSON.process_result_value">
-<code class="sig-name descname">process_result_value</code><span class="sig-paren">(</span><em class="sig-param">value</em>, <em class="sig-param">dialect</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/database/models.html#SQLiteJSON.process_result_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.models.SQLiteJSON.process_result_value" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.services.database.models.FriendlyJSONType.process_result_value">
+<code class="sig-name descname">process_result_value</code><span class="sig-paren">(</span><em class="sig-param">value: str</em>, <em class="sig-param">dialect: str</em><span class="sig-paren">)</span> &#x2192; Optional[dict]<a class="reference internal" href="../_modules/filemanager/services/database/models.html#FriendlyJSONType.process_result_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.models.FriendlyJSONType.process_result_value" title="Permalink to this definition">¶</a></dt>
 <dd><p>Deserialize JSON content to a dict.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Optional" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</p>
-</dd>
-</dl>
 </dd></dl>
 
 </dd></dl>
@@ -196,7 +186,7 @@
   <li><a href="filemanager.services.html">filemanager.services package</a><ul>
   <li><a href="filemanager.services.database.html">filemanager.services.database package</a><ul>
       <li>Previous: <a href="filemanager.services.database.html" title="previous chapter">filemanager.services.database package</a></li>
-      <li>Next: <a href="filemanager.services.database.translate.html" title="next chapter">filemanager.services.database.translate module</a></li>
+      <li>Next: <a href="filemanager.services.tests.html" title="next chapter">filemanager.services.tests package</a></li>
   </ul></li>
   </ul></li>
   </ul></li>

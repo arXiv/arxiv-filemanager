@@ -34,35 +34,79 @@
   <h1>Source code for filemanager.domain.uploads.countable</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Provides :class:`.CountsMixin`.&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Dict</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">Counter</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">cast</span>
 
-<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="k">import</span> <span class="n">Protocol</span>
 
-<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseWorkspace</span>
 <span class="kn">from</span> <span class="nn">..file_type</span> <span class="k">import</span> <span class="n">FileType</span>
-<span class="kn">from</span> <span class="nn">..uploaded_file</span> <span class="k">import</span> <span class="n">UploadedFile</span>
+<span class="kn">from</span> <span class="nn">..uploaded_file</span> <span class="k">import</span> <span class="n">UserFile</span>
+
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">IBaseWorkspace</span>
 
 
-<div class="viewcode-block" id="CountableWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.countable.html#filemanager.domain.uploads.countable.CountableWorkspace">[docs]</a><span class="nd">@dataclass</span>
-<span class="k">class</span> <span class="nc">CountableWorkspace</span><span class="p">(</span><span class="n">BaseWorkspace</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Adds methods related to file counts.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="IWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.countable.html#filemanager.domain.uploads.countable.IWorkspace">[docs]</a><span class="k">class</span> <span class="nc">IWorkspace</span><span class="p">(</span><span class="n">IBaseWorkspace</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Workspace API required for :class:`.Countable`.</span>
+
+<span class="sd">    This incorporates the base API and any additional structures that require</span>
+<span class="sd">    implementation by other components of the workspace.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="ICountable"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.countable.html#filemanager.domain.uploads.countable.ICountable">[docs]</a><span class="k">class</span> <span class="nc">ICountable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for countable behavior.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ancillary_file_count</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the total number of ancillary files in this workspace.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">file_count</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get the total number of non-ancillary files in this workspace.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iter_files</span><span class="p">(</span><span class="n">allow_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
-    
+
+<div class="viewcode-block" id="ICountable.get_file_type_counts"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.countable.html#filemanager.domain.uploads.countable.ICountable.get_file_type_counts">[docs]</a>    <span class="k">def</span> <span class="nf">get_file_type_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">FileType</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="nb">int</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get the number of files of each type in the workspace.&quot;&quot;&quot;</span></div></div>
+
+
+<div class="viewcode-block" id="ICountableWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.countable.html#filemanager.domain.uploads.countable.ICountableWorkspace">[docs]</a><span class="k">class</span> <span class="nc">ICountableWorkspace</span><span class="p">(</span><span class="n">IWorkspace</span><span class="p">,</span> <span class="n">ICountable</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Structure of a workspace with countable behavior.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="Countable"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.countable.html#filemanager.domain.uploads.countable.Countable">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Countable</span><span class="p">(</span><span class="n">ICountable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Adds methods related to file counts.&quot;&quot;&quot;</span>
+
+    <span class="n">__internal_api</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__api_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api</span><span class="p">:</span> <span class="n">IWorkspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Register the workspace API.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">Countable</span><span class="p">,</span> <span class="bp">self</span><span class="p">),</span> <span class="s1">&#39;__api_init__&#39;</span><span class="p">):</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">Countable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__api_init__</span><span class="p">(</span><span class="n">api</span><span class="p">)</span>   <span class="c1"># type: ignore</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span> <span class="o">=</span> <span class="n">api</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">__api</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IWorkspace</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span>
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">ancillary_file_count</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get the total number of ancillary files in this workspace.&quot;&quot;&quot;</span>
-        <span class="n">files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_files</span><span class="p">(</span><span class="n">allow_ancillary</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">iter_files</span><span class="p">(</span><span class="n">allow_ancillary</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                      <span class="n">allow_removed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">([</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">])</span>
 
-<div class="viewcode-block" id="CountableWorkspace.get_file_type_counts"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.countable.html#filemanager.domain.uploads.countable.CountableWorkspace.get_file_type_counts">[docs]</a>    <span class="k">def</span> <span class="nf">get_file_type_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">FileType</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="nb">int</span><span class="p">]:</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">file_count</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the total number of non-ancillary files in this workspace.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">iter_files</span><span class="p">(</span><span class="n">allow_ancillary</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Countable.get_file_type_counts"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.countable.html#filemanager.domain.uploads.countable.Countable.get_file_type_counts">[docs]</a>    <span class="k">def</span> <span class="nf">get_file_type_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">FileType</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="nb">int</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Get the number of files of each type in the workspace.&quot;&quot;&quot;</span>
         <span class="n">counts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">FileType</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_files</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">iter_files</span><span class="p">():</span>
             <span class="n">counts</span><span class="p">[</span><span class="s1">&#39;all_files&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
             <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">:</span>
                 <span class="n">counts</span><span class="p">[</span><span class="s1">&#39;ancillary&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>

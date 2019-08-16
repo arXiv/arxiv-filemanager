@@ -35,7 +35,7 @@
             
   <div class="section" id="module-filemanager.domain.tests.test_workspace">
 <span id="filemanager-domain-tests-test-workspace-module"></span><h1>filemanager.domain.tests.test_workspace module<a class="headerlink" href="#module-filemanager.domain.tests.test_workspace" title="Permalink to this headline">¶</a></h1>
-<p>Tests for <code class="xref py py-class docutils literal notranslate"><span class="pre">domain.UploadWorkspace</span></code>.</p>
+<p>Tests for <code class="xref py py-class docutils literal notranslate"><span class="pre">domain.Workspace</span></code>.</p>
 <dl class="class">
 <dt id="filemanager.domain.tests.test_workspace.TestAddRemoveFiles">
 <em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.tests.test_workspace.</code><code class="sig-name descname">TestAddRemoveFiles</code><span class="sig-paren">(</span><em class="sig-param">methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestAddRemoveFiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestAddRemoveFiles" title="Permalink to this definition">¶</a></dt>
@@ -167,7 +167,7 @@
 <dl class="method">
 <dt id="filemanager.domain.tests.test_workspace.TestPaths.test_get_ancillary_file_path">
 <code class="sig-name descname">test_get_ancillary_file_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestPaths.test_get_ancillary_file_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestPaths.test_get_ancillary_file_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Can get a relative path for an ancillary <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>.</p>
+<dd><p>Can get a relative path for an ancillary <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a>.</p>
 </dd></dl>
 
 <dl class="method">
@@ -185,13 +185,13 @@
 <dl class="method">
 <dt id="filemanager.domain.tests.test_workspace.TestPaths.test_get_path">
 <code class="sig-name descname">test_get_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestPaths.test_get_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestPaths.test_get_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Can get a relative path for an <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>.</p>
+<dd><p>Can get a relative path for an <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a>.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="filemanager.domain.tests.test_workspace.TestPaths.test_get_removed_file_path">
 <code class="sig-name descname">test_get_removed_file_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestPaths.test_get_removed_file_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestPaths.test_get_removed_file_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Can get a relative path for a removed <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>.</p>
+<dd><p>Can get a relative path for a removed <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a>.</p>
 </dd></dl>
 
 <dl class="method">
@@ -209,61 +209,61 @@
 </dd></dl>
 
 <dl class="class">
-<dt id="filemanager.domain.tests.test_workspace.TestUploadedFile">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.tests.test_workspace.</code><code class="sig-name descname">TestUploadedFile</code><span class="sig-paren">(</span><em class="sig-param">methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUploadedFile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUploadedFile" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.tests.test_workspace.TestUserFile">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.tests.test_workspace.</code><code class="sig-name descname">TestUserFile</code><span class="sig-paren">(</span><em class="sig-param">methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUserFile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUserFile" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
-<p>Test methods of the <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile" title="filemanager.domain.uploaded_file.UploadedFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadedFile</span></code></a>.</p>
+<p>Test methods of the <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a>.</p>
 <dl class="method">
-<dt id="filemanager.domain.tests.test_workspace.TestUploadedFile.setUp">
-<code class="sig-name descname">setUp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUploadedFile.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUploadedFile.setUp" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.tests.test_workspace.TestUserFile.setUp">
+<code class="sig-name descname">setUp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUserFile.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUserFile.setUp" title="Permalink to this definition">¶</a></dt>
 <dd><p>We have a file.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.tests.test_workspace.TestUploadedFile.test_dir">
-<code class="sig-name descname">test_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUploadedFile.test_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUploadedFile.test_dir" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.tests.test_workspace.TestUserFile.test_dir">
+<code class="sig-name descname">test_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUserFile.test_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUserFile.test_dir" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the path of the containing directory.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.tests.test_workspace.TestUploadedFile.test_ext">
-<code class="sig-name descname">test_ext</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUploadedFile.test_ext"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUploadedFile.test_ext" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.tests.test_workspace.TestUserFile.test_ext">
+<code class="sig-name descname">test_ext</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUserFile.test_ext"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUserFile.test_ext" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the extension of the file.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.tests.test_workspace.TestUploadedFile.test_is_empty">
-<code class="sig-name descname">test_is_empty</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUploadedFile.test_is_empty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUploadedFile.test_is_empty" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.tests.test_workspace.TestUserFile.test_is_empty">
+<code class="sig-name descname">test_is_empty</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUserFile.test_is_empty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUserFile.test_is_empty" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determine whether the file is empty.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.tests.test_workspace.TestUploadedFile.test_name">
-<code class="sig-name descname">test_name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUploadedFile.test_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUploadedFile.test_name" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.tests.test_workspace.TestUserFile.test_name">
+<code class="sig-name descname">test_name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUserFile.test_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUserFile.test_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the name of the file.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.tests.test_workspace.TestUploadedFile.test_removed_type_string">
-<code class="sig-name descname">test_removed_type_string</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUploadedFile.test_removed_type_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUploadedFile.test_removed_type_string" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.tests.test_workspace.TestUserFile.test_removed_type_string">
+<code class="sig-name descname">test_removed_type_string</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUserFile.test_removed_type_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUserFile.test_removed_type_string" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the human-readable type for removed file.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.tests.test_workspace.TestUploadedFile.test_type_string">
-<code class="sig-name descname">test_type_string</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUploadedFile.test_type_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUploadedFile.test_type_string" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.tests.test_workspace.TestUserFile.test_type_string">
+<code class="sig-name descname">test_type_string</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUserFile.test_type_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUserFile.test_type_string" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the human-readable name of this file’s type.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.tests.test_workspace.TestUploadedFile.test_type_string_ancillary_directory">
-<code class="sig-name descname">test_type_string_ancillary_directory</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUploadedFile.test_type_string_ancillary_directory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUploadedFile.test_type_string_ancillary_directory" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.tests.test_workspace.TestUserFile.test_type_string_ancillary_directory">
+<code class="sig-name descname">test_type_string_ancillary_directory</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUserFile.test_type_string_ancillary_directory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUserFile.test_type_string_ancillary_directory" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the human-readable name of a directory.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.tests.test_workspace.TestUploadedFile.test_type_string_directory">
-<code class="sig-name descname">test_type_string_directory</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUploadedFile.test_type_string_directory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUploadedFile.test_type_string_directory" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.tests.test_workspace.TestUserFile.test_type_string_directory">
+<code class="sig-name descname">test_type_string_directory</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/tests/test_workspace.html#TestUserFile.test_type_string_directory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.tests.test_workspace.TestUserFile.test_type_string_directory" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the human-readable name of a directory.</p>
 </dd></dl>
 

@@ -45,14 +45,16 @@
 <span class="kn">from</span> <span class="nn">werkzeug.exceptions</span> <span class="k">import</span> <span class="n">NotFound</span><span class="p">,</span> <span class="n">InternalServerError</span><span class="p">,</span> <span class="n">SecurityError</span><span class="p">,</span> \
         <span class="n">Forbidden</span>
 
+<span class="kn">from</span> <span class="nn">arxiv.users</span> <span class="k">import</span> <span class="n">domain</span> <span class="k">as</span> <span class="n">auth_domain</span>
 <span class="kn">from</span> <span class="nn">arxiv.base.globals</span> <span class="k">import</span> <span class="n">get_application_config</span>
 
-<span class="kn">from</span> <span class="nn">..domain</span> <span class="k">import</span> <span class="n">UploadWorkspace</span><span class="p">,</span> <span class="n">NoSuchFile</span>
+<span class="kn">from</span> <span class="nn">..domain</span> <span class="k">import</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">NoSuchFile</span>
 <span class="kn">from</span> <span class="nn">..services</span> <span class="k">import</span> <span class="n">database</span><span class="p">,</span> <span class="n">storage</span>
 <span class="kn">from</span> <span class="nn">..process</span> <span class="k">import</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">check</span>
-<span class="kn">from</span> <span class="nn">..serialize</span> <span class="k">import</span> <span class="n">serialize_workspace</span>
+<span class="kn">from</span> <span class="nn">.transform</span> <span class="k">import</span> <span class="n">transform_workspace</span>
 <span class="kn">from</span> <span class="nn">.service_log</span> <span class="k">import</span> <span class="n">logger</span>
 <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">_messages</span> <span class="k">as</span> <span class="n">messages</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">util</span>
 
 <span class="n">Response</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">IO</span><span class="p">]],</span> <span class="n">status</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span>
 
@@ -70,28 +72,25 @@
 <span class="sd">    -------</span>
 <span class="sd">    dict</span>
 <span class="sd">        Response content</span>
-<span class="sd">    int </span>
+<span class="sd">    int</span>
 <span class="sd">        HTTP status</span>
 <span class="sd">    dict</span>
 <span class="sd">        HTTP headers.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UploadWorkspace</span><span class="p">]</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+        <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: ContentExistsCheck: There was a problem connecting &quot;</span>
                      <span class="s2">&quot;to database.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_DB_CONNECT_ERROR</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">workspace</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">except</span> <span class="n">database</span><span class="o">.</span><span class="n">WorkspaceNotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Workspace not found: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span>
-    
-    <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">is_stale</span><span class="p">:</span>
-        <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Upload content summary request.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
 
-    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ARXIV-OWNER&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">,</span> 
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ARXIV-OWNER&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">,</span>
                <span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">checksum</span><span class="p">,</span>
                <span class="s1">&#39;Content-Length&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">size_bytes</span><span class="p">,</span>
                <span class="s1">&#39;Last-Modified&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">last_modified</span><span class="p">}</span>
@@ -99,7 +98,7 @@
     <span class="k">return</span> <span class="p">{},</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span><span class="p">,</span> <span class="n">headers</span></div>
 
 
-<div class="viewcode-block" id="get_upload_content"><a class="viewcode-back" href="../../../api/filemanager.controllers.package.html#filemanager.controllers.package.get_upload_content">[docs]</a><span class="k">def</span> <span class="nf">get_upload_content</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<div class="viewcode-block" id="get_upload_content"><a class="viewcode-back" href="../../../api/filemanager.controllers.package.html#filemanager.controllers.package.get_upload_content">[docs]</a><span class="k">def</span> <span class="nf">get_upload_content</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Package up files for downloading as a compressed gzipped tar file.</span>
 
@@ -112,31 +111,33 @@
 <span class="sd">    -------</span>
 <span class="sd">    dict</span>
 <span class="sd">        Response content</span>
-<span class="sd">    int </span>
+<span class="sd">    int</span>
 <span class="sd">        HTTP status</span>
 <span class="sd">    dict</span>
 <span class="sd">        HTTP headers.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">user_string</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">format_user_information_for_logging</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Download workspace source content [</span><span class="si">%s</span><span class="s2">].&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span>
+                <span class="n">user_string</span><span class="p">)</span>
+
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UploadWorkspace</span><span class="p">]</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+        <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: ContentDownload: There was a problem connecting &quot;</span>
                      <span class="s2">&quot;to database.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_DB_CONNECT_ERROR</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">workspace</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span>
-    
-    <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">is_stale</span><span class="p">:</span>
-        <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+    <span class="k">except</span> <span class="n">database</span><span class="o">.</span><span class="n">WorkspaceNotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Download workspace source content: There was a &quot;</span>
+                     <span class="s2">&quot;problem connecting to database.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">nf</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="n">filepointer</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">open_pointer</span><span class="p">(</span><span class="s1">&#39;rb&#39;</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="s2">&quot;No content in workspace&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
     <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;ARXIV-OWNER&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">,</span> 
+        <span class="s1">&#39;ARXIV-OWNER&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">,</span>
         <span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">checksum</span><span class="p">,</span>
         <span class="s1">&#39;Content-Length&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">size_bytes</span><span class="p">,</span>
         <span class="s1">&#39;Last-Modified&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">source_package</span><span class="o">.</span><span class="n">last_modified</span><span class="p">,</span>

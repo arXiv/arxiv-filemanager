@@ -32,40 +32,71 @@
           <div class="body" role="main">
             
   <h1>Source code for filemanager.domain.uploads.lock</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Provides :class:`.LockMixin`.&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;Provides :class:`.Lockable`.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">enum</span> <span class="k">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
 
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="k">import</span> <span class="n">Protocol</span>
 
-<div class="viewcode-block" id="LockMixin"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.lock.html#filemanager.domain.uploads.lock.LockMixin">[docs]</a><span class="nd">@dataclass</span> 
-<span class="k">class</span> <span class="nc">LockMixin</span><span class="p">:</span>
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">IBaseWorkspace</span>
+
+
+<div class="viewcode-block" id="LockState"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.lock.html#filemanager.domain.uploads.lock.LockState">[docs]</a><span class="k">class</span> <span class="nc">LockState</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Upload workspace lock states.&quot;&quot;&quot;</span>
+
+    <span class="n">LOCKED</span> <span class="o">=</span> <span class="s1">&#39;LOCKED&#39;</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Indicates upload workspace is locked and cannot be updated.</span>
+
+<span class="sd">    The workspace might be locked during publish or when admins are</span>
+<span class="sd">    updating uploaded files.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">UNLOCKED</span> <span class="o">=</span> <span class="s1">&#39;UNLOCKED&#39;</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Workspace is unlocked, updates are allowed.</span>
+
+<span class="sd">    Workspace is normally in this state.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="ILockable"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.lock.html#filemanager.domain.uploads.lock.ILockable">[docs]</a><span class="k">class</span> <span class="nc">ILockable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for lockable behavior.&quot;&quot;&quot;</span>
+
+    <span class="n">lock_state</span><span class="p">:</span> <span class="n">LockState</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_locked</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not the workspace is locked.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="ILockableWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.lock.html#filemanager.domain.uploads.lock.ILockableWorkspace">[docs]</a><span class="k">class</span> <span class="nc">ILockableWorkspace</span><span class="p">(</span><span class="n">IBaseWorkspace</span><span class="p">,</span> <span class="n">ILockable</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for workspace with lockable behavior.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="Lockable"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.lock.html#filemanager.domain.uploads.lock.Lockable">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Lockable</span><span class="p">(</span><span class="n">ILockable</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Implements methods and properties related to locking/unlocking.&quot;&quot;&quot;</span>
-
-<div class="viewcode-block" id="LockMixin.LockState"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.lock.html#filemanager.domain.uploads.lock.LockMixin.LockState">[docs]</a>    <span class="k">class</span> <span class="nc">LockState</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Upload workspace lock states.&quot;&quot;&quot;</span>
-
-        <span class="n">LOCKED</span> <span class="o">=</span> <span class="s1">&#39;LOCKED&#39;</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Indicates upload workspace is locked and cannot be updated.</span>
-
-<span class="sd">        The workspace might be locked during publish or when admins are</span>
-<span class="sd">        updating uploaded files.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">UNLOCKED</span> <span class="o">=</span> <span class="s1">&#39;UNLOCKED&#39;</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Workspace is unlocked, updates are allowed.</span>
-
-<span class="sd">        Workspace is normally in this state.</span>
-<span class="sd">        &quot;&quot;&quot;</span></div>
 
     <span class="n">lock_state</span><span class="p">:</span> <span class="n">LockState</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">LockState</span><span class="o">.</span><span class="n">UNLOCKED</span><span class="p">)</span>
     <span class="sd">&quot;&quot;&quot;Lock state of upload workspace.&quot;&quot;&quot;</span>
-    
+
+<div class="viewcode-block" id="Lockable.args_from_dict"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.lock.html#filemanager.domain.uploads.lock.Lockable.args_from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">args_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Pluck constructor args from dict representation of workspace.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;lock_state&#39;</span><span class="p">:</span> <span class="n">LockState</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;lock_state&#39;</span><span class="p">])}</span></div>
+
+<div class="viewcode-block" id="Lockable.to_dict_impl"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.lock.html#filemanager.domain.uploads.lock.Lockable.to_dict_impl">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">to_dict_impl</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="bp">self</span><span class="p">:</span> <span class="s1">&#39;Lockable&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Generate a dict representation of the workspace.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;lock_state&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock_state</span><span class="o">.</span><span class="n">value</span><span class="p">}</span></div>
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_locked</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lock_state</span> <span class="o">==</span> <span class="n">LockMixin</span><span class="o">.</span><span class="n">LockState</span><span class="o">.</span><span class="n">LOCKED</span><span class="p">)</span></div>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not the workspace is locked.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lock_state</span> <span class="o">==</span> <span class="n">LockState</span><span class="o">.</span><span class="n">LOCKED</span><span class="p">)</span></div>
 </pre></div>
 
           </div>

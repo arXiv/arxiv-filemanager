@@ -36,59 +36,46 @@
   <div class="section" id="module-filemanager.services.database">
 <span id="filemanager-services-database-package"></span><h1>filemanager.services.database package<a class="headerlink" href="#module-filemanager.services.database" title="Permalink to this headline">¶</a></h1>
 <p>Provides access to the uploads data store.</p>
+<dl class="exception">
+<dt id="filemanager.services.database.WorkspaceNotFound">
+<em class="property">exception </em><code class="sig-prename descclassname">filemanager.services.database.</code><code class="sig-name descname">WorkspaceNotFound</code><a class="reference internal" href="../_modules/filemanager/services/database.html#WorkspaceNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.WorkspaceNotFound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/exceptions.html#RuntimeError" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">RuntimeError</span></code></a></p>
+<p>Workspace not found in file manager database.</p>
+</dd></dl>
+
 <dl class="function">
 <dt id="filemanager.services.database.atomic">
-<code class="sig-prename descclassname">filemanager.services.database.</code><code class="sig-name descname">atomic</code><span class="sig-paren">(</span><em class="sig-param">func</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/database.html#atomic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.atomic" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.services.database.</code><code class="sig-name descname">atomic</code><span class="sig-paren">(</span><em class="sig-param">func: Callable</em><span class="sig-paren">)</span> &#x2192; Callable<a class="reference internal" href="../_modules/filemanager/services/database.html#atomic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.atomic" title="Permalink to this definition">¶</a></dt>
 <dd><p>Decorate a function to run within a database transaction.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Callable" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.services.database.create">
-<code class="sig-prename descclassname">filemanager.services.database.</code><code class="sig-name descname">create</code><span class="sig-paren">(</span><em class="sig-param">owner_user_id</em>, <em class="sig-param">status=&lt;Status.ACTIVE: 'ACTIVE'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/database.html#create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.create" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploads.html#filemanager.domain.uploads.UploadWorkspace" title="filemanager.domain.uploads.UploadWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadWorkspace</span></code></a></p>
-</dd>
-</dl>
-</dd></dl>
+<code class="sig-prename descclassname">filemanager.services.database.</code><code class="sig-name descname">create</code><span class="sig-paren">(</span><em class="sig-param">owner_user_id: str</em>, <em class="sig-param">status: filemanager.domain.uploads.status.Status = &lt;Status.ACTIVE: 'ACTIVE'&gt;</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploads.Workspace<a class="reference internal" href="../_modules/filemanager/services/database.html#create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.create" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="function">
 <dt id="filemanager.services.database.init_app">
-<code class="sig-prename descclassname">filemanager.services.database.</code><code class="sig-name descname">init_app</code><span class="sig-paren">(</span><em class="sig-param">app</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/database.html#init_app"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.init_app" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.services.database.</code><code class="sig-name descname">init_app</code><span class="sig-paren">(</span><em class="sig-param">app: flask.app.Flask</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/services/database.html#init_app"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.init_app" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set configuration defaults and attach session to the application.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.services.database.is_available">
-<code class="sig-prename descclassname">filemanager.services.database.</code><code class="sig-name descname">is_available</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/database.html#is_available"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.is_available" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.services.database.</code><code class="sig-name descname">is_available</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/filemanager/services/database.html#is_available"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.is_available" title="Permalink to this definition">¶</a></dt>
 <dd><p>Make a quick check to see whether databse is available.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.services.database.retrieve">
-<code class="sig-prename descclassname">filemanager.services.database.</code><code class="sig-name descname">retrieve</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em>, <em class="sig-param">skip_cache=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/database.html#retrieve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.retrieve" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.services.database.</code><code class="sig-name descname">retrieve</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em>, <em class="sig-param">skip_cache: bool = False</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploads.Workspace<a class="reference internal" href="../_modules/filemanager/services/database.html#retrieve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.retrieve" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get data about a upload.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>upload_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Unique identifier for the upload.</p></li>
 <li><p><strong>skip_cache</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – If <cite>True</cite>, will load fresh data regardless of what might already be
-around. Otherwise, will only load the same <code class="xref py py-class docutils literal notranslate"><span class="pre">UploadWorkspace</span></code>
+around. Otherwise, will only load the same <code class="xref py py-class docutils literal notranslate"><span class="pre">Workspace</span></code>
 instance once.</p></li>
 </ul>
 </dd>
@@ -96,64 +83,50 @@ instance once.</p></li>
 <dd class="field-even"><p>Data about the upload.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploads.html#filemanager.domain.uploads.UploadWorkspace" title="filemanager.domain.uploads.UploadWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadWorkspace</span></code></a></p>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploads.html#filemanager.domain.uploads.Workspace" title="filemanager.domain.uploads.Workspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">Workspace</span></code></a></p>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3.6/library/exceptions.html#IOError" title="(in Python v3.6)"><strong>IOError</strong></a> – When there is a problem querying the database.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Optional" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="filemanager.domain.uploads.html#filemanager.domain.uploads.UploadWorkspace" title="filemanager.domain.uploads.UploadWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadWorkspace</span></code></a>]</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.services.database.store">
-<code class="sig-prename descclassname">filemanager.services.database.</code><code class="sig-name descname">store</code><span class="sig-paren">(</span><em class="sig-param">new_upload_data</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/database.html#store"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.store" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a new record for a <a class="reference internal" href="filemanager.domain.uploads.html#filemanager.domain.uploads.UploadWorkspace" title="filemanager.domain.uploads.UploadWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadWorkspace</span></code></a> in the database.</p>
+<code class="sig-prename descclassname">filemanager.services.database.</code><code class="sig-name descname">store</code><span class="sig-paren">(</span><em class="sig-param">new_upload_data: filemanager.domain.uploads.Workspace</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploads.Workspace<a class="reference internal" href="../_modules/filemanager/services/database.html#store"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.store" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new record for a <a class="reference internal" href="filemanager.domain.uploads.html#filemanager.domain.uploads.Workspace" title="filemanager.domain.uploads.Workspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">Workspace</span></code></a> in the database.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>upload_data</strong> (<a class="reference internal" href="filemanager.domain.uploads.html#filemanager.domain.uploads.UploadWorkspace" title="filemanager.domain.uploads.UploadWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadWorkspace</span></code></a>) – </p>
+<dd class="field-odd"><p><strong>upload_data</strong> (<a class="reference internal" href="filemanager.domain.uploads.html#filemanager.domain.uploads.Workspace" title="filemanager.domain.uploads.Workspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">Workspace</span></code></a>) – </p>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><ul class="simple">
 <li><p><a class="reference external" href="https://docs.python.org/3.6/library/exceptions.html#IOError" title="(in Python v3.6)"><strong>IOError</strong></a> – When there is a problem querying the database.</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3.6/library/exceptions.html#RuntimeError" title="(in Python v3.6)"><strong>RuntimeError</strong></a> – When there is some other problem.</p></li>
 </ul>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploads.html#filemanager.domain.uploads.UploadWorkspace" title="filemanager.domain.uploads.UploadWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadWorkspace</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.services.database.transaction">
-<code class="sig-prename descclassname">filemanager.services.database.</code><code class="sig-name descname">transaction</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/database.html#transaction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.transaction" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.services.database.</code><code class="sig-name descname">transaction</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Generator<a class="reference internal" href="../_modules/filemanager/services/database.html#transaction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.transaction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Context manager for database transaction.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Generator" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code></a>[+T_co, -T_contra, +V_co]</p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.services.database.update">
-<code class="sig-prename descclassname">filemanager.services.database.</code><code class="sig-name descname">update</code><span class="sig-paren">(</span><em class="sig-param">workspace</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/services/database.html#update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.update" title="Permalink to this definition">¶</a></dt>
-<dd><p>Update the database with the latest <a class="reference internal" href="filemanager.domain.uploads.html#filemanager.domain.uploads.UploadWorkspace" title="filemanager.domain.uploads.UploadWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadWorkspace</span></code></a>.</p>
+<code class="sig-prename descclassname">filemanager.services.database.</code><code class="sig-name descname">update</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/services/database.html#update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.services.database.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the database with the latest <a class="reference internal" href="filemanager.domain.uploads.html#filemanager.domain.uploads.Workspace" title="filemanager.domain.uploads.Workspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">Workspace</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>the_thing</strong> (<a class="reference internal" href="filemanager.domain.uploads.html#filemanager.domain.uploads.UploadWorkspace" title="filemanager.domain.uploads.UploadWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadWorkspace</span></code></a>) – </p>
+<dd class="field-odd"><p><strong>the_thing</strong> (<a class="reference internal" href="filemanager.domain.uploads.html#filemanager.domain.uploads.Workspace" title="filemanager.domain.uploads.Workspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">Workspace</span></code></a>) – </p>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><ul class="simple">
 <li><p><a class="reference external" href="https://docs.python.org/3.6/library/exceptions.html#IOError" title="(in Python v3.6)"><strong>IOError</strong></a> – When there is a problem querying the database.</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3.6/library/exceptions.html#RuntimeError" title="(in Python v3.6)"><strong>RuntimeError</strong></a> – When there is some other problem.</p></li>
 </ul>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -163,7 +136,6 @@ instance once.</p></li>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="filemanager.services.database.models.html">filemanager.services.database.models module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="filemanager.services.database.translate.html">filemanager.services.database.translate module</a></li>
 </ul>
 </div>
 </div>

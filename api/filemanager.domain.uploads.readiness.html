@@ -16,7 +16,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="filemanager.domain.uploads.single_file module" href="filemanager.domain.uploads.single_file.html" />
-    <link rel="prev" title="filemanager.domain.uploads.paths module" href="filemanager.domain.uploads.paths.html" />
+    <link rel="prev" title="filemanager.domain.uploads.lock module" href="filemanager.domain.uploads.lock.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -37,56 +37,104 @@
 <span id="filemanager-domain-uploads-readiness-module"></span><h1>filemanager.domain.uploads.readiness module<a class="headerlink" href="#module-filemanager.domain.uploads.readiness" title="Permalink to this headline">¶</a></h1>
 <p>Provides <code class="xref py py-class docutils literal notranslate"><span class="pre">ReadinessMixin</span></code>.</p>
 <dl class="class">
-<dt id="filemanager.domain.uploads.readiness.ReadinessWorkspace">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.readiness.</code><code class="sig-name descname">ReadinessWorkspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em>, <em class="sig-param">owner_user_id</em>, <em class="sig-param">created_datetime</em>, <em class="sig-param">modified_datetime</em>, <em class="sig-param">files=&lt;factory&gt;</em>, <em class="sig-param">storage=None</em>, <em class="sig-param">lastupload_start_datetime=None</em>, <em class="sig-param">lastupload_completion_datetime=None</em>, <em class="sig-param">lastupload_logs=&lt;factory&gt;</em>, <em class="sig-param">lastupload_file_summary=&lt;factory&gt;</em>, <em class="sig-param">_errors=&lt;factory&gt;</em>, <em class="sig-param">lastupload_readiness=&lt;Readiness.READY: 'READY'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/readiness.html#ReadinessWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.readiness.ReadinessWorkspace" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace" title="filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace</span></code></a></p>
-<p>Adds methods and properties releated to source readiness.</p>
+<dt id="filemanager.domain.uploads.readiness.IReadiable">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.readiness.</code><code class="sig-name descname">IReadiable</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/readiness.html#IReadiable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.readiness.IReadiable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Interface for readiable behavior.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.readiness.IReadiable.readiness">
+<em class="property">property </em><code class="sig-name descname">readiness</code><a class="headerlink" href="#filemanager.domain.uploads.readiness.IReadiable.readiness" title="Permalink to this definition">¶</a></dt>
+<dd><p>Readiness state of the upload workspace.</p>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="class">
-<dt id="filemanager.domain.uploads.readiness.ReadinessWorkspace.Readiness">
-<em class="property">class </em><code class="sig-name descname">Readiness</code><a class="reference internal" href="../_modules/filemanager/domain/uploads/readiness.html#ReadinessWorkspace.Readiness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.readiness.ReadinessWorkspace.Readiness" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.readiness.IReadiableWorkspace">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.readiness.</code><code class="sig-name descname">IReadiableWorkspace</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/readiness.html#IReadiableWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.readiness.IReadiableWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#filemanager.domain.uploads.readiness.IWorkspace" title="filemanager.domain.uploads.readiness.IWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.readiness.IWorkspace</span></code></a>, <a class="reference internal" href="#filemanager.domain.uploads.readiness.IReadiable" title="filemanager.domain.uploads.readiness.IReadiable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.readiness.IReadiable</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Interface for workspace with readiable behavior.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.readiness.IWorkspace">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.readiness.</code><code class="sig-name descname">IWorkspace</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/readiness.html#IWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.readiness.IWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace" title="filemanager.domain.uploads.base.IBaseWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.base.IBaseWorkspace</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Workspace API required for <a class="reference internal" href="#filemanager.domain.uploads.readiness.Readiable" title="filemanager.domain.uploads.readiness.Readiable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Readiable</span></code></a>.</p>
+<p>This incorporates the base API and any additional structures that require
+implementation by other components of the workspace.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.readiness.IWorkspace.has_errors_fatal">
+<em class="property">property </em><code class="sig-name descname">has_errors_fatal</code><a class="headerlink" href="#filemanager.domain.uploads.readiness.IWorkspace.has_errors_fatal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether or not this workspace has fatal errors.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.readiness.IWorkspace.has_warnings_active">
+<em class="property">property </em><code class="sig-name descname">has_warnings_active</code><a class="headerlink" href="#filemanager.domain.uploads.readiness.IWorkspace.has_warnings_active" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether this workspace has warnings for active files.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.readiness.Readiable">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.readiness.</code><code class="sig-name descname">Readiable</code><span class="sig-paren">(</span><em class="sig-param">last_upload_readiness: filemanager.domain.uploads.readiness.Readiness = &lt;Readiness.READY: 'READY'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/readiness.html#Readiable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.readiness.Readiable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#filemanager.domain.uploads.readiness.IReadiable" title="filemanager.domain.uploads.readiness.IReadiable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.readiness.IReadiable</span></code></a></p>
+<p>Adds methods and properties releated to source readiness.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.readiness.Readiable.args_from_dict">
+<em class="property">classmethod </em><code class="sig-name descname">args_from_dict</code><span class="sig-paren">(</span><em class="sig-param">data: Dict[str, Any]</em><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="reference internal" href="../_modules/filemanager/domain/uploads/readiness.html#Readiable.args_from_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.readiness.Readiable.args_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pluck workspace constructor args from a dict.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.readiness.Readiable.last_upload_readiness">
+<code class="sig-name descname">last_upload_readiness</code><em class="property"> = 'READY'</em><a class="headerlink" href="#filemanager.domain.uploads.readiness.Readiable.last_upload_readiness" title="Permalink to this definition">¶</a></dt>
+<dd><p>Content readiness status after last upload event.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.readiness.Readiable.readiness">
+<em class="property">property </em><code class="sig-name descname">readiness</code><a class="headerlink" href="#filemanager.domain.uploads.readiness.Readiable.readiness" title="Permalink to this definition">¶</a></dt>
+<dd><p>Readiness state of the upload workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.readiness.Readiable.to_dict_impl">
+<em class="property">classmethod </em><code class="sig-name descname">to_dict_impl</code><span class="sig-paren">(</span><em class="sig-param">self: filemanager.domain.uploads.readiness.Readiable</em><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="reference internal" href="../_modules/filemanager/domain/uploads/readiness.html#Readiable.to_dict_impl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.readiness.Readiable.to_dict_impl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a dict representation of the workspace.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.readiness.Readiness">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.readiness.</code><code class="sig-name descname">Readiness</code><a class="reference internal" href="../_modules/filemanager/domain/uploads/readiness.html#Readiness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.readiness.Readiness" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/enum.html#enum.Enum" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
 <p>Upload workspace readiness states.</p>
 <p>Provides an indication (but not the final word) on whether the
 workspace is suitable for incorporating into a submission to arXiv.</p>
 <dl class="attribute">
-<dt id="filemanager.domain.uploads.readiness.ReadinessWorkspace.Readiness.ERRORS">
-<code class="sig-name descname">ERRORS</code><em class="property"> = 'ERRORS'</em><a class="headerlink" href="#filemanager.domain.uploads.readiness.ReadinessWorkspace.Readiness.ERRORS" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.readiness.Readiness.ERRORS">
+<code class="sig-name descname">ERRORS</code><em class="property"> = 'ERRORS'</em><a class="headerlink" href="#filemanager.domain.uploads.readiness.Readiness.ERRORS" title="Permalink to this definition">¶</a></dt>
 <dd><p>There were errors reported while processing upload files.</p>
 <p>Subsequent steps [compilation, submit, publish] should reject working
 with such an upload package.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="filemanager.domain.uploads.readiness.ReadinessWorkspace.Readiness.READY">
-<code class="sig-name descname">READY</code><em class="property"> = 'READY'</em><a class="headerlink" href="#filemanager.domain.uploads.readiness.ReadinessWorkspace.Readiness.READY" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.readiness.Readiness.READY">
+<code class="sig-name descname">READY</code><em class="property"> = 'READY'</em><a class="headerlink" href="#filemanager.domain.uploads.readiness.Readiness.READY" title="Permalink to this definition">¶</a></dt>
 <dd><p>Overall state of workspace is good; no warnings/errors reported.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="filemanager.domain.uploads.readiness.ReadinessWorkspace.Readiness.READY_WITH_WARNINGS">
-<code class="sig-name descname">READY_WITH_WARNINGS</code><em class="property"> = 'READY_WITH_WARNINGS'</em><a class="headerlink" href="#filemanager.domain.uploads.readiness.ReadinessWorkspace.Readiness.READY_WITH_WARNINGS" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.readiness.Readiness.READY_WITH_WARNINGS">
+<code class="sig-name descname">READY_WITH_WARNINGS</code><em class="property"> = 'READY_WITH_WARNINGS'</em><a class="headerlink" href="#filemanager.domain.uploads.readiness.Readiness.READY_WITH_WARNINGS" title="Permalink to this definition">¶</a></dt>
 <dd><p>Workspace is ready, but there are warnings for the user.</p>
 <p>Upload processing reported warnings which do not prohibit client
 from continuing on to compilation and submit steps.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="attribute">
-<dt id="filemanager.domain.uploads.readiness.ReadinessWorkspace.lastupload_readiness">
-<code class="sig-name descname">lastupload_readiness</code><em class="property"> = 'READY'</em><a class="headerlink" href="#filemanager.domain.uploads.readiness.ReadinessWorkspace.lastupload_readiness" title="Permalink to this definition">¶</a></dt>
-<dd><p>Content readiness status after last upload event.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="filemanager.domain.uploads.readiness.ReadinessWorkspace.readiness">
-<em class="property">property </em><code class="sig-name descname">readiness</code><a class="headerlink" href="#filemanager.domain.uploads.readiness.ReadinessWorkspace.readiness" title="Permalink to this definition">¶</a></dt>
-<dd><p>Readiness state of the upload workspace.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#filemanager.domain.uploads.readiness.ReadinessWorkspace.Readiness" title="filemanager.domain.uploads.readiness.ReadinessWorkspace.Readiness">Readiness</a></p>
-</dd>
-</dl>
 </dd></dl>
 
 </dd></dl>
@@ -127,7 +175,7 @@ from continuing on to compilation and submit steps.</p>
   <li><a href="filemanager.html">filemanager package</a><ul>
   <li><a href="filemanager.domain.html">filemanager.domain package</a><ul>
   <li><a href="filemanager.domain.uploads.html">filemanager.domain.uploads package</a><ul>
-      <li>Previous: <a href="filemanager.domain.uploads.paths.html" title="previous chapter">filemanager.domain.uploads.paths module</a></li>
+      <li>Previous: <a href="filemanager.domain.uploads.lock.html" title="previous chapter">filemanager.domain.uploads.lock module</a></li>
       <li>Next: <a href="filemanager.domain.uploads.single_file.html" title="next chapter">filemanager.domain.uploads.single_file module</a></li>
   </ul></li>
   </ul></li>

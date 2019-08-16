@@ -15,8 +15,8 @@
     <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="filemanager.domain package" href="filemanager.domain.html" />
-    <link rel="prev" title="filemanager.controllers.status module" href="filemanager.controllers.status.html" />
+    <link rel="next" title="filemanager.controllers.util module" href="filemanager.controllers.util.html" />
+    <link rel="prev" title="filemanager.controllers.transform module" href="filemanager.controllers.transform.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -38,7 +38,7 @@
 <p>Handles all upload-related requests.</p>
 <dl class="function">
 <dt id="filemanager.controllers.upload.delete_workspace">
-<code class="sig-prename descclassname">filemanager.controllers.upload.</code><code class="sig-name descname">delete_workspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/controllers/upload.html#delete_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.controllers.upload.delete_workspace" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.controllers.upload.</code><code class="sig-name descname">delete_workspace</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em>, <em class="sig-param">user: arxiv.users.domain.User</em><span class="sig-paren">)</span> &#x2192; Tuple[Optional[dict], http.HTTPStatus, dict]<a class="reference internal" href="../_modules/filemanager/controllers/upload.html#delete_workspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.controllers.upload.delete_workspace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Delete workspace.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -52,15 +52,12 @@
 </ul>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Optional" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>], <a class="reference external" href="https://docs.python.org/3.6/library/http.html#http.HTTPStatus" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HTTPStatus</span></code></a>, <a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</p>
-</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.controllers.upload.upload">
-<code class="sig-prename descclassname">filemanager.controllers.upload.</code><code class="sig-name descname">upload</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em>, <em class="sig-param">file</em>, <em class="sig-param">archive</em>, <em class="sig-param">user</em>, <em class="sig-param">ancillary=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/controllers/upload.html#upload"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.controllers.upload.upload" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.controllers.upload.</code><code class="sig-name descname">upload</code><span class="sig-paren">(</span><em class="sig-param">upload_id: Optional[int], file: Union[werkzeug.datastructures.FileStorage, Any], user: arxiv.users.domain.User, ancillary: bool = False, checkpoint: bool = False, clear_source_files: bool = False</em><span class="sig-paren">)</span> &#x2192; Tuple[Optional[dict], http.HTTPStatus, dict]<a class="reference internal" href="../_modules/filemanager/controllers/upload.html#upload"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.controllers.upload.upload" title="Permalink to this definition">¶</a></dt>
 <dd><p>Upload individual files or compressed archive into specified workspace.</p>
 <p>Unpack, sanitize, and add files to upload workspace.</p>
 <dl class="field-list simple">
@@ -73,6 +70,8 @@ specified at the archive level.</p></li>
 <li><p><strong>ancillary</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the file is to be treated as an ancillary file. This means
 (presently) that the file is stored in a special subdirectory within
 the source package.</p></li>
+<li><p><strong>checkpoint</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – Create a checkpoint (backup) of source files before unpacking and
+installing file payload for this request.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -83,15 +82,12 @@ the source package.</p></li>
 </ul>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Optional" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>], <a class="reference external" href="https://docs.python.org/3.6/library/http.html#http.HTTPStatus" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HTTPStatus</span></code></a>, <a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</p>
-</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.controllers.upload.upload_summary">
-<code class="sig-prename descclassname">filemanager.controllers.upload.</code><code class="sig-name descname">upload_summary</code><span class="sig-paren">(</span><em class="sig-param">upload_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/controllers/upload.html#upload_summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.controllers.upload.upload_summary" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.controllers.upload.</code><code class="sig-name descname">upload_summary</code><span class="sig-paren">(</span><em class="sig-param">upload_id: int</em><span class="sig-paren">)</span> &#x2192; Tuple[Optional[dict], http.HTTPStatus, dict]<a class="reference internal" href="../_modules/filemanager/controllers/upload.html#upload_summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.controllers.upload.upload_summary" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provide summary of important upload workspace details.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -107,9 +103,6 @@ files - list of file details</p>
 <li><p><em>dict</em> – Some extra headers to add to the response.</p></li>
 </ul>
 </p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Optional" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>], <a class="reference external" href="https://docs.python.org/3.6/library/http.html#http.HTTPStatus" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HTTPStatus</span></code></a>, <a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -149,8 +142,8 @@ files - list of file details</p>
   <li><a href="modules.html">filemanager</a><ul>
   <li><a href="filemanager.html">filemanager package</a><ul>
   <li><a href="filemanager.controllers.html">filemanager.controllers package</a><ul>
-      <li>Previous: <a href="filemanager.controllers.status.html" title="previous chapter">filemanager.controllers.status module</a></li>
-      <li>Next: <a href="filemanager.domain.html" title="next chapter">filemanager.domain package</a></li>
+      <li>Previous: <a href="filemanager.controllers.transform.html" title="previous chapter">filemanager.controllers.transform module</a></li>
+      <li>Next: <a href="filemanager.controllers.util.html" title="next chapter">filemanager.controllers.util module</a></li>
   </ul></li>
   </ul></li>
   </ul></li>

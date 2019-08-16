@@ -34,8 +34,9 @@
   <h1>Source code for filemanager.domain.error</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Structs for errors and warnings.&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Optional</span>
 <span class="kn">from</span> <span class="nn">enum</span> <span class="k">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
+
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 
 
@@ -72,7 +73,27 @@
     <span class="sd">&quot;&quot;&quot;Optional path for file associated with this error.&quot;&quot;&quot;</span>
 
     <span class="n">is_persistant</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="sd">&quot;&quot;&quot;Indicates whether or not this error sticks around between requests.&quot;&quot;&quot;</span></div>
+    <span class="sd">&quot;&quot;&quot;Indicates whether or not this error sticks around between requests.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Error.to_dict"><a class="viewcode-back" href="../../../api/filemanager.domain.error.html#filemanager.domain.error.Error.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;severity&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">severity</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="s1">&#39;message&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">,</span>
+            <span class="s1">&#39;code&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="s1">&#39;path&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+            <span class="s1">&#39;is_persistant&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_persistant</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="Error.from_dict"><a class="viewcode-back" href="../../../api/filemanager.domain.error.html#filemanager.domain.error.Error.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Error&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Translate a dict to an :class:`.Error`.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">severity</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">Severity</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;severity&#39;</span><span class="p">]),</span>
+            <span class="n">message</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;message&#39;</span><span class="p">],</span>
+            <span class="n">code</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">Code</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;code&#39;</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">Code</span><span class="o">.</span><span class="n">UNKNOWN</span><span class="o">.</span><span class="n">value</span><span class="p">)),</span>
+            <span class="n">path</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="n">is_persistant</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;is_persistant&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="p">)</span></div></div>
 </pre></div>
 
           </div>

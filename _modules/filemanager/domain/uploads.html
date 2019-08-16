@@ -33,97 +33,171 @@
             
   <h1>Source code for filemanager.domain.uploads</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Provides :class:`.UploadWorkspace`, the organizing concept for this service. </span>
+<span class="sd">Provides :class:`.Workspace`, the organizing concept for this service.</span>
 
-<span class="sd">Because :class:`.UploadWorkspace` has many properties and methods, its </span>
-<span class="sd">members are split out into separate classes.</span>
+<span class="sd">Because :class:`.Workspace` has many properties and methods, its members are</span>
+<span class="sd">split out into separate classes.</span>
 
-<span class="sd">- :class:`.BaseWorkspace` provides the file index, and foundational methods.</span>
-<span class="sd">- :class:`.FilePathsWorkspace` adds methods for working with paths inside </span>
-<span class="sd">  the workspace.</span>
-<span class="sd">- :class:`.StoredWorkspace` adds integration with a storage adapter.</span>
-<span class="sd">- :class:`.FileMutationsWorkspace` adds methods for manipulating individual </span>
-<span class="sd">  files.</span>
-<span class="sd">- :class:`.CheckableWorkspace` adds slots for checkers and checking strategy,</span>
-<span class="sd">  and methods for performing checks. It also adds:</span>
+<span class="sd">- :class:`.BaseWorkspace` provides the file index, and foundational methods</span>
+<span class="sd">  for working with :class:`.UserFile`s and their paths.</span>
+<span class="sd">- :class:`.FileMutations` adds methods for manipulating individual files.</span>
+<span class="sd">- :class:`.Checkpointable` adds workspace checkpointing and restore.</span>
+<span class="sd">- :class:`.Checkable` adds slots for checkers and checking strategy, and</span>
+<span class="sd">  methods for performing checks.</span>
+<span class="sd">- :class:`.SourceTypeable` adds a representation of the submission source</span>
+<span class="sd">  upload type.</span>
+<span class="sd">- :class:`.Countable` adds methods for counting files and types of files.</span>
+<span class="sd">- :class:`.Workspace` extends :class:`.Checkable` to add an initialization</span>
+<span class="sd">  method.</span>
+<span class="sd">- :class:`.Readiable`, which adds semantics around the &quot;readiness&quot; of the</span>
+<span class="sd">   workspace for use in a submission.</span>
+<span class="sd">- :class:`.SingleFile`, which adds the concept of a &quot;single file submission.&quot;</span>
+<span class="sd">- :class:`.Lockable`, which adds support for locking/unlocking the workspace.</span>
+<span class="sd">- :class:`.Statusable`, which adds the concept of a workspace status.</span>
 
-<span class="sd">  - :class:`.SourceTypeMixin`, which adds a representation of the submission </span>
-<span class="sd">    source upload type.</span>
-<span class="sd">  - :class:`.CountableWorkspace`, which adds methods for counting files and </span>
-<span class="sd">    types of files.</span>
+<span class="sd">How to implement new functionality in the workspace</span>
+<span class="sd">===================================================</span>
 
-<span class="sd">- :class:`.UploadWorkspace` extends :class:`.CheckableWorkspace` to add an </span>
-<span class="sd">  initialization method, and also incorporates:</span>
+<span class="sd">Each of the classes mentioned above are &quot;mixins&quot; that contribute to the</span>
+<span class="sd">functionality of :class:`.Workspace`. The best way to become familiar with how</span>
+<span class="sd">to write new functionality is to look at the existing mixins. A few things to</span>
+<span class="sd">observe:</span>
 
-<span class="sd">  - :class:`.ReadinessWorkspace`, which adds semantics around the &quot;readiness&quot;</span>
-<span class="sd">    of the workspace for use in a submission.</span>
-<span class="sd">  - :class:`.SingleFileWorkspace`, which adds the concept of a &quot;single file</span>
-<span class="sd">    submission.&quot;</span>
-<span class="sd">  - :class:`.LockMixin`, which adds support for locking/unlocking the </span>
-<span class="sd">    workspace.</span>
-<span class="sd">  - :class:`.StatusMixin`, which adds the concept of a workspace status.</span>
+<span class="sd">- Protocols (structural typing) are used to define interfaces. You can read</span>
+<span class="sd">  about the current state of protocols in the `mypy documentation</span>
+<span class="sd">  &lt;https://mypy.readthedocs.io/en/latest/protocols.html&gt;`_. `PEP 544</span>
+<span class="sd">  &lt;https://www.python.org/dev/peps/pep-0544/&gt;`_ provides the detailed</span>
+<span class="sd">  specification.</span>
+<span class="sd">- Each mixin class is a ``dataclass``.</span>
+<span class="sd">- The mixins do *not* inherit from :class:`.BaseWorkspace`; they access the</span>
+<span class="sd">  base workspace functionality and functionality provided by other mixins via</span>
+<span class="sd">  an internal API (see below).</span>
+<span class="sd">- For each mixin, an interface is defined for:</span>
 
+<span class="sd">  - The workspace API upon which the mixin depends. These are attributes,</span>
+<span class="sd">    properties, methods provided by either :class:`.BaseWorkspace` or other</span>
+<span class="sd">    mixins that are required for the mixin to do its job. This is usually</span>
+<span class="sd">    called ``IWorkspace``, and builds on :class:`.IBaseWorkspace``.</span>
+<span class="sd">  - The API provided by the mixin itself, usually called ``I[Mixin]``.</span>
+<span class="sd">  - The API of a workspace with the mixin mixed in, usually called</span>
+<span class="sd">    ``I[Mixin]Workspace``.</span>
+
+<span class="sd">- The mixin class itself inherits from its interface (``IMixin``).</span>
+
+
+<span class="sd">Each mixin accesses the API of the rest of the workspace via a special</span>
+<span class="sd">protected property called ``__api``. This is defined on each mixin. For</span>
+<span class="sd">example:</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">   @dataclass</span>
+<span class="sd">   class Bounceable(IBounceable):</span>
+<span class="sd">       # Note that this is not typed; this way dataclasses will ignore it.</span>
+<span class="sd">       # The double-underscores are used to ensure that this attribute belongs</span>
+<span class="sd">       # specifically to this class (and doesn&#39;t get clobbered by other</span>
+<span class="sd">       # mixins).</span>
+<span class="sd">       __internal_api = None</span>
+
+<span class="sd">       # This method is called by Workspace right after construction, and</span>
+<span class="sd">       # registers the final workspace instance as the internal workspace API.</span>
+<span class="sd">       # Note that it is typed as ``IWorkspace``, which is the interface</span>
+<span class="sd">       # that defines the external functionality upon which this mixin depends.</span>
+<span class="sd">       def __api_init__(self, api: IWorkspace) -&gt; None:</span>
+<span class="sd">           &#39;&#39;&#39;Register the workspace API.&#39;&#39;&#39;</span>
+<span class="sd">           if hasattr(super(Bounceable, self), &#39;__api_init__&#39;):</span>
+<span class="sd">               super(Bounceable, self).__api_init__(api)   # type: ignore</span>
+<span class="sd">           self.__internal_api = api</span>
+
+<span class="sd">       # Since ``__internal_api`` is ``None`` until runtime, this property</span>
+<span class="sd">       # saves us the hassle of having to perform a null check every time we</span>
+<span class="sd">       # want to use the workspace API.</span>
+<span class="sd">       @property</span>
+<span class="sd">       def __api(self) -&gt; &#39;IWorkspace&#39;:</span>
+<span class="sd">           &#39;&#39;&#39;Get the internal workspace API.&#39;&#39;&#39;</span>
+<span class="sd">           assert self.__internal_api is not None</span>
+<span class="sd">           return self.__internal_api</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
-<span class="kn">from</span> <span class="nn">enum</span> <span class="k">import</span> <span class="n">Enum</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="k">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Any</span>
 
-<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="k">import</span> <span class="n">Protocol</span>
+<span class="kn">from</span> <span class="nn">attrdict</span> <span class="k">import</span> <span class="n">AttrDict</span>
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="k">import</span> <span class="n">Protocol</span>
 
-<span class="kn">from</span> <span class="nn">..file_type</span> <span class="k">import</span> <span class="n">FileType</span>
-<span class="kn">from</span> <span class="nn">..uploaded_file</span> <span class="k">import</span> <span class="n">UploadedFile</span>
 <span class="kn">from</span> <span class="nn">..error</span> <span class="k">import</span> <span class="n">Error</span>
+<span class="kn">from</span> <span class="nn">..file_type</span> <span class="k">import</span> <span class="n">FileType</span>
 <span class="kn">from</span> <span class="nn">..index</span> <span class="k">import</span> <span class="n">FileIndex</span>
+<span class="kn">from</span> <span class="nn">..uploaded_file</span> <span class="k">import</span> <span class="n">UserFile</span>
 
-<span class="kn">from</span> <span class="nn">.file_mutations</span> <span class="k">import</span> <span class="n">SourceLog</span><span class="p">,</span> <span class="n">SourcePackage</span>
-<span class="kn">from</span> <span class="nn">.stored</span> <span class="k">import</span> <span class="n">IStorageAdapter</span><span class="p">,</span> <span class="n">StoredWorkspace</span>
-<span class="kn">from</span> <span class="nn">.checkable</span> <span class="k">import</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">IChecker</span><span class="p">,</span> <span class="n">ICheckingStrategy</span>
-<span class="kn">from</span> <span class="nn">.lock</span> <span class="k">import</span> <span class="n">LockMixin</span>
-<span class="kn">from</span> <span class="nn">.readiness</span> <span class="k">import</span> <span class="n">ReadinessWorkspace</span>
-<span class="kn">from</span> <span class="nn">.single_file</span> <span class="k">import</span> <span class="n">SingleFileWorkspace</span>
-<span class="kn">from</span> <span class="nn">.status</span> <span class="k">import</span> <span class="n">StatusMixin</span>
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseWorkspace</span><span class="p">,</span> <span class="n">IStorageAdapter</span>
+<span class="kn">from</span> <span class="nn">.checkable</span> <span class="k">import</span> <span class="n">Checkable</span><span class="p">,</span> <span class="n">IChecker</span><span class="p">,</span> <span class="n">ICheckingStrategy</span><span class="p">,</span> \
+    <span class="n">ICheckableWorkspace</span>
+<span class="kn">from</span> <span class="nn">.checkpoint</span> <span class="k">import</span> <span class="n">Checkpointable</span>
+<span class="kn">from</span> <span class="nn">.countable</span> <span class="k">import</span> <span class="n">Countable</span>
+<span class="kn">from</span> <span class="nn">.errors_and_warnings</span> <span class="k">import</span> <span class="n">ErrorsAndWarnings</span>
+<span class="kn">from</span> <span class="nn">.file_mutations</span> <span class="k">import</span> <span class="n">SourceLog</span><span class="p">,</span> <span class="n">SourcePackage</span><span class="p">,</span> <span class="n">FileMutations</span>
+<span class="kn">from</span> <span class="nn">.lock</span> <span class="k">import</span> <span class="n">Lockable</span><span class="p">,</span> <span class="n">LockState</span>
+<span class="kn">from</span> <span class="nn">.readiness</span> <span class="k">import</span> <span class="n">Readiable</span><span class="p">,</span> <span class="n">Readiness</span>
+<span class="kn">from</span> <span class="nn">.single_file</span> <span class="k">import</span> <span class="n">SingleFile</span>
+<span class="kn">from</span> <span class="nn">.source_type</span> <span class="k">import</span> <span class="n">SourceTypeable</span><span class="p">,</span> <span class="n">SourceType</span>
+<span class="kn">from</span> <span class="nn">.status</span> <span class="k">import</span> <span class="n">Statusable</span><span class="p">,</span> <span class="n">Status</span>
+<span class="kn">from</span> <span class="nn">.translatable</span> <span class="k">import</span> <span class="n">Translatable</span>
 <span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">modifies_workspace</span><span class="p">,</span> <span class="n">logger</span>
 
 
-<div class="viewcode-block" id="UploadWorkspace"><a class="viewcode-back" href="../../../api/filemanager.domain.uploads.html#filemanager.domain.uploads.UploadWorkspace">[docs]</a><span class="nd">@dataclass</span>
-<span class="k">class</span> <span class="nc">UploadWorkspace</span><span class="p">(</span><span class="n">ReadinessWorkspace</span><span class="p">,</span> <span class="n">SingleFileWorkspace</span><span class="p">,</span> <span class="n">LockMixin</span><span class="p">,</span> 
-                      <span class="n">StatusMixin</span><span class="p">,</span> <span class="n">CheckableWorkspace</span><span class="p">):</span>
+<span class="c1"># Mypy is getting hung up on protected double-underscore members. This is</span>
+<span class="c1"># probably a bug in mypy.</span>
+<div class="viewcode-block" id="Workspace"><a class="viewcode-back" href="../../../api/filemanager.domain.uploads.html#filemanager.domain.uploads.Workspace">[docs]</a><span class="nd">@dataclass</span>    <span class="c1"># type: ignore</span>
+<span class="k">class</span> <span class="nc">Workspace</span><span class="p">(</span><span class="n">ErrorsAndWarnings</span><span class="p">,</span>
+                      <span class="n">Translatable</span><span class="p">,</span>
+                      <span class="n">FileMutations</span><span class="p">,</span>
+                      <span class="n">Readiable</span><span class="p">,</span>
+                      <span class="n">Countable</span><span class="p">,</span>
+                      <span class="n">Checkpointable</span><span class="p">,</span>
+                      <span class="n">Checkable</span><span class="p">,</span>
+                      <span class="n">SourceTypeable</span><span class="p">,</span>
+                      <span class="n">Statusable</span><span class="p">,</span>
+                      <span class="n">Lockable</span><span class="p">,</span>
+                      <span class="n">SingleFile</span><span class="p">,</span>
+                      <span class="n">BaseWorkspace</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;An upload workspace contains a set of submission source files.&quot;&quot;&quot;</span>
 
+    <span class="n">interfaces</span><span class="p">:</span> <span class="n">AttrDict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">AttrDict</span><span class="p">)</span>
+    <span class="n">_initialized</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Mark the workspace as uninitialized.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="sd">&quot;&quot;&quot;Register all interfaces in the API.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">Workspace</span><span class="p">,</span> <span class="bp">self</span><span class="p">),</span> <span class="s1">&#39;__api_init__&#39;</span><span class="p">):</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">Workspace</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__api_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_initialized</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Determine whether or not the workspace has been initialized.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span>
 
-<div class="viewcode-block" id="UploadWorkspace.initialize"><a class="viewcode-back" href="../../../api/filemanager.domain.uploads.html#filemanager.domain.uploads.UploadWorkspace.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="Workspace.initialize"><a class="viewcode-back" href="../../../api/filemanager.domain.uploads.html#filemanager.domain.uploads.Workspace.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Make sure that we have all of the required directories.</span>
-<span class="sd">        </span>
-<span class="sd">        This is performed on demand, rather than as a ``__post_init__`` hook, </span>
+
+<span class="sd">        This is performed on demand, rather than as a ``__post_init__`` hook,</span>
 <span class="sd">        so that we have an opportunity to attach an updated :class:`.FileIndex`</span>
-<span class="sd">        after the :class:`.UploadWorkspace` is instantiated but before any</span>
+<span class="sd">        after the :class:`.Workspace` is instantiated but before any</span>
 <span class="sd">        system files are created.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Storage adapter is not set&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_path</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ancillary_path</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">removed_path</span><span class="p">)</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">UploadWorkspace</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Workspace</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">True</span></div></div>
-    
 
-    
 
-    
+
+
+
 </pre></div>
 
           </div>

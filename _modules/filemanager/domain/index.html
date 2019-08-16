@@ -38,7 +38,7 @@
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="k">import</span> <span class="n">chain</span>
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 
-<span class="kn">from</span> <span class="nn">.uploaded_file</span> <span class="k">import</span> <span class="n">UploadedFile</span>
+<span class="kn">from</span> <span class="nn">.uploaded_file</span> <span class="k">import</span> <span class="n">UserFile</span>
 
 
 <div class="viewcode-block" id="NoSuchFile"><a class="viewcode-back" href="../../../api/filemanager.domain.index.html#filemanager.domain.index.NoSuchFile">[docs]</a><span class="k">class</span> <span class="nc">NoSuchFile</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
@@ -48,35 +48,31 @@
 <div class="viewcode-block" id="FileIndex"><a class="viewcode-back" href="../../../api/filemanager.domain.index.html#filemanager.domain.index.FileIndex">[docs]</a><span class="nd">@dataclass</span>
 <span class="k">class</span> <span class="nc">FileIndex</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Indexing struct for :class:`.UploadedFile`s.</span>
+<span class="sd">    Indexing struct for :class:`.UserFile`s.</span>
 
 <span class="sd">    The overarching objective is to keep track of system, ancillary, removed,</span>
 <span class="sd">    and source files without committing to an underlying path/filesystem</span>
 <span class="sd">    structure. This helps us maintain flexibility around how we store files.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">source</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
-    <span class="n">ancillary</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
-    <span class="n">removed</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
-    <span class="n">system</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">source</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">ancillary</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">removed</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">system</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
 
-    <span class="c1"># def __post_init__(self) -&gt; None:</span>
-    <span class="c1">#     &quot;&quot;&quot;Initialize with separate mappings for ancillary, system, etc.&quot;&quot;&quot;</span>
-        
-
-<div class="viewcode-block" id="FileIndex.set"><a class="viewcode-back" href="../../../api/filemanager.domain.index.html#filemanager.domain.index.FileIndex.set">[docs]</a>    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Add a :class:`.UploadedFile` to the index.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="FileIndex.set"><a class="viewcode-back" href="../../../api/filemanager.domain.index.html#filemanager.domain.index.FileIndex.set">[docs]</a>    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Add a :class:`.UserFile` to the index.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_system</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">system</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="n">u_file</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">system</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="n">u_file</span>  <span class="c1"># pylint: disable=unsupported-assignment-operation</span>
         <span class="k">elif</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">removed</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="n">u_file</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removed</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="n">u_file</span>  <span class="c1"># pylint: disable=unsupported-assignment-operation</span>
         <span class="k">elif</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">ancillary</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="n">u_file</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ancillary</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="n">u_file</span>  <span class="c1"># pylint: disable=unsupported-assignment-operation</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="n">u_file</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="n">u_file</span>  <span class="c1"># pylint: disable=unsupported-assignment-operation</span></div>
 
 <div class="viewcode-block" id="FileIndex.contains"><a class="viewcode-back" href="../../../api/filemanager.domain.index.html#filemanager.domain.index.FileIndex.contains">[docs]</a>    <span class="k">def</span> <span class="nf">contains</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                  <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Determine whether an :class:`.UploadedFile` exists at ``path``.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether an :class:`.UserFile` exists at ``path``.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">is_system</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">path</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">system</span>
         <span class="k">if</span> <span class="n">is_removed</span><span class="p">:</span>
@@ -87,8 +83,8 @@
 
 <div class="viewcode-block" id="FileIndex.get"><a class="viewcode-back" href="../../../api/filemanager.domain.index.html#filemanager.domain.index.FileIndex.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
             <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get an :class:`.UploadedFile` exists at ``path``.&quot;&quot;&quot;</span>
+            <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get an :class:`.UserFile` exists at ``path``.&quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">is_system</span><span class="p">:</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">system</span><span class="p">[</span><span class="n">path</span><span class="p">]</span>
@@ -101,8 +97,8 @@
             <span class="k">raise</span> <span class="n">NoSuchFile</span><span class="p">(</span><span class="s1">&#39;No such file&#39;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span></div>
 
 <div class="viewcode-block" id="FileIndex.items"><a class="viewcode-back" href="../../../api/filemanager.domain.index.html#filemanager.domain.index.FileIndex.items">[docs]</a>    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-              <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Get an interator over (path, :class:`.UploadedFile`) tuples.&quot;&quot;&quot;</span>
+              <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Get an interator over (path, :class:`.UserFile`) tuples.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">is_system</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">is_removed</span><span class="p">:</span>
@@ -113,8 +109,8 @@
 
 <div class="viewcode-block" id="FileIndex.pop"><a class="viewcode-back" href="../../../api/filemanager.domain.index.html#filemanager.domain.index.FileIndex.pop">[docs]</a>    <span class="k">def</span> <span class="nf">pop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
             <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UploadedFile</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Pop the :class:`.UploadedFile` at ``path``.&quot;&quot;&quot;</span>
+            <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UserFile</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Pop the :class:`.UserFile` at ``path``.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">is_system</span><span class="p">:</span>
             <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">is_removed</span><span class="p">:</span>
@@ -125,8 +121,8 @@
             <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">value</span></div>
 
-    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">UploadedFile</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get an interator over all :class:`.UploadedFile`s.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">UserFile</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get an interator over all :class:`.UserFile`s.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">chain</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">ancillary</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span>
                      <span class="bp">self</span><span class="o">.</span><span class="n">removed</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
 </pre></div>

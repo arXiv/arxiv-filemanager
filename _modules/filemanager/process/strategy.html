@@ -34,20 +34,105 @@
   <h1>Source code for filemanager.process.strategy</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;File checks.&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">queue</span> <span class="k">import</span> <span class="n">Queue</span>
+<span class="kn">from</span> <span class="nn">threading</span> <span class="k">import</span> <span class="n">Thread</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Iterable</span>
+
 <span class="kn">from</span> <span class="nn">flask</span> <span class="k">import</span> <span class="n">Flask</span>
+
 <span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
 <span class="kn">from</span> <span class="nn">.check.base</span> <span class="k">import</span> <span class="n">StopCheck</span>
-<span class="kn">from</span> <span class="nn">..domain</span> <span class="k">import</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">IChecker</span><span class="p">,</span> <span class="n">ICheckingStrategy</span>
+<span class="kn">from</span> <span class="nn">..domain</span> <span class="k">import</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">IChecker</span><span class="p">,</span> <span class="n">ICheckingStrategy</span><span class="p">,</span> \
+    <span class="n">UserFile</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 <span class="n">logger</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="kc">False</span>
 
 
+<div class="viewcode-block" id="BaseCheckingStrategy"><a class="viewcode-back" href="../../../api/filemanager.process.strategy.html#filemanager.process.strategy.BaseCheckingStrategy">[docs]</a><span class="k">class</span> <span class="nc">BaseCheckingStrategy</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Base class for checking strategies.&quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="Worker"><a class="viewcode-back" href="../../../api/filemanager.process.strategy.html#filemanager.process.strategy.Worker">[docs]</a><span class="k">class</span> <span class="nc">Worker</span><span class="p">(</span><span class="n">Thread</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A worker thread that executes tasks from a queue.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tasks</span><span class="p">:</span> <span class="n">Queue</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">Thread</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="n">tasks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Worker.run"><a class="viewcode-back" href="../../../api/filemanager.process.strategy.html#filemanager.process.strategy.Worker.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Perform tasks until the queue is empty.&quot;&quot;&quot;</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">func</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="c1"># Mark this task as done, whether an exception happened or not.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">task_done</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="ThreadPool"><a class="viewcode-back" href="../../../api/filemanager.process.strategy.html#filemanager.process.strategy.ThreadPool">[docs]</a><span class="k">class</span> <span class="nc">ThreadPool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Manages a pool of :class:`.Worker` threads to perform tasks.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workers</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Create a :class:`.Queue`.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span> <span class="n">Queue</span> <span class="o">=</span> <span class="n">Queue</span><span class="p">(</span><span class="n">workers</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">workers</span><span class="p">):</span>
+            <span class="n">Worker</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ThreadPool.map"><a class="viewcode-back" href="../../../api/filemanager.process.strategy.html#filemanager.process.strategy.ThreadPool.map">[docs]</a>    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">args_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply ``func`` to each of the elements of ``args_list``.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">args</span> <span class="ow">in</span> <span class="n">args_list</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">func</span><span class="p">,</span> <span class="p">(</span><span class="n">args</span><span class="p">,)))</span></div>
+
+<div class="viewcode-block" id="ThreadPool.await_completion"><a class="viewcode-back" href="../../../api/filemanager.process.strategy.html#filemanager.process.strategy.ThreadPool.await_completion">[docs]</a>    <span class="k">def</span> <span class="nf">await_completion</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Await completion of all the tasks in the queue.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">join</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="AsynchronousCheckingStrategy"><a class="viewcode-back" href="../../../api/filemanager.process.strategy.html#filemanager.process.strategy.AsynchronousCheckingStrategy">[docs]</a><span class="k">class</span> <span class="nc">AsynchronousCheckingStrategy</span><span class="p">(</span><span class="n">BaseCheckingStrategy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Runs checks in parallel processes.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AsynchronousCheckingStrategy.check"><a class="viewcode-back" href="../../../api/filemanager.process.strategy.html#filemanager.process.strategy.AsynchronousCheckingStrategy.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;Workspace&#39;</span><span class="p">,</span>
+              <span class="o">*</span><span class="n">checkers</span><span class="p">:</span> <span class="n">IChecker</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Run checks in parallel threads.&quot;&quot;&quot;</span>
+        <span class="n">pool</span> <span class="o">=</span> <span class="n">ThreadPool</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">workspace</span><span class="o">.</span><span class="n">has_unchecked_files</span><span class="p">:</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_check_file</span><span class="p">,</span> <span class="n">workspace</span><span class="p">,</span> <span class="n">checkers</span><span class="p">),</span> <span class="p">[(</span><span class="n">u_file</span><span class="p">,)</span> <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="n">workspace</span><span class="o">.</span><span class="n">iter_files</span><span class="p">(</span><span class="n">allow_directories</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">await_completion</span><span class="p">()</span>
+
+            <span class="c1"># Perform workspace-wide checks.</span>
+            <span class="k">for</span> <span class="n">checker</span> <span class="ow">in</span> <span class="n">checkers</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">checker</span><span class="p">,</span> <span class="s1">&#39;check_workspace&#39;</span><span class="p">):</span>
+                    <span class="n">checker</span><span class="o">.</span><span class="n">check_workspace</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_check_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;Workspace&#39;</span><span class="p">,</span>
+                    <span class="n">checkers</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">IChecker</span><span class="p">],</span>
+                    <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">checker</span> <span class="ow">in</span> <span class="n">checkers</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">u_file</span> <span class="o">=</span> <span class="n">checker</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">StopCheck</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Got StopCheck from </span><span class="si">%s</span><span class="s1"> on </span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                                <span class="n">checker</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+                                <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">:</span>   <span class="c1"># If a checker removes a file, no</span>
+                <span class="k">break</span>               <span class="c1"># further action should be taken.</span>
+
+        <span class="n">u_file</span><span class="o">.</span><span class="n">is_checked</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+
+
 <div class="viewcode-block" id="SynchronousCheckingStrategy"><a class="viewcode-back" href="../../../api/filemanager.process.strategy.html#filemanager.process.strategy.SynchronousCheckingStrategy">[docs]</a><span class="k">class</span> <span class="nc">SynchronousCheckingStrategy</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Runs checks one file at a time.&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="SynchronousCheckingStrategy.check"><a class="viewcode-back" href="../../../api/filemanager.process.strategy.html#filemanager.process.strategy.SynchronousCheckingStrategy.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;CheckableWorkspace&#39;</span><span class="p">,</span> 
+<div class="viewcode-block" id="SynchronousCheckingStrategy.check"><a class="viewcode-back" href="../../../api/filemanager.process.strategy.html#filemanager.process.strategy.SynchronousCheckingStrategy.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;Workspace&#39;</span><span class="p">,</span>
               <span class="o">*</span><span class="n">checkers</span><span class="p">:</span> <span class="n">IChecker</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Run checks one file at a time.&quot;&quot;&quot;</span>
         <span class="c1"># This may take a few passes, as we may be unpacking compressed files.</span>
@@ -74,6 +159,7 @@
 
 <div class="viewcode-block" id="create_strategy"><a class="viewcode-back" href="../../../api/filemanager.process.strategy.html#filemanager.process.strategy.create_strategy">[docs]</a><span class="k">def</span> <span class="nf">create_strategy</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">Flask</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ICheckingStrategy</span><span class="p">:</span>
     <span class="k">return</span> <span class="n">SynchronousCheckingStrategy</span><span class="p">()</span></div>
+    <span class="c1"># return AsynchronousCheckingStrategy()</span>
 </pre></div>
 
           </div>

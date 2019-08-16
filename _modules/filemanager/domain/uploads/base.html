@@ -34,16 +34,274 @@
   <h1>Source code for filemanager.domain.uploads.base</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Provides :class:`.BaseWorkspace`.&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">base64</span> <span class="k">import</span> <span class="n">urlsafe_b64encode</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">hashlib</span> <span class="k">import</span> <span class="n">md5</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> \
+    <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">IO</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">cast</span>
 
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span> <span class="nn">pytz</span> <span class="k">import</span> <span class="n">UTC</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="k">import</span> <span class="n">Protocol</span>
 
-<span class="kn">from</span> <span class="nn">..uploaded_file</span> <span class="k">import</span> <span class="n">UploadedFile</span>
+<span class="kn">from</span> <span class="nn">..uploaded_file</span> <span class="k">import</span> <span class="n">UserFile</span>
 <span class="kn">from</span> <span class="nn">..index</span> <span class="k">import</span> <span class="n">FileIndex</span>
+<span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">modifies_workspace</span>
 
 
-<span class="nd">@dataclass</span>
+<span class="n">WorkspaceType</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;WorkspaceType&#39;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="s1">&#39;BaseWorkspace&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="IBaseWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace">[docs]</a><span class="k">class</span> <span class="nc">IBaseWorkspace</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>  <span class="c1"># pylint: disable=too-many-public-methods</span>
+    <span class="sd">&quot;&quot;&quot;Defines the base workspace API.&quot;&quot;&quot;</span>
+
+    <span class="n">created_datetime</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="sd">&quot;&quot;&quot;When workspace was created&quot;&quot;&quot;</span>
+
+    <span class="n">files</span><span class="p">:</span> <span class="n">FileIndex</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">FileIndex</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Index of all of the files in this workspace.&quot;&quot;&quot;</span>
+
+    <span class="n">last_upload_completion_datetime</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span>
+    <span class="sd">&quot;&quot;&quot;When we completed processing last upload event.&quot;&quot;&quot;</span>
+
+    <span class="n">last_upload_logs</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="sd">&quot;&quot;&quot;Logs associated with last upload event.&quot;&quot;&quot;</span>
+
+    <span class="n">last_upload_file_summary</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="sd">&quot;&quot;&quot;Logs associated with last upload event.&quot;&quot;&quot;</span>
+
+    <span class="n">last_upload_start_datetime</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span>
+    <span class="sd">&quot;&quot;&quot;When we started processing last upload event.&quot;&quot;&quot;</span>
+
+    <span class="n">modified_datetime</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="sd">&quot;&quot;&quot;When workspace was last modified&quot;&quot;&quot;</span>
+
+    <span class="n">owner_user_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="sd">&quot;&quot;&quot;User id for owner of workspace.&quot;&quot;&quot;</span>
+
+    <span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="sd">&quot;&quot;&quot;Unique ID for the upload workspace.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ancillary_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the path where ancillary files are stored.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">base_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Relative base path for this workspace.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Time of the most recent change to a file in the workspace.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">removed_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get path where source archive files get moved when unpacked.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">size_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Total size of the source content (including ancillary files).&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">source_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the path where source files are deposited.&quot;&quot;&quot;</span>
+
+    <span class="c1"># I would prefer that this were defined as an attribute, but see</span>
+    <span class="c1"># https://github.com/python/mypy/issues/4125</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">storage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;IStorageAdapter&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the storage adapter for this workspace.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IBaseWorkspace.cmp"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace.cmp">[docs]</a>    <span class="k">def</span> <span class="nf">cmp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span>
+            <span class="n">b_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">shallow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Compare the contents of two files.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IBaseWorkspace.exists"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace.exists">[docs]</a>    <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+               <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not a file exists in this workspace.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IBaseWorkspace.get_checksum"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace.get_checksum">[docs]</a>    <span class="k">def</span> <span class="nf">get_checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the urlsafe base64-encoded MD5 hash of the file contents.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IBaseWorkspace.get"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get a file at ``path``.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IBaseWorkspace.get_full_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace.get_full_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_full_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file_or_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">],</span>
+                      <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                      <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                      <span class="n">is_persisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                      <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the absolute path to a :class:`.UserFile`.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IBaseWorkspace.get_last_modified"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace.get_last_modified">[docs]</a>    <span class="k">def</span> <span class="nf">get_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the datetime when a :class:`.UserFile` was last modified.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IBaseWorkspace.get_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace.get_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file_or_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">],</span>
+                 <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the path to an :class:`.UserFile` in this workspace.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IBaseWorkspace.get_public_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace.get_public_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_public_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the public path for a file in the workspace.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IBaseWorkspace.get_size_bytes"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace.get_size_bytes">[docs]</a>    <span class="k">def</span> <span class="nf">get_size_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get (and update) the size in bytes of a file.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IBaseWorkspace.is_ancillary_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace.is_ancillary_path">[docs]</a>    <span class="k">def</span> <span class="nf">is_ancillary_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not ``path`` is an ancillary path.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IBaseWorkspace.is_tarfile"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace.is_tarfile">[docs]</a>    <span class="k">def</span> <span class="nf">is_tarfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not a file is a tarfile.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IBaseWorkspace.iter_children"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace.iter_children">[docs]</a>    <span class="k">def</span> <span class="nf">iter_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file_or_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">],</span>
+                      <span class="n">max_depth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                      <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                      <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                      <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span>
+                                                                 <span class="n">UserFile</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Get an iterator over (path, :class:`.UserFile`) tuples.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IBaseWorkspace.iter_files"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace.iter_files">[docs]</a>    <span class="k">def</span> <span class="nf">iter_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">allow_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                   <span class="n">allow_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                   <span class="n">allow_directories</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                   <span class="n">allow_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">UserFile</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get an iterator over :class:`.UploadFile`s in this workspace.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IBaseWorkspace.open"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace.open">[docs]</a>    <span class="nd">@contextmanager</span>
+    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">flags</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span>
+             <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">IO</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get a file pointer for a :class:`.UploadFile`.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IBaseWorkspace.open_pointer"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace.open_pointer">[docs]</a>    <span class="k">def</span> <span class="nf">open_pointer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">flags</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span>
+                     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IO</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get an open file pointer to a file on disk.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IBaseWorkspace.pack_source"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace.pack_source">[docs]</a>    <span class="k">def</span> <span class="nf">pack_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Pack the source + ancillary content of a workspace as a tarball.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IBaseWorkspace.set_last_modified"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace.set_last_modified">[docs]</a>    <span class="k">def</span> <span class="nf">set_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span>
+                          <span class="n">modified</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Set the last modified time on a :class:`UserFile`.&quot;&quot;&quot;</span></div></div>
+
+
+<div class="viewcode-block" id="IStorageAdapter"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter">[docs]</a><span class="k">class</span> <span class="nc">IStorageAdapter</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>  <span class="c1"># pylint: disable=too-many-public-methods</span>
+    <span class="sd">&quot;&quot;&quot;Responsible for providing a data access interface.&quot;&quot;&quot;</span>
+
+    <span class="n">PARAMS</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">deleted_logs_path</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># pylint: disable=super-init-not-called</span>
+        <span class="sd">&quot;&quot;&quot;Initialize with implementation-specific configuration params.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IStorageAdapter.cmp"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.cmp">[docs]</a>    <span class="k">def</span> <span class="nf">cmp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">a_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span>
+            <span class="n">b_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">shallow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Compare the contents of two files.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.copy"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span>
+             <span class="n">new_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Copy the contents of ``u_file`` into ``new_file``.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.create"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.create">[docs]</a>    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a file.</span>
+
+<span class="sd">        Creates any non-existant directories in the path.</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.delete"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+               <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Permanently delete a file or directory.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.delete_all"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.delete_all">[docs]</a>    <span class="k">def</span> <span class="nf">delete_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Delete all files in the workspace.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.delete_workspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.delete_workspace">[docs]</a>    <span class="k">def</span> <span class="nf">delete_workspace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Completely delete a workspace and all of its contents.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.get_last_modified"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.get_last_modified">[docs]</a>    <span class="k">def</span> <span class="nf">get_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+                          <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the datetime when a file was last modified.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.get_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.get_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+                 <span class="n">u_file_or_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">],</span>
+                 <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">is_persisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the absolute path to an :class:`.UserFile`.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.get_size_bytes"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.get_size_bytes">[docs]</a>    <span class="k">def</span> <span class="nf">get_size_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the size of a file in bytes.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.is_safe"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.is_safe">[docs]</a>    <span class="k">def</span> <span class="nf">is_safe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="n">is_persisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not a path is safe to use.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.is_tarfile"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.is_tarfile">[docs]</a>    <span class="k">def</span> <span class="nf">is_tarfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not a file can be opened with ``tarfile``.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.makedirs"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.makedirs">[docs]</a>    <span class="k">def</span> <span class="nf">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Make directories recursively for ``path`` if they don&#39;t exist.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.move"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.move">[docs]</a>    <span class="k">def</span> <span class="nf">move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span>
+             <span class="n">from_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">to_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Move a file from one path to another.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.open"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.open">[docs]</a>    <span class="nd">@contextmanager</span>
+    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span>
+             <span class="n">flags</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">IO</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get an open file pointer to a file on disk.</span>
+
+<span class="sd">        To be used as a context manager. For example:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           with storage.open(workspace, u_file) as f:</span>
+<span class="sd">               f.read()</span>
+
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.open_pointer"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.open_pointer">[docs]</a>    <span class="k">def</span> <span class="nf">open_pointer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span>
+                     <span class="n">flags</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IO</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get an open file pointer to a file on disk.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.pack_tarfile"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.pack_tarfile">[docs]</a>    <span class="k">def</span> <span class="nf">pack_tarfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span>
+                     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Pack ``path`` into ``u_file`` as a tarball.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.persist"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.persist">[docs]</a>    <span class="k">def</span> <span class="nf">persist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Persist a file.</span>
+
+<span class="sd">        The file should be available on subsequent requests.</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.remove"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.remove">[docs]</a>    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Remove a file.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.set_last_modified"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.set_last_modified">[docs]</a>    <span class="k">def</span> <span class="nf">set_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+                          <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">modified</span><span class="p">:</span> <span class="n">datetime</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Set the modification datetime on a file.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.set_permissions"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.set_permissions">[docs]</a>    <span class="k">def</span> <span class="nf">set_permissions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+                        <span class="n">file_mode</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mo">0o664</span><span class="p">,</span> <span class="n">dir_mode</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mo">0o775</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Set permissions for files and directories in a workspace.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.stash_deleted_log"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.stash_deleted_log">[docs]</a>    <span class="k">def</span> <span class="nf">stash_deleted_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Stash the log file ``u_file`` (e.g. when deleting a workspace).&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IStorageAdapter.unpack_tarfile"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IStorageAdapter.unpack_tarfile">[docs]</a>    <span class="k">def</span> <span class="nf">unpack_tarfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span>
+                       <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Unpack tarfile ``u_file`` into ``path``.&quot;&quot;&quot;</span></div></div>
+
+
+<span class="nd">@dataclass</span>  <span class="c1"># pylint: disable=too-few-public-methods</span>
 <span class="k">class</span> <span class="nc">_BaseFields</span><span class="p">:</span>
     <span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span>
     <span class="sd">&quot;&quot;&quot;Unique ID for the upload workspace.&quot;&quot;&quot;</span>
@@ -58,30 +316,258 @@
     <span class="sd">&quot;&quot;&quot;When workspace was last modified&quot;&quot;&quot;</span>
 
 
-<span class="nd">@dataclass</span>
+<span class="nd">@dataclass</span>  <span class="c1"># pylint: disable=too-few-public-methods</span>
 <span class="k">class</span> <span class="nc">_BaseFieldsWithDefaults</span><span class="p">:</span>
     <span class="n">files</span><span class="p">:</span> <span class="n">FileIndex</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">FileIndex</span><span class="p">)</span>
     <span class="sd">&quot;&quot;&quot;Index of all of the files in this workspace.&quot;&quot;&quot;</span>
 
+    <span class="n">SOURCE_PREFIX</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s1">&#39;src&#39;</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;The name of the source directory within the upload workspace.&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="BaseWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace">[docs]</a><span class="nd">@dataclass</span>
-<span class="k">class</span> <span class="nc">BaseWorkspace</span><span class="p">(</span><span class="n">_BaseFieldsWithDefaults</span><span class="p">,</span> <span class="n">_BaseFields</span><span class="p">):</span>
+    <span class="n">REMOVED_PREFIX</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s1">&#39;removed&#39;</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;The name of the removed directory within the upload workspace.&quot;&quot;&quot;</span>
+
+    <span class="n">ANCILLARY_PREFIX</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s1">&#39;anc&#39;</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;The directory within source directory where ancillary files are kept.&quot;&quot;&quot;</span>
+
+    <span class="n">_storage</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s1">&#39;IStorageAdapter&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Adapter for persistence.&quot;&quot;&quot;</span>
+
+    <span class="n">last_upload_start_datetime</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;When we started processing last upload event.&quot;&quot;&quot;</span>
+
+    <span class="n">last_upload_completion_datetime</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;When we completed processing last upload event.&quot;&quot;&quot;</span>
+
+    <span class="n">last_upload_logs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Logs associated with last upload event.&quot;&quot;&quot;</span>
+
+    <span class="n">last_upload_file_summary</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Logs associated with last upload event.&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="BaseWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace">[docs]</a><span class="nd">@dataclass</span>  <span class="c1"># pylint: disable=too-many-public-methods</span>
+<span class="k">class</span> <span class="nc">BaseWorkspace</span><span class="p">(</span><span class="n">_BaseFieldsWithDefaults</span><span class="p">,</span> <span class="n">_BaseFields</span><span class="p">,</span> <span class="n">IBaseWorkspace</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Base class for upload workspaces.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Provides a foundational :class:`.FileIndex` at :attr:`.files`, plus some</span>
 <span class="sd">    core methods that depend on the index.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="BaseWorkspace.iter_children"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.iter_children">[docs]</a>    <span class="k">def</span> <span class="nf">iter_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file_or_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">],</span>
-                      <span class="n">max_depth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  
+<div class="viewcode-block" id="BaseWorkspace.args_from_dict"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.args_from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">args_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Pluck workspace constructor args from a dict.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;upload_id&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;upload_id&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;owner_user_id&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;owner_user_id&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;created_datetime&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_datetime&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;modified_datetime&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;modified_datetime&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;last_upload_start_datetime&#39;</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;last_upload_start_datetime&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;last_upload_completion_datetime&#39;</span><span class="p">:</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;last_upload_completion_datetime&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;last_upload_logs&#39;</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;last_upload_logs&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;last_upload_file_summary&#39;</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;last_upload_file_summary&#39;</span><span class="p">)</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="BaseWorkspace.post_from_dict"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.post_from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">post_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">WorkspaceType</span><span class="p">,</span>
+                       <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Update the workspace after it has been loaded from a dict.&quot;&quot;&quot;</span>
+        <span class="n">_files</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;files&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_files</span><span class="p">:</span>
+            <span class="n">workspace</span><span class="o">.</span><span class="n">files</span> <span class="o">=</span> <span class="n">FileIndex</span><span class="p">(</span>
+                <span class="n">source</span><span class="o">=</span><span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="n">UserFile</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">workspace</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">_files</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+                <span class="n">ancillary</span><span class="o">=</span><span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="n">UserFile</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">workspace</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">_files</span><span class="p">[</span><span class="s1">&#39;ancillary&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+                <span class="n">removed</span><span class="o">=</span><span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="n">UserFile</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">workspace</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">_files</span><span class="p">[</span><span class="s1">&#39;removed&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+                <span class="n">system</span><span class="o">=</span><span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="n">UserFile</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">workspace</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">_files</span><span class="p">[</span><span class="s1">&#39;system&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseWorkspace.to_dict_impl"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.to_dict_impl">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">to_dict_impl</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="bp">self</span><span class="p">:</span> <span class="s1">&#39;BaseWorkspace&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Generate a dict representation of the workspace.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;upload_id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">upload_id</span><span class="p">,</span>
+            <span class="s1">&#39;owner_user_id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">owner_user_id</span><span class="p">,</span>
+            <span class="s1">&#39;created_datetime&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">created_datetime</span><span class="p">,</span>
+            <span class="s1">&#39;modified_datetime&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">modified_datetime</span><span class="p">,</span>
+            <span class="s1">&#39;files&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+                                 <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+                      <span class="s1">&#39;ancillary&#39;</span><span class="p">:</span> <span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+                                    <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">ancillary</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+                      <span class="s1">&#39;removed&#39;</span><span class="p">:</span> <span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+                                  <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">removed</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+                      <span class="s1">&#39;system&#39;</span><span class="p">:</span> <span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+                                 <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">items</span><span class="p">()}},</span>
+             <span class="s1">&#39;last_upload_start_datetime&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_upload_start_datetime</span><span class="p">,</span>
+            <span class="s1">&#39;last_upload_completion_datetime&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">last_upload_completion_datetime</span><span class="p">,</span>
+            <span class="s1">&#39;last_upload_logs&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_upload_logs</span><span class="p">,</span>
+            <span class="s1">&#39;last_upload_file_summary&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_upload_file_summary</span>
+        <span class="p">}</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ancillary_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the path where ancillary files are stored.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ANCILLARY_PREFIX</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">base_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Relative base path for this workspace.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">upload_id</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Time of the most recent change to a file in the workspace.&quot;&quot;&quot;</span>
+        <span class="n">files_last_modified</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">last_modified</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_files</span><span class="p">()]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">files_last_modified</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">_mod</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">files_last_modified</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">modified_datetime</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">_mod</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">removed_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get path where source archive files get moved when unpacked.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">REMOVED_PREFIX</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">size_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Total size of the source content (including ancillary files).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">f</span><span class="o">.</span><span class="n">size_bytes</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_files</span><span class="p">()])</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">source_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the path where source files are deposited.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SOURCE_PREFIX</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">storage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;IStorageAdapter&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the storage adapter for this workspace.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;No storage adapter set on workspace&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_storage</span>
+
+<div class="viewcode-block" id="BaseWorkspace.is_ancillary_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.is_ancillary_path">[docs]</a>    <span class="k">def</span> <span class="nf">is_ancillary_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine whether or not ``path`` is an ancillary path.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path : str</span>
+<span class="sd">            A (relative) path. Need not refer to a file that already exists in</span>
+<span class="sd">            the workspace.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            The ``path`` that was passed. If ``path`` is to an ancillary file,</span>
+<span class="sd">            the ancillary affix is removed.</span>
+<span class="sd">        bool</span>
+<span class="sd">            True if ``path`` was ancillary. False otherwise.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ANCILLARY_PREFIX</span><span class="p">):</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ANCILLARY_PREFIX</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">path</span><span class="p">,</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="n">path</span><span class="p">,</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="BaseWorkspace.cmp"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.cmp">[docs]</a>    <span class="k">def</span> <span class="nf">cmp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span>
+            <span class="n">b_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">shallow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Compare the contents of two files.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">cmp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a_file</span><span class="p">,</span> <span class="n">b_file</span><span class="p">,</span> <span class="n">shallow</span><span class="o">=</span><span class="n">shallow</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseWorkspace.exists"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.exists">[docs]</a>    <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+               <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not a file exists in this workspace.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
+                                   <span class="n">is_removed</span><span class="o">=</span><span class="n">is_removed</span><span class="p">,</span>
+                                   <span class="n">is_system</span><span class="o">=</span><span class="n">is_system</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseWorkspace.get"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get a file at ``path``.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">is_ancillary</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">path</span><span class="p">,</span> <span class="n">is_ancillary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_ancillary_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
+                                    <span class="n">is_removed</span><span class="o">=</span><span class="n">is_removed</span><span class="p">,</span>
+                                    <span class="n">is_system</span><span class="o">=</span><span class="n">is_system</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseWorkspace.get_checksum"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.get_checksum">[docs]</a>    <span class="k">def</span> <span class="nf">get_checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the urlsafe base64-encoded MD5 hash of the file contents.&quot;&quot;&quot;</span>
+        <span class="n">hash_md5</span> <span class="o">=</span> <span class="n">md5</span><span class="p">()</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">iter</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">4096</span><span class="p">)),</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+                <span class="n">hash_md5</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">urlsafe_b64encode</span><span class="p">(</span><span class="n">hash_md5</span><span class="o">.</span><span class="n">digest</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseWorkspace.get_full_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.get_full_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_full_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file_or_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">],</span>
                       <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                      <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Get an iterator over path, :class:`.UploadedFile` tuples.&quot;&quot;&quot;</span>
+                      <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                      <span class="n">is_persisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                      <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the absolute path to a :class:`.UserFile`.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file_or_path</span><span class="p">,</span>
+                                     <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
+                                     <span class="n">is_removed</span><span class="o">=</span><span class="n">is_removed</span><span class="p">,</span>
+                                     <span class="n">is_persisted</span><span class="o">=</span><span class="n">is_persisted</span><span class="p">,</span>
+                                     <span class="n">is_system</span><span class="o">=</span><span class="n">is_system</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseWorkspace.get_last_modified"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.get_last_modified">[docs]</a>    <span class="k">def</span> <span class="nf">get_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the datetime when a :class:`.UserFile` was last modified.&quot;&quot;&quot;</span>
+        <span class="n">u_file</span><span class="o">.</span><span class="n">last_modified</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">get_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span><span class="o">.</span><span class="n">last_modified</span></div>
+
+<div class="viewcode-block" id="BaseWorkspace.get_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.get_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file_or_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">],</span>
+                 <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the path to an :class:`.UserFile` in this workspace.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">u_file_or_path</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">):</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_path_from_file</span><span class="p">(</span><span class="n">u_file_or_path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_path</span><span class="p">(</span><span class="n">u_file_or_path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
+                                  <span class="n">is_removed</span><span class="o">=</span><span class="n">is_removed</span><span class="p">,</span> <span class="n">is_system</span><span class="o">=</span><span class="n">is_system</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseWorkspace.get_public_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.get_public_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_public_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the public path for a file in the workspace.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ANCILLARY_PREFIX</span><span class="p">,</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span></div>
+
+<div class="viewcode-block" id="BaseWorkspace.get_size_bytes"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.get_size_bytes">[docs]</a>    <span class="k">def</span> <span class="nf">get_size_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get (and update) the size in bytes of a file.&quot;&quot;&quot;</span>
+        <span class="n">size_bytes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">get_size_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+        <span class="n">u_file</span><span class="o">.</span><span class="n">size_bytes</span> <span class="o">=</span> <span class="n">size_bytes</span>
+        <span class="k">return</span> <span class="n">size_bytes</span></div>
+
+<div class="viewcode-block" id="BaseWorkspace.is_safe"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.is_safe">[docs]</a>    <span class="k">def</span> <span class="nf">is_safe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_persisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not a path is safe to use in this workspace.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">is_safe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
+                                    <span class="n">is_removed</span><span class="o">=</span><span class="n">is_removed</span><span class="p">,</span>
+                                    <span class="n">is_persisted</span><span class="o">=</span><span class="n">is_persisted</span><span class="p">,</span>
+                                    <span class="n">is_system</span><span class="o">=</span><span class="n">is_system</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="n">strict</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseWorkspace.is_tarfile"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.is_tarfile">[docs]</a>    <span class="k">def</span> <span class="nf">is_tarfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not a file is a tarfile.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">is_tarfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseWorkspace.iter_children"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.iter_children">[docs]</a>    <span class="k">def</span> <span class="nf">iter_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file_or_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">],</span>
+                      <span class="n">max_depth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                      <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                      <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                      <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span>
+                                                                 <span class="n">UserFile</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Get an iterator over (path, :class:`.UserFile`) tuples.&quot;&quot;&quot;</span>
         <span class="c1"># QUESTION: is it really so bad to use non-directories here? Can be</span>
         <span class="c1"># like the key-prefix for S3. --Erick 2019-06-11.</span>
-        <span class="n">u_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UploadedFile</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">u_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UserFile</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">u_file_or_path</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> \
                 <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">u_file_or_path</span><span class="p">,</span>
                                         <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
@@ -91,7 +577,7 @@
                                     <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
                                     <span class="n">is_removed</span><span class="o">=</span><span class="n">is_removed</span><span class="p">,</span>
                                     <span class="n">is_system</span><span class="o">=</span><span class="n">is_system</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">u_file_or_path</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">):</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">u_file_or_path</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">):</span>
             <span class="n">u_file</span> <span class="o">=</span> <span class="n">u_file_or_path</span>
 
         <span class="k">if</span> <span class="n">u_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_directory</span><span class="p">:</span>
@@ -114,41 +600,61 @@
 <div class="viewcode-block" id="BaseWorkspace.iter_files"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.iter_files">[docs]</a>    <span class="k">def</span> <span class="nf">iter_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">allow_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                    <span class="n">allow_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                    <span class="n">allow_directories</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                   <span class="n">allow_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">UploadedFile</span><span class="p">]:</span>
+                   <span class="n">allow_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">UserFile</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Get an iterator over :class:`.UploadFile`s in this workspace.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span>
                 <span class="k">if</span> <span class="p">(</span><span class="n">allow_directories</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">f</span><span class="o">.</span><span class="n">is_directory</span><span class="p">)</span>
                 <span class="ow">and</span> <span class="p">(</span><span class="n">allow_removed</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">f</span><span class="o">.</span><span class="n">is_removed</span><span class="p">)</span>
                 <span class="ow">and</span> <span class="p">(</span><span class="n">allow_ancillary</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">f</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">)</span>
-                <span class="ow">and</span> <span class="p">(</span><span class="n">allow_system</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">f</span><span class="o">.</span><span class="n">is_system</span><span class="p">)]</span>  </div>
-    
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">size_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Total size of the source content (including ancillary files).&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">f</span><span class="o">.</span><span class="n">size_bytes</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_files</span><span class="p">()])</span>
+                <span class="ow">and</span> <span class="p">(</span><span class="n">allow_system</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">f</span><span class="o">.</span><span class="n">is_system</span><span class="p">)]</span></div>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Time of the most recent change to a file in the workspace.&quot;&quot;&quot;</span>
-        <span class="n">files_last_modified</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">last_modified</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iter_files</span><span class="p">()]</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">files_last_modified</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">None</span>
-        <span class="n">_mod</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">files_last_modified</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">modified_datetime</span><span class="p">])</span>   
-        <span class="k">return</span> <span class="n">_mod</span>
-    
-    <span class="k">def</span> <span class="nf">_update_refs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> 
-                     <span class="n">from_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">from_path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">,</span>
-                       <span class="n">is_removed</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">,</span>
-                       <span class="n">is_system</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_system</span><span class="p">)</span>   <span class="c1"># Discard old ref.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">u_file</span><span class="p">)</span>
+<div class="viewcode-block" id="BaseWorkspace.open"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.open">[docs]</a>    <span class="nd">@contextmanager</span>
+    <span class="nd">@modifies_workspace</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">flags</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span>
+             <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">IO</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get a file pointer for a :class:`.UploadFile`.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span>
+                <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+                <span class="n">is_ancillary</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">,</span>
+                <span class="n">is_system</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_system</span><span class="p">,</span>
+                <span class="n">is_removed</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;No such file&#39;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">f</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_size_bytes</span><span class="p">(</span><span class="n">u_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_last_modified</span><span class="p">(</span><span class="n">u_file</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">_drop_refs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
-                   <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> 
-                   <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">from_path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
-                       <span class="n">is_removed</span><span class="o">=</span><span class="n">is_removed</span><span class="p">,</span> <span class="n">is_system</span><span class="o">=</span><span class="n">is_system</span><span class="p">)</span></div>
-                
+<div class="viewcode-block" id="BaseWorkspace.open_pointer"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.open_pointer">[docs]</a>    <span class="k">def</span> <span class="nf">open_pointer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">flags</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span>
+                     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IO</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">open_pointer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseWorkspace.pack_source"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.pack_source">[docs]</a>    <span class="k">def</span> <span class="nf">pack_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Pack the source + ancillary content of a workspace as a tarball.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">pack_tarfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseWorkspace.set_last_modified"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.BaseWorkspace.set_last_modified">[docs]</a>    <span class="k">def</span> <span class="nf">set_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span>
+                          <span class="n">modified</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Set the last modified time on a :class:`UserFile`.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">modified</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">modified</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">UTC</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">set_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="n">modified</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                  <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_system</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_path</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_ancillary</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ancillary_path</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_removed</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">removed_path</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_path</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_path_from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_path</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">,</span>
+                              <span class="n">is_removed</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_removed</span><span class="p">,</span>
+                              <span class="n">is_system</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">is_system</span><span class="p">)</span></div>
+
 </pre></div>
 
           </div>

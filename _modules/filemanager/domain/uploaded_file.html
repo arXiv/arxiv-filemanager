@@ -32,7 +32,7 @@
           <div class="body" role="main">
             
   <h1>Source code for filemanager.domain.uploaded_file</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Provides :class:`UploadedFile`.&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;Provides :class:`UserFile`.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
@@ -48,27 +48,25 @@
 <span class="kn">from</span> <span class="nn">.error</span> <span class="k">import</span> <span class="n">Error</span>
 
 
-<span class="k">class</span> <span class="nc">_IUploadWorkspace</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Interface for an upload workspace, from the perspective of the file.&quot;&quot;&quot;</span>
-    
-    <span class="k">def</span> <span class="nf">get_public_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="s1">&#39;UploadedFile&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get the public path (key) of a :class:`.UploadedFile`.&quot;&quot;&quot;</span>
-        <span class="o">...</span>
-    
-    <span class="k">def</span> <span class="nf">get_full_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="s1">&#39;UploadedFile&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get the full path (key) of a :class:`.UploadedFile`.&quot;&quot;&quot;</span>
-        <span class="o">...</span>
-    
-    <span class="k">def</span> <span class="nf">get_checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="s1">&#39;UploadedFile&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<div class="viewcode-block" id="IWorkspace"><a class="viewcode-back" href="../../../api/filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.IWorkspace">[docs]</a><span class="k">class</span> <span class="nc">IWorkspace</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="IWorkspace.get_public_path"><a class="viewcode-back" href="../../../api/filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.IWorkspace.get_public_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_public_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="s1">&#39;UserFile&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the public path (key) of a :class:`.UserFile`.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="IWorkspace.get_full_path"><a class="viewcode-back" href="../../../api/filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.IWorkspace.get_full_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_full_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="s1">&#39;UserFile&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the full path (key) of a :class:`.UserFile`.&quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="IWorkspace.get_checksum"><a class="viewcode-back" href="../../../api/filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.IWorkspace.get_checksum">[docs]</a>    <span class="k">def</span> <span class="nf">get_checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="s1">&#39;UserFile&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get the URL-safe base64-encoded MD5 hash of file contents.&quot;&quot;&quot;</span>
-        <span class="o">...</span>
+        <span class="o">...</span></div></div>
 
 
-<div class="viewcode-block" id="UploadedFile"><a class="viewcode-back" href="../../../api/filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile">[docs]</a><span class="nd">@dataclass</span>
-<span class="k">class</span> <span class="nc">UploadedFile</span><span class="p">:</span>
+<div class="viewcode-block" id="UserFile"><a class="viewcode-back" href="../../../api/filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">UserFile</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Represents a single file in an upload workspace.&quot;&quot;&quot;</span>
 
-    <span class="n">workspace</span><span class="p">:</span> <span class="n">_IUploadWorkspace</span>
+    <span class="n">workspace</span><span class="p">:</span> <span class="n">IWorkspace</span>
     <span class="sd">&quot;&quot;&quot;The workspace to which this file belongs.&quot;&quot;&quot;</span>
 
     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
@@ -137,7 +135,7 @@
                 <span class="n">error</span><span class="o">.</span><span class="n">is_persistant</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span>
 
-<div class="viewcode-block" id="UploadedFile.add_error"><a class="viewcode-back" href="../../../api/filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UploadedFile.add_error">[docs]</a>    <span class="k">def</span> <span class="nf">add_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">:</span> <span class="n">Error</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="UserFile.add_error"><a class="viewcode-back" href="../../../api/filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile.add_error">[docs]</a>    <span class="k">def</span> <span class="nf">add_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">:</span> <span class="n">Error</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Add an error to this file.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">error</span><span class="p">)</span></div>
 
@@ -199,11 +197,53 @@
     <span class="k">def</span> <span class="nf">full_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Absolute path to this file.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">get_full_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-    
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Base64-endocded MD5 hash of the file contents.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">get_checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">get_checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="UserFile.to_dict"><a class="viewcode-back" href="../../../api/filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;path&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+            <span class="s1">&#39;size_bytes&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_bytes</span><span class="p">,</span>
+            <span class="s1">&#39;file_type&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="s1">&#39;is_removed&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_removed</span><span class="p">,</span>
+            <span class="s1">&#39;is_ancillary&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_ancillary</span><span class="p">,</span>
+            <span class="s1">&#39;is_directory&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_directory</span><span class="p">,</span>
+            <span class="s1">&#39;is_checked&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_checked</span><span class="p">,</span>
+            <span class="s1">&#39;is_persisted&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_persisted</span><span class="p">,</span>
+            <span class="s1">&#39;is_system&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_system</span><span class="p">,</span>
+            <span class="s1">&#39;last_modified&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_modified</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+            <span class="s1">&#39;reason_for_removal&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">reason_for_removal</span><span class="p">,</span>
+            <span class="s1">&#39;errors&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">error</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">errors</span>
+                       <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">is_persistant</span><span class="p">]</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="UserFile.from_dict"><a class="viewcode-back" href="../../../api/filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">IWorkspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;UserFile&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Translate a dict to an :class:`.UserFile`.&quot;&quot;&quot;</span>
+        <span class="n">last_modified</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;last_modified&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">last_modified</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
+            <span class="c1"># fromisoformat() is backported from 3.7.</span>
+            <span class="n">last_modified</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">last_modified</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">workspace</span><span class="o">=</span><span class="n">workspace</span><span class="p">,</span>
+            <span class="n">path</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">],</span>
+            <span class="n">size_bytes</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;size_bytes&#39;</span><span class="p">]),</span>
+            <span class="n">is_removed</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;is_removed&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+            <span class="n">is_ancillary</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;is_ancillary&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+            <span class="n">is_checked</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;is_checked&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+            <span class="n">is_persisted</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;is_persisted&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+            <span class="n">is_system</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;is_system&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+            <span class="n">is_directory</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;is_directory&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+            <span class="n">last_modified</span><span class="o">=</span><span class="n">last_modified</span><span class="p">,</span>
+            <span class="n">reason_for_removal</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;reason_for_removal&#39;</span><span class="p">),</span>
+            <span class="n">_errors</span><span class="o">=</span><span class="p">[</span><span class="n">Error</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+                     <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;errors&#39;</span><span class="p">,</span> <span class="p">[])],</span>
+            <span class="n">file_type</span><span class="o">=</span><span class="n">FileType</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;file_type&#39;</span><span class="p">])</span>
+        <span class="p">)</span></div></div>
 </pre></div>
 
           </div>

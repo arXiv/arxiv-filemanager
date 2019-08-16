@@ -37,7 +37,7 @@
 <span id="filemanager-process-util-unmacify-module"></span><h1>filemanager.process.util.unmacify module<a class="headerlink" href="#module-filemanager.process.util.unmacify" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="filemanager.process.util.unmacify.check_file_termination">
-<code class="sig-prename descclassname">filemanager.process.util.unmacify.</code><code class="sig-name descname">check_file_termination</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">u_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/util/unmacify.html#check_file_termination"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.util.unmacify.check_file_termination" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.process.util.unmacify.</code><code class="sig-name descname">check_file_termination</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/process/util/unmacify.html#check_file_termination"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.util.unmacify.check_file_termination" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check for unwanted characters at end of file.</p>
 <p>The original unmacify/unpcify routine attemtps to cleanup the last few
 characters in a file regardless or whether the file is pc/mac generated.
@@ -47,13 +47,11 @@ ease of testing. This also simplifies the unmacify routine.</p>
 377, end of transmission ^D (004), or  characters ^Z (032).</p>
 <p>At the current time this routine will get called anytime unmacify routine
 is called.</p>
-<p>:param :
-:type : rtype: <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd></dl>
 
 <dl class="function">
 <dt id="filemanager.process.util.unmacify.unmacify">
-<code class="sig-prename descclassname">filemanager.process.util.unmacify.</code><code class="sig-name descname">unmacify</code><span class="sig-paren">(</span><em class="sig-param">workspace</em>, <em class="sig-param">uploaded_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/process/util/unmacify.html#unmacify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.util.unmacify.unmacify" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">filemanager.process.util.unmacify.</code><code class="sig-name descname">unmacify</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.Workspace</em>, <em class="sig-param">uploaded_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/process/util/unmacify.html#unmacify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.process.util.unmacify.unmacify" title="Permalink to this definition">¶</a></dt>
 <dd><p>Cleans up files containing carriage returns and line feeds.</p>
 <p>Files generated on Macs and Windows machines frequently have carriage
 returns that we must clean up prior to compilation.</p>
@@ -61,9 +59,6 @@ returns that we must clean up prior to compilation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>file_obj</strong> (<em>File</em>) – File object containing details about file to unmacify.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>

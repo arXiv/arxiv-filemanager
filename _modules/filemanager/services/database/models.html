@@ -42,18 +42,18 @@
 
 <span class="kn">from</span> <span class="nn">arxiv.util.serialize</span> <span class="k">import</span> <span class="n">dumps</span><span class="p">,</span> <span class="n">loads</span>
 
-<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">UploadWorkspace</span>
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">LockState</span><span class="p">,</span> <span class="n">SourceType</span><span class="p">,</span> <span class="n">Status</span>
 
 
 <span class="n">db</span><span class="p">:</span> <span class="n">SQLAlchemy</span> <span class="o">=</span> <span class="n">SQLAlchemy</span><span class="p">()</span>
 
 
-<div class="viewcode-block" id="SQLiteJSON"><a class="viewcode-back" href="../../../../api/filemanager.services.database.models.html#filemanager.services.database.models.SQLiteJSON">[docs]</a><span class="k">class</span> <span class="nc">SQLiteJSON</span><span class="p">(</span><span class="n">types</span><span class="o">.</span><span class="n">TypeDecorator</span><span class="p">):</span>
+<div class="viewcode-block" id="FriendlyJSONType"><a class="viewcode-back" href="../../../../api/filemanager.services.database.models.html#filemanager.services.database.models.FriendlyJSONType">[docs]</a><span class="k">class</span> <span class="nc">FriendlyJSONType</span><span class="p">(</span><span class="n">types</span><span class="o">.</span><span class="n">TypeDecorator</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;A SQLite-friendly JSON data type.&quot;&quot;&quot;</span>
 
     <span class="n">impl</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">TEXT</span>
 
-<div class="viewcode-block" id="SQLiteJSON.process_bind_param"><a class="viewcode-back" href="../../../../api/filemanager.services.database.models.html#filemanager.services.database.models.SQLiteJSON.process_bind_param">[docs]</a>    <span class="k">def</span> <span class="nf">process_bind_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="n">dialect</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> \
+<div class="viewcode-block" id="FriendlyJSONType.process_bind_param"><a class="viewcode-back" href="../../../../api/filemanager.services.database.models.html#filemanager.services.database.models.FriendlyJSONType.process_bind_param">[docs]</a>    <span class="k">def</span> <span class="nf">process_bind_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="n">dialect</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Serialize a dict to JSON.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -61,7 +61,7 @@
             <span class="k">return</span> <span class="n">value</span>
         <span class="k">return</span> <span class="n">obj</span></div>
 
-<div class="viewcode-block" id="SQLiteJSON.process_result_value"><a class="viewcode-back" href="../../../../api/filemanager.services.database.models.html#filemanager.services.database.models.SQLiteJSON.process_result_value">[docs]</a>    <span class="k">def</span> <span class="nf">process_result_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<div class="viewcode-block" id="FriendlyJSONType.process_result_value"><a class="viewcode-back" href="../../../../api/filemanager.services.database.models.html#filemanager.services.database.models.FriendlyJSONType.process_result_value">[docs]</a>    <span class="k">def</span> <span class="nf">process_result_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Deserialize JSON content to a dict.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">obj</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">loads</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
@@ -71,7 +71,7 @@
 
 <span class="c1"># SQLite does not support JSON, so we extend JSON to use our custom data type</span>
 <span class="c1"># as a variant for the &#39;sqlite&#39; dialect.</span>
-<span class="n">FriendlyJSON</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">JSON</span><span class="p">()</span><span class="o">.</span><span class="n">with_variant</span><span class="p">(</span><span class="n">SQLiteJSON</span><span class="p">,</span> <span class="s1">&#39;sqlite&#39;</span><span class="p">)</span>
+<span class="n">FriendlyJSON</span> <span class="o">=</span> <span class="n">JSON</span><span class="p">()</span><span class="o">.</span><span class="n">with_variant</span><span class="p">(</span><span class="n">FriendlyJSONType</span><span class="p">,</span> <span class="s1">&#39;sqlite&#39;</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="DBUpload"><a class="viewcode-back" href="../../../../api/filemanager.services.database.models.html#filemanager.services.database.models.DBUpload">[docs]</a><span class="k">class</span> <span class="nc">DBUpload</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
@@ -94,30 +94,28 @@
     <span class="n">files</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">FriendlyJSON</span><span class="p">)</span>
     <span class="n">errors</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">FriendlyJSON</span><span class="p">)</span>
 
-    <span class="n">lastupload_start_datetime</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">DateTime</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">last_upload_start_datetime</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">DateTime</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="sd">&quot;&quot;&quot;Start datetime of last upload.&quot;&quot;&quot;</span>
 
-    <span class="n">lastupload_completion_datetime</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">DateTime</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">last_upload_completion_datetime</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">DateTime</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="sd">&quot;&quot;&quot;Completion datetime of last upload.&quot;&quot;&quot;</span>
 
-    <span class="n">lastupload_logs</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Text</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">last_upload_logs</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Text</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="sd">&quot;&quot;&quot;Log (error/warning messages) from last upload.&quot;&quot;&quot;</span>
 
-    <span class="n">lastupload_file_summary</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Text</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">last_upload_file_summary</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Text</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="sd">&quot;&quot;&quot;Upload details useful for display in UI&quot;&quot;&quot;</span>
 
-    <span class="n">lastupload_readiness</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Text</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">last_upload_readiness</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Text</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="sd">&quot;&quot;&quot;Upload content readiness status.&quot;&quot;&quot;</span>
 
-    <span class="n">status</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">30</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">ACTIVE</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">30</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="n">Status</span><span class="o">.</span><span class="n">ACTIVE</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
     <span class="sd">&quot;&quot;&quot;State of upload. ACTIVE, RELEASED, DELETED&quot;&quot;&quot;</span>
 
-    <span class="n">lock_state</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">30</span><span class="p">),</span> 
-                        <span class="n">default</span><span class="o">=</span><span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">LockState</span><span class="o">.</span><span class="n">UNLOCKED</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+    <span class="n">lock_state</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">30</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="n">LockState</span><span class="o">.</span><span class="n">UNLOCKED</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
     <span class="sd">&quot;&quot;&quot;Lock state of upload workspace. UNLOCKED or LOCKED.&quot;&quot;&quot;</span>
 
-    <span class="n">source_type</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">30</span><span class="p">),</span> 
-                         <span class="n">default</span><span class="o">=</span><span class="n">UploadWorkspace</span><span class="o">.</span><span class="n">SourceType</span><span class="o">.</span><span class="n">UNKNOWN</span><span class="o">.</span><span class="n">value</span><span class="p">)</span></div>
+    <span class="n">source_type</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">30</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="n">SourceType</span><span class="o">.</span><span class="n">UNKNOWN</span><span class="o">.</span><span class="n">value</span><span class="p">)</span></div>
 </pre></div>
 
           </div>

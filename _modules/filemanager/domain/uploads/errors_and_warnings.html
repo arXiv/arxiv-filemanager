@@ -32,35 +32,145 @@
           <div class="body" role="main">
             
   <h1>Source code for filemanager.domain.uploads.errors_and_warnings</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Provides :class:`.ErrorsAndWarningsMixin`.&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;Provides :class:`.ErrorsAndWarnings`.&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">cast</span>
 
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="k">import</span> <span class="n">Protocol</span>
 
-<span class="kn">from</span> <span class="nn">.stored</span> <span class="k">import</span> <span class="n">StoredWorkspace</span>
-<span class="kn">from</span> <span class="nn">..uploaded_file</span> <span class="k">import</span> <span class="n">UploadedFile</span>
+<span class="kn">from</span> <span class="nn">..uploaded_file</span> <span class="k">import</span> <span class="n">UserFile</span>
 <span class="kn">from</span> <span class="nn">..error</span> <span class="k">import</span> <span class="n">Error</span>
 <span class="kn">from</span> <span class="nn">..index</span> <span class="k">import</span> <span class="n">FileIndex</span>
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">IBaseWorkspace</span>
 
 
-<div class="viewcode-block" id="ErrorsAndWarningsWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace">[docs]</a><span class="nd">@dataclass</span>
-<span class="k">class</span> <span class="nc">ErrorsAndWarningsWorkspace</span><span class="p">(</span><span class="n">StoredWorkspace</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Adds methods for handling errors and warnings.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="IWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.IWorkspace">[docs]</a><span class="k">class</span> <span class="nc">IWorkspace</span><span class="p">(</span><span class="n">IBaseWorkspace</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Workspace API required for :class:`.ErrorsAndWarnings`.</span>
 
-    <span class="n">_errors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Error</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+<span class="sd">    This incorporates the base API and any additional structures that require</span>
+<span class="sd">    implementation by other components of the workspace.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="IErrorsAndWarnings"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.IErrorsAndWarnings">[docs]</a><span class="k">class</span> <span class="nc">IErrorsAndWarnings</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for errors and warnings behavior.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">errors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Error</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;All of the errors + warnings in the workspace.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">error</span> <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span> <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">u_file</span><span class="o">.</span><span class="n">errors</span><span class="p">]</span> \
-            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">fatal_errors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Error</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">errors_fatal</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Error</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;All of the fatal errors on active files in the workspace.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">has_errors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not this workspace has errors.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">has_errors_fatal</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not this workspace has fatal errors.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">has_warnings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not this workspace has warnings.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">has_warnings_active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether this workspace has warnings for active files.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">warnings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Error</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Warnings for all files in the workspace.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">warnings_active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Error</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Warnings for active files only.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IErrorsAndWarnings.add_error"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.IErrorsAndWarnings.add_error">[docs]</a>    <span class="k">def</span> <span class="nf">add_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                  <span class="n">severity</span><span class="p">:</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span> <span class="o">=</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">FATAL</span><span class="p">,</span>
+                  <span class="n">is_persistant</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Add an error for a specific file.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IErrorsAndWarnings.add_error_non_file"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.IErrorsAndWarnings.add_error_non_file">[docs]</a>    <span class="k">def</span> <span class="nf">add_error_non_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                           <span class="n">severity</span><span class="p">:</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span> <span class="o">=</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">FATAL</span><span class="p">,</span>
+                           <span class="n">is_persistant</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Add an error for the workspace that is not specific to a file.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IErrorsAndWarnings.add_warning"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.IErrorsAndWarnings.add_warning">[docs]</a>    <span class="k">def</span> <span class="nf">add_warning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                    <span class="n">is_persistant</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Add a warning for a specific file.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IErrorsAndWarnings.add_warning_non_file"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.IErrorsAndWarnings.add_warning_non_file">[docs]</a>    <span class="k">def</span> <span class="nf">add_warning_non_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                             <span class="n">is_persistant</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Add a warning for the workspace that is not specific to a file.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="IErrorsAndWarnings.get_warnings"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.IErrorsAndWarnings.get_warnings">[docs]</a>    <span class="k">def</span> <span class="nf">get_warnings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                     <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                     <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                     <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get all warnings for the file at ``path``.&quot;&quot;&quot;</span></div></div>
+
+
+<div class="viewcode-block" id="IErrorsAndWarningsWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.IErrorsAndWarningsWorkspace">[docs]</a><span class="k">class</span> <span class="nc">IErrorsAndWarningsWorkspace</span><span class="p">(</span><span class="n">IWorkspace</span><span class="p">,</span> <span class="n">IErrorsAndWarnings</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for workspace with errors and warnings behavior.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="ErrorsAndWarnings"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarnings">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">ErrorsAndWarnings</span><span class="p">(</span><span class="n">IErrorsAndWarnings</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Adds methods for handling errors and warnings.&quot;&quot;&quot;</span>
+
+    <span class="n">_errors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Error</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+
+    <span class="n">__internal_api</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__api_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api</span><span class="p">:</span> <span class="n">IWorkspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Register the workspace API.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">ErrorsAndWarnings</span><span class="p">,</span> <span class="bp">self</span><span class="p">),</span> <span class="s1">&#39;__api_init__&#39;</span><span class="p">):</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">ErrorsAndWarnings</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__api_init__</span><span class="p">(</span><span class="n">api</span><span class="p">)</span>    <span class="c1"># type: ignore</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span> <span class="o">=</span> <span class="n">api</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">__api</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IWorkspace</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Accessor for the internal workspace API.&quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__internal_api</span>
+
+    <span class="c1"># This is a classmethod so that it can be accessed and utilized separately</span>
+    <span class="c1"># from methods with the same name in other mixed-in classes.</span>
+<div class="viewcode-block" id="ErrorsAndWarnings.post_from_dict"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarnings.post_from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">post_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="s1">&#39;ErrorsAndWarnings&#39;</span><span class="p">,</span>
+                       <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Update the workspace after loading from dict.&quot;&quot;&quot;</span>
+        <span class="n">_errors</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;errors&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_errors</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">datum</span> <span class="ow">in</span> <span class="n">_errors</span><span class="p">:</span>
+                <span class="n">e</span> <span class="o">=</span> <span class="n">Error</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">datum</span><span class="p">)</span>
+                <span class="c1"># The protected access is safe, given that this is for all</span>
+                <span class="c1"># intents and purposes an instancemethod without instance</span>
+                <span class="c1"># binding.</span>
+                <span class="n">workspace</span><span class="o">.</span><span class="n">_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>  <span class="c1"># pylint: disable=protected-access</span></div>
+
+<div class="viewcode-block" id="ErrorsAndWarnings.to_dict_impl"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarnings.to_dict_impl">[docs]</a>    <span class="nd">@classmethod</span>    <span class="c1"># See comment for post_from_dict, above.</span>
+    <span class="k">def</span> <span class="nf">to_dict_impl</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="bp">self</span><span class="p">:</span> <span class="s1">&#39;ErrorsAndWarnings&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Generate a dict representation of errors.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;errors&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">e</span>          <span class="c1"># See comment above.</span>
+                <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span> <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">is_persistant</span><span class="p">]}</span>  <span class="c1"># pylint: disable=protected-access</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">errors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Error</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;All of the errors + warnings in the workspace.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">error</span> <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">files</span>
+                <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">u_file</span><span class="o">.</span><span class="n">errors</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">errors_fatal</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Error</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;All of the fatal errors on active files in the workspace.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">(</span>
-            <span class="p">[</span><span class="n">error</span> <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span> <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">u_file</span><span class="o">.</span><span class="n">errors</span>
+            <span class="p">[</span><span class="n">error</span> <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">files</span>
+             <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">u_file</span><span class="o">.</span><span class="n">errors</span>
              <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_active</span> <span class="ow">and</span> <span class="n">error</span><span class="o">.</span><span class="n">severity</span> <span class="ow">is</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">FATAL</span><span class="p">]</span>
             <span class="o">+</span>
             <span class="p">[</span><span class="n">error</span> <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span>
@@ -68,78 +178,82 @@
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">warnings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Error</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Warnings for all files in the workspace.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_warnings</span><span class="p">()</span>
-    
+    <span class="k">def</span> <span class="nf">has_errors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not this workspace has errors.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">active_warnings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Error</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Warnings for active files only.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_warnings</span><span class="p">(</span><span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">has_errors_fatal</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not this workspace has fatal errors.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">errors_fatal</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
 
-    <span class="k">def</span> <span class="nf">_get_warnings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">is_active</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Error</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="p">(</span>
-            <span class="p">[</span><span class="n">error</span> <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span> <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">u_file</span><span class="o">.</span><span class="n">errors</span>
-             <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">severity</span> <span class="ow">is</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">WARNING</span>
-             <span class="ow">and</span> <span class="p">(</span><span class="n">is_active</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_active</span> <span class="o">==</span> <span class="n">is_active</span><span class="p">)]</span>
-            <span class="o">+</span>
-            <span class="p">[</span><span class="n">error</span> <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span>
-             <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">severity</span> <span class="ow">is</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">WARNING</span><span class="p">]</span>
-        <span class="p">)</span>
-
-<div class="viewcode-block" id="ErrorsAndWarningsWorkspace.get_warnings_for_path"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.get_warnings_for_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_warnings_for_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
-                              <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                              <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                              <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="n">u_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
-                                <span class="n">is_system</span><span class="o">=</span><span class="n">is_system</span><span class="p">,</span> <span class="n">is_removed</span><span class="o">=</span><span class="n">is_removed</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">message</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">u_file</span><span class="o">.</span><span class="n">errors</span>
-                <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">severity</span> <span class="ow">is</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">WARNING</span><span class="p">]</span></div>
-    
-<div class="viewcode-block" id="ErrorsAndWarningsWorkspace.add_error"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.add_error">[docs]</a>    <span class="k">def</span> <span class="nf">add_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                  <span class="n">severity</span><span class="p">:</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span> <span class="o">=</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">FATAL</span><span class="p">,</span>
-                  <span class="n">is_persistant</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Add an error for a specific file.&quot;&quot;&quot;</span>
-        <span class="n">u_file</span><span class="o">.</span><span class="n">add_error</span><span class="p">(</span><span class="n">Error</span><span class="p">(</span><span class="n">severity</span><span class="o">=</span><span class="n">severity</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
-                               <span class="n">message</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span> <span class="n">is_persistant</span><span class="o">=</span><span class="n">is_persistant</span><span class="p">))</span></div>
-
-<div class="viewcode-block" id="ErrorsAndWarningsWorkspace.add_non_file_error"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.add_non_file_error">[docs]</a>    <span class="k">def</span> <span class="nf">add_non_file_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                           <span class="n">severity</span><span class="p">:</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span> <span class="o">=</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">FATAL</span><span class="p">,</span>
-                           <span class="n">is_persistant</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Add an error for the workspace that is not specific to a file.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Error</span><span class="p">(</span><span class="n">severity</span><span class="o">=</span><span class="n">severity</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span>
-                                  <span class="n">is_persistant</span><span class="o">=</span><span class="n">is_persistant</span><span class="p">))</span></div>
-
-<div class="viewcode-block" id="ErrorsAndWarningsWorkspace.add_warning"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.add_warning">[docs]</a>    <span class="k">def</span> <span class="nf">add_warning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                    <span class="n">is_persistant</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Add a warning for a specific file.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">add_error</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">severity</span><span class="o">=</span><span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
-                       <span class="n">is_persistant</span><span class="o">=</span><span class="n">is_persistant</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="ErrorsAndWarningsWorkspace.add_non_file_warning"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarningsWorkspace.add_non_file_warning">[docs]</a>    <span class="k">def</span> <span class="nf">add_non_file_warning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
-                             <span class="n">is_persistant</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Add a warning for the workspace that is not specific to a file.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">add_non_file_error</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">severity</span><span class="o">=</span><span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
-                                <span class="n">is_persistant</span><span class="o">=</span><span class="n">is_persistant</span><span class="p">)</span></div>
-    
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">has_warnings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Determine whether or not this workspace has warnings.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">warnings</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">has_active_warnings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">has_warnings_active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Determine whether this workspace has warnings for active files.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_warnings</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">warnings_active</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">has_errors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Determine whether or not this workspace has errors.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="k">def</span> <span class="nf">warnings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Error</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Warnings for all files in the workspace.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_warnings</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">has_fatal_errors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fatal_errors</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span></div>
+    <span class="k">def</span> <span class="nf">warnings_active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Error</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Warnings for active files only.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_warnings</span><span class="p">(</span><span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ErrorsAndWarnings.add_error"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarnings.add_error">[docs]</a>    <span class="k">def</span> <span class="nf">add_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                  <span class="n">severity</span><span class="p">:</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span> <span class="o">=</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">FATAL</span><span class="p">,</span>
+                  <span class="n">is_persistant</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Add an error for a specific file.&quot;&quot;&quot;</span>
+        <span class="n">u_file</span><span class="o">.</span><span class="n">add_error</span><span class="p">(</span><span class="n">Error</span><span class="p">(</span><span class="n">severity</span><span class="o">=</span><span class="n">severity</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+                               <span class="n">message</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span> <span class="n">is_persistant</span><span class="o">=</span><span class="n">is_persistant</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ErrorsAndWarnings.add_error_non_file"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarnings.add_error_non_file">[docs]</a>    <span class="k">def</span> <span class="nf">add_error_non_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                           <span class="n">severity</span><span class="p">:</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span> <span class="o">=</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">FATAL</span><span class="p">,</span>
+                           <span class="n">is_persistant</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Add an error for the workspace that is not specific to a file.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Error</span><span class="p">(</span><span class="n">severity</span><span class="o">=</span><span class="n">severity</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span>
+                                  <span class="n">is_persistant</span><span class="o">=</span><span class="n">is_persistant</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ErrorsAndWarnings.add_warning"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarnings.add_warning">[docs]</a>    <span class="k">def</span> <span class="nf">add_warning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                    <span class="n">is_persistant</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Add a warning for a specific file.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_error</span><span class="p">(</span><span class="n">u_file</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">severity</span><span class="o">=</span><span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                       <span class="n">is_persistant</span><span class="o">=</span><span class="n">is_persistant</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ErrorsAndWarnings.add_warning_non_file"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarnings.add_warning_non_file">[docs]</a>    <span class="k">def</span> <span class="nf">add_warning_non_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                             <span class="n">is_persistant</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Add a warning for the workspace that is not specific to a file.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_error_non_file</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">severity</span><span class="o">=</span><span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                                <span class="n">is_persistant</span><span class="o">=</span><span class="n">is_persistant</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ErrorsAndWarnings.get_warnings"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.errors_and_warnings.html#filemanager.domain.uploads.errors_and_warnings.ErrorsAndWarnings.get_warnings">[docs]</a>    <span class="k">def</span> <span class="nf">get_warnings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                     <span class="n">is_ancillary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                     <span class="n">is_system</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                     <span class="n">is_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get all warnings for the file at ``path``.&quot;&quot;&quot;</span>
+        <span class="n">u_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="n">is_ancillary</span><span class="p">,</span>
+                                      <span class="n">is_system</span><span class="o">=</span><span class="n">is_system</span><span class="p">,</span>
+                                      <span class="n">is_removed</span><span class="o">=</span><span class="n">is_removed</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">message</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">u_file</span><span class="o">.</span><span class="n">errors</span>
+                <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">severity</span> <span class="ow">is</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">WARNING</span><span class="p">]</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_warnings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">is_active</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Error</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="p">[</span><span class="n">error</span> <span class="k">for</span> <span class="n">u_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__api</span><span class="o">.</span><span class="n">files</span>
+             <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">u_file</span><span class="o">.</span><span class="n">errors</span>
+             <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">severity</span> <span class="ow">is</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">WARNING</span>
+             <span class="ow">and</span> <span class="p">(</span><span class="n">is_active</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">u_file</span><span class="o">.</span><span class="n">is_active</span> <span class="o">==</span> <span class="n">is_active</span><span class="p">)]</span>
+            <span class="o">+</span>
+            <span class="p">[</span><span class="n">error</span> <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span>
+             <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">severity</span> <span class="ow">is</span> <span class="n">Error</span><span class="o">.</span><span class="n">Severity</span><span class="o">.</span><span class="n">WARNING</span><span class="p">]</span>
+        <span class="p">)</span></div>
 </pre></div>
 
           </div>

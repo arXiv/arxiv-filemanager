@@ -36,72 +36,88 @@
   <div class="section" id="module-filemanager.domain.uploads.source_type">
 <span id="filemanager-domain-uploads-source-type-module"></span><h1>filemanager.domain.uploads.source_type module<a class="headerlink" href="#module-filemanager.domain.uploads.source_type" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
-<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin">
-<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.source_type.</code><code class="sig-name descname">SourceTypeMixin</code><span class="sig-paren">(</span><em class="sig-param">source_type=&lt;SourceType.UNKNOWN: 'unknown'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/source_type.html#SourceTypeMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dt id="filemanager.domain.uploads.source_type.ISourceTypeable">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.source_type.</code><code class="sig-name descname">ISourceTypeable</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/source_type.html#ISourceTypeable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.source_type.ISourceTypeable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Interface for source type behavior.</p>
+</dd></dl>
+
 <dl class="class">
-<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType">
-<em class="property">class </em><code class="sig-name descname">SourceType</code><a class="reference internal" href="../_modules/filemanager/domain/uploads/source_type.html#SourceTypeMixin.SourceType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.source_type.ISourceTypeableWorkspace">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.source_type.</code><code class="sig-name descname">ISourceTypeableWorkspace</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/source_type.html#ISourceTypeableWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.source_type.ISourceTypeableWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace" title="filemanager.domain.uploads.base.IBaseWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.base.IBaseWorkspace</span></code></a>, <a class="reference internal" href="#filemanager.domain.uploads.source_type.ISourceTypeable" title="filemanager.domain.uploads.source_type.ISourceTypeable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.source_type.ISourceTypeable</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Interface for workspace with source type behavior.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.source_type.SourceType">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.source_type.</code><code class="sig-name descname">SourceType</code><a class="reference internal" href="../_modules/filemanager/domain/uploads/source_type.html#SourceType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceType" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/enum.html#enum.Enum" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
 <p>High-level type of the submission source as a whole.</p>
 <dl class="attribute">
-<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.HTML">
-<code class="sig-name descname">HTML</code><em class="property"> = 'html'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.HTML" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.source_type.SourceType.HTML">
+<code class="sig-name descname">HTML</code><em class="property"> = 'html'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceType.HTML" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.INVALID">
-<code class="sig-name descname">INVALID</code><em class="property"> = 'invalid'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.INVALID" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.source_type.SourceType.INVALID">
+<code class="sig-name descname">INVALID</code><em class="property"> = 'invalid'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceType.INVALID" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.PDF">
-<code class="sig-name descname">PDF</code><em class="property"> = 'pdf'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.PDF" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.source_type.SourceType.PDF">
+<code class="sig-name descname">PDF</code><em class="property"> = 'pdf'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceType.PDF" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.POSTSCRIPT">
-<code class="sig-name descname">POSTSCRIPT</code><em class="property"> = 'ps'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.POSTSCRIPT" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.source_type.SourceType.POSTSCRIPT">
+<code class="sig-name descname">POSTSCRIPT</code><em class="property"> = 'ps'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceType.POSTSCRIPT" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.TEX">
-<code class="sig-name descname">TEX</code><em class="property"> = 'tex'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.TEX" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.source_type.SourceType.TEX">
+<code class="sig-name descname">TEX</code><em class="property"> = 'tex'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceType.TEX" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.UNKNOWN">
-<code class="sig-name descname">UNKNOWN</code><em class="property"> = 'unknown'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.UNKNOWN" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.source_type.SourceType.UNKNOWN">
+<code class="sig-name descname">UNKNOWN</code><em class="property"> = 'unknown'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceType.UNKNOWN" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.is_invalid">
-<em class="property">property </em><code class="sig-name descname">is_invalid</code><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.is_invalid" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.source_type.SourceType.is_invalid">
+<em class="property">property </em><code class="sig-name descname">is_invalid</code><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceType.is_invalid" title="Permalink to this definition">¶</a></dt>
 <dd><p>Indicate whether this is the <code class="xref py py-const docutils literal notranslate"><span class="pre">INVALID</span></code> type.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
-<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.is_unknown">
-<em class="property">property </em><code class="sig-name descname">is_unknown</code><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.SourceType.is_unknown" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.source_type.SourceType.is_unknown">
+<em class="property">property </em><code class="sig-name descname">is_unknown</code><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceType.is_unknown" title="Permalink to this definition">¶</a></dt>
 <dd><p>Indicate whether this is the <code class="xref py py-const docutils literal notranslate"><span class="pre">UNKNOWN</span></code> type.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.source_type.SourceTypeable">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.source_type.</code><code class="sig-name descname">SourceTypeable</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/source_type.html#SourceTypeable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#filemanager.domain.uploads.source_type.ISourceTypeable" title="filemanager.domain.uploads.source_type.ISourceTypeable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.source_type.ISourceTypeable</span></code></a></p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.source_type.SourceTypeable.args_from_dict">
+<em class="property">classmethod </em><code class="sig-name descname">args_from_dict</code><span class="sig-paren">(</span><em class="sig-param">data: Dict[str, Any]</em><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="reference internal" href="../_modules/filemanager/domain/uploads/source_type.html#SourceTypeable.args_from_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeable.args_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pluck constructor args from a dict representation.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="filemanager.domain.uploads.source_type.SourceTypeMixin.source_type">
-<code class="sig-name descname">source_type</code><em class="property"> = 'unknown'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeMixin.source_type" title="Permalink to this definition">¶</a></dt>
+<dt id="filemanager.domain.uploads.source_type.SourceTypeable.source_type">
+<code class="sig-name descname">source_type</code><em class="property"> = 'unknown'</em><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeable.source_type" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.source_type.SourceTypeable.to_dict_impl">
+<em class="property">classmethod </em><code class="sig-name descname">to_dict_impl</code><span class="sig-paren">(</span><em class="sig-param">self: filemanager.domain.uploads.source_type.SourceTypeable</em><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="reference internal" href="../_modules/filemanager/domain/uploads/source_type.html#SourceTypeable.to_dict_impl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.source_type.SourceTypeable.to_dict_impl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a dict representation of the workspace.</p>
+</dd></dl>
 
 </dd></dl>
 

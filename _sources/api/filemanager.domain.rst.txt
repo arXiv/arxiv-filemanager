@@ -23,6 +23,5 @@ Submodules
    filemanager.domain.file_type
    filemanager.domain.index
    filemanager.domain.log
-   filemanager.domain.package
    filemanager.domain.uploaded_file
 

@@ -1,0 +1,441 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.domain.uploads.checkpoint module &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="filemanager.domain.uploads.countable module" href="filemanager.domain.uploads.countable.html" />
+    <link rel="prev" title="filemanager.domain.uploads.checkable module" href="filemanager.domain.uploads.checkable.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-filemanager.domain.uploads.checkpoint">
+<span id="filemanager-domain-uploads-checkpoint-module"></span><h1>filemanager.domain.uploads.checkpoint module<a class="headerlink" href="#module-filemanager.domain.uploads.checkpoint" title="Permalink to this headline">¶</a></h1>
+<p>Adds checkpoint functionality to the upload workspace.</p>
+<dl class="class">
+<dt id="filemanager.domain.uploads.checkpoint.Checkpointable">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.checkpoint.</code><code class="sig-name descname">Checkpointable</code><span class="sig-paren">(</span><em class="sig-param">CHECKPOINT_PREFIX: str = 'checkpoint'</em>, <em class="sig-param">MAX_CHECKPOINTS: int = 10</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#Checkpointable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.Checkpointable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#filemanager.domain.uploads.checkpoint.ICheckpointable" title="filemanager.domain.uploads.checkpoint.ICheckpointable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.checkpoint.ICheckpointable</span></code></a></p>
+<p>Adds checkpoint routines to the workspace.</p>
+<p>Manage creating, viewing, removing, and restoring checkpoints.</p>
+<p>checksum might be useful as key to identify specific checkpoint.</p>
+<p>TODO: Should we support admin provided description of checkpoint?</p>
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.checkpoint.Checkpointable.CHECKPOINT_PREFIX">
+<code class="sig-name descname">CHECKPOINT_PREFIX</code><em class="property"> = 'checkpoint'</em><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.Checkpointable.CHECKPOINT_PREFIX" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the checkpoint directory within the upload workspace.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="filemanager.domain.uploads.checkpoint.Checkpointable.MAX_CHECKPOINTS">
+<code class="sig-name descname">MAX_CHECKPOINTS</code><em class="property"> = 10</em><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.Checkpointable.MAX_CHECKPOINTS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.Checkpointable.checkpoint_directory">
+<em class="property">property </em><code class="sig-name descname">checkpoint_directory</code><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.Checkpointable.checkpoint_directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get directory where checkpoint archive files live.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.Checkpointable.checkpoint_file_exists">
+<code class="sig-name descname">checkpoint_file_exists</code><span class="sig-paren">(</span><em class="sig-param">checksum: str</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#Checkpointable.checkpoint_file_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.Checkpointable.checkpoint_file_exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicate whether checkpoint files exists.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>checksum</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – Checksum that uniquely identifies checkpoint.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if file exists, False otherwise.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.Checkpointable.create_checkpoint">
+<code class="sig-name descname">create_checkpoint</code><span class="sig-paren">(</span><em class="sig-param">user: arxiv.users.domain.User</em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#Checkpointable.create_checkpoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.Checkpointable.create_checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a chckpoint (backup) of workspace source files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>checksum</strong> – Checksum for checkpoint tar gzipped archive we just created.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.Checkpointable.delete_all_checkpoints">
+<code class="sig-name descname">delete_all_checkpoints</code><span class="sig-paren">(</span><em class="sig-param">user: arxiv.users.domain.User</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#Checkpointable.delete_all_checkpoints"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.Checkpointable.delete_all_checkpoints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove all checkpoints.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.Checkpointable.delete_checkpoint">
+<code class="sig-name descname">delete_checkpoint</code><span class="sig-paren">(</span><em class="sig-param">checksum: str</em>, <em class="sig-param">user: arxiv.users.domain.User</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#Checkpointable.delete_checkpoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.Checkpointable.delete_checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove specified checkpoint.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.Checkpointable.from_dict">
+<em class="property">classmethod </em><code class="sig-name descname">from_dict</code><span class="sig-paren">(</span><em class="sig-param">upload_data: dict</em><span class="sig-paren">)</span> &#x2192; T<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#Checkpointable.from_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.Checkpointable.from_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.Checkpointable.get_checkpoint_file">
+<code class="sig-name descname">get_checkpoint_file</code><span class="sig-paren">(</span><em class="sig-param">checksum: str</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#Checkpointable.get_checkpoint_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.Checkpointable.get_checkpoint_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a checkpoint file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>checksum</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – Checksum that uniquely identifies checkpoint.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.Checkpointable.get_checkpoint_file_last_modified">
+<code class="sig-name descname">get_checkpoint_file_last_modified</code><span class="sig-paren">(</span><em class="sig-param">checksum: str</em><span class="sig-paren">)</span> &#x2192; datetime.datetime<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#Checkpointable.get_checkpoint_file_last_modified"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.Checkpointable.get_checkpoint_file_last_modified" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return last modified time for specified file/package.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>checksum</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – Checksum that uniquely identifies checkpoint.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Last modified date string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.Checkpointable.get_checkpoint_file_pointer">
+<code class="sig-name descname">get_checkpoint_file_pointer</code><span class="sig-paren">(</span><em class="sig-param">checksum: str</em><span class="sig-paren">)</span> &#x2192; IO[bytes]<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#Checkpointable.get_checkpoint_file_pointer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.Checkpointable.get_checkpoint_file_pointer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Open specified file and return file pointer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>checksum</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – Checksum that uniquely identifies checkpoint.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>File pointer or exception string when filepath does not exist.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/io.html#io.BytesIO" title="(in Python v3.6)">io.BytesIO</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.Checkpointable.get_checkpoint_file_size">
+<code class="sig-name descname">get_checkpoint_file_size</code><span class="sig-paren">(</span><em class="sig-param">checksum: str</em><span class="sig-paren">)</span> &#x2192; int<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#Checkpointable.get_checkpoint_file_size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.Checkpointable.get_checkpoint_file_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return size of specified file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>checksum</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – Checksum that uniquely identifies checkpoint.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Size in bytes.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.Checkpointable.list_checkpoints">
+<code class="sig-name descname">list_checkpoints</code><span class="sig-paren">(</span><em class="sig-param">user: arxiv.users.domain.User</em><span class="sig-paren">)</span> &#x2192; List[filemanager.domain.uploaded_file.UserFile]<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#Checkpointable.list_checkpoints"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.Checkpointable.list_checkpoints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a list of checkpoints.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><em>list</em> – list of checkpoint files, includes date/time checkpoint was
+created and checksum key.</p></li>
+<li><p><strong>TODO</strong> (<em>include description? or make one up on the fly?</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.Checkpointable.restore_checkpoint">
+<code class="sig-name descname">restore_checkpoint</code><span class="sig-paren">(</span><em class="sig-param">checksum: str</em>, <em class="sig-param">user: arxiv.users.domain.User</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#Checkpointable.restore_checkpoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.Checkpointable.restore_checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Restore a previous checkpoint.</p>
+<p>First we delete all existing files under workspace source directory.</p>
+<p>Next we unpack chackpoint file into src directory.</p>
+<p>TODO: Decide whether to checkpoint source we are restoring over.
+TODO: Probably not. Maybe should checkpoint if someone other than owner
+TODO: is uploading file (forget to select checkpoint) but only if
+TODO: previous upload was by owner.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.checkpoint.ICheckpointable">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.checkpoint.</code><code class="sig-name descname">ICheckpointable</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#ICheckpointable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.ICheckpointable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Interface for checkpointable behavior.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.ICheckpointable.checkpoint_directory">
+<em class="property">property </em><code class="sig-name descname">checkpoint_directory</code><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.ICheckpointable.checkpoint_directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get directory where checkpoint archive files live.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.ICheckpointable.checkpoint_file_exists">
+<code class="sig-name descname">checkpoint_file_exists</code><span class="sig-paren">(</span><em class="sig-param">checksum: str</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#ICheckpointable.checkpoint_file_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.ICheckpointable.checkpoint_file_exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicate whether checkpoint files exists.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.ICheckpointable.create_checkpoint">
+<code class="sig-name descname">create_checkpoint</code><span class="sig-paren">(</span><em class="sig-param">user: arxiv.users.domain.User</em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#ICheckpointable.create_checkpoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.ICheckpointable.create_checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a chckpoint (backup) of workspace source files.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.ICheckpointable.delete_all_checkpoints">
+<code class="sig-name descname">delete_all_checkpoints</code><span class="sig-paren">(</span><em class="sig-param">user: arxiv.users.domain.User</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#ICheckpointable.delete_all_checkpoints"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.ICheckpointable.delete_all_checkpoints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove all checkpoints.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.ICheckpointable.delete_checkpoint">
+<code class="sig-name descname">delete_checkpoint</code><span class="sig-paren">(</span><em class="sig-param">checksum: str</em>, <em class="sig-param">user: arxiv.users.domain.User</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#ICheckpointable.delete_checkpoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.ICheckpointable.delete_checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove specified checkpoint.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.ICheckpointable.get_checkpoint_file">
+<code class="sig-name descname">get_checkpoint_file</code><span class="sig-paren">(</span><em class="sig-param">checksum: str</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#ICheckpointable.get_checkpoint_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.ICheckpointable.get_checkpoint_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a checkpoint file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.ICheckpointable.get_checkpoint_file_last_modified">
+<code class="sig-name descname">get_checkpoint_file_last_modified</code><span class="sig-paren">(</span><em class="sig-param">checksum: str</em><span class="sig-paren">)</span> &#x2192; datetime.datetime<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#ICheckpointable.get_checkpoint_file_last_modified"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.ICheckpointable.get_checkpoint_file_last_modified" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return last modified time for specified file/package.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.ICheckpointable.get_checkpoint_file_pointer">
+<code class="sig-name descname">get_checkpoint_file_pointer</code><span class="sig-paren">(</span><em class="sig-param">checksum: str</em><span class="sig-paren">)</span> &#x2192; IO[bytes]<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#ICheckpointable.get_checkpoint_file_pointer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.ICheckpointable.get_checkpoint_file_pointer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Open specified file and return file pointer.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.ICheckpointable.get_checkpoint_file_size">
+<code class="sig-name descname">get_checkpoint_file_size</code><span class="sig-paren">(</span><em class="sig-param">checksum: str</em><span class="sig-paren">)</span> &#x2192; int<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#ICheckpointable.get_checkpoint_file_size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.ICheckpointable.get_checkpoint_file_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return size of specified checkpoint file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.ICheckpointable.list_checkpoints">
+<code class="sig-name descname">list_checkpoints</code><span class="sig-paren">(</span><em class="sig-param">user: arxiv.users.domain.User</em><span class="sig-paren">)</span> &#x2192; List[filemanager.domain.uploaded_file.UserFile]<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#ICheckpointable.list_checkpoints"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.ICheckpointable.list_checkpoints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a list of checkpoints.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.checkpoint.ICheckpointableWorkspace">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.checkpoint.</code><code class="sig-name descname">ICheckpointableWorkspace</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#ICheckpointableWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.ICheckpointableWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#filemanager.domain.uploads.checkpoint.IWorkspace" title="filemanager.domain.uploads.checkpoint.IWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.checkpoint.IWorkspace</span></code></a>, <a class="reference internal" href="#filemanager.domain.uploads.checkpoint.ICheckpointable" title="filemanager.domain.uploads.checkpoint.ICheckpointable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.checkpoint.ICheckpointable</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Structure of a workspace with checkpointable behavior.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.checkpoint.IFiles">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.checkpoint.</code><code class="sig-name descname">IFiles</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#IFiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.IFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.checkpoint.ILog">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.checkpoint.</code><code class="sig-name descname">ILog</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#ILog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.ILog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.ILog.info">
+<code class="sig-name descname">info</code><span class="sig-paren">(</span><em class="sig-param">message: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#ILog.info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.ILog.info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.checkpoint.IStorage">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.checkpoint.</code><code class="sig-name descname">IStorage</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#IStorage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.IStorage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.IStorage.unpack_tarfile">
+<code class="sig-name descname">unpack_tarfile</code><span class="sig-paren">(</span><em class="sig-param">workspace: filemanager.domain.uploads.checkpoint.Checkpointable</em>, <em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em>, <em class="sig-param">path: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#IStorage.unpack_tarfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.IStorage.unpack_tarfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unpack tarfile <code class="docutils literal notranslate"><span class="pre">u_file</span></code> into <code class="docutils literal notranslate"><span class="pre">path</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.checkpoint.IWorkspace">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.checkpoint.</code><code class="sig-name descname">IWorkspace</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#IWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.IWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace" title="filemanager.domain.uploads.base.IBaseWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.base.IBaseWorkspace</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Workspace API required for <a class="reference internal" href="filemanager.domain.uploads.checkable.html#filemanager.domain.uploads.checkable.Checkable" title="filemanager.domain.uploads.checkable.Checkable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Checkable</span></code></a>.</p>
+<p>This incorporates the base API and any additional structures that require
+implementation by other components of the workspace.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.IWorkspace.add_error_non_file">
+<code class="sig-name descname">add_error_non_file</code><span class="sig-paren">(</span><em class="sig-param">msg: str</em>, <em class="sig-param">severity: filemanager.domain.error.Error.Severity = &lt;Severity.FATAL: 'fatal'&gt;</em>, <em class="sig-param">is_persistant: bool = True</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#IWorkspace.add_error_non_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.IWorkspace.add_error_non_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an error for the workspace that is not specific to a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.IWorkspace.add_warning_non_file">
+<code class="sig-name descname">add_warning_non_file</code><span class="sig-paren">(</span><em class="sig-param">msg: str</em>, <em class="sig-param">is_persistant: bool = False</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#IWorkspace.add_warning_non_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.IWorkspace.add_warning_non_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a warning for the workspace that is not specific to a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.IWorkspace.create">
+<code class="sig-name descname">create</code><span class="sig-paren">(</span><em class="sig-param">path: str</em>, <em class="sig-param">is_system: bool = False</em>, <em class="sig-param">is_persisted: bool = False</em>, <em class="sig-param">touch: bool = True</em><span class="sig-paren">)</span> &#x2192; filemanager.domain.uploaded_file.UserFile<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#IWorkspace.create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.IWorkspace.create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new <a class="reference internal" href="filemanager.domain.uploaded_file.html#filemanager.domain.uploaded_file.UserFile" title="filemanager.domain.uploaded_file.UserFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserFile</span></code></a> at <code class="docutils literal notranslate"><span class="pre">path</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.IWorkspace.delete">
+<code class="sig-name descname">delete</code><span class="sig-paren">(</span><em class="sig-param">u_file: filemanager.domain.uploaded_file.UserFile</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#IWorkspace.delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.IWorkspace.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Completely delete a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.IWorkspace.delete_all_files">
+<code class="sig-name descname">delete_all_files</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#IWorkspace.delete_all_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.IWorkspace.delete_all_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete all source and ancillary files in the workspace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.checkpoint.IWorkspace.to_dict">
+<code class="sig-name descname">to_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="reference internal" href="../_modules/filemanager/domain/uploads/checkpoint.html#IWorkspace.to_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.checkpoint.IWorkspace.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a dict representation of a workspace.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">filemanager</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="filemanager.html">filemanager package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">filemanager</a><ul>
+  <li><a href="filemanager.html">filemanager package</a><ul>
+  <li><a href="filemanager.domain.html">filemanager.domain package</a><ul>
+  <li><a href="filemanager.domain.uploads.html">filemanager.domain.uploads package</a><ul>
+      <li>Previous: <a href="filemanager.domain.uploads.checkable.html" title="previous chapter">filemanager.domain.uploads.checkable module</a></li>
+      <li>Next: <a href="filemanager.domain.uploads.countable.html" title="next chapter">filemanager.domain.uploads.countable module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/api/filemanager.domain.uploads.checkpoint.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

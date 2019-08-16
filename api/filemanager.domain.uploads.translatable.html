@@ -1,0 +1,211 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.domain.uploads.translatable module &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="filemanager.domain.uploads.util module" href="filemanager.domain.uploads.util.html" />
+    <link rel="prev" title="filemanager.domain.uploads.status module" href="filemanager.domain.uploads.status.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-filemanager.domain.uploads.translatable">
+<span id="filemanager-domain-uploads-translatable-module"></span><h1>filemanager.domain.uploads.translatable module<a class="headerlink" href="#module-filemanager.domain.uploads.translatable" title="Permalink to this headline">¶</a></h1>
+<p>Conversion of domain objects to/from native structs for persistence.</p>
+<p>These are defined separately from the serialization functions that we use to
+prepare workspace data for API responses. In the API case, we are only exposing
+a subset of the information, and the naming/structure of the response documents
+in somewhat different from our internal representation. In contrast, the goal
+here is fidelity.</p>
+<dl class="class">
+<dt id="filemanager.domain.uploads.translatable.IFromDictable">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.translatable.</code><code class="sig-name descname">IFromDictable</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/translatable.html#IFromDictable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.translatable.IFromDictable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Supports loading constructor args from a dict.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.translatable.IFromDictable.args_from_dict">
+<em class="property">classmethod </em><code class="sig-name descname">args_from_dict</code><span class="sig-paren">(</span><em class="sig-param">data: Dict[str, Any]</em><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="reference internal" href="../_modules/filemanager/domain/uploads/translatable.html#IFromDictable.args_from_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.translatable.IFromDictable.args_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pluck object constructor args from a dict.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.translatable.IFromDictable.post_from_dict">
+<em class="property">classmethod </em><code class="sig-name descname">post_from_dict</code><span class="sig-paren">(</span><em class="sig-param">workspace: T, data: Dict[str, Any]</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/filemanager/domain/uploads/translatable.html#IFromDictable.post_from_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.translatable.IFromDictable.post_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the object after it has been loaded from a dict.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.translatable.IToDictable">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.translatable.</code><code class="sig-name descname">IToDictable</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/translatable.html#IToDictable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.translatable.IToDictable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Supports translating to dict.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.translatable.IToDictable.to_dict_impl">
+<em class="property">classmethod </em><code class="sig-name descname">to_dict_impl</code><span class="sig-paren">(</span><em class="sig-param">workspace: T</em><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="reference internal" href="../_modules/filemanager/domain/uploads/translatable.html#IToDictable.to_dict_impl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.translatable.IToDictable.to_dict_impl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a dict representation of the object.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.translatable.ITranslatable">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.translatable.</code><code class="sig-name descname">ITranslatable</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/translatable.html#ITranslatable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.translatable.ITranslatable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Interface for translatable behavior.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.translatable.ITranslatable.from_dict">
+<em class="property">classmethod </em><code class="sig-name descname">from_dict</code><span class="sig-paren">(</span><em class="sig-param">data: dict</em><span class="sig-paren">)</span> &#x2192; T<a class="reference internal" href="../_modules/filemanager/domain/uploads/translatable.html#ITranslatable.from_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.translatable.ITranslatable.from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a workspace from a dict representation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.translatable.ITranslatable.to_dict">
+<code class="sig-name descname">to_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="reference internal" href="../_modules/filemanager/domain/uploads/translatable.html#ITranslatable.to_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.translatable.ITranslatable.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a dict representation of a workspace.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.translatable.ITranslatableWorkspace">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.translatable.</code><code class="sig-name descname">ITranslatableWorkspace</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/translatable.html#ITranslatableWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.translatable.ITranslatableWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#filemanager.domain.uploads.translatable.IWorkspace" title="filemanager.domain.uploads.translatable.IWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.translatable.IWorkspace</span></code></a>, <a class="reference internal" href="#filemanager.domain.uploads.translatable.ITranslatable" title="filemanager.domain.uploads.translatable.ITranslatable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.translatable.ITranslatable</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Interface for workspace with translatable behavior.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.translatable.IWorkspace">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.translatable.</code><code class="sig-name descname">IWorkspace</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/filemanager/domain/uploads/translatable.html#IWorkspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.translatable.IWorkspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="filemanager.domain.uploads.base.html#filemanager.domain.uploads.base.IBaseWorkspace" title="filemanager.domain.uploads.base.IBaseWorkspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.base.IBaseWorkspace</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">typing_extensions.Protocol</span></code></p>
+<p>Workspace behavior required for <a class="reference internal" href="#filemanager.domain.uploads.translatable.Translatable" title="filemanager.domain.uploads.translatable.Translatable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Translatable</span></code></a>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="filemanager.domain.uploads.translatable.Translatable">
+<em class="property">class </em><code class="sig-prename descclassname">filemanager.domain.uploads.translatable.</code><code class="sig-name descname">Translatable</code><a class="reference internal" href="../_modules/filemanager/domain/uploads/translatable.html#Translatable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.translatable.Translatable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#filemanager.domain.uploads.translatable.ITranslatable" title="filemanager.domain.uploads.translatable.ITranslatable"><code class="xref py py-class docutils literal notranslate"><span class="pre">filemanager.domain.uploads.translatable.ITranslatable</span></code></a></p>
+<p>Adds translation functionality to/from native Python structs.</p>
+<dl class="method">
+<dt id="filemanager.domain.uploads.translatable.Translatable.from_dict">
+<em class="property">classmethod </em><code class="sig-name descname">from_dict</code><span class="sig-paren">(</span><em class="sig-param">data: dict</em><span class="sig-paren">)</span> &#x2192; T<a class="reference internal" href="../_modules/filemanager/domain/uploads/translatable.html#Translatable.from_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.translatable.Translatable.from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a workspace from a dict representation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filemanager.domain.uploads.translatable.Translatable.to_dict">
+<code class="sig-name descname">to_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="reference internal" href="../_modules/filemanager/domain/uploads/translatable.html#Translatable.to_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#filemanager.domain.uploads.translatable.Translatable.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a dict representation of a workspace.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">filemanager</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="filemanager.html">filemanager package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">filemanager</a><ul>
+  <li><a href="filemanager.html">filemanager package</a><ul>
+  <li><a href="filemanager.domain.html">filemanager.domain package</a><ul>
+  <li><a href="filemanager.domain.uploads.html">filemanager.domain.uploads package</a><ul>
+      <li>Previous: <a href="filemanager.domain.uploads.status.html" title="previous chapter">filemanager.domain.uploads.status module</a></li>
+      <li>Next: <a href="filemanager.domain.uploads.util.html" title="next chapter">filemanager.domain.uploads.util module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/api/filemanager.domain.uploads.translatable.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

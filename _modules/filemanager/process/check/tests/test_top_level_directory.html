@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>filemanager.process.check.tests.test_top_level_directory &#8212; arXiv File Manager Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../../" src="../../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for filemanager.process.check.tests.test_top_level_directory</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Tests for :mod:`.check.top_level_directory`.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">unittest</span> <span class="k">import</span> <span class="n">TestCase</span><span class="p">,</span> <span class="n">mock</span>
+
+<span class="kn">from</span> <span class="nn">....services.storage</span> <span class="k">import</span> <span class="n">SimpleStorageAdapter</span>
+<span class="kn">from</span> <span class="nn">....domain</span> <span class="k">import</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">UserFile</span>
+<span class="kn">from</span> <span class="nn">..top_level_directory</span> <span class="k">import</span> <span class="n">RemoveTopLevelDirectory</span>
+
+
+<div class="viewcode-block" id="TestRemoveTopLevelDirectoryCheck"><a class="viewcode-back" href="../../../../../api/filemanager.process.check.tests.test_top_level_directory.html#filemanager.process.check.tests.test_top_level_directory.TestRemoveTopLevelDirectoryCheck">[docs]</a><span class="k">class</span> <span class="nc">TestRemoveTopLevelDirectoryCheck</span><span class="p">(</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Check :class:`.RemoveTopLevelDirectory` removes top-level directory.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TestRemoveTopLevelDirectoryCheck.setUp"><a class="viewcode-back" href="../../../../../api/filemanager.process.check.tests.test_top_level_directory.html#filemanager.process.check.tests.test_top_level_directory.TestRemoveTopLevelDirectoryCheck.setUp">[docs]</a>    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a workspace.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">basedir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_strategy</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="o">=</span> <span class="n">SimpleStorageAdapter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span> <span class="o">=</span> <span class="n">Workspace</span><span class="p">(</span>
+            <span class="n">upload_id</span><span class="o">=</span><span class="mi">1234</span><span class="p">,</span>
+            <span class="n">owner_user_id</span><span class="o">=</span><span class="s1">&#39;98765&#39;</span><span class="p">,</span>
+            <span class="n">created_datetime</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+            <span class="n">modified_datetime</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+            <span class="n">_strategy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mock_strategy</span><span class="p">,</span>
+            <span class="n">_storage</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">storage</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="TestRemoveTopLevelDirectoryCheck.tearDown"><a class="viewcode-back" href="../../../../../api/filemanager.process.check.tests.test_top_level_directory.html#filemanager.process.check.tests.test_top_level_directory.TestRemoveTopLevelDirectoryCheck.tearDown">[docs]</a>    <span class="k">def</span> <span class="nf">tearDown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove the temporary workspace files.&quot;&quot;&quot;</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestRemoveTopLevelDirectoryCheck.test_with_tld"><a class="viewcode-back" href="../../../../../api/filemanager.process.check.tests.test_top_level_directory.html#filemanager.process.check.tests.test_top_level_directory.TestRemoveTopLevelDirectoryCheck.test_with_tld">[docs]</a>    <span class="k">def</span> <span class="nf">test_with_tld</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The source is contained in a single top-level directory.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;foo/baz.txt&#39;</span><span class="p">,</span> <span class="n">touch</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;foo/bar.md&#39;</span><span class="p">,</span> <span class="n">touch</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;foo/baz.txt&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;foo/bar.md&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;baz.txt&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;bar.md&#39;</span><span class="p">))</span>
+
+        <span class="n">checker</span> <span class="o">=</span> <span class="n">RemoveTopLevelDirectory</span><span class="p">()</span>
+        <span class="n">checker</span><span class="o">.</span><span class="n">check_workspace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;foo/baz.txt&#39;</span><span class="p">),</span>
+                         <span class="s1">&#39;File no longer exists in top level directory&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;foo/bar.md&#39;</span><span class="p">),</span>
+                         <span class="s1">&#39;File no longer exists in top level directory&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;baz.txt&#39;</span><span class="p">),</span>
+                        <span class="s1">&#39;File now exists in root source directory&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;bar.md&#39;</span><span class="p">),</span>
+                        <span class="s1">&#39;File now exists in root source directory&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestRemoveTopLevelDirectoryCheck.test_with_tld_in_ancillary"><a class="viewcode-back" href="../../../../../api/filemanager.process.check.tests.test_top_level_directory.html#filemanager.process.check.tests.test_top_level_directory.TestRemoveTopLevelDirectoryCheck.test_with_tld_in_ancillary">[docs]</a>    <span class="k">def</span> <span class="nf">test_with_tld_in_ancillary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Ancillary files are contained in a single top-level directory.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;foo/bz.txt&#39;</span><span class="p">,</span> <span class="n">touch</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;foo/bar.md&#39;</span><span class="p">,</span> <span class="n">touch</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;foo/bz.txt&#39;</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;foo/bar.md&#39;</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;bz.txt&#39;</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;bar.md&#39;</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
+        <span class="n">checker</span> <span class="o">=</span> <span class="n">RemoveTopLevelDirectory</span><span class="p">()</span>
+        <span class="n">checker</span><span class="o">.</span><span class="n">check_workspace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;foo/bz.txt&#39;</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                        <span class="s1">&#39;File still exists in top-level directory; ancillary&#39;</span>
+                        <span class="s1">&#39; files are not affected by this check.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;foo/bar.md&#39;</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                        <span class="s1">&#39;File still exists in top-level directory; ancillary&#39;</span>
+                        <span class="s1">&#39; files are not affected by this check.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;bz.txt&#39;</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;bar.md&#39;</span><span class="p">,</span> <span class="n">is_ancillary</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../../index.html">arXiv File Manager Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../architecture.html">File management service architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api/modules.html">filemanager</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../check.html">filemanager.process.check</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv-NG Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -37,7 +37,7 @@
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
 
-<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">CheckableWorkspace</span>
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">Workspace</span>
 <span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseChecker</span>
 
 
@@ -47,8 +47,8 @@
 <div class="viewcode-block" id="AncillaryFileChecker"><a class="viewcode-back" href="../../../../api/filemanager.process.check.ancillary.html#filemanager.process.check.ancillary.AncillaryFileChecker">[docs]</a><span class="k">class</span> <span class="nc">AncillaryFileChecker</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Checks for and marks ancillary files.&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="AncillaryFileChecker.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.ancillary.html#filemanager.process.check.ancillary.AncillaryFileChecker.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+<div class="viewcode-block" id="AncillaryFileChecker.check"><a class="viewcode-back" href="../../../../api/filemanager.process.check.ancillary.html#filemanager.process.check.ancillary.AncillaryFileChecker.check">[docs]</a>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Check for and mark ancillary files.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">ancillary_path</span><span class="p">):</span>
             <span class="n">u_file</span><span class="o">.</span><span class="n">is_ancillary</span> <span class="o">=</span> <span class="kc">True</span>

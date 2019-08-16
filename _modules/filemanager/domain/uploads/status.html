@@ -32,53 +32,95 @@
           <div class="body" role="main">
             
   <h1>Source code for filemanager.domain.uploads.status</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Provides :class:`.StatusMixin`.&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;Provides :class:`.Statusable`.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">enum</span> <span class="k">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
 
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="k">import</span> <span class="n">Protocol</span>
+
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">IBaseWorkspace</span>
 
 
-<div class="viewcode-block" id="StatusMixin"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.status.html#filemanager.domain.uploads.status.StatusMixin">[docs]</a><span class="nd">@dataclass</span>
-<span class="k">class</span> <span class="nc">StatusMixin</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Implements status-related methods and properties.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Status"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.status.html#filemanager.domain.uploads.status.Status">[docs]</a><span class="k">class</span> <span class="nc">Status</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Upload workspace statuses.&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="StatusMixin.Status"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.status.html#filemanager.domain.uploads.status.StatusMixin.Status">[docs]</a>    <span class="k">class</span> <span class="nc">Status</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Upload workspace statuses.&quot;&quot;&quot;</span>
+    <span class="n">ACTIVE</span> <span class="o">=</span> <span class="s1">&#39;ACTIVE&#39;</span>
+    <span class="sd">&quot;&quot;&quot;Upload workspace is actively being used.&quot;&quot;&quot;</span>
 
-        <span class="n">ACTIVE</span> <span class="o">=</span> <span class="s1">&#39;ACTIVE&#39;</span>
-        <span class="sd">&quot;&quot;&quot;Upload workspace is actively being used.&quot;&quot;&quot;</span>
+    <span class="n">RELEASED</span> <span class="o">=</span> <span class="s1">&#39;RELEASED&#39;</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Workspace is released and can be removed.</span>
 
-        <span class="n">RELEASED</span> <span class="o">=</span> <span class="s1">&#39;RELEASED&#39;</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Workspace is released and can be removed.</span>
+<span class="sd">    Client/Admin/System indicate release to indicate upload workspace is no</span>
+<span class="sd">    longer in use.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
-<span class="sd">        Client/Admin/System indicate release to indicate upload workspace is no</span>
-<span class="sd">        longer in use.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="n">DELETED</span> <span class="o">=</span> <span class="s1">&#39;DELETED&#39;</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Workspace is deleted (no files on disk).</span>
 
-        <span class="n">DELETED</span> <span class="o">=</span> <span class="s1">&#39;DELETED&#39;</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Workspace is deleted (no files on disk).</span>
+<span class="sd">    After upload workspace files are deleted the state of workspace in</span>
+<span class="sd">    database is set to deleted. Database entry is retained indefinitely.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
 
-<span class="sd">        After upload workspace files are deleted the state of workspace in</span>
-<span class="sd">        database is set to deleted. Database entry is retained indefinitely.</span>
-<span class="sd">        &quot;&quot;&quot;</span></div>
 
-    <span class="n">status</span><span class="p">:</span> <span class="n">Status</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">Status</span><span class="o">.</span><span class="n">ACTIVE</span><span class="p">)</span>
-    <span class="sd">&quot;&quot;&quot;Status of upload workspace.&quot;&quot;&quot;</span>
-    
+<div class="viewcode-block" id="IStatusable"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.status.html#filemanager.domain.uploads.status.IStatusable">[docs]</a><span class="k">class</span> <span class="nc">IStatusable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for status behavior.&quot;&quot;&quot;</span>
+
+    <span class="n">status</span><span class="p">:</span> <span class="n">Status</span>
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">StatusMixin</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">ACTIVE</span><span class="p">)</span>
-        
+        <span class="sd">&quot;&quot;&quot;Determine whether or not the workspace is active.&quot;&quot;&quot;</span>
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_deleted</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">StatusMixin</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">DELETED</span><span class="p">)</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not the workspace is deleted.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_released</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">StatusMixin</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">RELEASED</span><span class="p">)</span></div>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not the workspace is released.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="IStatusableWorkspace"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.status.html#filemanager.domain.uploads.status.IStatusableWorkspace">[docs]</a><span class="k">class</span> <span class="nc">IStatusableWorkspace</span><span class="p">(</span><span class="n">IBaseWorkspace</span><span class="p">,</span> <span class="n">IStatusable</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for workspace with status behavior.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="Statusable"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.status.html#filemanager.domain.uploads.status.Statusable">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Statusable</span><span class="p">(</span><span class="n">IStatusable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Implements status-related methods and properties.&quot;&quot;&quot;</span>
+
+    <span class="n">status</span><span class="p">:</span> <span class="n">Status</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">Status</span><span class="o">.</span><span class="n">ACTIVE</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Status of upload workspace.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Statusable.args_from_dict"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.status.html#filemanager.domain.uploads.status.Statusable.args_from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">args_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Pluck constructor args from a dict representation.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="n">Status</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">])}</span></div>
+
+<div class="viewcode-block" id="Statusable.to_dict_impl"><a class="viewcode-back" href="../../../../api/filemanager.domain.uploads.status.html#filemanager.domain.uploads.status.Statusable.to_dict_impl">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">to_dict_impl</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="bp">self</span><span class="p">:</span> <span class="s1">&#39;Statusable&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Generate a dict representation.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">value</span><span class="p">}</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not the workspace is active.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">Status</span><span class="o">.</span><span class="n">ACTIVE</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_deleted</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not the workspace is deleted.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">Status</span><span class="o">.</span><span class="n">DELETED</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_released</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Determine whether or not the workspace is released.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">Status</span><span class="o">.</span><span class="n">RELEASED</span><span class="p">)</span></div>
+
 </pre></div>
 
           </div>

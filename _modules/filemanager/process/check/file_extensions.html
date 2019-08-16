@@ -38,7 +38,7 @@
 
 <span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
 
-<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">CheckableWorkspace</span>
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">Workspace</span>
 <span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseChecker</span>
 
 
@@ -48,9 +48,9 @@
 <div class="viewcode-block" id="FixFileExtensions"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_extensions.html#filemanager.process.check.file_extensions.FixFileExtensions">[docs]</a><span class="k">class</span> <span class="nc">FixFileExtensions</span><span class="p">(</span><span class="n">BaseChecker</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Checks and fixes filename extensions for known formats.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">_change_extension</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span>
-                          <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">extension</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_change_extension</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span><span class="p">,</span>
+                          <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">extension</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
         <span class="n">prev_name</span> <span class="o">=</span> <span class="n">u_file</span><span class="o">.</span><span class="n">name</span>
         <span class="n">base_dir</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">u_file</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
         <span class="n">base_name</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
@@ -60,22 +60,22 @@
                               <span class="n">is_persistant</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">u_file</span>
 
-<div class="viewcode-block" id="FixFileExtensions.check_POSTSCRIPT"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_extensions.html#filemanager.process.check.file_extensions.FixFileExtensions.check_POSTSCRIPT">[docs]</a>    <span class="k">def</span> <span class="nf">check_POSTSCRIPT</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span>
-                         <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+<div class="viewcode-block" id="FixFileExtensions.check_POSTSCRIPT"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_extensions.html#filemanager.process.check.file_extensions.FixFileExtensions.check_POSTSCRIPT">[docs]</a>    <span class="k">def</span> <span class="nf">check_POSTSCRIPT</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span><span class="p">,</span>
+                         <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Ensure that postscript files have a ``.ps`` extension.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">ext</span> <span class="o">!=</span> <span class="s1">&#39;ps&#39;</span><span class="p">:</span>
             <span class="n">u_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_extension</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="s1">&#39;ps&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">u_file</span></div>
 
-<div class="viewcode-block" id="FixFileExtensions.check_PDF"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_extensions.html#filemanager.process.check.file_extensions.FixFileExtensions.check_PDF">[docs]</a>    <span class="k">def</span> <span class="nf">check_PDF</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+<div class="viewcode-block" id="FixFileExtensions.check_PDF"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_extensions.html#filemanager.process.check.file_extensions.FixFileExtensions.check_PDF">[docs]</a>    <span class="k">def</span> <span class="nf">check_PDF</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Ensure that PDF files have a ``.pdf`` extension.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">ext</span> <span class="o">!=</span> <span class="s1">&#39;pdf&#39;</span><span class="p">:</span>
             <span class="n">u_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_extension</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="s1">&#39;pdf&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">u_file</span></div>
 
-<div class="viewcode-block" id="FixFileExtensions.check_HTML"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_extensions.html#filemanager.process.check.file_extensions.FixFileExtensions.check_HTML">[docs]</a>    <span class="k">def</span> <span class="nf">check_HTML</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UploadedFile</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">UploadedFile</span><span class="p">:</span>
+<div class="viewcode-block" id="FixFileExtensions.check_HTML"><a class="viewcode-back" href="../../../../api/filemanager.process.check.file_extensions.html#filemanager.process.check.file_extensions.FixFileExtensions.check_HTML">[docs]</a>    <span class="k">def</span> <span class="nf">check_HTML</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">:</span> <span class="n">UserFile</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">UserFile</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Ensure that HTML files have a ``.html`` extension.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">u_file</span><span class="o">.</span><span class="n">ext</span> <span class="o">!=</span> <span class="s1">&#39;html&#39;</span><span class="p">:</span>
             <span class="n">u_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_extension</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">u_file</span><span class="p">,</span> <span class="s1">&#39;html&#39;</span><span class="p">)</span>

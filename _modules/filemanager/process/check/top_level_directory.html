@@ -38,7 +38,7 @@
 
 <span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
 
-<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UploadedFile</span><span class="p">,</span> <span class="n">CheckableWorkspace</span>
+<span class="kn">from</span> <span class="nn">...domain</span> <span class="k">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">UserFile</span><span class="p">,</span> <span class="n">Workspace</span>
 <span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">BaseChecker</span><span class="p">,</span> <span class="n">StopCheck</span>
 
 
@@ -54,7 +54,7 @@
 <span class="sd">    files in a subdirectory.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="RemoveTopLevelDirectory.check_workspace"><a class="viewcode-back" href="../../../../api/filemanager.process.check.top_level_directory.html#filemanager.process.check.top_level_directory.RemoveTopLevelDirectory.check_workspace">[docs]</a>    <span class="k">def</span> <span class="nf">check_workspace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">CheckableWorkspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="RemoveTopLevelDirectory.check_workspace"><a class="viewcode-back" href="../../../../api/filemanager.process.check.top_level_directory.html#filemanager.process.check.top_level_directory.RemoveTopLevelDirectory.check_workspace">[docs]</a>    <span class="k">def</span> <span class="nf">check_workspace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Eliminate single top-level directory.&quot;&quot;&quot;</span>
         <span class="c1"># source_directory = self.source_path</span>
 

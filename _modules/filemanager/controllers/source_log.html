@@ -43,12 +43,14 @@
 
 <span class="kn">from</span> <span class="nn">werkzeug.exceptions</span> <span class="k">import</span> <span class="n">NotFound</span><span class="p">,</span> <span class="n">InternalServerError</span>
 
+<span class="kn">from</span> <span class="nn">arxiv.users</span> <span class="k">import</span> <span class="n">domain</span> <span class="k">as</span> <span class="n">auth_domain</span>
 <span class="kn">from</span> <span class="nn">arxiv.base.globals</span> <span class="k">import</span> <span class="n">get_application_config</span>
 
-<span class="kn">from</span> <span class="nn">..domain</span> <span class="k">import</span> <span class="n">UploadWorkspace</span>
+<span class="kn">from</span> <span class="nn">..domain</span> <span class="k">import</span> <span class="n">Workspace</span>
 <span class="kn">from</span> <span class="nn">..services</span> <span class="k">import</span> <span class="n">database</span>
 <span class="kn">from</span> <span class="nn">.service_log</span> <span class="k">import</span> <span class="n">logger</span>
 <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">_messages</span> <span class="k">as</span> <span class="n">messages</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">util</span>
 
 <span class="n">Response</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">IO</span><span class="p">]],</span> <span class="n">status</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span>
 
@@ -74,14 +76,14 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UploadWorkspace</span><span class="p">]</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+        <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">ioe</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: SourceLogExistCheck: There was a problem connecting&quot;</span>
-                     <span class="s2">&quot; to database.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
+                     <span class="s2">&quot; to database: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">ioe</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_DB_CONNECT_ERROR</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">workspace</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">database</span><span class="o">.</span><span class="n">WorkspaceNotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Workspace not found: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">nf</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Test for source log.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
     <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
@@ -93,12 +95,12 @@
     <span class="k">return</span> <span class="p">{},</span> <span class="n">status</span><span class="o">.</span><span class="n">OK</span><span class="p">,</span> <span class="n">headers</span></div>
 
 
-<div class="viewcode-block" id="get_upload_source_log"><a class="viewcode-back" href="../../../api/filemanager.controllers.source_log.html#filemanager.controllers.source_log.get_upload_source_log">[docs]</a><span class="k">def</span> <span class="nf">get_upload_source_log</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<div class="viewcode-block" id="get_upload_source_log"><a class="viewcode-back" href="../../../api/filemanager.controllers.source_log.html#filemanager.controllers.source_log.get_upload_source_log">[docs]</a><span class="k">def</span> <span class="nf">get_upload_source_log</span><span class="p">(</span><span class="n">upload_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">auth_domain</span><span class="o">.</span><span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get upload workspace log.</span>
 
-<span class="sd">    This log contains details of all actions/requests/warnings/errors/etc related</span>
-<span class="sd">    to specified upload workspace.</span>
+<span class="sd">    This log contains details of all actions/requests/warnings/errors/etc</span>
+<span class="sd">    related to specified upload workspace.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -108,24 +110,23 @@
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    Standard Response tuple containing content, HTTP status, and HTTP headers.</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">user_string</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">format_user_information_for_logging</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Download source log [</span><span class="si">%s</span><span class="s2">].&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">user_string</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UploadWorkspace</span><span class="p">]</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
+        <span class="n">workspace</span><span class="p">:</span> <span class="n">Workspace</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">upload_id</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: GetSourceLog: There was a problem connecting to&quot;</span>
                      <span class="s2">&quot; database.&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">InternalServerError</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_DB_CONNECT_ERROR</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">workspace</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">database</span><span class="o">.</span><span class="n">WorkspaceNotFound</span> <span class="k">as</span> <span class="n">nf</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: Workspace not found: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">messages</span><span class="o">.</span><span class="n">UPLOAD_NOT_FOUND</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">nf</span>
 
 
     <span class="n">filepointer</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">open_pointer</span><span class="p">(</span><span class="s1">&#39;rb&#39;</span><span class="p">)</span>
-    <span class="c1"># if filepointer:</span>
-    <span class="c1">#     name = filepointer.name</span>
-    <span class="c1"># else:</span>
-    <span class="c1">#     name = &quot;&quot;</span>
-
     <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;Content-disposition&quot;</span><span class="p">:</span> <span class="n">f</span><span class="s2">&quot;filename=</span><span class="si">{workspace.log.name}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="s1">&#39;ETag&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">checksum</span><span class="p">,</span>
