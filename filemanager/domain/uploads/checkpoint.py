@@ -190,7 +190,7 @@ class Checkpointable(ICheckpointable):
         if self._all_file_count == 0:
             raise NoSourceFilesToCheckpoint(UPLOAD_WORKSPACE_IS_EMPTY)
 
-        self.__api.add_warning_non_file(
+        self.__api.log.info(
             "Creating checkpoint." + (f"['{user.user_id}']" if user else "")
         )
 
@@ -426,4 +426,4 @@ class Checkpointable(ICheckpointable):
         self.__api.files.ancillary = workspace.files.ancillary
         for u_file in self.__api.iter_files():
             u_file.workspace = cast(IWorkspace, self)
-        self._errors = workspace.errors
+        self._errors = {(e.path, e.code): e for e in workspace.errors}

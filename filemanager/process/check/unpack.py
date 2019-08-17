@@ -15,7 +15,7 @@ logger.propagate = False
 
 UNPACK_ERROR: Code = "unpack_error"
 UNPACK_ERROR_MESSAGE = ("There were problems unpacking '%s'. Please try "
-                        "again and confirm your files.")
+                        "again and confirm your files. Error: %s")
 
 DISALLOWED_FILES: Code = "contains_disallowed_files"
 DISALLOWED_MESSAGE = "%s are not allowed. Removing '%s'"
@@ -107,11 +107,11 @@ class UnpackCompressedTarFiles(BaseChecker):
                                  is_ancillary=is_ancillary)
         return u_file
 
-    def _unpack(self, workspace: Workspace, u_file: UserFile) \
-            -> UserFile:
+    def _unpack(self, workspace: Workspace, u_file: UserFile) -> UserFile:
         if not workspace.is_tarfile(u_file):
             workspace.add_error(u_file, self.UNREADABLE_TAR,
-                                self.UNREADABLE_TAR_MESSAGE % u_file.name)
+                                self.UNREADABLE_TAR_MESSAGE %
+                                (u_file.name, 'not a tar file'))
             return u_file
 
         workspace.log.info(

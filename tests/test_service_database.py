@@ -43,16 +43,18 @@ class TestTranslate(TestCase):
         workspace = mock.MagicMock(spec=Workspace)
         u_file = UserFile(workspace=workspace,
                               path='foo/path.md', is_ancillary=True,
-                              size_bytes=54_022, _errors=[
-                                  Error(severity=Severity.FATAL,
+                              size_bytes=54_022, _errors={
+                                  'fa_tal': Error(severity=Severity.FATAL,
                                         path='foo/path.md',
+                                        code='fa_tal',
                                         message='This is a fatal error',
                                         is_persistant=True),
-                                  Error(severity=Severity.WARNING,
+                                  'mes_sage': Error(severity=Severity.WARNING,
                                         path='foo/path.md',
+                                        code='mes_sage',
                                         message='This is a message',
                                         is_persistant=False),
-                              ])
+                              })
         translated_file = UserFile.from_dict(u_file.to_dict(), workspace)
         self.assertEqual(len(translated_file.errors), 1,
                          'Only one file is preserved')

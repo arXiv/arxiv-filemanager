@@ -49,16 +49,19 @@ class TestTransformFile(TestCase):
         u_file = UserFile(workspace=workspace,
                               path='foo/path.md', is_ancillary=False,
                               file_type=FileType.TEX,
-                              size_bytes=54_022, _errors=[
-                                  Error(severity=Severity.FATAL,
+                              size_bytes=54_022,
+                              _errors={
+                                  'fatal_error': Error(severity=Severity.FATAL,
                                         path='foo/path.md',
+                                        code='fatal_error',
                                         message='This is a fatal error',
                                         is_persistant=True),
-                                  Error(severity=Severity.WARNING,
+                                  'message': Error(severity=Severity.WARNING,
                                         path='foo/path.md',
+                                        code='message',
                                         message='This is a message',
                                         is_persistant=False),
-                              ])
+                              })
         expected = {'name': 'path.md', 'public_filepath': 'foo/path.md',
                     'size': 54_022, 'type': 'TEX',
                     'modified_datetime': u_file.last_modified,
@@ -128,8 +131,8 @@ class TestTransformWorkspace(TestCase):
         workspace.initialize()
         u_file = workspace.create('foo/baz.md')
         u_file2 = workspace.create('secret', is_system=True)
-        workspace.add_error(u_file, 'foo error', is_persistant=True)
-        workspace.add_warning(u_file, 'foo warning', is_persistant=False)
+        workspace.add_error(u_file, 'foo_error', 'foo error', is_persistant=True)
+        workspace.add_warning(u_file, 'foo_warning', 'foo warning', is_persistant=False)
         transformd = transform_workspace(workspace)
         self.assertEqual(transformd['errors'],
                          [('fatal', 'foo/baz.md', 'foo error'),

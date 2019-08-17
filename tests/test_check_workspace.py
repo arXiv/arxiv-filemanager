@@ -304,8 +304,9 @@ class TestUploadScenarios(WorkspaceTestCase):
         self.write_upload('upload1.tar.gz')
         self.workspace.perform_checks()
         self.assertTrue(self.workspace.has_warnings)
-        self.assertIn("File 'espcrc2.sty' is empty (size is zero).",
-                      self.workspace.get_warnings('espcrc2.sty', is_removed=True))
+        self.assertIn("Removed file 'espcrc2.sty' [file is empty].",
+                      self.workspace.get_errors('espcrc2.sty',
+                                                is_removed=True))
 
     def test_well_formed_submission(self):
         """Upload is a well-formed submission package."""
@@ -323,9 +324,7 @@ class TestUploadScenarios(WorkspaceTestCase):
         """Upload is a well-formed submission package."""
         self.write_upload('upload4.gz')
         self.workspace.perform_checks()
-        self.assertTrue(self.workspace.has_warnings)
-        self.assertIn("Renamed 'upload4.gz' to 'upload4'.",
-                      self.workspace.get_warnings('upload4'))
+        self.assertFalse(self.workspace.has_warnings)
         self.assertTrue(self.workspace.has_errors_fatal)
 
     def test_yet_another_well_formed_submission(self):
@@ -358,7 +357,7 @@ class TestNestedArchives(WorkspaceTestCase):
         self.assertTrue(self.workspace.has_warnings)
         self.assertIn('There were problems unpacking \'jz2.zip\'. Please try'
                       ' again and confirm your files.',
-                      self.workspace.get_warnings('jz2.zip'))
+                      ' '.join(self.workspace.get_warnings('jz2.zip')))
 
     def test_contains_top_level_directory(self):
         """Contains a top-level directory."""
@@ -402,7 +401,7 @@ class TestBadFilenames(WorkspaceTestCase):
         self.write_upload('UploadTestWindowCDrive.tar.gz')
         self.workspace.perform_checks()
         self.assertTrue(self.workspace.has_warnings)
-        self.assertIn('Renamed c:\\data\\windows.txt to windows.txt.',
+        self.assertIn("Renamed 'c:\\data\\windows.txt' to 'windows.txt'.",
                       self.workspace.get_warnings('windows.txt'))
 
     def test_contains_illegal_filenames(self):
@@ -410,7 +409,7 @@ class TestBadFilenames(WorkspaceTestCase):
         self.write_upload('Upload9BadFileNames.tar.gz')
         self.workspace.perform_checks()
         self.assertTrue(self.workspace.has_warnings)
-        self.assertIn('Renamed 10-1-1(63).png to 10-1-1_63_.png',
+        self.assertIn("Renamed '10-1-1(63).png' to '10-1-1_63_.png'",
                       ' '.join(self.workspace.get_warnings('10-1-1_63_.png')))
 
 

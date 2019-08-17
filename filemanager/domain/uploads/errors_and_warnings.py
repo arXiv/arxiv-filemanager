@@ -73,6 +73,12 @@ class IErrorsAndWarnings(Protocol):
                              is_persistant: bool = False) -> None:
         """Add a warning for the workspace that is not specific to a file."""
 
+    def get_errors(self, path: str,
+                   is_ancillary: bool = False,
+                   is_system: bool = False,
+                   is_removed: bool = False) -> List[str]:
+        """Get all errors for the file at ``path``."""
+
     def get_warnings(self, path: str,
                      is_ancillary: bool = False,
                      is_system: bool = False,
@@ -223,6 +229,16 @@ class ErrorsAndWarnings(IErrorsAndWarnings):
         self.add_error_non_file(code, msg, severity=Severity.WARNING,
                                 is_persistant=is_persistant)
 
+    def get_errors(self, path: str,
+                   is_ancillary: bool = False,
+                   is_system: bool = False,
+                   is_removed: bool = False) -> List[str]:
+        """Get all errors for the file at ``path``."""
+        u_file = self.__api.files.get(path, is_ancillary=is_ancillary,
+                                      is_system=is_system,
+                                      is_removed=is_removed)
+        return [e.message for e in u_file.errors]
+
     def get_warnings(self, path: str,
                      is_ancillary: bool = False,
                      is_system: bool = False,
@@ -231,8 +247,7 @@ class ErrorsAndWarnings(IErrorsAndWarnings):
         u_file = self.__api.files.get(path, is_ancillary=is_ancillary,
                                       is_system=is_system,
                                       is_removed=is_removed)
-        return [e.message for e in u_file.errors
-                if e.severity is Severity.WARNING]
+        return [e.message for e in u_file.errors if e.is_warning]
 
     def _get_warnings(self, is_active: Optional[bool] = None) -> List[Error]:
         return self._get_warnings_file(is_active) + self._warnings
