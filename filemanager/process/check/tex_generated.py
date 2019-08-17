@@ -4,7 +4,7 @@ import os
 import re
 from arxiv.base import logging
 
-from ...domain import FileType, UserFile, Workspace, Code
+from ...domain import FileType, UserFile, Workspace, Code, Severity
 from .base import BaseChecker
 
 logger = logging.getLogger(__name__)
@@ -20,6 +20,9 @@ class RemoveTeXGeneratedFiles(BaseChecker):
     TEX_PRODUCED = re.compile(r'(.+)\.(log|aux|out|blg|dvi|ps|pdf)$',
                               re.IGNORECASE)
 
+    NAME_CONFLICT: Code = 'name_conflict'
+    NAME_CONFLICT_MSG = "Removed file '%s' due to name conflict."
+
     def check(self, workspace: Workspace, u_file: UserFile) \
             -> UserFile:
         """Check for and remove TeX processing files."""
@@ -32,9 +35,11 @@ class RemoveTeXGeneratedFiles(BaseChecker):
             if workspace.exists(tex_file) or workspace.exists(ucase_tex_file):
                 # Potential conflict / corruption by including TeX generated
                 # files in submission.
-                workspace.remove(u_file,
-                                 f"Removed file '{u_file.name}' due to name"
-                                 " conflict.")
+                workspace.add_error(u_file, self.NAME_CONFLICT,
+                                    self.NAME_CONFLICT_MSG % u_file.name,
+                                    severity=Severity.INFO,
+                                    is_persistant=False)
+                workspace.remove(u_file, self.NAME_CONFLICT_MSG % u_file.name)
         return u_file
 
 

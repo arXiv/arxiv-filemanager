@@ -7,7 +7,7 @@ from typing import Callable, Optional
 
 from arxiv.base import logging
 
-from ...domain import FileType, UserFile, Workspace, Code
+from ...domain import FileType, UserFile, Workspace, Code, Severity
 from .base import BaseChecker
 
 
@@ -41,9 +41,9 @@ class RemoveFilesWithLeadingDot(BaseChecker):
             -> UserFile:
         """Removes files and directories that start with a dot."""
         if u_file.name.startswith('.') or u_file.path.startswith('.'):
-            workspace.add_warning(u_file, self.HIDDEN_FILES_DOT,
-                                  self.HIDDEN_FILES_MESSAGE,
-                                  is_persistant=False)
+            workspace.add_error(u_file, self.HIDDEN_FILES_DOT,
+                                self.HIDDEN_FILES_MESSAGE,
+                                severity=Severity.INFO, is_persistant=False)
             workspace.remove(u_file,
                              f"Removed file '{u_file.name}' [File not"
                              " allowed].")

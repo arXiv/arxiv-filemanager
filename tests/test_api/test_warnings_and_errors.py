@@ -120,12 +120,11 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
             elif level == 'info':
                 info_errors[name].append(msg)
         files = {f['name']: f for f in self.response_data['files']}
-
         self.assertIn("Removed file 'remove.desc' [File not allowed].",
                       info_errors['remove.desc'])
         self.assertNotIn('remove.desc', files, 'File ware removed')
 
-        self.assertIn("Removed file '.junk' [File not allowed].",
+        self.assertIn("Hidden file are not allowed.",
                       info_errors['.junk'])
         self.assertNotIn('.junk', files, 'File was removed')
 
@@ -155,10 +154,7 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
 
         self.assertIn("We do not run bibtex in the auto",
                       ' '.join(warnings['final.bib']))
-        self.assertIn(
-            "Removed the file 'final.bib'. Using 'final.bbl' for references.",
-            info_errors['final.bib']
-        )
+
         self.assertNotIn('final.bib', files, 'File was removed')
 
         self.assertIn(
@@ -253,8 +249,8 @@ class TestUploadingPackageWithLotsOfWarningsAndErrors(TestCase):
                       "Please inspect and remove extraneous backup files.",
                       warnings['submission.tex_'])
 
-        self.assertIn("Renamed submission.tex~ to submission.tex_",
-                      warnings['submission.tex_'])
+        self.assertIn("Renamed 'submission.tex~' to 'submission.tex_'",
+                      ' '.join(warnings['submission.tex_']))
 
         # Another backup file
         self.assertIn("File 'submission.tex.bak' may be a backup file. "

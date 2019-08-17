@@ -402,7 +402,7 @@ class TestBadFilenames(WorkspaceTestCase):
         self.write_upload('UploadTestWindowCDrive.tar.gz')
         self.workspace.perform_checks()
         self.assertTrue(self.workspace.has_warnings)
-        self.assertIn('Renamed c:\\data\\windows.txt to windows.txt',
+        self.assertIn('Renamed c:\\data\\windows.txt to windows.txt.',
                       self.workspace.get_warnings('windows.txt'))
 
     def test_contains_illegal_filenames(self):
@@ -411,7 +411,7 @@ class TestBadFilenames(WorkspaceTestCase):
         self.workspace.perform_checks()
         self.assertTrue(self.workspace.has_warnings)
         self.assertIn('Renamed 10-1-1(63).png to 10-1-1_63_.png',
-                      self.workspace.get_warnings('10-1-1_63_.png'))
+                      ' '.join(self.workspace.get_warnings('10-1-1_63_.png')))
 
 
 class TestUnpack(WorkspaceTestCase):

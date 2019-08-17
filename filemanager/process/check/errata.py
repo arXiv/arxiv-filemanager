@@ -4,10 +4,13 @@ import os
 import re
 from arxiv.base import logging
 
-from ...domain import FileType, UserFile, Workspace, Code
+from ...domain import FileType, UserFile, Workspace, Code, Severity
 from .base import BaseChecker
 
 logger = logging.getLogger(__name__)
+
+DISALLOWED_FILE: Code = 'disallowed_file'
+DISALLOWED_FILE_MESSAGE = "Removed file '%s' [File not allowed]."
 
 
 class RemoveHyperlinkStyleFiles(BaseChecker):
@@ -23,14 +26,23 @@ class RemoveHyperlinkStyleFiles(BaseChecker):
     DOT_TEX_DETECTED: Code = 'dot_tex_detected'
     DOT_TEX_MESSAGE = "Possible submitter error. Unwanted '%s'"
 
-    WARNING_MSG = ("Found hyperlink-compatible package '%s'. Will remove and"
-                   " use hypertex-compatible local version")
+    HYPERLINK_COMPATIBLE: Code = 'hyperlink_compatible_package'
+    HYPERLINK_COMPATIBLE_MESSAGE = (
+        "Found hyperlink-compatible package '%s'. Will remove and use"
+        " hypertex-compatible local version"
+    )
 
     def check(self, workspace: Workspace, u_file: UserFile) \
             -> UserFile:
         """Check for and remove hyperlink styles espcrc2 and lamuphys."""
         if self.DOT_STY.search(u_file.name):
-            workspace.remove(u_file, self.WARNING_MSG % u_file.name)
+            workspace.add_error(
+                u_file, self.HYPERLINK_COMPATIBLE,
+                self.HYPERLINK_COMPATIBLE_MESSAGE % u_file.name,
+                severity=Severity.INFO, is_persistant=False
+            )
+            workspace.remove(u_file,
+                             self.HYPERLINK_COMPATIBLE_MESSAGE % u_file.name)
 
         elif self.DOT_TEX.search(u_file.name):
             # I'm not sure why this is just a warning
@@ -50,9 +62,10 @@ class RemoveDisallowedFiles(BaseChecker):
             -> UserFile:
         """Check for and removes disallowed files."""
         if u_file.name in self.DISALLOWED:
-            workspace.remove(u_file,
-                             f"Removed file '{u_file.name}' [File not"
-                             " allowed].")
+            workspace.add_error(u_file, DISALLOWED_FILE,
+                                DISALLOWED_FILE_MESSAGE % u_file.name,
+                                severity=Severity.INFO, is_persistant=False)
+            workspace.remove(u_file, DISALLOWED_FILE_MESSAGE % u_file.name)
         return u_file
 
 
@@ -69,9 +82,11 @@ class RemoveMetaFiles(BaseChecker):
         """Check for and remove disallowed meta files."""
         for pattern in self.DISALLOWED_PATTERNS:
             if pattern.search(u_file.name):
-                workspace.remove(u_file,
-                                 f"Removed file '{u_file.name}' [File not"
-                                 " allowed].")
+                workspace.add_error(u_file, DISALLOWED_FILE,
+                                    DISALLOWED_FILE_MESSAGE % u_file.name,
+                                    severity=Severity.INFO,
+                                    is_persistant=False)
+                workspace.remove(u_file, DISALLOWED_FILE_MESSAGE % u_file.name)
         return u_file
 
 
@@ -94,6 +109,9 @@ class RemoveExtraneousRevTeXFiles(BaseChecker):
             -> UserFile:
         """Check for and remove files already included in TeX Live release."""
         if self.EXTRANEOUS.search(u_file.name):
+            workspace.add_error(u_file, DISALLOWED_FILE,
+                                self.REVTEX_WARNING_MSG,
+                                severity=Severity.INFO, is_persistant=False)
             workspace.remove(u_file, self.REVTEX_WARNING_MSG)
         return u_file
 
@@ -120,6 +138,8 @@ class RemoveDiagramsPackage(BaseChecker):
             -> UserFile:
         """Check for and remove the diagrams package."""
         if self.DIAGRAMS.search(u_file.name):
+            workspace.add_error(u_file, DISALLOWED_FILE, self.DIAGRAMS_WARNING,
+                                severity=Severity.INFO, is_persistant=False)
             workspace.remove(u_file, self.DIAGRAMS_WARNING)
         return u_file
 
@@ -141,6 +161,8 @@ class RemoveAADemoFile(BaseChecker):
             -> UserFile:
         """Check for and remove the ``aa.dem`` file."""
         if u_file.name == 'aa.dem':
+            workspace.add_error(u_file, DISALLOWED_FILE, self.AA_DEM_MSG,
+                                severity=Severity.INFO, is_persistant=False)
             workspace.remove(u_file, self.AA_DEM_MSG)
         return u_file
 
@@ -161,6 +183,8 @@ class RemoveMissingFontFile(BaseChecker):
             -> UserFile:
         """Check for and remove the ``missfont.log`` file."""
         if u_file.name == 'missfont.log':
+            workspace.add_error(u_file, DISALLOWED_FILE, self.MISSFONT_WARNING,
+                                severity=Severity.INFO, is_persistant=False)
             workspace.remove(u_file, self.MISSFONT_WARNING)
         return u_file
 
@@ -183,6 +207,9 @@ class RemoveSyncTeXFiles(BaseChecker):
             -> UserFile:
         """Check for and remove synctex files."""
         if self.SYNCTEX.search(u_file.name):
+            workspace.add_error(u_file, DISALLOWED_FILE,
+                                self.SYNCTEX_MSG % u_file.name,
+                                severity=Severity.INFO, is_persistant=False)
             workspace.remove(u_file, self.SYNCTEX_MSG % u_file.name)
         return u_file
 
