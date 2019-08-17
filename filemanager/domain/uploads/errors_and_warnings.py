@@ -207,7 +207,7 @@ class ErrorsAndWarnings(IErrorsAndWarnings):
         if path is None:
             self._remove_error(code, path)
         else:
-            self.__api.get(path).remove_error(code)
+            self.__api.files.get(path).remove_error(code)
 
 
     def add_error_non_file(self, code: Code, msg: str,

@@ -25,8 +25,12 @@ class FileIndex:
     removed: Dict[str, UserFile] = field(default_factory=dict)
     system: Dict[str, UserFile] = field(default_factory=dict)
 
-    def set(self, path: str, u_file: UserFile) -> None:
+    def add(self, u_file: UserFile) -> None:
         """Add a :class:`.UserFile` to the index."""
+        self.set(u_file.path, u_file)
+
+    def set(self, path: str, u_file: UserFile) -> None:
+        """Add a :class:`.UserFile` to the index at ``path``."""
         if u_file.is_system:
             self.system[path] = u_file  # pylint: disable=unsupported-assignment-operation
         elif u_file.is_removed:
