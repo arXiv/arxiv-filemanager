@@ -4,7 +4,7 @@ import os
 
 from arxiv.base import logging
 
-from ...domain import FileType, UserFile, Workspace
+from ...domain import FileType, UserFile, Workspace, Code
 from .base import BaseChecker, StopCheck
 
 
@@ -20,6 +20,9 @@ class RemoveTopLevelDirectory(BaseChecker):
     files in a subdirectory.
     """
 
+    TOP_LEVEL_DIRECTORY: Code = 'top_level_directory_removed'
+    TOP_LEVEL_DIRECTORY_MESSAGE = "Removed top level directory"
+
     def check_workspace(self, workspace: Workspace) -> None:
         """Eliminate single top-level directory."""
         # source_directory = self.source_path
@@ -33,7 +36,8 @@ class RemoveTopLevelDirectory(BaseChecker):
         if len(entries) == 1 \
                 and entries[0].is_directory and not entries[0].is_ancillary:
 
-            workspace.add_warning(entries[0], "Removed top level directory",
+            workspace.add_warning(entries[0], self.TOP_LEVEL_DIRECTORY,
+                                  self.TOP_LEVEL_DIRECTORY_MESSAGE,
                                   is_persistant=False)
             for _, child in workspace.iter_children(entries[0], max_depth=1):
                 _, new_path = child.path.split(entries[0].path, 1)

@@ -4,16 +4,27 @@ import os
 
 from arxiv.base import logging
 
-from ...domain import FileType, UserFile, Workspace, SourceType
+from ...domain import FileType, UserFile, Workspace, SourceType, Code
 from .base import BaseChecker, StopCheck
 
 
 logger = logging.getLogger(__name__)
 logger.propagate = False
 
+INVALID_SOURCE_TYPE: Code = 'invalid_source_type'
+
 
 class InferSourceType(BaseChecker):
     """Attempt to determine the source type for the workspace as a whole."""
+
+    ALL_IGNORE_MESSAGE = (
+        "All files are auto-ignore. If you intended to withdraw the "
+        "article, please use the 'withdraw' function from the list "
+        "of articles on your account page."
+    )
+    SINGLE_ANC_MESSAGE = 'Found single ancillary file. Invalid submission.'
+    SINGLE_FILE_UNKNOWN_MESSAGE = 'Could not determine file type.'
+    UNSUPPORTED_MESSAGE = 'Unsupported submission type'
 
     def check(self, workspace: Workspace, u_file: UserFile) \
             -> UserFile:
@@ -25,8 +36,8 @@ class InferSourceType(BaseChecker):
         if u_file.is_ancillary or u_file.is_always_ignore:
             logger.debug('Ancillary or always-ignore file; invalid source')
             workspace.source_type = SourceType.INVALID
-            workspace.add_error_non_file('Found single ancillary file. Invalid'
-                                         ' submission.')
+            workspace.add_error_non_file(INVALID_SOURCE_TYPE,
+                                         self.SINGLE_ANC_MESSAGE)
         return u_file
 
     def check_workspace(self, workspace: Workspace) -> None:
@@ -67,11 +78,8 @@ class InferSourceType(BaseChecker):
         ))
         if type_counts['files'] == type_counts['ignore']:
             workspace.source_type = SourceType.INVALID
-            workspace.add_warning_non_file(
-                "All files are auto-ignore. If you intended to withdraw the"
-                " article, please use the 'withdraw' function from the list"
-                "of articles on your account page."
-            )
+            workspace.add_warning_non_file(INVALID_SOURCE_TYPE,
+                                           self.ALL_IGNORE_MESSAGE)
             logger.debug('All files are auto-ignore; source type is invalid')
         elif type_counts['all_files'] > 0 and type_counts['files'] == 0:
             # No source files detected, extra ancillary files may be present
@@ -107,6 +115,7 @@ class InferSourceType(BaseChecker):
         """Check for single-file PDF source package."""
         logger.debug('Check PDF?')
         if workspace.file_count == 1:
+            workspace.remove_error(INVALID_SOURCE_TYPE)
             workspace.source_type = SourceType.PDF
         return u_file
 
@@ -122,7 +131,8 @@ class InferSourceType(BaseChecker):
         """Check for single-file source with failed type detection."""
         if workspace.source_type.is_unknown and workspace.file_count == 1:
             workspace.source_type = SourceType.INVALID
-            workspace.add_error(u_file, 'Could not determine file type.')
+            workspace.add_error(u_file, INVALID_SOURCE_TYPE,
+                                self.SINGLE_FILE_UNKNOWN_MESSAGE)
         return u_file
 
     # def check_DOS_EPS(self, workspace: Workspace, u_file: UserFile) \
@@ -138,5 +148,6 @@ class InferSourceType(BaseChecker):
         if workspace.source_type.is_unknown and workspace.file_count == 1:
             logger.debug('Source type not known, and only one file')
             workspace.source_type = SourceType.INVALID
-            workspace.add_error(u_file, 'Unsupported submission type')
+            workspace.add_error(u_file, INVALID_SOURCE_TYPE,
+                                self.UNSUPPORTED_MESSAGE)
         return u_file

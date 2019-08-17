@@ -16,7 +16,7 @@ from typing_extensions import Protocol
 from ..index import FileIndex
 
 from ..uploaded_file import UserFile
-from ..error import Error
+from ..error import Error, Severity
 from ..file_type import FileType
 
 from .base import IStorageAdapter, IBaseWorkspace
@@ -32,7 +32,7 @@ class IWorkspace(IBaseWorkspace, Protocol):
     """
 
     def add_error(self, u_file: UserFile, msg: str,
-                  severity: Error.Severity = Error.Severity.FATAL,
+                  severity: Severity = Severity.FATAL,
                   is_persistant: bool = True) -> None:
         """Add an error for a specific file."""
 
@@ -318,7 +318,7 @@ class FileMutations(IFileMutations):
         u_file.is_removed = True
         u_file.reason_for_removal = reason
 
-        self.__api.add_error(u_file, reason, severity=Error.Severity.INFO,
+        self.__api.add_error(u_file, reason, severity=Severity.INFO,
                              is_persistant=False)
 
         self.drop_refs(u_file.path, is_ancillary=u_file.is_ancillary,

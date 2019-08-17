@@ -11,7 +11,7 @@ from pytz import UTC
 from dataclasses import dataclass, field
 
 from .file_type import FileType
-from .error import Error
+from .error import Error, Code
 
 
 class IWorkspace(Protocol):
@@ -80,7 +80,8 @@ class UserFile:
     last_modified: datetime = field(default_factory=partial(datetime.now, UTC))
 
     reason_for_removal: Optional[str] = field(default=None)
-    _errors: List[Error] = field(default_factory=list)
+    # _errors: List[Error] = field(default_factory=list)
+    _errors: Dict[Code, Error] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Make sure that directory paths end with '/'."""
@@ -95,15 +96,20 @@ class UserFile:
     def errors(self) -> List[Error]:
         """Get errors for this file."""
         # May have inherited errors with a different path.
-        for error in self._errors:
+        for error in self._errors.values():
             error.path = self.path
             if self.is_removed:     # Mark all of our errors as non-persistant.
                 error.is_persistant = False
-        return self._errors
+        return list(self._errors.values())
 
     def add_error(self, error: Error) -> None:
         """Add an error to this file."""
-        self._errors.append(error)
+        # pylint doesn't know that dataclasses is initializing this with a
+        # dict.
+        self._errors[error.code] = error  # pylint: disable=unsupported-assignment-operation
+
+    def remove_error(self, code: Code) -> None:
+        self._errors.pop(code, None)
 
     @property
     def name(self) -> str:
@@ -194,6 +200,7 @@ class UserFile:
             # fromisoformat() is backported from 3.7.
             last_modified = datetime.fromisoformat(last_modified)  # type: ignore
 
+        _errors = [Error.from_dict(error) for error in data.get('errors', [])]
         return cls(
             workspace=workspace,
             path=data['path'],
@@ -206,7 +213,6 @@ class UserFile:
             is_directory=data.get('is_directory', False),
             last_modified=last_modified,
             reason_for_removal=data.get('reason_for_removal'),
-            _errors=[Error.from_dict(error)
-                     for error in data.get('errors', [])],
+            _errors={e.code: e for e in _errors},
             file_type=FileType(data['file_type'])
         )

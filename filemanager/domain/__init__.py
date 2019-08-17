@@ -5,5 +5,5 @@ from .uploads import UserFile, Workspace, IChecker, SourceLog, SourceType, \
     Status, LockState
 from .file_type import FileType
 from .uploads import ICheckingStrategy
-from .error import Error
+from .error import Error, Severity, Code
 from .index import NoSuchFile, FileIndex

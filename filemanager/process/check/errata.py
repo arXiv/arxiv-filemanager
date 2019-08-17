@@ -4,7 +4,7 @@ import os
 import re
 from arxiv.base import logging
 
-from ...domain import FileType, UserFile, Workspace
+from ...domain import FileType, UserFile, Workspace, Code
 from .base import BaseChecker
 
 logger = logging.getLogger(__name__)
@@ -17,10 +17,14 @@ class RemoveHyperlinkStyleFiles(BaseChecker):
     These are styles that conflict with internal hypertex package.
     """
 
-    WARNING_MSG = ("Found hyperlink-compatible package '%s'. Will remove and"
-                   " use hypertex-compatible local version")
     DOT_STY = re.compile(r'^(espcrc2|lamuphys)\.sty$')
     DOT_TEX = re.compile(r'^(espcrc2|lamuphys)\.tex$')
+
+    DOT_TEX_DETECTED: Code = 'dot_tex_detected'
+    DOT_TEX_MESSAGE = "Possible submitter error. Unwanted '%s'"
+
+    WARNING_MSG = ("Found hyperlink-compatible package '%s'. Will remove and"
+                   " use hypertex-compatible local version")
 
     def check(self, workspace: Workspace, u_file: UserFile) \
             -> UserFile:
@@ -30,9 +34,8 @@ class RemoveHyperlinkStyleFiles(BaseChecker):
 
         elif self.DOT_TEX.search(u_file.name):
             # I'm not sure why this is just a warning
-            workspace.add_warning(u_file,
-                                  "Possible submitter error. Unwanted"
-                                  f" '{u_file.name}'")
+            workspace.add_warning(u_file, self.DOT_TEX_DETECTED,
+                                  self.DOT_TEX_MESSAGE % u_file.name)
         return u_file
 
 
@@ -199,8 +202,6 @@ class FixTGZFileName(BaseChecker):
             new_name = self.PTN.sub('', prev_name)
             new_path = os.path.join(base_path, new_name)
             workspace.rename(u_file, new_path)
-            workspace.add_warning(u_file,
-                                  f"Renamed '{prev_name}' to '{new_name}'.")
         return u_file
 
 
@@ -208,6 +209,8 @@ class FixTGZFileName(BaseChecker):
 # when we are also removing the file. -- Erick 2019-06-25
 class RemoveDOCFiles(BaseChecker):
     """Removes .doc files that fail type checks."""
+
+    MS_WORD_NOT_SUPPORTED: Code = 'ms_word_not_supported'
 
     DOC_WARNING = (
         "Your submission has been rejected because it contains "
@@ -234,5 +237,6 @@ class RemoveDOCFiles(BaseChecker):
             # -- Erick 2019-06-25
             #
             # workspace.remove(u_file)
-            workspace.add_error(u_file, self.DOC_WARNING)
+            workspace.add_error(u_file, self.MS_WORD_NOT_SUPPORTED,
+                                self.DOC_WARNING)
         return u_file

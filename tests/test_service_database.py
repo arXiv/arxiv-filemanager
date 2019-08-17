@@ -8,7 +8,7 @@ from pytz import UTC
 from typing import Any
 import sqlalchemy
 from filemanager.services import database
-from filemanager.domain import Workspace, Error, UserFile, Status
+from filemanager.domain import Workspace, Error, UserFile, Status, Severity
 from filemanager.services.storage import SimpleStorageAdapter
 
 
@@ -17,12 +17,12 @@ class TestTranslate(TestCase):
 
     def test_translate_error(self):
         """Translate an :class:`.Error` to and from a ``dict``."""
-        error = Error(severity=Error.Severity.FATAL, path='foo/path.md',
+        error = Error(severity=Severity.FATAL, path='foo/path.md',
                                message='This is a message',
                                is_persistant=True)
         self.assertEqual(error, Error.from_dict(error.to_dict()),
                          'Error is preserved with fidelity')
-        error = Error(severity=Error.Severity.FATAL, path='foo/path.md',
+        error = Error(severity=Severity.FATAL, path='foo/path.md',
                                message='This is a message',
                                is_persistant=False)
         self.assertEqual(error, Error.from_dict(error.to_dict()),
@@ -44,11 +44,11 @@ class TestTranslate(TestCase):
         u_file = UserFile(workspace=workspace,
                               path='foo/path.md', is_ancillary=True,
                               size_bytes=54_022, _errors=[
-                                  Error(severity=Error.Severity.FATAL,
+                                  Error(severity=Severity.FATAL,
                                         path='foo/path.md',
                                         message='This is a fatal error',
                                         is_persistant=True),
-                                  Error(severity=Error.Severity.WARNING,
+                                  Error(severity=Severity.WARNING,
                                         path='foo/path.md',
                                         message='This is a message',
                                         is_persistant=False),
@@ -57,7 +57,7 @@ class TestTranslate(TestCase):
         self.assertEqual(len(translated_file.errors), 1,
                          'Only one file is preserved')
         self.assertEqual(translated_file.errors[0].severity,
-                         Error.Severity.FATAL,
+                         Severity.FATAL,
                          'The persistant error is preserved')
 
 

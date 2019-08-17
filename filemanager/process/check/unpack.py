@@ -5,7 +5,7 @@ import tarfile
 import zipfile
 from arxiv.base import logging
 
-from ...domain import FileType, UserFile, Workspace
+from ...domain import FileType, UserFile, Workspace, Code
 from .base import BaseChecker
 
 
@@ -13,11 +13,20 @@ logger = logging.getLogger(__name__)
 logger.propagate = False
 
 
+UNPACK_ERROR: Code = "unpack_error"
+UNPACK_ERROR_MESSAGE = ("There were problems unpacking '%s'. Please try "
+                        "again and confirm your files.")
+
+DISALLOWED_FILES: Code = "contains_disallowed_files"
+DISALLOWED_MESSAGE = "%s are not allowed. Removing '%s'"
+
+
 class UnpackCompressedTarFiles(BaseChecker):
     """Unpack any compressed Tar files in a workspace."""
 
-    UNPACK_ERROR_MSG = ("There were problems unpacking '%s'. Please try again"
-                        " and confirm your files.")
+    UNREADABLE_TAR: Code = "tar_file_unreadable"
+    UNREADABLE_TAR_MESSAGE = "Unable to read tar '%s': %s"
+
 
     def check_TAR(self, workspace: Workspace, u_file: UserFile) \
             -> UserFile:
@@ -33,6 +42,12 @@ class UnpackCompressedTarFiles(BaseChecker):
             -> UserFile:
         """Unpack a bzip2 file."""
         return self._unpack(workspace, u_file)
+
+    def _warn_disallowed(self, workspace: Workspace, u_file: UserFile,
+                         file_type: str, tarinfo: tarfile.TarInfo) -> None:
+        workspace.add_warning(u_file, DISALLOWED_FILES,
+                              DISALLOWED_MESSAGE % (file_type, tarinfo.name),
+                              is_persistant=False)
 
     def _unpack_file(self, workspace: Workspace, u_file: UserFile,
                      tar: tarfile.TarFile, tarinfo: tarfile.TarInfo) \
@@ -56,33 +71,26 @@ class UnpackCompressedTarFiles(BaseChecker):
         # Warn about entities we don't want to see in upload archives. We
         # did not check carefully in legacy system and hard links caused
         # bad things to happen.
-        msg = '%s are not allowed. ' + f'Removing {tarinfo.name}'
-        if tarinfo.issym():  # sym link
-            workspace.add_warning(u_file, msg % 'Symbolic links',
-                                  is_persistant=False)
-        elif tarinfo.islnk():  # hard link
-            workspace.add_warning(u_file, msg % 'Hard links',
-                                  is_persistant=False)
+        if tarinfo.issym():
+            self._warn_disallowed(workspace, u_file, 'Symbolic links', tarinfo)
+        elif tarinfo.islnk():
+            self._warn_disallowed(workspace, u_file, 'Hard links', tarinfo)
         elif tarinfo.ischr():
-            workspace.add_warning(u_file, msg % 'Character devices',
-                                  is_persistant=False)
+            self._warn_disallowed(workspace, u_file, 'Character devices',
+                                  tarinfo)
         elif tarinfo.isblk():
-            workspace.add_warning(u_file, msg % 'Block devices',
-                                  is_persistant=False)
+            self._warn_disallowed(workspace, u_file, 'Block devices', tarinfo)
         elif tarinfo.isfifo():
-            workspace.add_warning(u_file, msg % 'FIFO devices',
-                                  is_persistant=False)
+            self._warn_disallowed(workspace, u_file, 'FIFO devices', tarinfo)
         elif tarinfo.isdev():
-            workspace.add_warning(u_file, msg % 'Character devices',
-                                  is_persistant=False)
+            self._warn_disallowed(workspace, u_file, 'Character devices',
+                                  tarinfo)
 
         # Extract a regular file or directory.
         elif tarinfo.isreg() or tarinfo.isdir():
             parent = workspace.get_full_path(u_file.dir,
                                              is_ancillary=u_file.is_ancillary)
             tar.extract(tarinfo, parent)
-            logger.debug('Unpacked to %s', parent)
-
             os.utime(parent)  # Update access and modified times to now.
             # If the parent is not explicitly an ancillary file, leave it up
             # to the workspace to infer whether or not the new file is
@@ -102,7 +110,8 @@ class UnpackCompressedTarFiles(BaseChecker):
     def _unpack(self, workspace: Workspace, u_file: UserFile) \
             -> UserFile:
         if not workspace.is_tarfile(u_file):
-            workspace.add_error(u_file, f'Unable to read tar {u_file.name}')
+            workspace.add_error(u_file, self.UNREADABLE_TAR,
+                                self.UNREADABLE_TAR_MESSAGE % u_file.name)
             return u_file
 
         workspace.log.info(
@@ -118,8 +127,8 @@ class UnpackCompressedTarFiles(BaseChecker):
 
         except tarfile.TarError as e:
             # Do something better with as error
-            workspace.add_warning(u_file, self.UNPACK_ERROR_MSG % u_file.name)
-            workspace.add_warning(u_file, f'Tar error message: {e}')
+            workspace.add_warning(u_file, UNPACK_ERROR,
+                                  UNPACK_ERROR_MESSAGE % (u_file.name, e))
             return u_file
 
         workspace.remove(u_file, f"Removed packed file '{u_file.name}'.")
@@ -151,8 +160,8 @@ class UnpackCompressedZIPFiles(BaseChecker):
             # TODO: Think about warnings a bit. Tar/zip problems currently
             # reported as warnings. Upload warnings allow submitter to continue
             # on to process/compile step.
-            workspace.add_warning(u_file, self.UNPACK_ERROR_MSG % u_file.name)
-            workspace.add_warning(u_file, f'Zip error message: {e}')
+            workspace.add_warning(u_file, UNPACK_ERROR,
+                                  UNPACK_ERROR_MESSAGE % (u_file.name, e))
             return u_file
 
         # Now move zip file out of way to removed directory
@@ -195,5 +204,5 @@ class UnpackCompressedZFiles(BaseChecker):
                          u_file: UserFile) -> UserFile:
         """Uncompress the .Z file (not implemented)."""
         logger.debug("We can't uncompress .Z files yet: %s", u_file.path)
-        workspace.log.info('Unable to uncompress .Z file. Not implemented yet.')
+        workspace.log.info('Unable to uncompress .Z file. Not implemented.')
         return u_file

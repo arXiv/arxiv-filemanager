@@ -2,7 +2,7 @@ import mmap
 import re
 from arxiv.base import logging
 
-from ...domain import UserFile, Workspace
+from ...domain import UserFile, Workspace, Code
 
 logger = logging.getLogger(__name__)
 
@@ -10,6 +10,9 @@ logger = logging.getLogger(__name__)
 # File types unmacify is interested in
 PC = 'pc'
 MAC = 'mac'
+
+UNMACIFIED: Code = 'unmacified'
+TRUNCATED: Code = 'truncated'
 
 
 def unmacify(workspace: Workspace, uploaded_file: UserFile) \
@@ -123,7 +126,7 @@ def check_file_termination(workspace: Workspace,
             if input_bytes[1] == 0x0A:
                 workspace.log.info(f"{u_file.path} [stripped newline] ")
 
-            workspace.add_warning(u_file,
+            workspace.add_warning(u_file, UNMACIFIED,
                                   f"{msg} stripped from {u_file.path}.",
                                   is_persistant=False)
 
@@ -132,6 +135,6 @@ def check_file_termination(workspace: Workspace,
         f.seek(-1, 2)
         last_byte = f.read(1)
         if last_byte != b'\n':
-            workspace.add_warning(u_file,
+            workspace.add_warning(u_file, TRUNCATED,
                                   f"File '{u_file.path}' does not end with"
                                   " newline (\\n), TRUNCATED?")

@@ -164,7 +164,7 @@ def retrieve(upload_id: int, skip_cache: bool = False) -> Workspace:
         )
     if upload_data.errors:
         for datum in upload_data.errors:
-            workspace._errors.append(Error.from_dict(datum))
+            workspace._insert_error(Error.from_dict(datum))
     workspace.initialize()
     return workspace
 
@@ -261,7 +261,7 @@ def update(workspace: Workspace) -> None:
                     for p, f in workspace.files.removed.items()},
         'system': {p: f.to_dict() for p, f in workspace.files.system.items()},
     }
-    upload_data.errors = [e.to_dict() for e in workspace._errors
+    upload_data.errors = [e.to_dict() for e in workspace._errors.values()
                           if e.is_persistant]
 
     # 2019-06-28: In earlier versions, the ``modified_datetime`` of the

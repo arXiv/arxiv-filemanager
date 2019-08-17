@@ -4,7 +4,7 @@ import io
 from contextlib import contextmanager
 from unittest import TestCase, mock
 from datetime import datetime
-from filemanager.domain import UserFile, Workspace, Error, FileType
+from filemanager.domain import UserFile, Workspace, Error, FileType, Severity
 from filemanager.controllers.transform import transform_error, \
     transform_file, transform_workspace
 
@@ -14,14 +14,14 @@ class TestTransformError(TestCase):
 
     def test_transform_fatal_error(self):
         """Transform a fatal :class:`.Error."""
-        error = Error(severity=Error.Severity.FATAL, path='foo/path.md',
+        error = Error(severity=Severity.FATAL, path='foo/path.md',
                       message='This is a message', is_persistant=True)
         expected = ('fatal', 'foo/path.md', 'This is a message')
         self.assertEqual(transform_error(error), expected)
 
     def test_transform_warning_error(self):
         """Transform a warning :class:`.Error."""
-        error = Error(severity=Error.Severity.WARNING, path='foo/path.md',
+        error = Error(severity=Severity.WARNING, path='foo/path.md',
                       message='This is a message', is_persistant=True)
         expected = ('warn', 'foo/path.md', 'This is a message')
         self.assertEqual(transform_error(error), expected)
@@ -50,11 +50,11 @@ class TestTransformFile(TestCase):
                               path='foo/path.md', is_ancillary=False,
                               file_type=FileType.TEX,
                               size_bytes=54_022, _errors=[
-                                  Error(severity=Error.Severity.FATAL,
+                                  Error(severity=Severity.FATAL,
                                         path='foo/path.md',
                                         message='This is a fatal error',
                                         is_persistant=True),
-                                  Error(severity=Error.Severity.WARNING,
+                                  Error(severity=Severity.WARNING,
                                         path='foo/path.md',
                                         message='This is a message',
                                         is_persistant=False),

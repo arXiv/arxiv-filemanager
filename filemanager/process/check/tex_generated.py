@@ -4,7 +4,7 @@ import os
 import re
 from arxiv.base import logging
 
-from ...domain import FileType, UserFile, Workspace
+from ...domain import FileType, UserFile, Workspace, Code
 from .base import BaseChecker
 
 logger = logging.getLogger(__name__)
@@ -46,12 +46,14 @@ class DisallowDVIFiles(BaseChecker):
     was also included???????
     """
 
-    ERROR_MSG = ('%s is a TeX-produced DVI file. Please submit the TeX source'
-                 ' instead.')
+    DVI_NOT_ALLOWED: Code
+    DVI_MESSAGE = ('%s is a TeX-produced DVI file. Please submit the TeX'
+                   'source instead.')
 
     def check_DVI(self, workspace: Workspace, u_file: UserFile) \
             -> UserFile:
         """Add an error for any non-ancillary DVI file."""
         if not u_file.is_ancillary:
-            workspace.add_error(u_file, self.ERROR_MSG % u_file.name)
+            workspace.add_error(u_file, self.DVI_NOT_ALLOWED,
+                                self.DVI_MESSAGE % u_file.name)
         return u_file

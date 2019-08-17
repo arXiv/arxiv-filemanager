@@ -4,7 +4,7 @@ import os
 import re
 from arxiv.base import logging
 
-from ...domain import FileType, UserFile, Workspace
+from ...domain import FileType, UserFile, Workspace, Code
 from .base import BaseChecker
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,8 @@ class CheckForUnacceptableImages(BaseChecker):
     """
 
     UNACCEPTABLE = re.compile(r'\.(pcx|bmp|wmf|opj|pct|tiff?)$', re.IGNORECASE)
-    ERROR_MSG = (
+    UNSUPPORTED_IMAGE: Code = 'unsupported_image'
+    UNSUPPORTED_IMAGE_MESSAGE = (
         f"%s is not a supported graphics format: most "
         "readers do not have the programs needed to view and print "
         ".$format figures. Please save your [% format %] "
@@ -35,5 +36,9 @@ class CheckForUnacceptableImages(BaseChecker):
         """Check and warn about image types that are not accepted."""
         match = self.UNACCEPTABLE.search(u_file.name)
         if match:
-            workspace.add_warning(u_file, self.ERROR_MSG % match.group(1))
+            workspace.add_warning(
+                u_file,
+                self.UNSUPPORTED_IMAGE,
+                self.UNSUPPORTED_IMAGE_MESSAGE % match.group(1)
+            )
         return u_file
