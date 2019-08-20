@@ -42,10 +42,6 @@ class InferSourceType(BaseChecker):
 
     def check_workspace(self, workspace: Workspace) -> None:
         """Determine the source type for the workspace as a whole."""
-        logger.debug('Check whole workspace')
-        # if not workspace.source_type.is_unknown:
-        #     return
-
         if workspace.file_count == 0:
             # No files detected, were all files removed? did user clear out
             # files? Since users are allowed to remove all files we won't
@@ -56,8 +52,6 @@ class InferSourceType(BaseChecker):
             return
 
         if not workspace.source_type.is_unknown:
-            logger.debug('Source type already identified as %s',
-                         workspace.source_type)
             return
 
         type_counts = workspace.get_file_type_counts()
@@ -84,22 +78,24 @@ class InferSourceType(BaseChecker):
         elif type_counts['all_files'] > 0 and type_counts['files'] == 0:
             # No source files detected, extra ancillary files may be present
             # User may have deleted main document source.
-            logger.debug('No active (non-ancillary) submission files')
             workspace.source_type = SourceType.INVALID
         elif type_counts[FileType.HTML] > 0 \
                 and type_counts['files'] == html_aux_file_count:
+            workspace.remove_error(INVALID_SOURCE_TYPE)
             workspace.source_type = SourceType.HTML
         elif type_counts[FileType.POSTSCRIPT] > 0 \
                 and type_counts['files'] == postscript_aux_file_counts:
+            workspace.remove_error(INVALID_SOURCE_TYPE)
             workspace.source_type = SourceType.POSTSCRIPT
         else:   # Default source type is TEX
-            logger.debug('Default source type is TeX')
+            workspace.remove_error(INVALID_SOURCE_TYPE)
             workspace.source_type = SourceType.TEX
 
     def check_tex_types(self, workspace: Workspace,
                         u_file: UserFile) -> UserFile:
         """Check for single-file TeX source package."""
         if workspace.source_type.is_unknown and workspace.file_count == 1:
+            workspace.remove_error(INVALID_SOURCE_TYPE)
             workspace.source_type = SourceType.TEX
         return u_file
 
@@ -107,6 +103,7 @@ class InferSourceType(BaseChecker):
                          u_file: UserFile) -> UserFile:
         """Check for single-file PostScript source package."""
         if workspace.source_type.is_unknown and workspace.file_count == 1:
+            workspace.remove_error(INVALID_SOURCE_TYPE)
             workspace.source_type = SourceType.POSTSCRIPT
         return u_file
 
@@ -123,6 +120,7 @@ class InferSourceType(BaseChecker):
             -> UserFile:
         """Check for single-file HTML source package."""
         if workspace.source_type.is_unknown and workspace.file_count == 1:
+            workspace.remove_error(INVALID_SOURCE_TYPE)
             workspace.source_type = SourceType.HTML
         return u_file
 
