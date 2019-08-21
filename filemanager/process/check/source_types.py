@@ -110,7 +110,6 @@ class InferSourceType(BaseChecker):
     def check_PDF(self, workspace: Workspace, u_file: UserFile) \
             -> UserFile:
         """Check for single-file PDF source package."""
-        logger.debug('Check PDF?')
         if workspace.file_count == 1:
             workspace.remove_error(INVALID_SOURCE_TYPE)
             workspace.source_type = SourceType.PDF
@@ -129,8 +128,8 @@ class InferSourceType(BaseChecker):
         """Check for single-file source with failed type detection."""
         if workspace.source_type.is_unknown and workspace.file_count == 1:
             workspace.source_type = SourceType.INVALID
-            workspace.add_error(u_file, INVALID_SOURCE_TYPE,
-                                self.SINGLE_FILE_UNKNOWN_MESSAGE)
+            workspace.add_error_non_file(INVALID_SOURCE_TYPE,
+                                         self.SINGLE_FILE_UNKNOWN_MESSAGE)
         return u_file
 
     # def check_DOS_EPS(self, workspace: Workspace, u_file: UserFile) \
@@ -146,6 +145,6 @@ class InferSourceType(BaseChecker):
         if workspace.source_type.is_unknown and workspace.file_count == 1:
             logger.debug('Source type not known, and only one file')
             workspace.source_type = SourceType.INVALID
-            workspace.add_error(u_file, INVALID_SOURCE_TYPE,
-                                self.UNSUPPORTED_MESSAGE)
+            workspace.add_error_non_file(INVALID_SOURCE_TYPE,
+                                         self.UNSUPPORTED_MESSAGE)
         return u_file
