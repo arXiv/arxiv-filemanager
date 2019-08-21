@@ -98,7 +98,8 @@ class TestEPSRepair(TestCase):
         warnings = defaultdict(list)
         for _, name, msg in response_data['errors']:
             warnings[name].append(msg)
-        self.assertIn('leading TIFF preview stripped', warnings[fname])
+        self.assertIn('Leading TIFF preview stripped',
+                      ' '.join(warnings[fname]))
 
         # Now let's grab file content and verify that it matches expected
         # reference_path file.

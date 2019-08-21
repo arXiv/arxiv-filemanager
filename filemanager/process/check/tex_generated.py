@@ -4,7 +4,7 @@ import os
 import re
 from arxiv.base import logging
 
-from ...domain import FileType, UserFile, Workspace
+from ...domain import FileType, UserFile, Workspace, Code, Severity
 from .base import BaseChecker
 
 logger = logging.getLogger(__name__)
@@ -20,6 +20,9 @@ class RemoveTeXGeneratedFiles(BaseChecker):
     TEX_PRODUCED = re.compile(r'(.+)\.(log|aux|out|blg|dvi|ps|pdf)$',
                               re.IGNORECASE)
 
+    NAME_CONFLICT: Code = 'name_conflict'
+    NAME_CONFLICT_MSG = "Removed file '%s' due to name conflict."
+
     def check(self, workspace: Workspace, u_file: UserFile) \
             -> UserFile:
         """Check for and remove TeX processing files."""
@@ -32,9 +35,11 @@ class RemoveTeXGeneratedFiles(BaseChecker):
             if workspace.exists(tex_file) or workspace.exists(ucase_tex_file):
                 # Potential conflict / corruption by including TeX generated
                 # files in submission.
-                workspace.remove(u_file,
-                                 f"Removed file '{u_file.name}' due to name"
-                                 " conflict.")
+                workspace.add_error(u_file, self.NAME_CONFLICT,
+                                    self.NAME_CONFLICT_MSG % u_file.name,
+                                    severity=Severity.INFO,
+                                    is_persistant=False)
+                workspace.remove(u_file, self.NAME_CONFLICT_MSG % u_file.name)
         return u_file
 
 
@@ -46,12 +51,14 @@ class DisallowDVIFiles(BaseChecker):
     was also included???????
     """
 
-    ERROR_MSG = ('%s is a TeX-produced DVI file. Please submit the TeX source'
-                 ' instead.')
+    DVI_NOT_ALLOWED: Code
+    DVI_MESSAGE = ('%s is a TeX-produced DVI file. Please submit the TeX'
+                   'source instead.')
 
     def check_DVI(self, workspace: Workspace, u_file: UserFile) \
             -> UserFile:
         """Add an error for any non-ancillary DVI file."""
         if not u_file.is_ancillary:
-            workspace.add_error(u_file, self.ERROR_MSG % u_file.name)
+            workspace.add_error(u_file, self.DVI_NOT_ALLOWED,
+                                self.DVI_MESSAGE % u_file.name)
         return u_file

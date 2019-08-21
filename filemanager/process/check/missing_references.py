@@ -4,7 +4,7 @@ import os
 import re
 from arxiv.base import logging
 
-from ...domain import FileType, UserFile, Workspace
+from ...domain import FileType, UserFile, Workspace, Code
 from .base import BaseChecker
 
 logger = logging.getLogger(__name__)
@@ -20,14 +20,16 @@ class CheckForMissingReferences(BaseChecker):
 
     BIB_FILE = re.compile(r'(.*)\.bib$', re.IGNORECASE)
 
-    BIB_WITH_BBL_WARNING = (
+    BIB_WITH_BBL: Code = 'bib_with_bbl'
+    BIB_WITH_BBL_MESSAGE = (
         "We do not run bibtex in the auto - TeXing procedure. We do not run"
         " bibtex because the .bib database files can be quite large, and the"
         " only thing necessary to make the references for a given paper is"
         " the .bbl file."
     )
 
-    BIB_NO_BBL_WARNING = (
+    BIB_NO_BBL: Code = 'bib_no_bbl'
+    BIB_NO_BBL_MESSAGE = (
         "We do not run bibtex in the auto - TeXing "
         "procedure. If you use it, include in your submission the .bbl file "
         "which bibtex produces on your home machine; otherwise your "
@@ -37,7 +39,8 @@ class CheckForMissingReferences(BaseChecker):
         "the.bbl file."
     )
 
-    BBL_MISSING_MSG = (
+    BBL_MISSING: Code = 'bbl_missing'
+    BBL_MISSING_MESSAGE = (
         "Your submission contained {base}.bib file, but no {base}.bbl"
         " file (include {base}.bbl, or submit without {base}.bib; and"
         " remember to verify references)."
@@ -67,7 +70,8 @@ class CheckForMissingReferences(BaseChecker):
         if workspace.exists(bbl_path):
             # If .bbl exists we go ahead and delete .bib file and warn
             # submitter of this action.
-            workspace.add_warning(u_file, self.BIB_WITH_BBL_WARNING,
+            workspace.add_warning(u_file, self.BIB_WITH_BBL,
+                                  self.BIB_WITH_BBL_MESSAGE,
                                   is_persistant=False)
             workspace.remove(u_file,
                              f"Removed the file '{u_file.name}'. Using"
@@ -76,6 +80,7 @@ class CheckForMissingReferences(BaseChecker):
             # Missing .bbl (potential missing references). Generate an
             # error and DO NOT DELETE .bib file. Note: We are using .bib as
             # flag until .bbl exists.
-            workspace.add_warning(u_file, self.BIB_NO_BBL_WARNING)
-            workspace.add_error(u_file,
-                                self.BBL_MISSING_MSG.format(base=base))
+            workspace.add_warning(u_file, self.BIB_NO_BBL,
+                                  self.BIB_NO_BBL_MESSAGE)
+            workspace.add_error(u_file, self.BBL_MISSING,
+                                self.BBL_MISSING_MESSAGE.format(base=base))

@@ -16,7 +16,7 @@ from typing_extensions import Protocol
 from ..index import FileIndex
 
 from ..uploaded_file import UserFile
-from ..error import Error
+from ..error import Error, Severity, Code
 from ..file_type import FileType
 
 from .base import IStorageAdapter, IBaseWorkspace
@@ -31,8 +31,8 @@ class IWorkspace(IBaseWorkspace, Protocol):
     implementation by other components of the workspace.
     """
 
-    def add_error(self, u_file: UserFile, msg: str,
-                  severity: Error.Severity = Error.Severity.FATAL,
+    def add_error(self, u_file: UserFile, code: Code, msg: str,
+                  severity: Severity = Severity.FATAL,
                   is_persistant: bool = True) -> None:
         """Add an error for a specific file."""
 
@@ -306,20 +306,17 @@ class FileMutations(IFileMutations):
         self.__api.storage.remove(self, u_file)
 
         if u_file.is_directory:
-            for former_path, _file \
-                    in self.__api.iter_children(u_file):
+            for _, _file in self.__api.iter_children(u_file):
                 _file.is_removed = True
-                self.drop_refs(_file.path,
-                                              is_ancillary=_file.is_ancillary,
-                                              is_removed=False,
-                                              is_system=_file.is_system)
+                self.drop_refs(_file.path, is_ancillary=_file.is_ancillary,
+                               is_removed=False, is_system=_file.is_system)
                 self.__api.files.set(_file.path, _file)
 
         u_file.is_removed = True
         u_file.reason_for_removal = reason
 
-        self.__api.add_error(u_file, reason, severity=Error.Severity.INFO,
-                             is_persistant=False)
+        # self.__api.add_error(u_file, reason, severity=Severity.INFO,
+        #                      is_persistant=False)
 
         self.drop_refs(u_file.path, is_ancillary=u_file.is_ancillary,
                              is_removed=False,

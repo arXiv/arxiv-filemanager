@@ -4,17 +4,22 @@ import os
 import re
 from arxiv.base import logging
 
-from ...domain import FileType, UserFile, Workspace
+from ...domain import FileType, UserFile, Workspace, Code
 from .base import BaseChecker
 
 
 logger = logging.getLogger(__name__)
+
+ILLEGAL_CHARACTERS: Code = 'filename_illegal_characters'
 
 
 class FixWindowsFileNames(BaseChecker):
     """Checks for and fixes Windows-style filenames."""
 
     WINDOWS_FILE_PREFIX = re.compile(r'^[A-Za-z]:\\(.*\\)?')
+
+    FIXED_WINDOWS_NAME = 'fixed_windows_name'
+    FIXED_WINDOWS_NAME_MESSAGE = "Renamed '%s' to '%s'."
 
     def check(self, workspace: Workspace, u_file: UserFile) \
             -> UserFile:
@@ -27,8 +32,12 @@ class FixWindowsFileNames(BaseChecker):
             new_path = os.path.join(base_path, new_name)
             workspace.rename(u_file, new_path)
 
-            workspace.add_warning(u_file, f'Renamed {prev_name} to {new_name}',
-                                  is_persistant=False)
+            workspace.add_warning(
+                u_file,
+                self.FIXED_WINDOWS_NAME,
+                self.FIXED_WINDOWS_NAME_MESSAGE % (prev_name, new_name),
+                is_persistant=False
+            )
         return u_file
 
 
@@ -41,8 +50,10 @@ class WarnAboutTeXBackupFiles(BaseChecker):
     ``.tex~``.
     """
 
-    WARNING_MSG = ("File '%s' may be a backup file. Please inspect and remove"
-                   " extraneous backup files.")
+    BACKUP_FILE: Code = 'possible_backup_file'
+    BACKUP_MESSAGE = ("File '%s' may be a backup file. Please inspect and"
+                      " remove extraneous backup files.")
+
     TEX_BACKUP_FILE = re.compile(r'(.+)\.(tex_|tex.bak|tex\~)$', re.IGNORECASE)
 
     def check(self, workspace: Workspace, u_file: UserFile) \
@@ -50,7 +61,8 @@ class WarnAboutTeXBackupFiles(BaseChecker):
         """Check for and warn about possible backup files."""
         if not u_file.is_ancillary \
                 and self.TEX_BACKUP_FILE.search(u_file.name):
-            workspace.add_warning(u_file, self.WARNING_MSG % u_file.name)
+            workspace.add_warning(u_file, self.BACKUP_FILE,
+                                 self.BACKUP_MESSAGE % u_file.name)
         return u_file
 
 
@@ -59,6 +71,10 @@ class ReplaceIllegalCharacters(BaseChecker):
 
     ILLEGAL = re.compile(r'[^\w\+\-\.\=\,\_]')
     """Filename contains illegal characters ``+-/=,``."""
+
+    ILLEGAL_CHARACTERS_MSG = ("We only accept file names containing the"
+                              " characters: a-z A-Z 0-9 _ + - . =."
+                              " Renamed '%s' to '%s'")
 
     def check(self, workspace: Workspace, u_file: UserFile) \
             -> UserFile:
@@ -72,12 +88,11 @@ class ReplaceIllegalCharacters(BaseChecker):
             new_path = os.path.join(base_path, new_name)
             workspace.rename(u_file, new_path)
 
-            workspace.add_warning(u_file,
-                                  "We only accept file names containing the"
-                                  " characters: a-z A-Z 0-9 _ + - . =",
-                                  is_persistant=False)
-            workspace.add_warning(u_file, f'Renamed {prev_name} to {new_name}',
-                                  is_persistant=False)
+            workspace.add_warning(
+                u_file, ILLEGAL_CHARACTERS,
+                self.ILLEGAL_CHARACTERS_MSG % (prev_name, new_name),
+                is_persistant=False
+            )
         return u_file
 
 
@@ -85,7 +100,7 @@ class ReplaceIllegalCharacters(BaseChecker):
 class PanicOnIllegalCharacters(BaseChecker):
     """Register an error for files with illegal characters in their names."""
 
-    ILLEGAL_ERROR = (
+    ILLEGAL_CHARACTERS_MSG = (
         'Filename "%s" contains unwanted bad characters. The only allowed are '
         'a-z A-Z 0-9 _ + - . , ='
     )
@@ -96,12 +111,17 @@ class PanicOnIllegalCharacters(BaseChecker):
         if u_file.is_directory:
             return u_file
         if ReplaceIllegalCharacters.ILLEGAL.search(u_file.name):
-            workspace.add_error(u_file, self.ILLEGAL_ERROR % u_file.name)
+            workspace.add_error(u_file, ILLEGAL_CHARACTERS,
+                                self.ILLEGAL_CHARACTERS_MSG % u_file.name)
         return u_file
 
 
 class ReplaceLeadingHyphen(BaseChecker):
     """Checks for a leading hyphen, and replaces it with an underscore."""
+
+    LEADING_HYPHEN: Code = 'filename_leading_hyphen'
+    LEADING_HYPHEN_MESSAGE = \
+        "We do not accept files starting with a hyphen. Renamed '%s' to '%s'."
 
     def check(self, workspace: Workspace, u_file: UserFile) \
             -> UserFile:
@@ -114,8 +134,10 @@ class ReplaceLeadingHyphen(BaseChecker):
             new_path = os.path.join(base_path, new_name)
             workspace.rename(u_file, new_path)
 
-            workspace.add_warning(u_file,
-                                  'We do not accept files starting with a'
-                                  f' hyphen. Renamed {prev_name} to'
-                                  f' {new_name}.', is_persistant=False)
+            workspace.add_warning(
+                u_file,
+                self.LEADING_HYPHEN,
+                self.LEADING_HYPHEN_MESSAGE % (prev_name, new_name),
+                is_persistant=False
+            )
         return u_file

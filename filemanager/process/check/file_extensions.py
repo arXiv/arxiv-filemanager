@@ -4,7 +4,7 @@ import os
 
 from arxiv.base import logging
 
-from ...domain import FileType, UserFile, Workspace
+from ...domain import FileType, UserFile, Workspace, Code
 from .base import BaseChecker
 
 
@@ -14,6 +14,9 @@ logger = logging.getLogger(__name__)
 class FixFileExtensions(BaseChecker):
     """Checks and fixes filename extensions for known formats."""
 
+    FIXED_EXTENSION: Code = 'fixed_extension'
+    FIXED_EXTENSION_MESSAGE = "Renamed '%s' to '%s'."
+
     def _change_extension(self, workspace: Workspace,
                           u_file: UserFile, extension: str) \
             -> UserFile:
@@ -22,8 +25,11 @@ class FixFileExtensions(BaseChecker):
         base_name, _ = os.path.splitext(name)
         new_name = f'{base_name}.{extension}'
         workspace.rename(u_file, os.path.join(base_dir, new_name))
-        workspace.add_warning(u_file, f"Renamed '{prev_name}' to {new_name}.",
-                              is_persistant=False)
+        workspace.add_warning(
+            u_file, self.FIXED_EXTENSION,
+            self.FIXED_EXTENSION_MESSAGE % (prev_name, new_name),
+            is_persistant=False
+        )
         return u_file
 
     def check_POSTSCRIPT(self, workspace: Workspace,

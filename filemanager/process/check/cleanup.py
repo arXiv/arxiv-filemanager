@@ -8,7 +8,7 @@ from typing import Union, Tuple
 
 from arxiv.base import logging
 
-from ...domain import FileType, UserFile, Workspace
+from ...domain import FileType, UserFile, Workspace, Code
 from ..util.unmacify import unmacify
 from .base import BaseChecker
 from .file_type import InferFileType
@@ -35,6 +35,25 @@ PATTERN = re.compile(rb'Thumbnail:|BeginPreview|BeginPhotoshop|'
 # TODO: This needs more context. -- Erick 2019-06-07
 PS_BEGIN = re.compile(b'^%!PS-')
 """[ needs info ]"""
+
+
+# Error codes and message.
+BACKUP_FILE: Code = 'backup_file'
+
+NONCOMPLIANT_TIFF: Code = 'noncompliant_tiff'
+NONCOMPLIANT_TIFF_MESSAGE = "Non-compliant attached TIFF removed from '%s'"
+
+POSTSCRIPT_HEADER_REPAIRED: Code = 'postscript_header_repaired'
+POSTSCRIPT_HEADER_MESSAGE = ("File '%s' did not have proper Postscript header,"
+                             " repaired to '%s'.")
+
+POSTSCRIPT_PREVIEW_STRIP_FAILED: Code = 'postscript_preview_stripping_failed'
+POSTSCRIPT_PREVIEW_STRIPPED: Code = 'postscript_preview_stripped'
+
+POSTSCRIPT_REPAIRED: Code = 'postscript_file_repaired'
+POSTSCRIPT_REPAIRED_MESSAGE = "Repaired Postscript file '%s': %s"
+POSTSCRIPT_REPAIR_ATTEMPTED_MESSAGE = \
+    "Attempted repairs on Postscript file '%s': %s"
 
 
 class UnMacify(BaseChecker):
@@ -72,6 +91,13 @@ class UnMacify(BaseChecker):
 class RepairDOSEPSFiles(BaseChecker):
     """Repair DOS EPS files."""
 
+    FAILED_STRIP_PREVIEW: Code = 'strip_preview_failed'
+    FAILED_STRIP_PREVIEW_MESSAGE = "Failed to strip TIFF preview"
+    LEADING_PREVIEW_MESSAGE = "Leading TIFF preview stripped."
+    LEADING_PREVIEW_STRIPPED: Code = 'leading_tiff_preview_stripped'
+    TRAILING_PREVIEW_MESSAGE = "Trailing TIFF preview stripped."
+    TRAILING_PREVIEW_STRIPPED: Code = 'trailing_tiff_preview_stripped'
+
     def check_DOS_EPS(self, workspace: Workspace, u_file: UserFile) \
             -> UserFile:
         """[ needs info ]"""
@@ -79,11 +105,14 @@ class RepairDOSEPSFiles(BaseChecker):
         if fixed:
             # stripped TIFF
             if 'leading' in fixed:
-                workspace.add_warning(u_file, "leading TIFF preview stripped")
+                workspace.add_warning(u_file, self.LEADING_PREVIEW_STRIPPED,
+                                      self.LEADING_PREVIEW_MESSAGE)
             if 'trailing' in fixed:
-                workspace.add_warning(u_file, "trailing TIFF preview stripped")
+                workspace.add_warning(u_file, self.TRAILING_PREVIEW_STRIPPED,
+                                      self.TRAILING_PREVIEW_MESSAGE)
         else:
-            workspace.add_warning(u_file, "Failed to strip TIFF preview")
+            workspace.add_warning(u_file, self.FAILED_STRIP_PREVIEW,
+                                  self.FAILED_STRIP_PREVIEW_MESSAGE)
             u_file, _ = _repair_postscript(workspace, u_file)
         return u_file
 
@@ -144,7 +173,6 @@ def _check_postscript(workspace: Workspace, u_file: UserFile,
     This routine also deals with detecting imbedded fonts in Postscript
     files.
 
-
     """
     # This code had the incorrect type specified and never actually ran.
     # Cleans up Postscript files file extraneous characters that cause
@@ -153,9 +181,8 @@ def _check_postscript(workspace: Workspace, u_file: UserFile,
         # This code has been not executing for many years. May have
         # resulted in more admin interventions to manually fix.
         u_file, hdr = _repair_postscript(workspace, u_file)
-        workspace.add_warning(u_file,
-                              f"File '{u_file.path}' did not have proper "
-                              f"Postscript header, repaired to '{hdr}'.")
+        workspace.add_warning(u_file, POSTSCRIPT_HEADER_REPAIRED,
+                              POSTSCRIPT_HEADER_MESSAGE % (u_file.path, hdr))
 
     # Determine whether Postscript file contains preview, photoshop. fonts,
     # or resource.
@@ -287,13 +314,13 @@ def _repair_postscript(workspace: Workspace, u_file: UserFile) \
         InferFileType().check_UNKNOWN(workspace, new_file)
         check_type = new_file.file_type
 
+        # Make note of the repair.
         if orig_type != check_type and check_type == FileType.POSTSCRIPT:
-            lm = f"Repaired Postscript file '{new_file.name}': {message}'"
+            lm = POSTSCRIPT_REPAIRED_MESSAGE % (new_file.name, message)
         else:
-            lm = (f"Attempted repairs on Postscript file"
-                  f" '{new_file.name}': {message}'")
+            lm = POSTSCRIPT_REPAIR_ATTEMPTED_MESSAGE % (new_file.name, message)
 
-        workspace.add_warning(new_file, lm)   # Make note of the repair.
+        workspace.add_warning(new_file, POSTSCRIPT_REPAIRED, lm)
         return new_file, first_line[0:75]
 
     workspace.delete(new_file)  # Cleanup.
@@ -367,25 +394,26 @@ def _strip_preview(workspace: Workspace, u_file: UserFile,
                 # AI bug %%EndData^M%%EndComments
                 if re.search(b'.*\r%/%', line):
                     outfile.write(line)
-    logger.debug('Finished stripping %s from %s', what_to_strip, u_file.name)
+
     # Generate some warnings
     if retain and strip_warning:
-        orig_size = u_file.size_bytes  # os.path.getsize(original_filepath)
+        orig_size = u_file.size_bytes
         strip_size = workspace.get_size_bytes(new_file)
         new_file = workspace.replace(u_file, new_file)
 
         msg = (f"reduced from {orig_size} bytes to {strip_size} bytes "
                "(see http://arxiv.org/help/sizes)")
-        strip_warning = ' '.join([strip_warning, msg])
-        workspace.add_warning(new_file, strip_warning)
+        workspace.add_warning(new_file, POSTSCRIPT_PREVIEW_STRIPPED,
+                              '%s %s' % (strip_warning, msg))
         return new_file
 
     if strip_warning:
         msg = f"{u_file.name} had unpaired {end_re.pattern}"
         strip_warning = ' '.join([strip_warning, msg])
-    # Removed failed attempt to strip Postscript
-    workspace.delete(new_file)
-    workspace.add_warning(u_file, strip_warning)
+
+    workspace.delete(new_file)  # Delete failed attempt to strip Postscript.
+    workspace.add_warning(u_file, POSTSCRIPT_PREVIEW_STRIP_FAILED,
+                          strip_warning)
     return u_file
 
 
@@ -443,9 +471,8 @@ def _strip_tiff(workspace: Workspace, u_file: UserFile) \
 
         if end:     # Truncate file after EOF marker
             infile.truncate(end)
-            workspace.add_warning(u_file,
-                                  f"Non-compliant attached TIFF removed"
-                                  f" from '{u_file.name}'")
+            workspace.add_warning(u_file, NONCOMPLIANT_TIFF,
+                                  NONCOMPLIANT_TIFF_MESSAGE % u_file.name)
     return u_file
 
 
@@ -568,7 +595,7 @@ def _repair_dos_eps(workspace: Workspace,
             msg = (f"Modified file {u_file.public_path}."
                    f"Saving original to {backup_file.public_path}."
                    f"You may delete this file.")
-            workspace.add_warning(backup_file, msg)
+            workspace.add_warning(backup_file, BACKUP_FILE, msg)
 
             # Indicate we stripped header and trailing TIFF.
             ret_msg = (f"stripped trailing tiff at {tiffoffset} bytes "
