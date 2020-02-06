@@ -107,6 +107,8 @@ class TestDeleteAllFiles(TestCase):
 
         self.assertEqual(response.status_code, status.OK,
                          "Delete all user-uploaded files.")
+        self.assertNotEqual(json.loads(response.data)['source_format'], 'tex',
+                            'Source format should be cleared on a delete_all')
 
         response = self.client.get(f"/filemanager/api/{self.upload_id}",
                                    headers={'Authorization': self.token})
