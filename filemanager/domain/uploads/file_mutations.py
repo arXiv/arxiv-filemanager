@@ -15,6 +15,7 @@ from typing_extensions import Protocol
 
 from ..index import FileIndex
 
+from .source_type import SourceType
 from ..uploaded_file import UserFile
 from ..error import Error, Severity, Code
 from ..file_type import FileType
@@ -245,6 +246,7 @@ class FileMutations(IFileMutations):
         self.__api.files.ancillary.clear()
         self.__api.storage.makedirs(self, self.__api.source_path)
         self.__api.storage.makedirs(self, self.__api.ancillary_path)
+        self.__api.source_type = SourceType.UNKNOWN
 
     @modifies_workspace()
     def delete_workspace(self) -> bool:
