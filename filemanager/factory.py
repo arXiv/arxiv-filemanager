@@ -16,7 +16,7 @@ from filemanager.services import database
 from arxiv.users import auth
 from arxiv.util.serialize import ISO8601JSONEncoder
 
-from werkzeug.contrib.profiler import ProfilerMiddleware
+from werkzeug.middleware.profiler import ProfilerMiddleware
 
 
 def create_web_app() -> Flask:
